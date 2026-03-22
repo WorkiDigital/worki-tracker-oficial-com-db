@@ -242,18 +242,92 @@
         html.light .metric-value, html.light .ads-metric-val { color:#111827; }
         html.light .chart-card h3 { color:#111827; }
 
-        /* ── Responsive ──────────────────────────── */
+        /* ── Sidebar overlay (mobile) ────────────── */
+        .sidebar-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:15; backdrop-filter:blur(2px); }
+        .sidebar-overlay.open { display:block; }
+        #btnMobileMenu { display:none; }
+
+        /* ── Responsive 960px ────────────────────── */
         @media(max-width:960px) {
             .metrics-grid { grid-template-columns:repeat(2,1fr); }
             .charts-grid  { grid-template-columns:repeat(2,1fr); }
             .ads-metrics  { grid-template-columns:repeat(2,1fr); }
             .content { padding:20px 16px; }
             .topbar { padding:16px; }
+            .demo-grid { grid-template-columns:repeat(2,1fr); }
         }
-        @media(max-width:600px) {
-            .metrics-grid { grid-template-columns:1fr 1fr; }
-            .charts-grid  { grid-template-columns:1fr; }
-            .ctrl-box input[type=text] { width:130px; }
+
+        /* ── Mobile 768px ────────────────────────── */
+        @media(max-width:768px) {
+            /* Body */
+            body { height:auto; min-height:100dvh; overflow-x:hidden; }
+            .main { height:100dvh; overflow:hidden; }
+
+            /* Sidebar: slide-out overlay */
+            .sidebar {
+                position:fixed; top:0; left:0; height:100dvh;
+                width:260px !important; padding:24px 16px;
+                transform:translateX(-100%); transition:transform .25s ease;
+                z-index:20; box-shadow:8px 0 32px rgba(0,0,0,.4);
+            }
+            .sidebar.mobile-open { transform:translateX(0); }
+            .sidebar.collapsed { width:260px !important; padding:24px 16px; }
+            .sidebar.collapsed .logo-text { opacity:1; width:auto; overflow:visible; }
+            .sidebar.collapsed .nav-item { justify-content:flex-start; padding:11px 12px; }
+            .sidebar.collapsed .nav-item span { opacity:1; width:auto; display:inline; }
+            #btnToggle { display:none !important; }
+            #btnMobileMenu { display:flex !important; }
+
+            /* Topbar */
+            .topbar { padding:12px 16px; gap:8px; }
+            .title-area h1 { font-size:16px; }
+            .title-area p  { display:none; }
+            .topbar-right  { gap:6px; }
+
+            /* Content */
+            .content { padding:16px; }
+
+            /* Metrics */
+            .metrics-grid { grid-template-columns:1fr 1fr; gap:10px; }
+            .metric-value { font-size:22px; }
+            .ads-metrics  { grid-template-columns:1fr 1fr; gap:10px; }
+            .ads-metric-val { font-size:17px; }
+
+            /* Charts */
+            .charts-grid { grid-template-columns:1fr; }
+
+            /* Config panel */
+            .metrics-cfg-sections { grid-template-columns:1fr; gap:14px; }
+
+            /* Account input */
+            .acct-input-box { min-width:unset; }
+            .acct-wrap { flex:1; }
+
+            /* Modal */
+            .modal { width:92vw; max-width:420px; }
+
+            /* Ads */
+            .ads-bar { gap:8px; }
+            .ads-filters { gap:8px; }
+
+            /* Leads controls: wrap full width */
+            #leadsControls { width:100%; }
+            .ctrl-box input[type=text] { width:140px; }
+        }
+
+        /* ── Mobile pequeno 480px ─────────────────── */
+        @media(max-width:480px) {
+            .metrics-grid { grid-template-columns:1fr 1fr; gap:8px; }
+            .metric-card { padding:16px 12px; }
+            .metric-value { font-size:20px; }
+            .ads-metrics  { grid-template-columns:1fr 1fr; gap:8px; }
+            .ads-metric   { padding:14px 10px; }
+            .ads-metric-val { font-size:16px; }
+            .refresh-badge { display:none; }
+            .ctrl-box input[type=text] { width:110px; }
+            .demo-grid { grid-template-columns:1fr; }
+            .topbar { padding:10px 12px; }
+            .content { padding:12px; }
         }
     </style>
 </head>
@@ -261,6 +335,9 @@
 
 <!-- Toast area -->
 <div id="toast-area"></div>
+
+<!-- Mobile sidebar overlay -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleMobileSidebar()"></div>
 
 <!-- CAPI Modal -->
 <div id="capiModal" class="modal-overlay">
@@ -316,9 +393,14 @@
 <div class="main">
     <!-- Topbar -->
     <div class="topbar">
-        <div class="title-area">
-            <h1 id="titulo-pagina"><i data-lucide="users" style="color:var(--blue);"></i> Leads Reais</h1>
-            <p>Projeto: <strong id="nome-projeto">...</strong></p>
+        <div style="display:flex;align-items:center;gap:10px;">
+            <button id="btnMobileMenu" class="btn-icon" onclick="toggleMobileSidebar()" style="width:36px;height:36px;flex-shrink:0;">
+                <i data-lucide="menu" style="width:20px;height:20px;"></i>
+            </button>
+            <div class="title-area">
+                <h1 id="titulo-pagina"><i data-lucide="users" style="color:var(--blue);"></i> Leads Reais</h1>
+                <p>Projeto: <strong id="nome-projeto">...</strong></p>
+            </div>
         </div>
         <div class="topbar-right">
             <!-- Refresh indicator -->
@@ -1587,9 +1669,20 @@ function mudarAba(aba) {
     $('leadsControls').style.display = aba === 'leads' ? 'flex' : 'none';
     lucide.createIcons({ nodes:[$('titulo-pagina')] });
     if (aba === 'anuncios' && !adsCarregado) carregarAnuncios();
+    // Fecha sidebar mobile ao trocar de aba
+    $('sidebar').classList.remove('mobile-open');
+    $('sidebarOverlay').classList.remove('open');
 }
 
-// ── Sidebar ────────────────────────────────────────────────────
+// ── Sidebar mobile ─────────────────────────────────────────────
+function toggleMobileSidebar() {
+    const sb  = $('sidebar');
+    const ov  = $('sidebarOverlay');
+    const open = sb.classList.toggle('mobile-open');
+    ov.classList.toggle('open', open);
+}
+
+// ── Sidebar desktop ────────────────────────────────────────────
 function toggleSidebar() {
     const sb  = $('sidebar');
     const btn = $('btnToggle');
