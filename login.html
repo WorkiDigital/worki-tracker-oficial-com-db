@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - WhatsApp Tracking</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <style>
+        :root {
+            --bg: #06080d; --card: #0b0e14; --text: #ffffff; --muted: #8a8f98;
+            --blue: #3b82f6; --green: #10b981; --red: #ef4444;
+            --border: #1f2937; --hover: #1a1f26;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; font-family:'Inter',sans-serif; }
+        body {
+            background:var(--bg); color:var(--text);
+            min-height:100vh; display:flex; align-items:center; justify-content:center;
+        }
+
+        .auth-wrap {
+            width:100%; max-width:420px; padding:24px;
+        }
+
+        .auth-logo {
+            display:flex; align-items:center; gap:12px;
+            justify-content:center; margin-bottom:32px;
+        }
+        .auth-logo-icon {
+            background:var(--blue); width:44px; height:44px; border-radius:10px;
+            display:flex; align-items:center; justify-content:center;
+        }
+        .auth-logo-icon svg { width:22px; height:22px; color:#fff; }
+        .auth-logo-text { font-size:18px; font-weight:700; }
+        .auth-logo-sub  { font-size:12px; color:var(--muted); margin-top:2px; }
+
+        .auth-card {
+            background:var(--card); border:1px solid var(--border);
+            border-radius:16px; padding:32px;
+        }
+
+        /* Tabs */
+        .auth-tabs {
+            display:flex; background:var(--bg); border-radius:10px;
+            padding:4px; margin-bottom:28px; gap:4px;
+        }
+        .auth-tab {
+            flex:1; padding:9px; border-radius:7px; border:none;
+            background:transparent; color:var(--muted); font-size:13px;
+            font-weight:600; cursor:pointer; transition:.2s; font-family:'Inter';
+        }
+        .auth-tab.active {
+            background:var(--blue); color:#fff;
+        }
+
+        /* Form */
+        .auth-title { font-size:18px; font-weight:700; margin-bottom:6px; }
+        .auth-sub   { font-size:13px; color:var(--muted); margin-bottom:24px; }
+
+        .field { margin-bottom:16px; }
+        .field label { display:block; font-size:12px; font-weight:600; color:var(--muted); margin-bottom:6px; text-transform:uppercase; letter-spacing:.5px; }
+        .field input {
+            width:100%; background:var(--bg); border:1px solid var(--border);
+            border-radius:8px; padding:11px 14px; color:var(--text);
+            font-size:14px; font-family:'Inter'; outline:none; transition:.2s;
+        }
+        .field input:focus { border-color:var(--blue); }
+        .field input::placeholder { color:var(--muted); }
+
+        .btn-submit {
+            width:100%; padding:12px; background:var(--blue); color:#fff;
+            border:none; border-radius:8px; font-size:14px; font-weight:700;
+            cursor:pointer; transition:.2s; font-family:'Inter'; margin-top:4px;
+            display:flex; align-items:center; justify-content:center; gap:8px;
+        }
+        .btn-submit:hover   { filter:brightness(1.15); }
+        .btn-submit:disabled { opacity:.5; cursor:not-allowed; filter:none; }
+
+        /* Spinner */
+        @keyframes spin { to { transform:rotate(360deg) } }
+        .spinner {
+            width:16px; height:16px; border:2px solid rgba(255,255,255,.3);
+            border-top-color:#fff; border-radius:50%; animation:spin .7s linear infinite;
+        }
+
+        /* Alert */
+        .alert {
+            padding:12px 14px; border-radius:8px; font-size:13px;
+            font-weight:500; margin-bottom:18px; display:none;
+            line-height:1.5;
+        }
+        .alert.show   { display:block; }
+        .alert.success { background:rgba(16,185,129,.15); border:1px solid rgba(16,185,129,.3); color:#34d399; }
+        .alert.error   { background:rgba(239,68,68,.15);  border:1px solid rgba(239,68,68,.3);  color:#f87171; }
+        .alert.info    { background:rgba(59,130,246,.15); border:1px solid rgba(59,130,246,.3); color:#93c5fd; }
+
+        /* Email sent state */
+        .email-sent {
+            text-align:center; display:none; padding:12px 0;
+        }
+        .email-sent.show { display:block; }
+        .email-sent-icon { font-size:48px; margin-bottom:16px; }
+        .email-sent h3   { font-size:18px; font-weight:700; margin-bottom:8px; }
+        .email-sent p    { font-size:13px; color:var(--muted); line-height:1.6; }
+        .email-sent .email-highlight { color:var(--blue); font-weight:600; }
+        .btn-back {
+            margin-top:20px; background:none; border:1px solid var(--border);
+            color:var(--muted); padding:9px 20px; border-radius:8px; font-size:13px;
+            font-weight:600; cursor:pointer; font-family:'Inter'; transition:.2s;
+        }
+        .btn-back:hover { border-color:var(--blue); color:var(--text); }
+    </style>
+</head>
+<body>
+
+<div class="auth-wrap">
+    <div class="auth-logo">
+        <div class="auth-logo-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+        </div>
+        <div>
+            <div class="auth-logo-text">WhatsApp Tracking</div>
+            <div class="auth-logo-sub">Dashboard de Leads</div>
+        </div>
+    </div>
+
+    <div class="auth-card">
+        <!-- Tabs -->
+        <div class="auth-tabs">
+            <button class="auth-tab active" id="tabLogin" onclick="mudarTab('login')">Entrar</button>
+            <button class="auth-tab" id="tabCadastro" onclick="mudarTab('cadastro')">Criar conta</button>
+        </div>
+
+        <!-- Alert -->
+        <div class="alert" id="alerta"></div>
+
+        <!-- Form Login -->
+        <div id="formLogin">
+            <div class="auth-title">Bem-vindo de volta</div>
+            <div class="auth-sub">Entre com seu email e senha para acessar o dashboard.</div>
+            <div class="field">
+                <label>Email</label>
+                <input type="email" id="loginEmail" placeholder="seu@email.com" autocomplete="email">
+            </div>
+            <div class="field">
+                <label>Senha</label>
+                <input type="password" id="loginSenha" placeholder="••••••••" autocomplete="current-password">
+            </div>
+            <button class="btn-submit" id="btnLogin" onclick="fazerLogin()">Entrar</button>
+        </div>
+
+        <!-- Form Cadastro -->
+        <div id="formCadastro" style="display:none">
+            <!-- Estado email enviado -->
+            <div class="email-sent" id="emailSent">
+                <div class="email-sent-icon">✉️</div>
+                <h3>Confirme seu email</h3>
+                <p>Enviamos um link de confirmação para<br>
+                   <span class="email-highlight" id="emailSentAddr"></span></p>
+                <p style="margin-top:8px;">Clique no link do email para ativar sua conta e depois faça login.</p>
+                <button class="btn-back" onclick="mudarTab('login')">Ir para o Login</button>
+            </div>
+
+            <!-- Formulário de cadastro -->
+            <div id="cadastroForm">
+                <div class="auth-title">Criar conta</div>
+                <div class="auth-sub">Preencha os dados abaixo para criar seu acesso.</div>
+                <div class="field">
+                    <label>Email</label>
+                    <input type="email" id="cadEmail" placeholder="seu@email.com" autocomplete="email">
+                </div>
+                <div class="field">
+                    <label>Senha</label>
+                    <input type="password" id="cadSenha" placeholder="Mínimo 6 caracteres" autocomplete="new-password">
+                </div>
+                <div class="field">
+                    <label>Confirmar senha</label>
+                    <input type="password" id="cadSenhaConf" placeholder="Repita a senha" autocomplete="new-password">
+                </div>
+                <button class="btn-submit" id="btnCadastro" onclick="fazerCadastro()">Criar conta</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let sbClient = null;
+
+// ── Inicialização ───────────────────────────────────────────────
+async function init() {
+    try {
+        const cfg = await fetch('/api/config').then(r => r.json());
+        sbClient = supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
+
+        // Se já tem sessão ativa, redireciona direto
+        const { data: { session } } = await sbClient.auth.getSession();
+        if (session) {
+            window.location.href = 'index.html';
+        }
+    } catch (e) {
+        mostrarAlerta('Erro ao conectar com o servidor.', 'error');
+    }
+}
+
+// ── Troca de aba ────────────────────────────────────────────────
+function mudarTab(tab) {
+    document.getElementById('formLogin').style.display    = tab === 'login'    ? '' : 'none';
+    document.getElementById('formCadastro').style.display = tab === 'cadastro' ? '' : 'none';
+    document.getElementById('tabLogin').classList.toggle('active', tab === 'login');
+    document.getElementById('tabCadastro').classList.toggle('active', tab === 'cadastro');
+    esconderAlerta();
+}
+
+// ── Alertas ─────────────────────────────────────────────────────
+function mostrarAlerta(msg, tipo = 'error') {
+    const el = document.getElementById('alerta');
+    el.textContent = msg;
+    el.className = `alert show ${tipo}`;
+}
+function esconderAlerta() {
+    document.getElementById('alerta').className = 'alert';
+}
+
+// ── Login ───────────────────────────────────────────────────────
+async function fazerLogin() {
+    if (!sbClient) return;
+    const email = document.getElementById('loginEmail').value.trim();
+    const senha  = document.getElementById('loginSenha').value;
+
+    if (!email || !senha) { mostrarAlerta('Preencha email e senha.'); return; }
+
+    const btn = document.getElementById('btnLogin');
+    btn.disabled = true;
+    btn.innerHTML = '<div class="spinner"></div> Entrando...';
+    esconderAlerta();
+
+    const { error } = await sbClient.auth.signInWithPassword({ email, password: senha });
+
+    if (error) {
+        let msg = 'Erro ao fazer login.';
+        if (error.message.includes('Invalid login'))      msg = 'Email ou senha incorretos.';
+        if (error.message.includes('Email not confirmed')) msg = 'Confirme seu email antes de entrar. Verifique sua caixa de entrada.';
+        mostrarAlerta(msg);
+        btn.disabled = false;
+        btn.innerHTML = 'Entrar';
+        return;
+    }
+
+    btn.innerHTML = '✓ Redirecionando...';
+    window.location.href = 'index.html';
+}
+
+// ── Cadastro ────────────────────────────────────────────────────
+async function fazerCadastro() {
+    if (!sbClient) return;
+    const email    = document.getElementById('cadEmail').value.trim();
+    const senha    = document.getElementById('cadSenha').value;
+    const senhaConf = document.getElementById('cadSenhaConf').value;
+
+    if (!email || !senha) { mostrarAlerta('Preencha todos os campos.'); return; }
+    if (senha.length < 6) { mostrarAlerta('A senha deve ter pelo menos 6 caracteres.'); return; }
+    if (senha !== senhaConf) { mostrarAlerta('As senhas não conferem.'); return; }
+
+    const btn = document.getElementById('btnCadastro');
+    btn.disabled = true;
+    btn.innerHTML = '<div class="spinner"></div> Criando conta...';
+    esconderAlerta();
+
+    const { error } = await sbClient.auth.signUp({ email, password: senha });
+
+    if (error) {
+        let msg = 'Erro ao criar conta.';
+        if (error.message.includes('already registered')) msg = 'Este email já está cadastrado. Faça login.';
+        mostrarAlerta(msg);
+        btn.disabled = false;
+        btn.innerHTML = 'Criar conta';
+        return;
+    }
+
+    // Exibe tela de "confirme seu email"
+    document.getElementById('emailSentAddr').textContent = email;
+    document.getElementById('cadastroForm').style.display = 'none';
+    document.getElementById('emailSent').classList.add('show');
+}
+
+// ── Enter para submeter ─────────────────────────────────────────
+document.addEventListener('keydown', e => {
+    if (e.key !== 'Enter') return;
+    const loginVisible = document.getElementById('formLogin').style.display !== 'none';
+    if (loginVisible) fazerLogin();
+    else fazerCadastro();
+});
+
+init();
+</script>
+</body>
+</html>
