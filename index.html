@@ -699,9 +699,9 @@
                 <div class="ads-filters" id="ads-filters">
                     <div class="filter-group">
                         <label>Status</label>
-                        <select id="filtroStatusAds" class="bare" onchange="filtrarCampanhas()" style="border:1px solid var(--border);border-radius:7px;padding:6px 10px;background:var(--card);color:var(--text);">
+                        <select id="filtroStatusAds" class="bare" onchange="salvarFiltroStatus();filtrarCampanhas()" style="border:1px solid var(--border);border-radius:7px;padding:6px 10px;background:var(--card);color:var(--text);">
                             <option value="">Todos</option>
-                            <option value="ACTIVE">Ativas</option>
+                            <option value="ACTIVE" selected>Ativas</option>
                             <option value="PAUSED">Pausadas</option>
                         </select>
                     </div>
@@ -1298,7 +1298,17 @@ async function confirmarVenda() {
 // ── Anúncios — Account picker ──────────────────────────────────
 let _todasContas = [];        // lista completa carregada da API
 let _contaSelecionada = null; // { id, name }
-const ACCT_KEY = 'wt_saved_account'; // localStorage key
+const ACCT_KEY        = 'wt_saved_account';
+const STATUS_FILTER_KEY = 'wt_status_filter';
+
+function salvarFiltroStatus() {
+    localStorage.setItem(STATUS_FILTER_KEY, $('filtroStatusAds').value);
+}
+function restaurarFiltroStatus() {
+    const saved = localStorage.getItem(STATUS_FILTER_KEY);
+    // Se nunca salvou, padrão é ACTIVE; se salvou, restaura
+    $('filtroStatusAds').value = saved !== null ? saved : 'ACTIVE';
+}
 
 async function carregarContasAds() {
     try {
@@ -1309,6 +1319,9 @@ async function carregarContasAds() {
         // Mantém o <select> hidden sincronizado (usado pelo resto do código)
         const sel = $('adsAccountSelect');
         sel.innerHTML = contas.map(c=>`<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('');
+
+        // Restaura filtro de status salvo
+        restaurarFiltroStatus();
 
         // Tenta restaurar conta salva
         const salva = JSON.parse(localStorage.getItem(ACCT_KEY) || 'null');
