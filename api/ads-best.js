@@ -35,6 +35,41 @@ export default async function handler(req, res) {
       todos.push(...(data.data || []));
       next = data.paging?.next || null;
     }
+
+    // Enrich video ads with HD thumbnails via Meta Batch API (groups of 50)
+    const videoAds = todos.filter(ad => ad.creative?.video_id);
+    for (let i = 0; i < videoAds.length; i += 50) {
+      const chunk = videoAds.slice(i, i + 50);
+      const batch = chunk.map(ad => ({
+        method: 'GET',
+        relative_url: `${ad.creative.video_id}?fields=thumbnails{uri,height,width}`,
+      }));
+
+      const form = new URLSearchParams();
+      form.set('access_token', token);
+      form.set('batch', JSON.stringify(batch));
+
+      const br = await fetch('https://graph.facebook.com/v20.0/', {
+        method: 'POST',
+        body: form,
+      });
+      const results = await br.json();
+
+      if (Array.isArray(results)) {
+        results.forEach((result, idx) => {
+          if (result?.code === 200) {
+            try {
+              const body = JSON.parse(result.body);
+              const thumbs = body.thumbnails?.data || [];
+              // Pick highest resolution thumbnail
+              const best = thumbs.reduce((b, t) => (!b || t.height > b.height) ? t : b, null);
+              if (best?.uri) chunk[idx].creative._hd_thumbnail = best.uri;
+            } catch (_) { /* skip */ }
+          }
+        });
+      }
+    }
+
     return res.status(200).json({ data: todos });
   } catch (e) {
     return res.status(500).json({ error: e.message });

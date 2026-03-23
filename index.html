@@ -2177,9 +2177,12 @@ function renderAdCard(ad, rank, sortObj) {
     const spend  = getSpendAd(ad);
     const leads  = getLeadsAd(ad);
     const msgs   = getMsgsAd(ad);
-    // image_url = full-res for static images; thumbnail_url = low-res preview
-    const thumb  = ad.creative?.image_url || ad.creative?.thumbnail_url || '';
     const isVideo = ad.creative?.object_type === 'VIDEO' || !!ad.creative?.video_id;
+    // For videos: _hd_thumbnail is fetched server-side (highest res from Meta thumbnails edge)
+    // For images: image_url is full-res; thumbnail_url is low-res fallback
+    const thumb = isVideo
+        ? (ad.creative?._hd_thumbnail || ad.creative?.thumbnail_url || ad.creative?.image_url || '')
+        : (ad.creative?.image_url     || ad.creative?.thumbnail_url || '');
 
     // Badge de destaque com valor da métrica de ordenação
     const sortVal = sortObj.key === 'leads'   ? leads
