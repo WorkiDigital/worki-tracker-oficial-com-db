@@ -276,6 +276,18 @@
         .best-ads-load-more { display:flex; justify-content:center; margin-top:20px; }
         @media(max-width:768px) { .best-ads-grid { grid-template-columns:repeat(2,1fr); } }
         @media(max-width:480px) { .best-ads-grid { grid-template-columns:1fr; } }
+        /* ── Ad Media Modal ─────────────────────── */
+        .ad-media-overlay { position:fixed; inset:0; background:rgba(0,0,0,.88); backdrop-filter:blur(6px); z-index:1100; display:flex; align-items:center; justify-content:center; opacity:0; visibility:hidden; transition:.2s; }
+        .ad-media-overlay.open { opacity:1; visibility:visible; }
+        .ad-media-box { position:relative; max-width:min(90vw,600px); max-height:90vh; display:flex; flex-direction:column; align-items:center; gap:10px; }
+        .ad-media-close { position:absolute; top:-38px; right:0; background:rgba(255,255,255,.12); border:none; color:#fff; width:32px; height:32px; border-radius:50%; font-size:18px; cursor:pointer; display:flex; align-items:center; justify-content:center; z-index:2; }
+        .ad-media-close:hover { background:rgba(255,255,255,.22); }
+        .ad-media-img { max-width:100%; max-height:80vh; border-radius:10px; object-fit:contain; display:block; }
+        .ad-media-video { max-width:100%; max-height:80vh; border-radius:10px; background:#000; display:block; }
+        .ad-media-name { color:rgba(255,255,255,.75); font-size:12px; text-align:center; max-width:500px; }
+        .ad-media-loading { color:#fff; font-size:13px; display:flex; align-items:center; gap:8px; }
+        .ad-media-ext-btn { margin-top:4px; font-size:11px; color:rgba(255,255,255,.5); background:none; border:1px solid rgba(255,255,255,.2); border-radius:6px; padding:4px 10px; cursor:pointer; }
+        .ad-media-ext-btn:hover { color:#fff; border-color:rgba(255,255,255,.5); }
 
         /* ── Aba oculta ──────────────────────────── */
         .aba-oculta { display:none !important; }
@@ -379,6 +391,18 @@
 
 <!-- Toast area -->
 <div id="toast-area"></div>
+
+<!-- Ad Media Modal (image lightbox + video player) -->
+<div class="ad-media-overlay" id="adMediaOverlay" onclick="fecharAdMedia(event)">
+    <div class="ad-media-box" id="adMediaBox">
+        <button class="ad-media-close" onclick="fecharAdMedia()">✕</button>
+        <div id="adMediaContent"></div>
+        <div class="ad-media-name" id="adMediaName"></div>
+        <button class="ad-media-ext-btn" id="adMediaExtBtn" onclick="abrirAdLink(window._adMediaCurrentId)" style="display:none;">
+            Abrir no Gerenciador de Anúncios ↗
+        </button>
+    </div>
+</div>
 
 <!-- Mobile sidebar overlay -->
 <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleMobileSidebar()"></div>
@@ -2151,8 +2175,9 @@ function renderAdCard(ad, rank, sortObj) {
     const spend  = getSpendAd(ad);
     const leads  = getLeadsAd(ad);
     const msgs   = getMsgsAd(ad);
-    const thumb  = ad.creative?.thumbnail_url || ad.creative?.image_url || '';
-    const isVideo = ad.creative?.object_type === 'VIDEO';
+    // image_url = full-res for static images; thumbnail_url = low-res preview
+    const thumb  = ad.creative?.image_url || ad.creative?.thumbnail_url || '';
+    const isVideo = ad.creative?.object_type === 'VIDEO' || !!ad.creative?.video_id;
 
     // Badge de destaque com valor da métrica de ordenação
     const sortVal = sortObj.key === 'leads'   ? leads
@@ -2179,9 +2204,9 @@ function renderAdCard(ad, rank, sortObj) {
     ];
 
     const thumbHtml = thumb
-        ? `<img class="ad-card-thumb" src="${esc(thumb)}" onclick="abrirAdLink('${esc(ad.id)}')" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" loading="lazy">
-           <div class="ad-card-thumb-placeholder" style="display:none;" onclick="abrirAdLink('${esc(ad.id)}')">🖼</div>`
-        : `<div class="ad-card-thumb-placeholder" onclick="abrirAdLink('${esc(ad.id)}')">🖼</div>`;
+        ? `<img class="ad-card-thumb" src="${esc(thumb)}" onclick="abrirAdMedia('${esc(ad.id)}')" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" loading="lazy">
+           <div class="ad-card-thumb-placeholder" style="display:none;" onclick="abrirAdMedia('${esc(ad.id)}')">🖼</div>`
+        : `<div class="ad-card-thumb-placeholder" onclick="abrirAdMedia('${esc(ad.id)}')">🖼</div>`;
 
     return `<div class="ad-card">
         <div style="position:relative;">
@@ -2221,6 +2246,81 @@ function setBestAdsSort(key) {
 function abrirAdLink(adId) {
     window.open(`https://adsmanager.facebook.com/adsmanager/manage/ads?selected_ad_ids=${adId}`, '_blank');
 }
+
+// ── Ad Media Modal ─────────────────────────────────────────────
+window._adMediaCurrentId = null;
+
+function fecharAdMedia(e) {
+    if (e && e.target !== document.getElementById('adMediaOverlay')) return;
+    const overlay = document.getElementById('adMediaOverlay');
+    overlay.classList.remove('open');
+    // Stop video playback
+    const v = overlay.querySelector('video');
+    if (v) { v.pause(); v.src = ''; }
+    window._adMediaCurrentId = null;
+}
+
+async function abrirAdMedia(adId) {
+    const ad = adBestMap[adId];
+    if (!ad) return;
+    window._adMediaCurrentId = adId;
+
+    const overlay  = document.getElementById('adMediaOverlay');
+    const content  = document.getElementById('adMediaContent');
+    const nameEl   = document.getElementById('adMediaName');
+    const extBtn   = document.getElementById('adMediaExtBtn');
+    const isVideo  = ad.creative?.object_type === 'VIDEO' || !!ad.creative?.video_id;
+
+    nameEl.textContent = ad.name || '';
+    extBtn.style.display = '';
+    content.innerHTML = '<div class="ad-media-loading"><svg class="spinner" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Carregando...</div>';
+    overlay.classList.add('open');
+
+    if (isVideo) {
+        const videoId = ad.creative?.video_id;
+        if (!videoId) {
+            // No video_id: fallback to thumbnail image
+            const thumb = ad.creative?.thumbnail_url || ad.creative?.image_url || '';
+            content.innerHTML = thumb
+                ? `<img class="ad-media-img" src="${esc(thumb)}">`
+                : `<div class="ad-media-loading">Prévia não disponível</div>`;
+            return;
+        }
+        try {
+            const dp  = document.getElementById('adsDatePreset')?.value || 'last_30d';
+            const res = await authFetch(`/api/video-source?videoId=${encodeURIComponent(videoId)}`);
+            const vd  = await res.json();
+            if (vd.error) throw new Error(vd.error);
+
+            const poster = vd.thumbnail || ad.creative?.thumbnail_url || '';
+            if (vd.source) {
+                content.innerHTML = `<video class="ad-media-video" controls autoplay playsinline
+                    poster="${esc(poster)}"
+                    src="${esc(vd.source)}"></video>`;
+            } else {
+                // No direct source available — show best thumbnail
+                content.innerHTML = poster
+                    ? `<img class="ad-media-img" src="${esc(poster)}"><div class="ad-media-name" style="color:rgba(255,255,255,.45);font-size:11px;">Vídeo não disponível para reprodução direta</div>`
+                    : `<div class="ad-media-loading">Prévia não disponível</div>`;
+            }
+        } catch (err) {
+            content.innerHTML = `<div class="ad-media-loading" style="color:#f87171;">Erro: ${esc(err.message)}</div>`;
+        }
+    } else {
+        // Static image: use full-res image_url
+        const img = ad.creative?.image_url || ad.creative?.thumbnail_url || '';
+        content.innerHTML = img
+            ? `<img class="ad-media-img" src="${esc(img)}" onerror="this.src='${esc(ad.creative?.thumbnail_url||'')}';">`
+            : `<div class="ad-media-loading">Imagem não disponível</div>`;
+    }
+}
+
+// Close modal on Escape key
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && document.getElementById('adMediaOverlay')?.classList.contains('open')) {
+        fecharAdMedia(null);
+    }
+});
 
 // ── Abas ───────────────────────────────────────────────────────
 const ABAS = ['leads','relatorios','anuncios'];

@@ -19,7 +19,7 @@ export default async function handler(req, res) {
     'name', 'status',
     'campaign_id', 'campaign{name}',
     'adset_id', 'adset{name}',
-    'creative{thumbnail_url,image_url,object_type}',
+    'creative{thumbnail_url,image_url,object_type,video_id}',
     `insights.date_preset(${datePreset}){${insightFields}}`,
   ].join(',');
 

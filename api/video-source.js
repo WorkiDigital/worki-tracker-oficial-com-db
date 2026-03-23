@@ -1,0 +1,32 @@
+import { verifyAuth } from './_auth.js';
+
+export default async function handler(req, res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
+  if (req.method === 'OPTIONS') return res.status(200).end();
+
+  const user = await verifyAuth(req, res);
+  if (!user) return;
+
+  const { videoId } = req.query;
+  const token = process.env.META_ADS_TOKEN;
+  if (!token)   return res.status(500).json({ error: 'META_ADS_TOKEN not configured' });
+  if (!videoId) return res.status(400).json({ error: 'videoId is required' });
+
+  try {
+    const url = `https://graph.facebook.com/v20.0/${videoId}?fields=source,thumbnails{uri,height,width}&access_token=${token}`;
+    const r    = await fetch(url);
+    const data = await r.json();
+    if (data.error) return res.status(400).json({ error: data.error.message });
+    // Pick the largest thumbnail available
+    const thumbs = data.thumbnails?.data || [];
+    const bestThumb = thumbs.reduce((best, t) => (!best || t.height > best.height) ? t : best, null);
+    return res.status(200).json({
+      source:    data.source    || null,
+      thumbnail: bestThumb?.uri || null,
+    });
+  } catch (e) {
+    return res.status(500).json({ error: e.message });
+  }
+}
