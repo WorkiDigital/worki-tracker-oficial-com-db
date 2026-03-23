@@ -441,6 +441,9 @@
         <a id="btn-anuncios"   class="nav-item"          onclick="mudarAba('anuncios')">
             <i data-lucide="trending-up" style="width:17px;flex-shrink:0;"></i><span>Anúncios</span>
         </a>
+        <a id="btn-config" class="nav-item" onclick="mudarAba('config')">
+            <i data-lucide="settings" style="width:17px;flex-shrink:0;"></i><span>Configurações</span>
+        </a>
     </nav>
     <div class="sidebar-bottom">
         <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;margin-bottom:8px;overflow:hidden;">
@@ -796,6 +799,31 @@
                 </div><!-- /ads-data -->
             </div><!-- /ads-conteudo -->
         </div><!-- /aba-anuncios -->
+
+        <!-- ABA: CONFIGURAÇÕES -->
+        <div id="aba-config" class="aba-oculta">
+            <div class="content">
+                <div style="max-width:600px;">
+                    <div class="card" style="padding:24px;margin-bottom:20px;">
+                        <div style="font-size:15px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:8px;">
+                            <i data-lucide="megaphone" style="width:16px;color:var(--blue);"></i>
+                            Contas de Anúncio
+                        </div>
+                        <p style="font-size:13px;color:var(--muted);margin-bottom:18px;">
+                            Selecione as contas que aparecem no seletor. Por padrão todas são exibidas.
+                        </p>
+                        <div id="cfgContasList" style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px;"></div>
+                        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+                            <button class="btn btn-primary" onclick="salvarConfigContas()">
+                                <i data-lucide="save" style="width:13px;"></i> Salvar
+                            </button>
+                            <button class="btn btn-ghost btn-sm" onclick="selecionarTodasContas()">Selecionar todas</button>
+                            <span id="cfgContasSalvo" style="font-size:12px;color:var(--blue);display:none;">✓ Salvo</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div><!-- /aba-config -->
 
         <!-- ABA: RELATÓRIOS -->
         <div id="aba-relatorios" class="aba-oculta">
@@ -1298,8 +1326,9 @@ async function confirmarVenda() {
 // ── Anúncios — Account picker ──────────────────────────────────
 let _todasContas = [];        // lista completa carregada da API
 let _contaSelecionada = null; // { id, name }
-const ACCT_KEY        = 'wt_saved_account';
-const STATUS_FILTER_KEY = 'wt_status_filter';
+const ACCT_KEY           = 'wt_saved_account';
+const STATUS_FILTER_KEY  = 'wt_status_filter';
+const ACCOUNTS_FILTER_KEY = 'wt_accounts_filter';
 
 function salvarFiltroStatus() {
     localStorage.setItem(STATUS_FILTER_KEY, $('filtroStatusAds').value);
@@ -1316,16 +1345,18 @@ async function carregarContasAds() {
         if (!Array.isArray(contas) || !contas.length) return;
         _todasContas = contas;
 
-        // Mantém o <select> hidden sincronizado (usado pelo resto do código)
-        const sel = $('adsAccountSelect');
-        sel.innerHTML = contas.map(c=>`<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('');
+        // Aplica filtro de contas salvo em Configurações e popula o select/dropdown
+        aplicarFiltroContas();
 
         // Restaura filtro de status salvo
         restaurarFiltroStatus();
 
-        // Tenta restaurar conta salva
+        // Tenta restaurar conta salva (baseado nas contas visíveis após filtro)
+        const visiveis = JSON.parse(ls(ACCOUNTS_FILTER_KEY) || 'null')
+            ? contas.filter(c => JSON.parse(ls(ACCOUNTS_FILTER_KEY)).includes(c.id))
+            : contas;
         const salva = JSON.parse(localStorage.getItem(ACCT_KEY) || 'null');
-        const encontrada = salva && contas.find(c => c.id === salva.id);
+        const encontrada = salva && visiveis.find(c => c.id === salva.id);
         if (encontrada) {
             selecionarConta(encontrada, false); // false = não gravar de novo
             $('acctSavedBadge').style.display = 'inline';
@@ -1383,6 +1414,53 @@ function selecionarConta(conta, salvar = true) {
         $('acctSavedBadge').style.display = 'inline';
         toast(`Conta "${conta.name}" salva`, 'success');
     }
+}
+
+function aplicarFiltroContas() {
+    const saved = JSON.parse(ls(ACCOUNTS_FILTER_KEY) || 'null');
+    const visiveis = saved ? _todasContas.filter(c => saved.includes(c.id)) : _todasContas;
+    const sel = $('adsAccountSelect');
+    sel.innerHTML = visiveis.map(c => `<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('');
+    renderDropdown(visiveis);
+    if (_contaSelecionada && !visiveis.find(c => c.id === _contaSelecionada.id)) {
+        _contaSelecionada = null;
+        $('acctSearch').value = '';
+        $('acctSavedBadge').style.display = 'none';
+    }
+}
+
+function renderConfigContas() {
+    if (!_todasContas.length) {
+        $('cfgContasList').innerHTML = '<p style="font-size:13px;color:var(--muted);">Nenhuma conta carregada ainda. Acesse a aba Anúncios primeiro.</p>';
+        return;
+    }
+    const saved = JSON.parse(ls(ACCOUNTS_FILTER_KEY) || 'null');
+    $('cfgContasList').innerHTML = _todasContas.map(c => {
+        const checked = !saved || saved.includes(c.id) ? 'checked' : '';
+        return `<label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--hover);">
+            <input type="checkbox" value="${esc(c.id)}" ${checked}
+                   style="width:16px;height:16px;accent-color:var(--blue);cursor:pointer;">
+            <span style="font-size:13px;font-weight:500;">${esc(c.name)}</span>
+            <span style="font-size:11px;color:var(--muted);margin-left:auto;">${esc(c.id)}</span>
+        </label>`;
+    }).join('');
+    lucide.createIcons({ nodes: [$('aba-config')] });
+}
+
+function salvarConfigContas() {
+    const checks = [...$('cfgContasList').querySelectorAll('input[type=checkbox]')];
+    const selecionados = checks.filter(c => c.checked).map(c => c.value);
+    const valor = selecionados.length === _todasContas.length ? null : selecionados;
+    ls(ACCOUNTS_FILTER_KEY, JSON.stringify(valor));
+    aplicarFiltroContas();
+    const badge = $('cfgContasSalvo');
+    badge.style.display = 'inline';
+    setTimeout(() => badge.style.display = 'none', 2000);
+    toast('Contas salvas', 'success');
+}
+
+function selecionarTodasContas() {
+    $('cfgContasList').querySelectorAll('input[type=checkbox]').forEach(c => c.checked = true);
 }
 
 function navDropdown(e) {
@@ -2375,11 +2453,12 @@ document.addEventListener('keydown', e => {
 });
 
 // ── Abas ───────────────────────────────────────────────────────
-const ABAS = ['leads','relatorios','anuncios'];
+const ABAS = ['leads','relatorios','anuncios','config'];
 const TITULOS = {
     leads:     '<i data-lucide="users" style="color:var(--blue);"></i> Leads Reais',
     relatorios:'<i data-lucide="bar-chart-2" style="color:var(--blue);"></i> Relatórios',
     anuncios:  '<i data-lucide="trending-up" style="color:var(--blue);"></i> Anúncios',
+    config:    '<i data-lucide="settings" style="color:var(--blue);"></i> Configurações',
 };
 
 function mudarAba(aba) {
@@ -2393,6 +2472,7 @@ function mudarAba(aba) {
     $('leadsControls').style.display = aba === 'leads' ? 'flex' : 'none';
     lucide.createIcons({ nodes:[$('titulo-pagina')] });
     if (aba === 'anuncios' && !adsCarregado) carregarAnuncios();
+    if (aba === 'config') renderConfigContas();
     // Fecha sidebar mobile ao trocar de aba
     $('sidebar').classList.remove('mobile-open');
     $('sidebarOverlay').classList.remove('open');
