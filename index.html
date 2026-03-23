@@ -543,7 +543,7 @@
                         <label>Buscar</label>
                         <div class="ctrl-box" style="padding:5px 10px;">
                             <i data-lucide="search" style="width:12px;color:var(--muted);"></i>
-                            <input type="text" id="filtroCriativoAds" placeholder="Campanha..." style="width:160px;">
+                            <input type="text" id="filtroCriativoAds" placeholder="Campanha..." style="width:160px;" oninput="filtrarCampanhas()">
                         </div>
                     </div>
                     <div style="margin-left:auto;font-size:12px;color:var(--muted);align-self:flex-end;padding-bottom:2px;">
@@ -585,7 +585,7 @@
                     <div class="ads-metric" data-card="leads"><div class="ads-metric-val" id="ads-leads">0</div><div class="ads-metric-lbl">Leads (formulário)</div></div>
                     <div class="ads-metric" data-card="cpl"><div class="ads-metric-val" id="ads-cpl">—</div><div class="ads-metric-lbl">CPL (custo/lead)</div></div>
                     <div class="ads-metric" data-card="msgs"><div class="ads-metric-val" id="ads-msgs">0</div><div class="ads-metric-lbl">Conversas Iniciadas</div></div>
-                    <div class="ads-metric" data-card="cpr"><div class="ads-metric-val" id="ads-cpm">—</div><div class="ads-metric-lbl">CPR (custo/conversa)</div></div>
+                    <div class="ads-metric" data-card="cpr"><div class="ads-metric-val" id="ads-cpr">—</div><div class="ads-metric-lbl">CPR (custo/conversa)</div></div>
                     <div class="ads-metric" data-card="seguidores"><div class="ads-metric-val" id="ads-seguidores">—</div><div class="ads-metric-lbl">Seguidores (curtidas)</div></div>
                     <div class="ads-metric" data-card="cps"><div class="ads-metric-val" id="ads-cps">—</div><div class="ads-metric-lbl">Custo/seguidor</div></div>
                 </div>
@@ -696,7 +696,7 @@ Chart.register(ChartDataLabels);
 let rawData = [], dadosFiltrados = [], META_TOKEN = '';
 let sortCol = 'event_time', sortDir = -1;
 let pagAtual = 1; const POR_PAGINA = 50;
-let campanhasRaw = [], adsCarregado = false, chumboAtivo = null;
+let campanhasRaw = [], adsCarregado = false;
 const graficos = {};
 const CORES = ['#0ea5e9','#10b981','#8b5cf6','#f59e0b','#ef4444','#ec4899','#06b6d4','#f97316'];
 let debounceTimer = null;
@@ -1371,7 +1371,7 @@ function getColsAtivas() {
 function getIns(c) {
     const i = c.insights;
     if (!i) return null;
-    return Array.isArray(i.data) ? i.data[0] : (i.data || i);
+    return Array.isArray(i.data) ? (i.data[0] || null) : (i.data || i || null);
 }
 
 // Soma actions por tipos — correspondência EXATA apenas
@@ -1457,7 +1457,7 @@ function calcMetricasAds(camps) {
     $('ads-leads').textContent    = fmtN(leads);
     $('ads-cpl').textContent      = leads      ? brl(spend/leads) : '—';
     $('ads-msgs').textContent     = fmtN(msgs);
-    $('ads-cpm').textContent      = msgs       ? brl(spend/msgs) : '—';
+    $('ads-cpr').textContent      = msgs       ? brl(spend/msgs) : '—';
     $('ads-seguidores').textContent = seguidores ? fmtN(seguidores) : '—';
     $('ads-cps').textContent      = seguidores  ? brl(spend/seguidores) : '—';
 }
@@ -1465,7 +1465,6 @@ function calcMetricasAds(camps) {
 // ── Demográficos ───────────────────────────────────────────────
 let demoMetrica = 'spend'; // métrica ativa nos gráficos
 let demoGraficos = {};
-let demoDebounceTimer2 = null;
 
 function selecionarMetricaDemo(metrica, el) {
     demoMetrica = metrica;
