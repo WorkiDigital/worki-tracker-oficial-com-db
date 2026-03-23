@@ -288,6 +288,8 @@
         .ad-media-loading { color:#fff; font-size:13px; display:flex; align-items:center; gap:8px; }
         .ad-media-ext-btn { margin-top:4px; font-size:11px; color:rgba(255,255,255,.5); background:none; border:1px solid rgba(255,255,255,.2); border-radius:6px; padding:4px 10px; cursor:pointer; }
         .ad-media-ext-btn:hover { color:#fff; border-color:rgba(255,255,255,.5); }
+        .ad-media-preview-wrap { border-radius:10px; overflow:hidden; display:flex; align-items:center; justify-content:center; }
+        .ad-media-preview-wrap iframe { display:block; border:none; }
 
         /* ── Aba oculta ──────────────────────────── */
         .aba-oculta { display:none !important; }
@@ -2265,11 +2267,11 @@ async function abrirAdMedia(adId) {
     if (!ad) return;
     window._adMediaCurrentId = adId;
 
-    const overlay  = document.getElementById('adMediaOverlay');
-    const content  = document.getElementById('adMediaContent');
-    const nameEl   = document.getElementById('adMediaName');
-    const extBtn   = document.getElementById('adMediaExtBtn');
-    const isVideo  = ad.creative?.object_type === 'VIDEO' || !!ad.creative?.video_id;
+    const overlay = document.getElementById('adMediaOverlay');
+    const content = document.getElementById('adMediaContent');
+    const nameEl  = document.getElementById('adMediaName');
+    const extBtn  = document.getElementById('adMediaExtBtn');
+    const isVideo = ad.creative?.object_type === 'VIDEO' || !!ad.creative?.video_id;
 
     nameEl.textContent = ad.name || '';
     extBtn.style.display = '';
@@ -2277,37 +2279,32 @@ async function abrirAdMedia(adId) {
     overlay.classList.add('open');
 
     if (isVideo) {
-        const videoId = ad.creative?.video_id;
-        if (!videoId) {
-            // No video_id: fallback to thumbnail image
-            const thumb = ad.creative?.thumbnail_url || ad.creative?.image_url || '';
-            content.innerHTML = thumb
-                ? `<img class="ad-media-img" src="${esc(thumb)}">`
-                : `<div class="ad-media-loading">Prévia não disponível</div>`;
-            return;
-        }
+        // Use Ad Preview API — returns iframe with Facebook's native video player
         try {
-            const dp  = document.getElementById('adsDatePreset')?.value || 'last_30d';
-            const res = await authFetch(`/api/video-source?videoId=${encodeURIComponent(videoId)}`);
-            const vd  = await res.json();
-            if (vd.error) throw new Error(vd.error);
-
-            const poster = vd.thumbnail || ad.creative?.thumbnail_url || '';
-            if (vd.source) {
-                content.innerHTML = `<video class="ad-media-video" controls autoplay playsinline
-                    poster="${esc(poster)}"
-                    src="${esc(vd.source)}"></video>`;
+            const r    = await authFetch(`/api/ad-preview?adId=${encodeURIComponent(adId)}`);
+            const data = await r.json();
+            if (data.error) throw new Error(data.error);
+            if (data.body) {
+                // The body is an <iframe ...> string from Meta — inject it directly
+                content.innerHTML = `<div class="ad-media-preview-wrap">${data.body}</div>`;
+                // Make iframe fill the modal box nicely
+                const iframe = content.querySelector('iframe');
+                if (iframe) {
+                    iframe.style.cssText = 'border:none;border-radius:10px;display:block;max-width:100%;';
+                }
             } else {
-                // No direct source available — show best thumbnail
-                content.innerHTML = poster
-                    ? `<img class="ad-media-img" src="${esc(poster)}"><div class="ad-media-name" style="color:rgba(255,255,255,.45);font-size:11px;">Vídeo não disponível para reprodução direta</div>`
-                    : `<div class="ad-media-loading">Prévia não disponível</div>`;
+                throw new Error('Preview não disponível');
             }
         } catch (err) {
-            content.innerHTML = `<div class="ad-media-loading" style="color:#f87171;">Erro: ${esc(err.message)}</div>`;
+            // Fallback: show thumbnail
+            const thumb = ad.creative?.thumbnail_url || ad.creative?.image_url || '';
+            content.innerHTML = thumb
+                ? `<img class="ad-media-img" src="${esc(thumb)}">
+                   <div style="color:rgba(255,255,255,.45);font-size:11px;margin-top:6px;">Preview não disponível — ${esc(err.message)}</div>`
+                : `<div class="ad-media-loading" style="color:#f87171;">${esc(err.message)}</div>`;
         }
     } else {
-        // Static image: use full-res image_url
+        // Static image: use full-res image_url as lightbox
         const img = ad.creative?.image_url || ad.creative?.thumbnail_url || '';
         content.innerHTML = img
             ? `<img class="ad-media-img" src="${esc(img)}" onerror="this.src='${esc(ad.creative?.thumbnail_url||'')}';">`
