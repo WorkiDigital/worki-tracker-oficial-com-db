@@ -751,38 +751,45 @@
                         </table>
                     </div>
                 </div>
-                <!-- ── Melhores Anúncios ─────────────────────── -->
-                <div class="best-ads-section" id="bestAdsSection" style="display:none;">
+                <!-- ── Melhores Criativos ────────────────────── -->
+                <div class="best-ads-section" id="bestAdsSection">
                     <div class="best-ads-header">
                         <span class="best-ads-title">
-                            <i data-lucide="trophy" style="width:16px;color:#f59e0b;"></i> Melhores Anúncios
+                            <i data-lucide="trophy" style="width:16px;color:#f59e0b;"></i> Melhores Criativos
                         </span>
-                        <button class="btn btn-ghost btn-sm" onclick="carregarMelhoresAnuncios()">
-                            <i data-lucide="refresh-cw" style="width:13px;"></i> Atualizar
+                        <button class="btn btn-ghost btn-sm" id="btnCarregarBestAds" onclick="carregarMelhoresAnuncios()">
+                            <i data-lucide="play-circle" style="width:13px;"></i> Carregar Criativos
                         </button>
                     </div>
-                    <div class="best-ads-sort" id="bestAdsSortPills"></div>
-                    <div class="best-ads-filters">
-                        <select id="bestAdsCampFilter" class="bare" onchange="renderMelhoresAnuncios()"
-                                style="border:1px solid var(--border);border-radius:7px;padding:6px 10px;background:var(--card);color:var(--text);font-size:13px;">
-                            <option value="">Todas as campanhas</option>
-                        </select>
-                        <select id="bestAdsStatusFilter" class="bare" onchange="renderMelhoresAnuncios()"
-                                style="border:1px solid var(--border);border-radius:7px;padding:6px 10px;background:var(--card);color:var(--text);font-size:13px;">
-                            <option value="ACTIVE">Apenas Ativos</option>
-                            <option value="">Todos</option>
-                        </select>
-                        <span id="bestAdsCount" style="font-size:12px;color:var(--muted);margin-left:auto;"></span>
+                    <!-- Estado inicial (antes de carregar) -->
+                    <div id="bestAdsEmpty" style="text-align:center;padding:32px 0 20px;color:var(--muted);font-size:13px;">
+                        Clique em <strong>Carregar Criativos</strong> para ver os melhores criativos desta conta.
                     </div>
-                    <div id="bestAdsLoading" style="display:none;text-align:center;padding:40px;color:var(--muted);">
-                        <i data-lucide="loader-2" class="spinner" style="width:24px;height:24px;color:var(--blue);display:block;margin:0 auto 10px;"></i>
-                        Buscando anúncios...
-                    </div>
-                    <div class="best-ads-grid" id="bestAdsGrid"></div>
-                    <div class="best-ads-load-more">
-                        <button class="btn btn-ghost" id="btnMaisAds" style="display:none;" onclick="mostrarMaisAds()">
-                            Carregar mais (<span id="bestAdsRestantes">0</span> restantes)
-                        </button>
+                    <!-- Conteúdo (oculto até primeiro load) -->
+                    <div id="bestAdsLoaded" style="display:none;">
+                        <div class="best-ads-sort" id="bestAdsSortPills"></div>
+                        <div class="best-ads-filters">
+                            <select id="bestAdsCampFilter" class="bare" onchange="renderMelhoresAnuncios()"
+                                    style="border:1px solid var(--border);border-radius:7px;padding:6px 10px;background:var(--card);color:var(--text);font-size:13px;">
+                                <option value="">Todas as campanhas</option>
+                            </select>
+                            <select id="bestAdsStatusFilter" class="bare" onchange="renderMelhoresAnuncios()"
+                                    style="border:1px solid var(--border);border-radius:7px;padding:6px 10px;background:var(--card);color:var(--text);font-size:13px;">
+                                <option value="ACTIVE">Apenas Ativos</option>
+                                <option value="">Todos</option>
+                            </select>
+                            <span id="bestAdsCount" style="font-size:12px;color:var(--muted);margin-left:auto;"></span>
+                        </div>
+                        <div id="bestAdsLoading" style="display:none;text-align:center;padding:40px;color:var(--muted);">
+                            <i data-lucide="loader-2" class="spinner" style="width:24px;height:24px;color:var(--blue);display:block;margin:0 auto 10px;"></i>
+                            Buscando criativos...
+                        </div>
+                        <div class="best-ads-grid" id="bestAdsGrid"></div>
+                        <div class="best-ads-load-more">
+                            <button class="btn btn-ghost" id="btnMaisAds" style="display:none;" onclick="mostrarMaisAds()">
+                                Carregar mais 15 (<span id="bestAdsRestantes">0</span> restantes)
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -841,7 +848,7 @@ let bestAdsRaw      = [];
 let bestAdsPagina   = 0;
 let bestAdsSortKey  = 'leads';
 const adBestMap     = {}; // { adId: adItem }
-const BEST_ADS_POR_PAGINA = 8;
+const BEST_ADS_POR_PAGINA = 15;
 
 const BEST_ADS_SORT = [
     { key:'leads',   label:'Mais Leads',     fn:(a,b) => getLeadsAd(b) - getLeadsAd(a) },
@@ -1385,7 +1392,10 @@ async function carregarAnuncios() {
     Object.keys(expandState).forEach(k => delete expandState[k]);
     Object.keys(adBestMap).forEach(k => delete adBestMap[k]);
     bestAdsRaw = []; bestAdsPagina = 0;
-    $('bestAdsSection').style.display = 'none';
+    $('bestAdsEmpty').style.display = '';
+    $('bestAdsLoaded').style.display = 'none';
+    $('btnCarregarBestAds').innerHTML = '<i data-lucide="play-circle" style="width:13px;"></i> Carregar Criativos';
+    lucide.createIcons({ nodes: [$('btnCarregarBestAds')] });
     focoStack = [];
     const bar = $('focoBreadcrumb'); if (bar) bar.classList.remove('show');
 
@@ -1404,8 +1414,7 @@ async function carregarAnuncios() {
         filtrarCampanhas(); // chama carregarDemograficos internamente
         loadEl.style.display = 'none';
         contEl.style.display = 'block';
-        lucide.createIcons({ nodes: [$('demo-section')] });
-        carregarMelhoresAnuncios();
+        lucide.createIcons({ nodes: [$('demo-section'), $('bestAdsSection')] });
     } catch(e) {
         loadEl.style.display = 'none';
         errEl.textContent = 'Erro: ' + e.message;
@@ -2125,20 +2134,39 @@ async function toggleExpand(level, parentId, btn, e) {
 }
 
 // ── Melhores Anúncios ─────────────────────────────────────────
+function getCreativeKey(ad) {
+    return ad.creative?.video_id
+        || ad.creative?.image_url
+        || ad.creative?.thumbnail_url
+        || ad.id;
+}
+
 async function carregarMelhoresAnuncios() {
     const accountId = $('adsAccountSelect').value;
     if (!accountId) return;
-    $('bestAdsSection').style.display = '';
+    // Mostra área de conteúdo e spinner, esconde estado vazio
+    $('bestAdsEmpty').style.display = 'none';
+    $('bestAdsLoaded').style.display = '';
     $('bestAdsLoading').style.display = '';
     $('bestAdsGrid').innerHTML = '';
     $('btnMaisAds').style.display = 'none';
-    const dp = $('adsDatePreset').value;
+
+    const dp   = $('adsDatePreset').value;
     const data = await authFetch(`/api/ads-best?accountId=${encodeURIComponent(accountId)}&datePreset=${encodeURIComponent(dp)}`)
         .then(r => r.json()).catch(() => ({ error: 'Erro de rede' }));
     $('bestAdsLoading').style.display = 'none';
     if (data.error) { toast(data.error, 'error'); return; }
-    bestAdsRaw = data.data || [];
+
+    // Deduplicar por criativo — manter o de maior gasto
+    const seen = new Map();
+    for (const ad of (data.data || [])) {
+        const key  = getCreativeKey(ad);
+        const prev = seen.get(key);
+        if (!prev || getSpendAd(ad) > getSpendAd(prev)) seen.set(key, ad);
+    }
+    bestAdsRaw = [...seen.values()];
     bestAdsRaw.forEach(ad => { adBestMap[ad.id] = ad; });
+
     // Popular dropdown de campanhas
     const camps = [...new Set(bestAdsRaw.map(a => a.campaign?.name).filter(Boolean))].sort();
     $('bestAdsCampFilter').innerHTML = '<option value="">Todas as campanhas</option>' +
@@ -2146,6 +2174,9 @@ async function carregarMelhoresAnuncios() {
     bestAdsPagina = 0;
     renderBestAdsSortPills();
     renderMelhoresAnuncios();
+
+    // Botão vira "Atualizar" após primeiro load
+    $('btnCarregarBestAds').innerHTML = '<i data-lucide="refresh-cw" style="width:13px;"></i> Atualizar';
     lucide.createIcons({ nodes: [$('bestAdsSection')] });
 }
 
