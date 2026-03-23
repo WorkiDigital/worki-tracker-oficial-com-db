@@ -250,6 +250,33 @@
         html.light .demo-legend-val { color:#111; }
         @media(max-width:960px) { .demo-grid { grid-template-columns:repeat(2,1fr); } }
 
+        /* ── Melhores Anúncios ───────────────────── */
+        .best-ads-section { margin-top:28px; }
+        .best-ads-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; flex-wrap:wrap; gap:10px; }
+        .best-ads-title { font-size:15px; font-weight:700; display:flex; align-items:center; gap:8px; }
+        .best-ads-sort { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
+        .sort-pill { background:var(--tag); border:1px solid var(--border); color:var(--muted); padding:5px 12px; border-radius:20px; font-size:11px; font-weight:600; cursor:pointer; transition:.2s; }
+        .sort-pill:hover { border-color:var(--blue); color:var(--text); }
+        .sort-pill.active { background:rgba(59,130,246,.15); border-color:var(--blue); color:var(--blue); }
+        .best-ads-filters { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px; align-items:center; }
+        .best-ads-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
+        @media(max-width:1100px) { .best-ads-grid { grid-template-columns:repeat(3,1fr); } }
+        .ad-card { background:var(--card); border:1px solid var(--border); border-radius:12px; overflow:hidden; animation:fadeUp .3s ease; position:relative; }
+        .ad-card-thumb { width:100%; aspect-ratio:1/1; object-fit:cover; display:block; cursor:pointer; background:var(--tag); }
+        .ad-card-thumb-placeholder { width:100%; aspect-ratio:1/1; background:var(--tag); display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:28px; cursor:pointer; }
+        .ad-card-rank { position:absolute; top:10px; left:10px; background:#f59e0b; color:#000; font-size:11px; font-weight:800; padding:3px 8px; border-radius:12px; z-index:2; }
+        .ad-card-play { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:42px; height:42px; background:rgba(0,0,0,.55); border-radius:50%; display:flex; align-items:center; justify-content:center; pointer-events:none; z-index:2; }
+        .ad-card-body { padding:12px; }
+        .ad-card-metric-badge { display:inline-flex; align-items:center; gap:5px; background:rgba(59,130,246,.12); color:var(--blue); padding:3px 9px; border-radius:12px; font-size:11px; font-weight:700; margin-bottom:8px; }
+        .ad-card-name { font-size:12px; font-weight:600; color:var(--text); margin-bottom:4px; line-height:1.35; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+        .ad-card-path { font-size:10px; color:var(--muted); margin-bottom:10px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .ad-card-metrics { display:grid; grid-template-columns:1fr 1fr; gap:5px; }
+        .ad-card-metric-lbl { color:var(--muted); font-size:10px; }
+        .ad-card-metric-val { font-weight:700; color:var(--text); font-size:11px; }
+        .best-ads-load-more { display:flex; justify-content:center; margin-top:20px; }
+        @media(max-width:768px) { .best-ads-grid { grid-template-columns:repeat(2,1fr); } }
+        @media(max-width:480px) { .best-ads-grid { grid-template-columns:1fr; } }
+
         /* ── Aba oculta ──────────────────────────── */
         .aba-oculta { display:none !important; }
 
@@ -698,6 +725,41 @@
                         </table>
                     </div>
                 </div>
+                <!-- ── Melhores Anúncios ─────────────────────── -->
+                <div class="best-ads-section" id="bestAdsSection" style="display:none;">
+                    <div class="best-ads-header">
+                        <span class="best-ads-title">
+                            <i data-lucide="trophy" style="width:16px;color:#f59e0b;"></i> Melhores Anúncios
+                        </span>
+                        <button class="btn btn-ghost btn-sm" onclick="carregarMelhoresAnuncios()">
+                            <i data-lucide="refresh-cw" style="width:13px;"></i> Atualizar
+                        </button>
+                    </div>
+                    <div class="best-ads-sort" id="bestAdsSortPills"></div>
+                    <div class="best-ads-filters">
+                        <select id="bestAdsCampFilter" class="bare" onchange="renderMelhoresAnuncios()"
+                                style="border:1px solid var(--border);border-radius:7px;padding:6px 10px;background:var(--card);color:var(--text);font-size:13px;">
+                            <option value="">Todas as campanhas</option>
+                        </select>
+                        <select id="bestAdsStatusFilter" class="bare" onchange="renderMelhoresAnuncios()"
+                                style="border:1px solid var(--border);border-radius:7px;padding:6px 10px;background:var(--card);color:var(--text);font-size:13px;">
+                            <option value="ACTIVE">Apenas Ativos</option>
+                            <option value="">Todos</option>
+                        </select>
+                        <span id="bestAdsCount" style="font-size:12px;color:var(--muted);margin-left:auto;"></span>
+                    </div>
+                    <div id="bestAdsLoading" style="display:none;text-align:center;padding:40px;color:var(--muted);">
+                        <i data-lucide="loader-2" class="spinner" style="width:24px;height:24px;color:var(--blue);display:block;margin:0 auto 10px;"></i>
+                        Buscando anúncios...
+                    </div>
+                    <div class="best-ads-grid" id="bestAdsGrid"></div>
+                    <div class="best-ads-load-more">
+                        <button class="btn btn-ghost" id="btnMaisAds" style="display:none;" onclick="mostrarMaisAds()">
+                            Carregar mais (<span id="bestAdsRestantes">0</span> restantes)
+                        </button>
+                    </div>
+                </div>
+
                 </div><!-- /ads-data -->
             </div><!-- /ads-conteudo -->
         </div><!-- /aba-anuncios -->
@@ -747,6 +809,34 @@ let sortCol = 'event_time', sortDir = -1;
 let pagAtual = 1; const POR_PAGINA = 50;
 let campanhasRaw = [], adsCarregado = false;
 const expandState = {}; // { 'adsets_<id>': true/false }
+
+// ── Melhores Anúncios ─────────────────────────────────────────
+let bestAdsRaw      = [];
+let bestAdsPagina   = 0;
+let bestAdsSortKey  = 'leads';
+const adBestMap     = {}; // { adId: adItem }
+const BEST_ADS_POR_PAGINA = 8;
+
+const BEST_ADS_SORT = [
+    { key:'leads',   label:'Mais Leads',     fn:(a,b) => getLeadsAd(b) - getLeadsAd(a) },
+    { key:'msgs',    label:'Mais Conversas', fn:(a,b) => getMsgsAd(b)  - getMsgsAd(a)  },
+    { key:'clicks',  label:'Mais Cliques',   fn:(a,b) => getClksAd(b)  - getClksAd(a)  },
+    { key:'ctr',     label:'Maior CTR',      fn:(a,b) => getCtrAd(b)   - getCtrAd(a)   },
+    { key:'cpm_asc', label:'Menor CPM',      fn:(a,b) => getCpmAd(a)   - getCpmAd(b)   },
+    { key:'cpl_asc', label:'Menor CPL',      fn:(a,b) => getCplAd(a)   - getCplAd(b)   },
+    { key:'cpr_asc', label:'Menor CPR',      fn:(a,b) => getCprAd(a)   - getCprAd(b)   },
+    { key:'spend',   label:'Maior Gasto',    fn:(a,b) => getSpendAd(b) - getSpendAd(a) },
+];
+
+const getInsAd   = ad => { const i = ad.insights; return Array.isArray(i?.data) ? (i.data[0]||null) : null; };
+const getSpendAd = ad => parseFloat(getInsAd(ad)?.spend||0);
+const getLeadsAd = ad => getAct(getInsAd(ad), ['lead','offsite_conversion.lead']);
+const getMsgsAd  = ad => getAct(getInsAd(ad), ['onsite_conversion.messaging_conversation_started_7d']);
+const getClksAd  = ad => getAct(getInsAd(ad), ['link_click']);
+const getCtrAd   = ad => parseFloat(getInsAd(ad)?.ctr||0);
+const getCpmAd   = ad => parseFloat(getInsAd(ad)?.cpm||Infinity);
+const getCplAd   = ad => { const s=getSpendAd(ad), l=getLeadsAd(ad); return l ? s/l : Infinity; };
+const getCprAd   = ad => { const s=getSpendAd(ad), m=getMsgsAd(ad);  return m ? s/m : Infinity; };
 const expandCache = {}; // { 'adsets_<id>': [...items] }
 let focoStack = []; // [{ level:'campanha'|'adset', id, nome }]
 const graficos = {};
@@ -1264,9 +1354,12 @@ async function carregarAnuncios() {
     const contEl = $('ads-data');
     const btn    = $('btnAtualizarAds');
 
-    // Limpa cache de expand e foco ao recarregar
+    // Limpa cache de expand, foco e melhores anúncios ao recarregar
     Object.keys(expandCache).forEach(k => delete expandCache[k]);
     Object.keys(expandState).forEach(k => delete expandState[k]);
+    Object.keys(adBestMap).forEach(k => delete adBestMap[k]);
+    bestAdsRaw = []; bestAdsPagina = 0;
+    $('bestAdsSection').style.display = 'none';
     focoStack = [];
     const bar = $('focoBreadcrumb'); if (bar) bar.classList.remove('show');
 
@@ -1286,6 +1379,7 @@ async function carregarAnuncios() {
         loadEl.style.display = 'none';
         contEl.style.display = 'block';
         lucide.createIcons({ nodes: [$('demo-section')] });
+        carregarMelhoresAnuncios();
     } catch(e) {
         loadEl.style.display = 'none';
         errEl.textContent = 'Erro: ' + e.message;
@@ -2002,6 +2096,130 @@ async function toggleExpand(level, parentId, btn, e) {
     }).join('');
 
     parentRow.insertAdjacentHTML('afterend', html);
+}
+
+// ── Melhores Anúncios ─────────────────────────────────────────
+async function carregarMelhoresAnuncios() {
+    const accountId = $('adsAccountSelect').value;
+    if (!accountId) return;
+    $('bestAdsSection').style.display = '';
+    $('bestAdsLoading').style.display = '';
+    $('bestAdsGrid').innerHTML = '';
+    $('btnMaisAds').style.display = 'none';
+    const dp = $('adsDatePreset').value;
+    const data = await authFetch(`/api/ads-best?accountId=${encodeURIComponent(accountId)}&datePreset=${encodeURIComponent(dp)}`)
+        .then(r => r.json()).catch(() => ({ error: 'Erro de rede' }));
+    $('bestAdsLoading').style.display = 'none';
+    if (data.error) { toast(data.error, 'error'); return; }
+    bestAdsRaw = data.data || [];
+    bestAdsRaw.forEach(ad => { adBestMap[ad.id] = ad; });
+    // Popular dropdown de campanhas
+    const camps = [...new Set(bestAdsRaw.map(a => a.campaign?.name).filter(Boolean))].sort();
+    $('bestAdsCampFilter').innerHTML = '<option value="">Todas as campanhas</option>' +
+        camps.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+    bestAdsPagina = 0;
+    renderBestAdsSortPills();
+    renderMelhoresAnuncios();
+    lucide.createIcons({ nodes: [$('bestAdsSection')] });
+}
+
+function renderMelhoresAnuncios() {
+    const campFiltro   = $('bestAdsCampFilter').value;
+    const statusFiltro = $('bestAdsStatusFilter').value;
+    const sortObj      = BEST_ADS_SORT.find(s => s.key === bestAdsSortKey) || BEST_ADS_SORT[0];
+
+    let filtered = bestAdsRaw.filter(ad => {
+        if (statusFiltro && ad.status !== statusFiltro) return false;
+        if (campFiltro  && ad.campaign?.name !== campFiltro) return false;
+        return true;
+    });
+    filtered.sort(sortObj.fn);
+
+    $('bestAdsCount').textContent = `${filtered.length} anúncios`;
+    const vistos    = (bestAdsPagina + 1) * BEST_ADS_POR_PAGINA;
+    const pagina    = filtered.slice(0, vistos);
+    const restantes = filtered.length - pagina.length;
+
+    $('bestAdsGrid').innerHTML = pagina.map((ad, i) => renderAdCard(ad, i + 1, sortObj)).join('');
+    $('btnMaisAds').style.display = restantes > 0 ? '' : 'none';
+    $('bestAdsRestantes').textContent = restantes;
+    lucide.createIcons({ nodes: [$('bestAdsGrid')] });
+}
+
+function renderAdCard(ad, rank, sortObj) {
+    const ins    = getInsAd(ad);
+    const spend  = getSpendAd(ad);
+    const leads  = getLeadsAd(ad);
+    const msgs   = getMsgsAd(ad);
+    const thumb  = ad.creative?.thumbnail_url || ad.creative?.image_url || '';
+    const isVideo = ad.creative?.object_type === 'VIDEO';
+
+    // Badge de destaque com valor da métrica de ordenação
+    const sortVal = sortObj.key === 'leads'   ? leads
+        : sortObj.key === 'msgs'    ? msgs
+        : sortObj.key === 'clicks'  ? getClksAd(ad)
+        : sortObj.key === 'ctr'     ? getCtrAd(ad).toFixed(2) + '%'
+        : sortObj.key === 'spend'   ? brl(spend)
+        : leads || msgs || 0;
+    const sortLbl = sortObj.label.replace(/^(Mais |Maior |Menor )/, '');
+
+    const metrics = [
+        ['Gasto',      spend ? brl(spend) : '—'],
+        ['Impressões', fmtN(parseInt(ins?.impressions||0))],
+        ['Alcance',    fmtN(parseInt(ins?.reach||0))],
+        ['Frequência', ins?.frequency ? parseFloat(ins.frequency).toFixed(2) : '—'],
+        ['Cliques',    fmtN(getClksAd(ad))],
+        ['CTR',        ins?.ctr ? parseFloat(ins.ctr).toFixed(2) + '%' : '—'],
+        ['CPM',        ins?.cpm ? brl(parseFloat(ins.cpm)) : '—'],
+        ['CPC',        ins?.cpc ? brl(parseFloat(ins.cpc)) : '—'],
+        ['Leads',      fmtN(leads)],
+        ['CPL',        leads ? brl(spend / leads) : '—'],
+        ['Conversas',  fmtN(msgs)],
+        ['CPR',        msgs  ? brl(spend / msgs)  : '—'],
+    ];
+
+    const thumbHtml = thumb
+        ? `<img class="ad-card-thumb" src="${esc(thumb)}" onclick="abrirAdLink('${esc(ad.id)}')" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" loading="lazy">
+           <div class="ad-card-thumb-placeholder" style="display:none;" onclick="abrirAdLink('${esc(ad.id)}')">🖼</div>`
+        : `<div class="ad-card-thumb-placeholder" onclick="abrirAdLink('${esc(ad.id)}')">🖼</div>`;
+
+    return `<div class="ad-card">
+        <div style="position:relative;">
+            ${thumbHtml}
+            <span class="ad-card-rank">#${rank}</span>
+            ${isVideo ? `<div class="ad-card-play"><svg width="16" height="16" viewBox="0 0 24 24" fill="white"><polygon points="5,3 19,12 5,21"/></svg></div>` : ''}
+        </div>
+        <div class="ad-card-body">
+            <div class="ad-card-metric-badge">${esc(sortLbl)} <strong>${sortVal}</strong></div>
+            <div class="ad-card-name" title="${esc(ad.name)}">${esc(ad.name)}</div>
+            <div class="ad-card-path">${esc(ad.campaign?.name||'')} › ${esc(ad.adset?.name||'')}</div>
+            <div class="ad-card-metrics">
+                ${metrics.map(([l, v]) => `<div><div class="ad-card-metric-lbl">${l}</div><div class="ad-card-metric-val">${v}</div></div>`).join('')}
+            </div>
+        </div>
+    </div>`;
+}
+
+function mostrarMaisAds() {
+    bestAdsPagina++;
+    renderMelhoresAnuncios();
+}
+
+function renderBestAdsSortPills() {
+    $('bestAdsSortPills').innerHTML = BEST_ADS_SORT.map(s =>
+        `<button class="sort-pill ${s.key === bestAdsSortKey ? 'active' : ''}" onclick="setBestAdsSort('${s.key}')">${s.label}</button>`
+    ).join('');
+}
+
+function setBestAdsSort(key) {
+    bestAdsSortKey = key;
+    bestAdsPagina  = 0;
+    renderBestAdsSortPills();
+    renderMelhoresAnuncios();
+}
+
+function abrirAdLink(adId) {
+    window.open(`https://adsmanager.facebook.com/adsmanager/manage/ads?selected_ad_ids=${adId}`, '_blank');
 }
 
 // ── Abas ───────────────────────────────────────────────────────
