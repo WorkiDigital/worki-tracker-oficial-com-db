@@ -809,10 +809,17 @@
                             <i data-lucide="megaphone" style="width:16px;color:var(--blue);"></i>
                             Contas de Anúncio
                         </div>
-                        <p style="font-size:13px;color:var(--muted);margin-bottom:18px;">
-                            Selecione as contas que aparecem no seletor. Por padrão todas são exibidas.
+                        <p style="font-size:13px;color:var(--muted);margin-bottom:14px;">
+                            Selecione as contas que aparecem no seletor em Anúncios.
                         </p>
-                        <div id="cfgContasList" style="border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:20px;"></div>
+                        <!-- Busca -->
+                        <div class="ctrl-box" style="margin-bottom:10px;">
+                            <i data-lucide="search" style="width:13px;color:var(--muted);flex-shrink:0;"></i>
+                            <input id="cfgContasSearch" type="text" placeholder="Pesquisar conta..."
+                                   oninput="filtrarCfgContas()" autocomplete="off"
+                                   style="flex:1;background:transparent;border:none;outline:none;font-size:13px;color:var(--text);">
+                        </div>
+                        <div id="cfgContasList" style="border:1px solid var(--border);border-radius:8px;overflow:hidden;max-height:320px;overflow-y:auto;margin-bottom:16px;"></div>
                         <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
                             <button class="btn btn-primary" onclick="salvarConfigContas()">
                                 <i data-lucide="save" style="width:13px;"></i> Salvar
@@ -1438,23 +1445,50 @@ async function renderConfigContas() {
             return;
         }
     }
+    // Reseta estado de seleção ao entrar na aba
+    _cfgChecked.clear();
+    $('cfgContasSearch').value = '';
+    _renderCfgLista('');
+    lucide.createIcons({ nodes: [$('aba-config')] });
+}
+
+// Mantém estado de checked ao filtrar (por id) — resetado ao entrar na aba
+const _cfgChecked = new Set();
+
+function _renderCfgLista(q) {
     const saved = JSON.parse(ls(ACCOUNTS_FILTER_KEY) || 'null');
-    $('cfgContasList').innerHTML = _todasContas.map((c, i) => {
-        const checked = !saved || saved.includes(c.id) ? 'checked' : '';
-        const border = i < _todasContas.length - 1 ? 'border-bottom:1px solid var(--border);' : '';
+    // Inicializa set na primeira vez
+    if (_cfgChecked.size === 0) {
+        _todasContas.forEach(c => { if (!saved || saved.includes(c.id)) _cfgChecked.add(c.id); });
+    }
+    const lista = q ? _todasContas.filter(c => c.name.toLowerCase().includes(q)) : _todasContas;
+    if (!lista.length) {
+        $('cfgContasList').innerHTML = '<p style="font-size:13px;color:var(--muted);padding:10px 14px;">Nenhuma conta encontrada.</p>';
+        return;
+    }
+    $('cfgContasList').innerHTML = lista.map((c, i) => {
+        const checked = _cfgChecked.has(c.id) ? 'checked' : '';
+        const border = i < lista.length - 1 ? 'border-bottom:1px solid var(--border);' : '';
         return `<label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:9px 14px;${border}transition:background .15s;" onmouseover="this.style.background='var(--hover)'" onmouseout="this.style.background=''">
             <input type="checkbox" value="${esc(c.id)}" ${checked}
+                   onchange="_cfgToggle(this)"
                    style="width:14px;height:14px;accent-color:var(--blue);cursor:pointer;flex-shrink:0;">
             <span style="font-size:13px;">${esc(c.name)}</span>
         </label>`;
     }).join('');
-    lucide.createIcons({ nodes: [$('aba-config')] });
+}
+
+function _cfgToggle(el) {
+    el.checked ? _cfgChecked.add(el.value) : _cfgChecked.delete(el.value);
+}
+
+function filtrarCfgContas() {
+    const q = $('cfgContasSearch').value.toLowerCase().trim();
+    _renderCfgLista(q);
 }
 
 function salvarConfigContas() {
-    const checks = [...$('cfgContasList').querySelectorAll('input[type=checkbox]')];
-    const selecionados = checks.filter(c => c.checked).map(c => c.value);
-    const valor = selecionados.length === _todasContas.length ? null : selecionados;
+    const valor = _cfgChecked.size === _todasContas.length ? null : [..._cfgChecked];
     ls(ACCOUNTS_FILTER_KEY, JSON.stringify(valor));
     aplicarFiltroContas();
     const badge = $('cfgContasSalvo');
@@ -1464,7 +1498,8 @@ function salvarConfigContas() {
 }
 
 function selecionarTodasContas() {
-    $('cfgContasList').querySelectorAll('input[type=checkbox]').forEach(c => c.checked = true);
+    _todasContas.forEach(c => _cfgChecked.add(c.id));
+    filtrarCfgContas();
 }
 
 function navDropdown(e) {
