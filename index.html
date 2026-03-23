@@ -102,7 +102,7 @@
         .count-badge { background:var(--tag); color:var(--muted); font-size:11px; font-weight:600; padding:3px 8px; border-radius:20px; }
 
         table { width:100%; border-collapse:collapse; }
-        thead th { color:var(--muted); font-size:10px; text-transform:uppercase; font-weight:600; letter-spacing:.5px; padding:12px 16px; border-bottom:1px solid var(--border); white-space:nowrap; user-select:none; }
+        thead th { color:var(--muted); font-size:10px; text-transform:uppercase; font-weight:600; letter-spacing:.5px; padding:12px 16px; border-bottom:1px solid var(--border); white-space:nowrap; user-select:none; text-align:center; }
         thead th.sortable { cursor:pointer; }
         thead th.sortable:hover { color:var(--text); }
         thead th .sort-icon { display:inline-block; margin-left:4px; opacity:.4; font-size:10px; }
@@ -110,7 +110,7 @@
         tbody tr { border-bottom:1px solid var(--border); transition:background .15s; }
         tbody tr:last-child { border-bottom:none; }
         tbody tr:hover { background:var(--hover); }
-        tbody td { padding:13px 16px; font-size:13px; color:var(--muted); }
+        tbody td { padding:13px 16px; font-size:13px; color:var(--muted); text-align:center; }
         html.light tbody td { color:#374151; }
 
         .tag { display:inline-flex; align-items:center; gap:4px; background:var(--tag); color:var(--text); padding:4px 10px; border-radius:20px; font-size:11px; font-weight:600; white-space:nowrap; }
@@ -182,10 +182,11 @@
 
         /* ── Ads ─────────────────────────────────── */
         .ads-bar { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:20px; }
-        .ads-metrics { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:20px; }
-        .ads-metric { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:18px; text-align:center; }
-        .ads-metric-val { font-size:20px; font-weight:700; margin-bottom:5px; }
-        .ads-metric-lbl { font-size:11px; color:var(--muted); font-weight:600; }
+        .ads-metrics { display:grid; grid-template-columns:repeat(6,1fr); gap:10px; margin-bottom:20px; }
+        .cfg-bar { display:flex; align-items:center; justify-content:flex-end; margin-bottom:8px; }
+        .ads-metric { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:12px 8px; text-align:center; }
+        .ads-metric-val { font-size:20px; font-weight:700; margin-bottom:4px; }
+        .ads-metric-lbl { font-size:12px; color:var(--muted); font-weight:600; }
         .ads-filters { display:flex; align-items:flex-end; gap:10px; flex-wrap:wrap; padding:12px 16px; background:rgba(255,255,255,.02); border:1px solid var(--border); border-radius:10px; margin-bottom:16px; }
         html.light .ads-filters { background:rgba(0,0,0,.02); }
         .filter-group { display:flex; flex-direction:column; gap:4px; }
@@ -194,6 +195,19 @@
         .spinner { animation:spin 1s linear infinite; }
         .ads-error { background:rgba(239,68,68,.1); border:1px solid rgba(239,68,68,.3); color:#ef4444; padding:14px 18px; border-radius:10px; font-size:13px; margin-bottom:16px; display:none; }
         .status-badge { padding:3px 9px; border-radius:20px; font-size:11px; font-weight:600; display:inline-block; }
+        .expand-btn { background:none; border:none; cursor:pointer; color:var(--muted); padding:2px 5px; border-radius:4px; font-size:10px; margin-right:4px; transition:.15s; vertical-align:middle; line-height:1; }
+        .expand-btn:hover:not(:disabled) { color:var(--blue); background:rgba(59,130,246,.1); }
+        .expand-btn:disabled { opacity:.4; cursor:default; }
+        .row-depth-1 > td { background:rgba(59,130,246,.07); font-size:12px; }
+        .row-depth-2 > td { background:rgba(16,185,129,.07); font-size:11px; }
+        .row-name-link { cursor:pointer; color:inherit; text-decoration:none; }
+        .row-name-link:hover { color:var(--blue); text-decoration:underline; }
+        .foco-bar { display:none; align-items:center; gap:8px; padding:8px 12px; background:rgba(59,130,246,.08); border:1px solid rgba(59,130,246,.2); border-radius:8px; margin-bottom:10px; font-size:12px; }
+        .foco-bar.show { display:flex; }
+        .foco-back { background:none; border:none; color:var(--blue); cursor:pointer; font-size:12px; font-weight:600; padding:2px 6px; border-radius:4px; transition:.15s; }
+        .foco-back:hover { background:rgba(59,130,246,.15); }
+        .foco-sep { color:var(--muted); }
+        .foco-item { color:var(--text); font-weight:600; }
 
         /* ── Modal ───────────────────────────────── */
         .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.65); backdrop-filter:blur(4px); z-index:1000; display:flex; align-items:center; justify-content:center; opacity:0; visibility:hidden; transition:.25s; }
@@ -486,91 +500,53 @@
 
         <!-- ABA: ANÚNCIOS -->
         <div id="aba-anuncios" class="aba-oculta">
-            <div class="ads-bar">
-                <!-- Searchable account picker -->
-                <div class="acct-wrap" id="acctWrap">
-                    <div class="acct-input-box" onclick="abrirDropdownContas()">
-                        <i data-lucide="search" style="width:13px;color:var(--muted);flex-shrink:0;"></i>
-                        <input id="acctSearch" type="text" placeholder="Buscar conta..."
-                               oninput="filtrarContas()" onkeydown="navDropdown(event)" autocomplete="off">
-                        <span id="acctSavedBadge" class="acct-saved-badge" style="display:none;">salva</span>
-                    </div>
-                    <div class="acct-dropdown" id="acctDropdown"></div>
-                </div>
-                <!-- Hidden select mantido para compatibilidade com o resto do código -->
-                <select id="adsAccountSelect" style="display:none;"></select>
-                <div class="ctrl-box">
-                    <select id="adsDatePreset" class="bare">
-                        <option value="today">Hoje</option>
-                        <option value="yesterday">Ontem</option>
-                        <option value="last_7d">7 dias</option>
-                        <option value="last_30d" selected>30 dias</option>
-                        <option value="this_month">Este mês</option>
-                        <option value="last_month">Mês passado</option>
-                    </select>
-                </div>
-                <button class="btn btn-primary" id="btnAtualizarAds" onclick="carregarAnuncios()">
-                    <i data-lucide="refresh-cw" style="width:13px;"></i> Atualizar
-                </button>
-            </div>
-
             <div class="ads-error" id="ads-error"></div>
 
-            <div id="ads-loading" style="display:none;">
-                <div class="ads-loading-wrap">
-                    <i data-lucide="loader-2" class="spinner" style="width:28px;height:28px;color:var(--blue);"></i>
-                    <span>Buscando dados da Meta Ads...</span>
-                </div>
-            </div>
-
-            <div id="ads-conteudo" style="display:none;">
-                <div class="ads-filters" id="ads-filters">
-                    <div class="filter-group">
-                        <label>Status</label>
-                        <select id="filtroStatusAds" class="bare" onchange="filtrarCampanhas()" style="border:1px solid var(--border);border-radius:7px;padding:6px 10px;background:var(--card);color:var(--text);">
-                            <option value="">Todos</option>
-                            <option value="ACTIVE">Ativas</option>
-                            <option value="PAUSED">Pausadas</option>
-                        </select>
-                    </div>
-                    <div class="filter-group">
-                        <label>Objetivo</label>
-                        <select id="filtroObjetivoAds" class="bare" onchange="filtrarCampanhas()" style="border:1px solid var(--border);border-radius:7px;padding:6px 10px;background:var(--card);color:var(--text);">
-                            <option value="">Todos</option>
-                        </select>
-                    </div>
-                    <div class="filter-group">
-                        <label>Buscar</label>
-                        <div class="ctrl-box" style="padding:5px 10px;">
-                            <i data-lucide="search" style="width:12px;color:var(--muted);"></i>
-                            <input type="text" id="filtroCriativoAds" placeholder="Campanha..." style="width:160px;" oninput="filtrarCampanhas()">
+            <div id="ads-conteudo">
+                <div class="ads-bar">
+                    <!-- Searchable account picker -->
+                    <div class="acct-wrap" id="acctWrap">
+                        <div class="acct-input-box" onclick="abrirDropdownContas()">
+                            <i data-lucide="search" style="width:13px;color:var(--muted);flex-shrink:0;"></i>
+                            <input id="acctSearch" type="text" placeholder="Buscar conta..."
+                                   oninput="filtrarContas()" onkeydown="navDropdown(event)" autocomplete="off">
+                            <span id="acctSavedBadge" class="acct-saved-badge" style="display:none;">salva</span>
                         </div>
+                        <div class="acct-dropdown" id="acctDropdown"></div>
                     </div>
-                    <div style="margin-left:auto;font-size:12px;color:var(--muted);align-self:flex-end;padding-bottom:2px;">
-                        <span id="ads-count" style="color:var(--text);font-weight:700;">0</span> campanhas
+                    <!-- Hidden select mantido para compatibilidade com o resto do código -->
+                    <select id="adsAccountSelect" style="display:none;"></select>
+                    <div class="ctrl-box">
+                        <select id="adsDatePreset" class="bare">
+                            <option value="today">Hoje</option>
+                            <option value="yesterday">Ontem</option>
+                            <option value="last_7d">7 dias</option>
+                            <option value="last_30d" selected>30 dias</option>
+                            <option value="this_month">Este mês</option>
+                            <option value="last_month">Mês passado</option>
+                        </select>
                     </div>
-                </div>
-
-                <!-- Config de métricas -->
-                <div class="metrics-cfg-bar">
-                    <span>Métricas</span>
-                    <button class="btn btn-ghost btn-sm" onclick="toggleMetricsCfg()" id="btnMetricsCfg">
-                        <i data-lucide="settings-2" style="width:13px;"></i> Configurar
+                    <button class="btn btn-primary" id="btnAtualizarAds" onclick="carregarAnuncios()">
+                        <i data-lucide="refresh-cw" style="width:13px;"></i> Atualizar
                     </button>
                 </div>
-                <div class="metrics-cfg-panel" id="metricsCfgPanel">
-                    <div class="metrics-cfg-sections">
-                        <div class="metrics-cfg-section">
-                            <h4>Cards de métricas</h4>
-                            <div class="metrics-cfg-grid" id="cfgCardsGrid"></div>
-                        </div>
-                        <div class="metrics-cfg-section">
-                            <h4>Colunas da tabela</h4>
-                            <div class="metrics-cfg-grid" id="cfgColsGrid"></div>
-                        </div>
+
+                <div id="ads-loading" style="display:none;">
+                    <div class="ads-loading-wrap">
+                        <i data-lucide="loader-2" class="spinner" style="width:28px;height:28px;color:var(--blue);"></i>
+                        <span>Buscando dados da Meta Ads...</span>
                     </div>
                 </div>
 
+                <div id="ads-data" style="display:none;">
+                <div class="cfg-bar">
+                    <button class="btn btn-ghost btn-sm" onclick="toggleCardsCfg()" id="btnCardsCfg">
+                        <i data-lucide="settings-2" style="width:13px;"></i> Configurar cards
+                    </button>
+                </div>
+                <div class="metrics-cfg-panel" id="cardsCfgPanel">
+                    <div class="metrics-cfg-grid" id="cfgCardsGrid"></div>
+                </div>
                 <div class="ads-metrics" id="adsMetricsGrid">
                     <div class="ads-metric" data-card="spend"><div class="ads-metric-val" id="ads-spend">R$ 0</div><div class="ads-metric-lbl">Gasto Total</div></div>
                     <div class="ads-metric" data-card="imps"><div class="ads-metric-val" id="ads-imps">0</div><div class="ads-metric-lbl">Impressões</div></div>
@@ -605,9 +581,34 @@
                                 <button class="demo-pill" onclick="selecionarMetricaDemo('msgs',this)">Conversas</button>
                             </div>
                         </div>
-                        <div id="demo-status" style="font-size:11px;color:var(--muted);display:flex;align-items:center;gap:6px;">
-                            <i data-lucide="info" style="width:12px;height:12px;"></i>
-                            <span id="demo-status-txt">Filtros aplicados atualizam os gráficos</span>
+                        <div style="display:flex;align-items:center;gap:10px;">
+                            <div id="demo-status" style="font-size:11px;color:var(--muted);display:flex;align-items:center;gap:6px;">
+                                <i data-lucide="info" style="width:12px;height:12px;"></i>
+                                <span id="demo-status-txt">Filtros aplicados atualizam os gráficos</span>
+                            </div>
+                            <button class="btn btn-ghost btn-sm" onclick="toggleDemoCfg()" id="btnDemoCfg">
+                                <i data-lucide="settings-2" style="width:13px;"></i> Configurar
+                            </button>
+                        </div>
+                    </div>
+                    <div class="metrics-cfg-panel" id="demoCfgPanel" style="margin-bottom:14px;">
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+                            <div>
+                                <h4 style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">Breakdowns visíveis</h4>
+                                <div style="display:flex;flex-direction:column;gap:6px;">
+                                    <label class="metrics-cfg-item"><input type="checkbox" id="demoCfgAge"    onchange="toggleDemoBreakdown('age',this.checked)"> Faixa Etária</label>
+                                    <label class="metrics-cfg-item"><input type="checkbox" id="demoCfgGender" onchange="toggleDemoBreakdown('gender',this.checked)"> Gênero</label>
+                                    <label class="metrics-cfg-item"><input type="checkbox" id="demoCfgPlat"   onchange="toggleDemoBreakdown('plat',this.checked)"> Plataforma</label>
+                                    <label class="metrics-cfg-item"><input type="checkbox" id="demoCfgDev"    onchange="toggleDemoBreakdown('dev',this.checked)"> Dispositivo</label>
+                                </div>
+                            </div>
+                            <div>
+                                <h4 style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">Estilo dos gráficos</h4>
+                                <div style="display:flex;flex-direction:column;gap:6px;">
+                                    <label class="metrics-cfg-item"><input type="radio" name="demoStyle" value="doughnut" onchange="setDemoStyle('doughnut')" checked> Rosca (Donut)</label>
+                                    <label class="metrics-cfg-item"><input type="radio" name="demoStyle" value="bar"      onchange="setDemoStyle('bar')"> Barras</label>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div id="demo-loading" style="display:none;text-align:center;padding:30px;color:var(--muted);font-size:13px;">
@@ -638,6 +639,50 @@
                     </div>
                 </div>
 
+                <!-- Filtros + Config de métricas -->
+                <div class="ads-filters" id="ads-filters">
+                    <div class="filter-group">
+                        <label>Status</label>
+                        <select id="filtroStatusAds" class="bare" onchange="filtrarCampanhas()" style="border:1px solid var(--border);border-radius:7px;padding:6px 10px;background:var(--card);color:var(--text);">
+                            <option value="">Todos</option>
+                            <option value="ACTIVE">Ativas</option>
+                            <option value="PAUSED">Pausadas</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Objetivo</label>
+                        <select id="filtroObjetivoAds" class="bare" onchange="filtrarCampanhas()" style="border:1px solid var(--border);border-radius:7px;padding:6px 10px;background:var(--card);color:var(--text);">
+                            <option value="">Todos</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Buscar</label>
+                        <div class="ctrl-box" style="padding:5px 10px;">
+                            <i data-lucide="search" style="width:12px;color:var(--muted);"></i>
+                            <input type="text" id="filtroCriativoAds" placeholder="Campanha..." style="width:160px;" oninput="filtrarCampanhas()">
+                        </div>
+                    </div>
+                    <div style="margin-left:auto;font-size:12px;color:var(--muted);align-self:flex-end;padding-bottom:2px;">
+                        <span id="ads-count" style="color:var(--text);font-weight:700;">0</span> campanhas
+                    </div>
+                    <button class="btn btn-ghost btn-sm" onclick="toggleColsCfg()" id="btnColsCfg" style="align-self:flex-end;">
+                        <i data-lucide="columns" style="width:13px;"></i> Colunas tabela
+                    </button>
+                </div>
+                <div class="metrics-cfg-panel" id="colsCfgPanel">
+                    <div class="metrics-cfg-grid" id="cfgColsGrid"></div>
+                </div>
+
+                <!-- Breadcrumb de foco -->
+                <div class="foco-bar" id="focoBreadcrumb">
+                    <button class="foco-back" onclick="voltarFoco(0)">← Todas as campanhas</button>
+                    <span class="foco-sep" id="focoSep1" style="display:none;">/</span>
+                    <span class="foco-item" id="focoCampNome"></span>
+                    <span class="foco-sep" id="focoSep2" style="display:none;">/</span>
+                    <button class="foco-back" id="focoAdsetBtn" style="display:none;" onclick="voltarFoco(1)"></button>
+                    <span class="foco-item" id="focoAdsetNome" style="display:none;"></span>
+                </div>
+
                 <div class="card">
                     <div style="overflow-x:auto;">
                         <table>
@@ -650,8 +695,9 @@
                         </table>
                     </div>
                 </div>
-            </div>
-        </div>
+                </div><!-- /ads-data -->
+            </div><!-- /ads-conteudo -->
+        </div><!-- /aba-anuncios -->
 
         <!-- ABA: RELATÓRIOS -->
         <div id="aba-relatorios" class="aba-oculta">
@@ -697,6 +743,9 @@ let rawData = [], dadosFiltrados = [], META_TOKEN = '';
 let sortCol = 'event_time', sortDir = -1;
 let pagAtual = 1; const POR_PAGINA = 50;
 let campanhasRaw = [], adsCarregado = false;
+const expandState = {}; // { 'adsets_<id>': true/false }
+const expandCache = {}; // { 'adsets_<id>': [...items] }
+let focoStack = []; // [{ level:'campanha'|'adset', id, nome }]
 const graficos = {};
 const CORES = ['#0ea5e9','#10b981','#8b5cf6','#f59e0b','#ef4444','#ec4899','#06b6d4','#f97316'];
 let debounceTimer = null;
@@ -1209,8 +1258,14 @@ async function carregarAnuncios() {
 
     const errEl  = $('ads-error');
     const loadEl = $('ads-loading');
-    const contEl = $('ads-conteudo');
+    const contEl = $('ads-data');
     const btn    = $('btnAtualizarAds');
+
+    // Limpa cache de expand e foco ao recarregar
+    Object.keys(expandCache).forEach(k => delete expandCache[k]);
+    Object.keys(expandState).forEach(k => delete expandState[k]);
+    focoStack = [];
+    const bar = $('focoBreadcrumb'); if (bar) bar.classList.remove('show');
 
     errEl.style.display = 'none';
     loadEl.style.display = 'block';
@@ -1317,15 +1372,73 @@ function carregarMetricsCfg() {
     COLS_DEF.forEach(m  => metricsCfg.cols[m.key]  = saved?.cols?.[m.key]  ?? m.on);
     renderMetricsCfgPanel();
     aplicarMetricsCfg();
+    carregarDemoCfg();
 }
 
 function salvarMetricsCfg() {
     localStorage.setItem(CFG_KEY, JSON.stringify(metricsCfg));
 }
 
-function toggleMetricsCfg() {
-    $('metricsCfgPanel').classList.toggle('open');
-    lucide.createIcons({ nodes:[$('btnMetricsCfg')] });
+// ── Configuração demográficos ──────────────────────────────────
+const DEMO_CFG_KEY = 'wt_demo_cfg';
+let demoCfg = { breakdowns:{ age:true, gender:true, plat:true, dev:true }, style:'doughnut' };
+
+function carregarDemoCfg() {
+    const saved = JSON.parse(localStorage.getItem(DEMO_CFG_KEY) || 'null');
+    if (saved) {
+        demoCfg.breakdowns = { ...demoCfg.breakdowns, ...saved.breakdowns };
+        demoCfg.style = saved.style || 'doughnut';
+    }
+    sincronizarDemoCfgUI();
+}
+
+function salvarDemoCfg() {
+    localStorage.setItem(DEMO_CFG_KEY, JSON.stringify(demoCfg));
+}
+
+function sincronizarDemoCfgUI() {
+    const chk = (id, val) => { const el = $(id); if (el) el.checked = val; };
+    chk('demoCfgAge',    demoCfg.breakdowns.age);
+    chk('demoCfgGender', demoCfg.breakdowns.gender);
+    chk('demoCfgPlat',   demoCfg.breakdowns.plat);
+    chk('demoCfgDev',    demoCfg.breakdowns.dev);
+    document.querySelectorAll('input[name="demoStyle"]').forEach(r => { r.checked = r.value === demoCfg.style; });
+    aplicarDemoCfg();
+}
+
+function aplicarDemoCfg() {
+    const map = { age:'dAge', gender:'dGender', plat:'dPlat', dev:'dDev' };
+    Object.keys(map).forEach(k => {
+        const card = document.querySelector(`#demo-grid .demo-card:nth-child(${Object.keys(map).indexOf(k)+1})`);
+        if (card) card.style.display = demoCfg.breakdowns[k] ? '' : 'none';
+    });
+}
+
+function toggleDemoBreakdown(key, on) {
+    demoCfg.breakdowns[key] = on;
+    salvarDemoCfg();
+    aplicarDemoCfg();
+}
+
+function setDemoStyle(style) {
+    demoCfg.style = style;
+    salvarDemoCfg();
+    if (window._demoData) renderDemoGraficos(window._demoData);
+}
+
+function toggleDemoCfg() {
+    $('demoCfgPanel').classList.toggle('open');
+    lucide.createIcons({ nodes:[$('btnDemoCfg')] });
+}
+
+function toggleCardsCfg() {
+    $('cardsCfgPanel').classList.toggle('open');
+    lucide.createIcons({ nodes:[$('btnCardsCfg')] });
+}
+
+function toggleColsCfg() {
+    $('colsCfgPanel').classList.toggle('open');
+    lucide.createIcons({ nodes:[$('btnColsCfg')] });
 }
 
 function renderMetricsCfgPanel() {
@@ -1548,13 +1661,15 @@ const DEMO_CORES = ['#0ea5e9','#8b5cf6','#10b981','#f59e0b','#ef4444','#ec4899',
 
 function renderDemoGraficos({ age, gender, plat, dev }) {
     const configs = [
-        { canvas:'dAge',    legend:'lAge',    data:age,    key:'age' },
-        { canvas:'dGender', legend:'lGender', data:gender, key:'gender' },
-        { canvas:'dPlat',   legend:'lPlat',   data:plat,   key:'publisher_platform' },
-        { canvas:'dDev',    legend:'lDev',    data:dev,    key:'impression_device' },
+        { canvas:'dAge',    legend:'lAge',    data:age,    key:'age',                  bdKey:'age'    },
+        { canvas:'dGender', legend:'lGender', data:gender, key:'gender',               bdKey:'gender' },
+        { canvas:'dPlat',   legend:'lPlat',   data:plat,   key:'publisher_platform',   bdKey:'plat'   },
+        { canvas:'dDev',    legend:'lDev',    data:dev,    key:'impression_device',     bdKey:'dev'    },
     ];
 
-    configs.forEach(({ canvas, legend, data, key }) => {
+    const isBar = demoCfg.style === 'bar';
+
+    configs.forEach(({ canvas, legend, data, key, bdKey }) => {
         if (!Array.isArray(data) || !data.length) return;
 
         // Agrupa por chave e soma a métrica
@@ -1574,11 +1689,21 @@ function renderDemoGraficos({ age, gender, plat, dev }) {
         const ctx = $(canvas);
         if (!ctx) return;
 
+        // Ajusta container do canvas para estilo
+        const wrap = ctx.closest('.demo-canvas-wrap');
+        if (wrap) { wrap.style.width = isBar ? '100%' : ''; wrap.style.height = isBar ? '120px' : '150px'; }
+
         demoGraficos[canvas] = new Chart(ctx, {
-            type: 'doughnut',
-            data: { labels, datasets: [{ data:values, backgroundColor:DEMO_CORES, borderWidth:0, hoverOffset:5 }] },
+            type: isBar ? 'bar' : 'doughnut',
+            data: { labels, datasets: [{ data:values, backgroundColor:DEMO_CORES, borderWidth:0, hoverOffset:5, borderRadius: isBar ? 4 : 0 }] },
             options: {
-                responsive:true, maintainAspectRatio:false, cutout:'70%',
+                responsive:true, maintainAspectRatio:false,
+                ...(isBar ? {} : { cutout:'70%' }),
+                indexAxis: isBar ? 'y' : undefined,
+                scales: isBar ? {
+                    x: { display:false, grid:{display:false} },
+                    y: { display:true, ticks:{ color:'#8a8f98', font:{size:10} }, grid:{display:false} }
+                } : {},
                 plugins: { legend:{display:false}, datalabels:{display:false} }
             }
         });
@@ -1593,6 +1718,7 @@ function renderDemoGraficos({ age, gender, plat, dev }) {
         }).join('');
     });
 
+    aplicarDemoCfg();
     lucide.createIcons({ nodes: [$('demo-section')] });
 }
 
@@ -1602,11 +1728,11 @@ function renderTabelaCampanhas(camps) {
     const tbody = $('tabela-campanhas-corpo');
     const total = 2 + cols.length; // Campanha + Status + colunas dinâmicas
 
-    // Atualiza header
-    thead.innerHTML = `<tr><th>Campanha</th><th>Status</th>${cols.map(c=>`<th>${c.label}</th>`).join('')}</tr>`;
+    // Atualiza header — coluna extra para botão expand
+    thead.innerHTML = `<tr><th style="width:32px;"></th><th>Campanha</th><th>Status</th>${cols.map(c=>`<th>${c.label}</th>`).join('')}</tr>`;
 
     if (!camps.length) {
-        tbody.innerHTML = `<tr><td colspan="${total}" style="text-align:center;padding:40px;color:var(--muted);">Nenhuma campanha encontrada.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="${total+1}" style="text-align:center;padding:40px;color:var(--muted);">Nenhuma campanha encontrada.</td></tr>`;
         return;
     }
 
@@ -1641,12 +1767,204 @@ function renderTabelaCampanhas(camps) {
         };
         const isAct = c.status==='ACTIVE';
         const bs    = isAct ? 'background:rgba(16,185,129,.15);color:#10b981;border:1px solid rgba(16,185,129,.3)' : 'background:rgba(156,163,175,.1);color:#9ca3af;border:1px solid rgba(156,163,175,.2)';
-        return `<tr>
-            <td style="color:var(--text);font-weight:600;max-width:220px;overflow:hidden;text-overflow:ellipsis;" title="${esc(c.name)}">${esc(c.name)}</td>
+        return `<tr data-row-id="${esc(c.id)}" data-nome="${esc(c.name)}">
+            <td style="text-align:center;padding:0 4px;"><button class="expand-btn" onclick="toggleExpand('adsets','${esc(c.id)}',this,event)">▶</button></td>
+            <td style="color:var(--text);font-weight:600;max-width:220px;overflow:hidden;text-overflow:ellipsis;text-align:left;" title="${esc(c.name)}"><span class="row-name-link" onclick="focarLinha('campanha','${esc(c.id)}',event)">${esc(c.name)}</span></td>
             <td><span class="status-badge" style="${bs}">${esc(c.status||'')}</span></td>
             ${cols.map(col=>`<td>${getVal(col.key)}</td>`).join('')}
         </tr>`;
     }).join('');
+}
+
+// ── Foco hierárquico (clique no nome para filtrar) ──────────────
+function focarLinha(level, id, e) {
+    e.stopPropagation();
+    const row = document.querySelector(`#tabela-campanhas-corpo tr[data-row-id="${id}"]`);
+    const nome = row?.getAttribute('data-nome') || id;
+    if (level === 'campanha') {
+        focoStack = [{ level, id, nome }];
+        // Oculta todas as campanhas exceto a selecionada
+        document.querySelectorAll('#tabela-campanhas-corpo tr:not(.row-child)').forEach(row => {
+            if (row.getAttribute('data-row-id') !== id) {
+                row.style.display = 'none';
+                // Colapsa filhos de outras campanhas
+                const rId = row.getAttribute('data-row-id');
+                const key = `adsets_${rId}`;
+                if (expandState[key]) {
+                    expandState[key] = false;
+                    document.querySelectorAll(`[data-parent="${key}"]`).forEach(r => r.remove());
+                    const btn = row.querySelector('.expand-btn');
+                    if (btn) btn.textContent = '▶';
+                }
+            }
+        });
+        // Auto-expande a campanha selecionada se não estiver aberta
+        const key = `adsets_${id}`;
+        if (!expandState[key]) {
+            const row = document.querySelector(`#tabela-campanhas-corpo tr[data-row-id="${id}"]:not(.row-child)`);
+            const btn = row?.querySelector('.expand-btn');
+            if (btn) toggleExpand('adsets', id, btn, { stopPropagation: ()=>{} });
+        }
+    } else { // adset
+        focoStack = [focoStack[0] || { level:'campanha', id:'', nome:'...' }, { level, id, nome }];
+        // Oculta todos os adsets exceto o selecionado
+        document.querySelectorAll('#tabela-campanhas-corpo .row-depth-1').forEach(row => {
+            if (row.getAttribute('data-row-id') !== id) {
+                row.style.display = 'none';
+                const rId = row.getAttribute('data-row-id');
+                const key = `ads_${rId}`;
+                if (expandState[key]) {
+                    expandState[key] = false;
+                    document.querySelectorAll(`[data-parent="${key}"]`).forEach(r => r.remove());
+                    const btn = row.querySelector('.expand-btn');
+                    if (btn) btn.textContent = '▶';
+                }
+            }
+        });
+        // Auto-expande o adset selecionado
+        const key = `ads_${id}`;
+        if (!expandState[key]) {
+            const row = document.querySelector(`#tabela-campanhas-corpo tr.row-depth-1[data-row-id="${id}"]`);
+            const btn = row?.querySelector('.expand-btn');
+            if (btn) toggleExpand('ads', id, btn, { stopPropagation: ()=>{} });
+        }
+    }
+    renderBreadcrumb();
+}
+
+function voltarFoco(toLevel) {
+    if (toLevel === 0) {
+        focoStack = [];
+        // Mostra todas as campanhas
+        document.querySelectorAll('#tabela-campanhas-corpo tr:not(.row-child)').forEach(r => r.style.display = '');
+        // Mostra todos os adsets (se havia algum oculto)
+        document.querySelectorAll('#tabela-campanhas-corpo .row-depth-1').forEach(r => r.style.display = '');
+    } else { // voltar para nível de campanha
+        focoStack = [focoStack[0]];
+        document.querySelectorAll('#tabela-campanhas-corpo .row-depth-1').forEach(r => r.style.display = '');
+        // Colapsa ads expandidos de adsets ocultos
+        document.querySelectorAll('#tabela-campanhas-corpo .row-depth-2').forEach(r => r.remove());
+        Object.keys(expandState).filter(k => k.startsWith('ads_')).forEach(k => { expandState[k] = false; });
+        document.querySelectorAll('#tabela-campanhas-corpo .row-depth-1 .expand-btn').forEach(b => b.textContent = '▶');
+    }
+    renderBreadcrumb();
+}
+
+function renderBreadcrumb() {
+    const bar = $('focoBreadcrumb');
+    if (!focoStack.length) { bar.classList.remove('show'); return; }
+    bar.classList.add('show');
+    const camp = focoStack[0];
+    $('focoCampNome').textContent = camp.nome;
+    $('focoSep1').style.display = 'inline';
+    if (focoStack.length > 1) {
+        const adset = focoStack[1];
+        $('focoAdsetBtn').textContent = `← ${camp.nome}`;
+        $('focoAdsetBtn').style.display = 'inline';
+        $('focoSep2').style.display = 'inline';
+        $('focoAdsetNome').textContent = adset.nome;
+        $('focoAdsetNome').style.display = 'inline';
+        $('focoCampNome').style.display = 'none';
+    } else {
+        $('focoAdsetBtn').style.display = 'none';
+        $('focoSep2').style.display = 'none';
+        $('focoAdsetNome').style.display = 'none';
+        $('focoCampNome').style.display = 'inline';
+    }
+}
+
+// ── Expand hierárquico (Campanhas → Conjuntos → Anúncios) ───────
+async function toggleExpand(level, parentId, btn, e) {
+    e.stopPropagation();
+    const key  = `${level}_${parentId}`;
+    const open = expandState[key];
+
+    // Colapsar: remove linhas filhas e também as linhas netas (se houver)
+    if (open) {
+        expandState[key] = false;
+        btn.textContent = '▶';
+        document.querySelectorAll(`[data-parent^="${key}"]`).forEach(r => {
+            // Colapsa filhos abertos recursivamente
+            const childId  = r.getAttribute('data-row-id');
+            const childKey = `ads_${childId}`;
+            if (expandState[childKey]) {
+                expandState[childKey] = false;
+                document.querySelectorAll(`[data-parent="${childKey}"]`).forEach(rr => rr.remove());
+            }
+            r.remove();
+        });
+        return;
+    }
+
+    // Expandir
+    expandState[key] = true;
+    btn.textContent = '▼';
+    btn.disabled = true;
+
+    // Busca lazy — usa cache se já buscou antes
+    if (!expandCache[key]) {
+        const dp = $('adsDatePreset').value;
+        const data = await authFetch(
+            `/api/ads-children?level=${level}&parentId=${encodeURIComponent(parentId)}&datePreset=${encodeURIComponent(dp)}`
+        ).then(r => r.json()).catch(() => ({ error: 'Erro de rede' }));
+        if (data.error) {
+            toast(data.error, 'error');
+            btn.disabled = false; btn.textContent = '▶'; expandState[key] = false; return;
+        }
+        expandCache[key] = data.data || [];
+    }
+
+    btn.disabled = false;
+    const cols     = getColsAtivas();
+    const indent   = level === 'adsets' ? 1 : 2;
+    const hasChild = level === 'adsets';
+    const parentRow = document.querySelector(`[data-row-id="${parentId}"]`);
+    if (!parentRow) return;
+
+    const bs = (status) => status === 'ACTIVE'
+        ? 'background:rgba(16,185,129,.15);color:#10b981;border:1px solid rgba(16,185,129,.3)'
+        : 'background:rgba(156,163,175,.1);color:#9ca3af;border:1px solid rgba(156,163,175,.2)';
+
+    const html = expandCache[key].map(item => {
+        const ins   = getIns(item);
+        const spend = parseFloat(ins?.spend||0);
+        const leads = getAct(ins,['lead','offsite_conversion.lead']);
+        const msgs  = getAct(ins,['onsite_conversion.messaging_conversation_started_7d']);
+        const lpv   = getAct(ins,['landing_page_view']);
+        const seg   = getAct(ins,['like']);
+        const getVal = k => {
+            switch(k) {
+                case 'spend':      return spend ? brl(spend) : '—';
+                case 'imps':       return fmtN(parseInt(ins?.impressions||0));
+                case 'reach':      return fmtN(parseInt(ins?.reach||0));
+                case 'freq':       { const v=parseFloat(ins?.frequency||0); return v?v.toFixed(2):'—'; }
+                case 'cpm':        { const v=parseFloat(ins?.cpm||0); return v?brl(v):'—'; }
+                case 'clicks':     return fmtN(getAct(ins,['link_click']));
+                case 'cpc':        { const v=parseFloat(ins?.cpc||0); return v?brl(v):'—'; }
+                case 'ctr':        { const v=parseFloat(ins?.ctr||0); return v?v.toFixed(2)+'%':'—'; }
+                case 'lpv':        return fmtN(lpv);
+                case 'cplpv':      return lpv ? brl(spend/lpv) : '—';
+                case 'leads':      return fmtN(leads);
+                case 'cpl':        return leads ? brl(spend/leads) : '—';
+                case 'msgs':       return fmtN(msgs);
+                case 'cpr':        return msgs ? brl(spend/msgs) : '—';
+                case 'seguidores': return fmtN(seg);
+                case 'cps':        return seg ? brl(spend/seg) : '—';
+                default:           return '—';
+            }
+        };
+        const expandBtn = hasChild
+            ? `<button class="expand-btn" onclick="toggleExpand('ads','${esc(item.id)}',this,event)">▶</button>`
+            : '';
+        return `<tr data-parent="${key}" data-row-id="${esc(item.id)}" data-nome="${esc(item.name)}" class="row-child row-depth-${indent}">
+            <td style="text-align:center;padding:0 4px;">${expandBtn}</td>
+            <td style="padding-left:${indent*28}px;text-align:left;font-weight:500;color:var(--text);" title="${esc(item.name)}">${hasChild ? `<span class="row-name-link" onclick="focarLinha('adset','${esc(item.id)}',event)">${esc(item.name)}</span>` : esc(item.name)}</td>
+            <td><span class="status-badge" style="${bs(item.status)}">${esc(item.status||'')}</span></td>
+            ${cols.map(col=>`<td>${getVal(col.key)}</td>`).join('')}
+        </tr>`;
+    }).join('');
+
+    parentRow.insertAdjacentHTML('afterend', html);
 }
 
 // ── Abas ───────────────────────────────────────────────────────
