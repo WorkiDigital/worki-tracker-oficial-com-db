@@ -2199,7 +2199,7 @@ function renderMelhoresAnuncios() {
     const sortObj      = BEST_ADS_SORT.find(s => s.key === bestAdsSortKey) || BEST_ADS_SORT[0];
 
     let filtered = bestAdsRaw.filter(ad => {
-        if (statusFiltro && ad.status !== statusFiltro) return false;
+        if (statusFiltro && (ad.effective_status || ad.status) !== statusFiltro) return false;
         if (campFiltro  && ad.campaign?.name !== campFiltro) return false;
         return true;
     });

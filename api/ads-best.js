@@ -16,7 +16,7 @@ export default async function handler(req, res) {
 
   const insightFields = 'spend,impressions,clicks,outbound_clicks,ctr,reach,cpm,cpc,frequency,inline_link_clicks,actions,cost_per_action_type';
   const fields = [
-    'name', 'status',
+    'name', 'status', 'effective_status',
     'campaign_id', 'campaign{name}',
     'adset_id', 'adset{name}',
     'creative{thumbnail_url,image_url,object_type,video_id}',
