@@ -1430,7 +1430,7 @@ function calcMetricasAds(camps) {
         linkClicks += getAct(ins, ['link_click']);
 
         // Leads: formulários
-        leads += getAct(ins, ['lead','onsite_conversion.lead_grouped','offsite_conversion.lead']);
+        leads += getAct(ins, ['lead','offsite_conversion.lead']);
 
         // Conversas iniciadas (Meta Ads Manager "Resultado" para campanhas de mensagens)
         msgs += getAct(ins, ['onsite_conversion.messaging_conversation_started_7d']);
@@ -1532,7 +1532,7 @@ function getValorDemo(item) {
     if (demoMetrica === 'spend')       return parseFloat(item.spend||0);
     if (demoMetrica === 'impressions') return parseInt(item.impressions||0);
     if (demoMetrica === 'clicks')      return parseInt(item.clicks||0);
-    if (demoMetrica === 'leads')       return getAct(item, ['lead','onsite_conversion.lead_grouped']);
+    if (demoMetrica === 'leads')       return getAct(item, ['lead','offsite_conversion.lead']);
     if (demoMetrica === 'msgs')        return getAct(item, ['onsite_conversion.messaging_conversation_started_7d']);
     return 0;
 }
