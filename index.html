@@ -1332,6 +1332,7 @@ async function confirmarVenda() {
 
 // ── Anúncios — Account picker ──────────────────────────────────
 let _todasContas = [];        // lista completa carregada da API
+let _contasVisiveis = [];     // lista filtrada por Configurações
 let _contaSelecionada = null; // { id, name }
 const ACCT_KEY           = 'wt_saved_account';
 const STATUS_FILTER_KEY  = 'wt_status_filter';
@@ -1378,7 +1379,7 @@ async function carregarContasAds() {
 }
 
 function abrirDropdownContas() {
-    renderDropdown(_todasContas);
+    renderDropdown(_contasVisiveis);
     $('acctDropdown').classList.add('open');
     $('acctSearch').focus();
 }
@@ -1392,7 +1393,7 @@ function fecharDropdownContas() {
 
 function filtrarContas() {
     const q = ($('acctSearch').value || '').toLowerCase();
-    const filtradas = q ? _todasContas.filter(c => c.name.toLowerCase().includes(q)) : _todasContas;
+    const filtradas = q ? _contasVisiveis.filter(c => c.name.toLowerCase().includes(q)) : _contasVisiveis;
     renderDropdown(filtradas);
     $('acctDropdown').classList.add('open');
 }
@@ -1425,11 +1426,11 @@ function selecionarConta(conta, salvar = true) {
 
 function aplicarFiltroContas() {
     const saved = JSON.parse(ls(ACCOUNTS_FILTER_KEY) || 'null');
-    const visiveis = saved ? _todasContas.filter(c => saved.includes(c.id)) : _todasContas;
+    _contasVisiveis = saved ? _todasContas.filter(c => saved.includes(c.id)) : _todasContas;
     const sel = $('adsAccountSelect');
-    sel.innerHTML = visiveis.map(c => `<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('');
-    renderDropdown(visiveis);
-    if (_contaSelecionada && !visiveis.find(c => c.id === _contaSelecionada.id)) {
+    sel.innerHTML = _contasVisiveis.map(c => `<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('');
+    renderDropdown(_contasVisiveis);
+    if (_contaSelecionada && !_contasVisiveis.find(c => c.id === _contaSelecionada.id)) {
         _contaSelecionada = null;
         $('acctSearch').value = '';
         $('acctSavedBadge').style.display = 'none';
