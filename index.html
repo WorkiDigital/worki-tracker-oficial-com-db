@@ -1429,10 +1429,14 @@ function aplicarFiltroContas() {
     }
 }
 
-function renderConfigContas() {
+async function renderConfigContas() {
     if (!_todasContas.length) {
-        $('cfgContasList').innerHTML = '<p style="font-size:13px;color:var(--muted);">Nenhuma conta carregada ainda. Acesse a aba Anúncios primeiro.</p>';
-        return;
+        $('cfgContasList').innerHTML = '<p style="font-size:13px;color:var(--muted);padding:10px 14px;">Carregando contas...</p>';
+        await carregarContasAds();
+        if (!_todasContas.length) {
+            $('cfgContasList').innerHTML = '<p style="font-size:13px;color:var(--muted);padding:10px 14px;">Nenhuma conta encontrada.</p>';
+            return;
+        }
     }
     const saved = JSON.parse(ls(ACCOUNTS_FILTER_KEY) || 'null');
     $('cfgContasList').innerHTML = _todasContas.map((c, i) => {
