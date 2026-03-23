@@ -1614,7 +1614,7 @@ function renderTabelaCampanhas(camps) {
     tbody.innerHTML = camps.map(c => {
         const ins        = getIns(c);
         const spend      = parseFloat(ins?.spend||0);
-        const leads      = getAct(ins,['lead','onsite_conversion.lead_grouped','offsite_conversion.lead']);
+        const leads      = getAct(ins,['lead','offsite_conversion.lead']);
         const msgs       = getAct(ins,['onsite_conversion.messaging_conversation_started_7d']);
         const lpv        = getAct(ins,['landing_page_view']);
         const seguidores = getAct(ins,['like']);
