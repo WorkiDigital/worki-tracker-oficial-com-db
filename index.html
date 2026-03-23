@@ -179,6 +179,9 @@
         .metrics-cfg-item { display:flex; align-items:center; gap:7px; font-size:12px; cursor:pointer; padding:4px 6px; border-radius:6px; transition:.15s; }
         .metrics-cfg-item:hover { background:var(--hover); }
         .metrics-cfg-item input[type=checkbox] { accent-color:var(--blue); width:13px; height:13px; cursor:pointer; flex-shrink:0; }
+        .metrics-cfg-item--off { opacity:.45; }
+        .col-order-badge { display:inline-flex; align-items:center; justify-content:center; width:16px; height:16px; min-width:16px; background:var(--blue); color:#fff; border-radius:50%; font-size:9px; font-weight:700; flex-shrink:0; }
+        .col-order-badge--empty { background:transparent; border:1px dashed var(--border); }
 
         /* ── Ads ─────────────────────────────────── */
         .ads-bar { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:20px; }
@@ -670,7 +673,7 @@
                     </button>
                 </div>
                 <div class="metrics-cfg-panel" id="colsCfgPanel">
-                    <div class="metrics-cfg-grid" id="cfgColsGrid"></div>
+                    <div id="cfgColsGrid" style="display:flex;flex-direction:column;gap:4px;"></div>
                 </div>
 
                 <!-- Breadcrumb de foco -->
@@ -1364,19 +1367,30 @@ const COLS_DEF = [
 ];
 
 const CFG_KEY = 'wt_metrics_cfg';
-let metricsCfg = { cards:{}, cols:{} };
+let metricsCfg = { cards:{}, colsOrder:[] };
 
 function carregarMetricsCfg() {
     const saved = JSON.parse(localStorage.getItem(CFG_KEY) || 'null');
     CARDS_DEF.forEach(m => metricsCfg.cards[m.key] = saved?.cards?.[m.key] ?? m.on);
-    COLS_DEF.forEach(m  => metricsCfg.cols[m.key]  = saved?.cols?.[m.key]  ?? m.on);
-    renderMetricsCfgPanel();
+
+    if (Array.isArray(saved?.colsOrder)) {
+        // Novo formato: array ordenado
+        metricsCfg.colsOrder = saved.colsOrder.filter(k => COLS_DEF.some(d => d.key === k));
+    } else if (saved?.cols) {
+        // Migração do formato antigo { key: bool }
+        metricsCfg.colsOrder = COLS_DEF.filter(m => saved.cols[m.key] ?? m.on).map(m => m.key);
+    } else {
+        metricsCfg.colsOrder = COLS_DEF.filter(m => m.on).map(m => m.key);
+    }
+
+    renderCardsCfgPanel();
+    renderColsCfgPanel();
     aplicarMetricsCfg();
     carregarDemoCfg();
 }
 
 function salvarMetricsCfg() {
-    localStorage.setItem(CFG_KEY, JSON.stringify(metricsCfg));
+    localStorage.setItem(CFG_KEY, JSON.stringify({ cards: metricsCfg.cards, colsOrder: metricsCfg.colsOrder }));
 }
 
 // ── Configuração demográficos ──────────────────────────────────
@@ -1441,20 +1455,39 @@ function toggleColsCfg() {
     lucide.createIcons({ nodes:[$('btnColsCfg')] });
 }
 
-function renderMetricsCfgPanel() {
+function renderCardsCfgPanel() {
     $('cfgCardsGrid').innerHTML = CARDS_DEF.map(m => `
         <label class="metrics-cfg-item">
             <input type="checkbox" ${metricsCfg.cards[m.key] ? 'checked' : ''}
                    onchange="toggleCard('${m.key}',this.checked)">
             ${m.label}
         </label>`).join('');
+}
 
-    $('cfgColsGrid').innerHTML = COLS_DEF.map(m => `
-        <label class="metrics-cfg-item">
-            <input type="checkbox" ${metricsCfg.cols[m.key] ? 'checked' : ''}
-                   onchange="toggleCol('${m.key}',this.checked)">
+function renderColsCfgPanel() {
+    const checked = metricsCfg.colsOrder.map((key, i) => {
+        const m = COLS_DEF.find(d => d.key === key);
+        if (!m) return '';
+        return `<label class="metrics-cfg-item">
+            <span class="col-order-badge">${i + 1}</span>
+            <input type="checkbox" checked onchange="toggleCol('${m.key}',this.checked)">
             ${m.label}
-        </label>`).join('');
+        </label>`;
+    });
+    const unchecked = COLS_DEF
+        .filter(m => !metricsCfg.colsOrder.includes(m.key))
+        .map(m => `
+        <label class="metrics-cfg-item metrics-cfg-item--off">
+            <span class="col-order-badge col-order-badge--empty"></span>
+            <input type="checkbox" onchange="toggleCol('${m.key}',this.checked)">
+            ${m.label}
+        </label>`);
+    $('cfgColsGrid').innerHTML = [...checked, ...unchecked].join('');
+}
+
+function renderMetricsCfgPanel() {
+    renderCardsCfgPanel();
+    renderColsCfgPanel();
 }
 
 function toggleCard(key, on) {
@@ -1464,9 +1497,13 @@ function toggleCard(key, on) {
 }
 
 function toggleCol(key, on) {
-    metricsCfg.cols[key] = on;
+    if (on) {
+        if (!metricsCfg.colsOrder.includes(key)) metricsCfg.colsOrder.push(key);
+    } else {
+        metricsCfg.colsOrder = metricsCfg.colsOrder.filter(k => k !== key);
+    }
     salvarMetricsCfg();
-    // Re-renderiza tabela com colunas atualizadas
+    renderColsCfgPanel();
     if (campanhasRaw.length) filtrarCampanhas();
 }
 
@@ -1478,7 +1515,7 @@ function aplicarMetricsCfg() {
 }
 
 function getColsAtivas() {
-    return COLS_DEF.filter(m => metricsCfg.cols[m.key]);
+    return metricsCfg.colsOrder.map(key => COLS_DEF.find(m => m.key === key)).filter(Boolean);
 }
 
 function getIns(c) {
