@@ -2191,6 +2191,9 @@ async function carregarMelhoresAnuncios() {
     // Botão vira "Atualizar" após primeiro load
     $('btnCarregarBestAds').innerHTML = '<i data-lucide="refresh-cw" style="width:13px;"></i> Atualizar';
     lucide.createIcons({ nodes: [$('bestAdsSection')] });
+
+    // Scroll suave até os cards
+    setTimeout(() => $('bestAdsGrid').scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
 }
 
 function renderMelhoresAnuncios() {
