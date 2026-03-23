@@ -2275,43 +2275,48 @@ async function abrirAdMedia(adId) {
     const nameEl  = document.getElementById('adMediaName');
     const extBtn  = document.getElementById('adMediaExtBtn');
     const isVideo = ad.creative?.object_type === 'VIDEO' || !!ad.creative?.video_id;
+    const thumb   = ad.creative?.image_url || ad.creative?.thumbnail_url || '';
 
     nameEl.textContent = ad.name || '';
     extBtn.style.display = '';
-    content.innerHTML = '<div class="ad-media-loading"><svg class="spinner" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Carregando...</div>';
+
+    // Mostra thumbnail imediatamente — modal abre sem delay
+    content.innerHTML = thumb
+        ? `<div style="position:relative;display:inline-block;">
+               <img class="ad-media-img" id="adMediaThumbInstant" src="${esc(thumb)}" style="display:block;">
+               ${isVideo ? `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;">
+                   <div style="width:52px;height:52px;background:rgba(0,0,0,.6);border-radius:50%;display:flex;align-items:center;justify-content:center;">
+                       <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><polygon points="5,3 19,12 5,21"/></svg>
+                   </div></div>` : ''}
+           </div>`
+        : `<div class="ad-media-loading"><svg class="spinner" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Carregando...</div>`;
     overlay.classList.add('open');
 
     if (isVideo) {
-        // Use Ad Preview API — returns iframe with Facebook's native video player
+        // Busca preview em background — substitui thumbnail quando pronto
         try {
             const r    = await authFetch(`/api/ad-preview?adId=${encodeURIComponent(adId)}`);
             const data = await r.json();
+            // Aborta se o modal foi fechado enquanto carregava
+            if (window._adMediaCurrentId !== adId) return;
             if (data.error) throw new Error(data.error);
             if (data.body) {
-                // The body is an <iframe ...> string from Meta — inject it directly
                 content.innerHTML = `<div class="ad-media-preview-wrap">${data.body}</div>`;
-                // Make iframe fill the modal box nicely
                 const iframe = content.querySelector('iframe');
-                if (iframe) {
-                    iframe.style.cssText = 'border:none;border-radius:10px;display:block;max-width:100%;';
-                }
-            } else {
-                throw new Error('Preview não disponível');
+                if (iframe) iframe.style.cssText = 'border:none;border-radius:10px;display:block;max-width:100%;';
             }
-        } catch (err) {
-            // Fallback: show thumbnail
-            const thumb = ad.creative?.thumbnail_url || ad.creative?.image_url || '';
-            content.innerHTML = thumb
-                ? `<img class="ad-media-img" src="${esc(thumb)}">
-                   <div style="color:rgba(255,255,255,.45);font-size:11px;margin-top:6px;">Preview não disponível — ${esc(err.message)}</div>`
-                : `<div class="ad-media-loading" style="color:#f87171;">${esc(err.message)}</div>`;
-        }
+        } catch (_) { /* mantém thumbnail já exibido */ }
     } else {
-        // Static image: use full-res image_url as lightbox
-        const img = ad.creative?.image_url || ad.creative?.thumbnail_url || '';
-        content.innerHTML = img
-            ? `<img class="ad-media-img" src="${esc(img)}" onerror="this.src='${esc(ad.creative?.thumbnail_url||'')}';">`
-            : `<div class="ad-media-loading">Imagem não disponível</div>`;
+        // Imagem estática: troca para full-res se image_url diferente do thumb já exibido
+        const fullRes = ad.creative?.image_url;
+        if (fullRes && fullRes !== thumb) {
+            const img = new Image();
+            img.onload = () => {
+                if (window._adMediaCurrentId !== adId) return;
+                content.innerHTML = `<img class="ad-media-img" src="${esc(fullRes)}">`;
+            };
+            img.src = fullRes;
+        }
     }
 }
 
