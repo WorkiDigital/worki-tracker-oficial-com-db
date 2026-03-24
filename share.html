@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatório de Anúncios</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <style>
+        :root {
+            --bg:#06080d; --card:#0b0e14; --text:#ffffff; --muted:#8a8f98;
+            --blue:#3b82f6; --green:#10b981; --red:#ef4444;
+            --border:#1f2937; --hover:#1a1f26; --tag:#1f2937;
+            --scheme:dark;
+        }
+        html.light {
+            --bg:#f0f2f5; --card:#ffffff; --text:#111827; --muted:#6b7280;
+            --blue:#2563eb; --green:#059669;
+            --border:#e5e7eb; --hover:#f9fafb; --tag:#f3f4f6;
+            --scheme:light;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; font-family:'Inter',sans-serif; }
+        body { background:var(--bg); color:var(--text); min-height:100vh; }
+
+        @keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:none} }
+        @keyframes spin   { to{transform:rotate(360deg)} }
+        @keyframes pulse  { 0%,100%{opacity:.4} 50%{opacity:.8} }
+
+        /* Toast */
+        #toast-area { position:fixed; bottom:24px; right:24px; z-index:9000; display:flex; flex-direction:column; gap:10px; pointer-events:none; }
+        .toast { pointer-events:all; background:#1f2937; color:#fff; padding:12px 18px; border-radius:10px; font-size:13px; font-weight:500; border-left:4px solid var(--blue); box-shadow:0 8px 24px rgba(0,0,0,.4); display:flex; align-items:center; gap:10px; animation:fadeUp .3s ease; max-width:320px; }
+        .toast.error { border-color:var(--red); }
+        html.light .toast { background:#fff; color:#111; }
+
+        /* Header */
+        .header { background:var(--card); border-bottom:1px solid var(--border); padding:18px 32px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:14px; position:sticky; top:0; z-index:10; }
+        .header-left { display:flex; align-items:center; gap:14px; }
+        .logo-icon { background:var(--blue); padding:8px; border-radius:8px; display:flex; align-items:center; justify-content:center; }
+        .header-title { font-size:16px; font-weight:700; }
+        .header-account { font-size:13px; color:var(--muted); margin-top:2px; }
+        .header-right { display:flex; align-items:center; gap:10px; }
+
+        /* Controls */
+        .ctrl-box { display:flex; align-items:center; background:var(--card); padding:7px 13px; border-radius:8px; border:1px solid var(--border); gap:8px; }
+        .ctrl-box select { background:transparent; border:none; color:var(--text); font-size:13px; outline:none; font-family:'Inter'; color-scheme:var(--scheme); cursor:pointer; }
+        .ctrl-box select option { background:var(--card); }
+        .btn { display:flex; align-items:center; gap:6px; padding:7px 14px; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; border:none; transition:.2s; }
+        .btn-primary { background:var(--blue); color:#fff; }
+        .btn-primary:hover { filter:brightness(1.15); }
+        .btn-icon-sm { background:none; border:1px solid var(--border); color:var(--muted); padding:7px; border-radius:8px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:.2s; }
+        .btn-icon-sm:hover { border-color:var(--blue); color:var(--text); }
+
+        /* Content */
+        .content { padding:28px 32px; }
+
+        /* Error/Loading */
+        .error-box { background:rgba(239,68,68,.1); border:1px solid rgba(239,68,68,.3); color:#ef4444; padding:20px 24px; border-radius:12px; font-size:14px; text-align:center; margin:40px auto; max-width:500px; }
+        .loading-wrap { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:80px; gap:14px; color:var(--muted); }
+        .spinner { animation:spin 1s linear infinite; }
+
+        /* Summary metrics */
+        .ads-metrics { display:grid; grid-template-columns:repeat(6,1fr); gap:10px; margin-bottom:20px; }
+        .ads-metric { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:12px 8px; text-align:center; animation:fadeUp .4s ease; }
+        .ads-metric-val { font-size:20px; font-weight:700; margin-bottom:4px; }
+        .ads-metric-lbl { font-size:12px; color:var(--muted); font-weight:600; }
+
+        /* Card / Table */
+        .card { background:var(--card); border-radius:12px; border:1px solid var(--border); overflow:hidden; animation:fadeUp .4s ease; margin-bottom:24px; }
+        .card-header { display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-bottom:1px solid var(--border); flex-wrap:wrap; gap:10px; }
+        .card-title { font-size:14px; font-weight:600; display:flex; align-items:center; gap:8px; }
+        .count-badge { background:var(--tag); color:var(--muted); font-size:11px; font-weight:600; padding:3px 8px; border-radius:20px; }
+        table { width:100%; border-collapse:collapse; }
+        thead th { color:var(--muted); font-size:10px; text-transform:uppercase; font-weight:600; letter-spacing:.5px; padding:12px 16px; border-bottom:1px solid var(--border); white-space:nowrap; text-align:center; }
+        tbody tr { border-bottom:1px solid var(--border); transition:background .15s; }
+        tbody tr:last-child { border-bottom:none; }
+        tbody tr:hover { background:var(--hover); }
+        tbody td { padding:13px 16px; font-size:13px; color:var(--muted); text-align:center; }
+        html.light tbody td { color:#374151; }
+        .status-badge { padding:3px 9px; border-radius:20px; font-size:11px; font-weight:600; display:inline-block; }
+        .td-name { text-align:left !important; color:var(--text) !important; font-weight:500; }
+        html.light .td-name { color:#111827 !important; }
+        .empty-row td { padding:40px; color:var(--muted); font-size:14px; }
+
+        /* Demographics */
+        .demo-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:24px; }
+        .demo-card { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:18px; display:flex; flex-direction:column; align-items:center; animation:fadeUp .5s ease; }
+        .demo-card-title { font-size:12px; font-weight:700; color:var(--text); margin-bottom:14px; display:flex; align-items:center; gap:7px; width:100%; }
+        .demo-canvas-wrap { width:150px; height:150px; margin-bottom:14px; }
+        .demo-legend { width:100%; display:flex; flex-direction:column; gap:7px; }
+        .demo-legend-row { display:flex; align-items:center; justify-content:space-between; font-size:11px; }
+        .demo-legend-left { display:flex; align-items:center; gap:6px; color:var(--muted); white-space:nowrap; overflow:hidden; max-width:90px; }
+        .demo-legend-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+        .demo-legend-val { color:var(--text); font-weight:700; white-space:nowrap; font-size:11px; }
+        html.light .demo-card-title, html.light .demo-legend-val { color:#111; }
+        @media(max-width:960px) { .demo-grid { grid-template-columns:repeat(2,1fr); } }
+
+        /* Best Ads */
+        .best-ads-section { margin-bottom:24px; animation:fadeUp .5s ease; }
+        .best-ads-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; flex-wrap:wrap; gap:10px; }
+        .best-ads-title { font-size:15px; font-weight:700; display:flex; align-items:center; gap:8px; }
+        .best-ads-sort { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
+        .sort-pill { background:var(--tag); border:1px solid var(--border); color:var(--muted); padding:5px 12px; border-radius:20px; font-size:11px; font-weight:600; cursor:pointer; transition:.2s; }
+        .sort-pill:hover { border-color:var(--blue); color:var(--text); }
+        .sort-pill.active { background:rgba(59,130,246,.15); border-color:var(--blue); color:var(--blue); }
+        .best-ads-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
+        .ad-card { background:var(--card); border:1px solid var(--border); border-radius:12px; overflow:hidden; animation:fadeUp .3s ease; position:relative; }
+        .ad-card-thumb { width:100%; aspect-ratio:1/1; object-fit:cover; display:block; cursor:pointer; background:var(--tag); }
+        .ad-card-thumb-placeholder { width:100%; aspect-ratio:1/1; background:var(--tag); display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:28px; cursor:pointer; }
+        .ad-card-rank { position:absolute; top:10px; left:10px; background:#f59e0b; color:#000; font-size:11px; font-weight:800; padding:3px 8px; border-radius:12px; z-index:2; }
+        .ad-card-play { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:42px; height:42px; background:rgba(0,0,0,.55); border-radius:50%; display:flex; align-items:center; justify-content:center; pointer-events:none; z-index:2; }
+        .ad-card-body { padding:12px; }
+        .ad-card-metric-badge { display:inline-flex; align-items:center; gap:5px; background:rgba(59,130,246,.12); color:var(--blue); padding:3px 9px; border-radius:12px; font-size:11px; font-weight:700; margin-bottom:8px; }
+        .ad-card-name { font-size:12px; font-weight:600; color:var(--text); margin-bottom:4px; line-height:1.35; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+        .ad-card-path { font-size:10px; color:var(--muted); margin-bottom:10px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .ad-card-metrics { display:grid; grid-template-columns:1fr 1fr; gap:5px; }
+        .ad-card-metric-lbl { color:var(--muted); font-size:10px; }
+        .ad-card-metric-val { font-weight:700; color:var(--text); font-size:11px; }
+        .best-ads-load-more { display:flex; justify-content:center; margin-top:20px; }
+        @media(max-width:1100px) { .best-ads-grid { grid-template-columns:repeat(3,1fr); } }
+        @media(max-width:768px) { .best-ads-grid { grid-template-columns:repeat(2,1fr); } .ads-metrics { grid-template-columns:repeat(3,1fr); } }
+        @media(max-width:480px) { .best-ads-grid { grid-template-columns:1fr; } .ads-metrics { grid-template-columns:repeat(2,1fr); } }
+
+        /* Ad media modal */
+        .ad-media-overlay { position:fixed; inset:0; background:rgba(0,0,0,.88); backdrop-filter:blur(6px); z-index:1100; display:flex; align-items:center; justify-content:center; opacity:0; visibility:hidden; transition:.2s; }
+        .ad-media-overlay.open { opacity:1; visibility:visible; }
+        .ad-media-box { position:relative; max-width:min(90vw,600px); max-height:90vh; display:flex; flex-direction:column; align-items:center; gap:10px; }
+        .ad-media-close { position:absolute; top:-38px; right:0; background:rgba(255,255,255,.12); border:none; color:#fff; width:32px; height:32px; border-radius:50%; font-size:18px; cursor:pointer; display:flex; align-items:center; justify-content:center; z-index:2; }
+        .ad-media-close:hover { background:rgba(255,255,255,.22); }
+        .ad-media-img { max-width:100%; max-height:80vh; border-radius:10px; object-fit:contain; display:block; }
+        .ad-media-video { max-width:100%; max-height:80vh; border-radius:10px; background:#000; display:block; }
+        .ad-media-name { color:rgba(255,255,255,.75); font-size:12px; text-align:center; max-width:500px; }
+
+        /* Section heading */
+        .section-label { font-size:13px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; margin-bottom:12px; display:flex; align-items:center; gap:7px; }
+
+        /* Responsive header */
+        @media(max-width:640px) { .header { padding:14px 16px; } .content { padding:16px; } }
+    </style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+    <div class="header-left">
+        <div class="logo-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+        </div>
+        <div>
+            <div class="header-title">Relatório de Anúncios</div>
+            <div class="header-account" id="accountName">Carregando...</div>
+        </div>
+    </div>
+    <div class="header-right">
+        <div class="ctrl-box">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="color:var(--muted)"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            <select id="datePreset" onchange="carregarTudo()">
+                <option value="today" selected>Hoje</option>
+                <option value="yesterday">Ontem</option>
+                <option value="last_7d">Últimos 7 dias</option>
+                <option value="last_14d">Últimos 14 dias</option>
+                <option value="last_30d">Últimos 30 dias</option>
+                <option value="this_month">Este mês</option>
+                <option value="last_month">Mês passado</option>
+                <option value="maximum">Máximo</option>
+            </select>
+        </div>
+        <button class="btn-icon-sm" onclick="toggleTheme()" title="Alternar tema" id="themeBtn">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        </button>
+    </div>
+</div>
+
+<!-- Content -->
+<div class="content" id="mainContent">
+    <div class="loading-wrap" id="loadingState">
+        <svg class="spinner" xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke-dasharray="56" stroke-dashoffset="56"><animate attributeName="stroke-dashoffset" dur="1s" values="56;0" repeatCount="indefinite"/></path></svg>
+        <span>Carregando dados...</span>
+    </div>
+    <div id="errorState" style="display:none;"></div>
+    <div id="dashContent" style="display:none;">
+
+        <!-- Summary metrics -->
+        <div class="ads-metrics" id="summaryMetrics"></div>
+
+        <!-- Campaigns table -->
+        <div class="card" id="tableCard">
+            <div class="card-header">
+                <div class="card-title">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                    Campanhas
+                    <span class="count-badge" id="campCount">0</span>
+                </div>
+            </div>
+            <div style="overflow-x:auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="text-align:left">Campanha</th>
+                            <th>Status</th>
+                            <th>Gasto</th>
+                            <th>Alcance</th>
+                            <th>Impressões</th>
+                            <th>Cliques</th>
+                            <th>CTR</th>
+                            <th>CPM</th>
+                            <th>CPC</th>
+                            <th>Freq.</th>
+                        </tr>
+                    </thead>
+                    <tbody id="campTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Demographics -->
+        <div class="section-label">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+            Demográficos
+        </div>
+        <div class="demo-grid" id="demoGrid"></div>
+
+        <!-- Best Ads -->
+        <div class="best-ads-section" id="bestAdsSection">
+            <div class="best-ads-header">
+                <div class="best-ads-title">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="#f59e0b" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                    Melhores Criativos
+                </div>
+                <div class="best-ads-sort" id="bestSortPills"></div>
+            </div>
+            <div class="best-ads-grid" id="bestAdsGrid"></div>
+            <div class="best-ads-load-more" id="bestLoadMore" style="display:none;">
+                <button class="btn btn-primary" onclick="mostrarMaisAnuncios()">Ver mais</button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Toast area -->
+<div id="toast-area"></div>
+
+<!-- Ad Media Modal -->
+<div class="ad-media-overlay" id="mediaOverlay" onclick="fecharMedia(event)">
+    <div class="ad-media-box" id="mediaBox">
+        <button class="ad-media-close" onclick="fecharMediaBtn()">✕</button>
+        <div id="mediaContent"></div>
+        <div class="ad-media-name" id="mediaName"></div>
+    </div>
+</div>
+
+<script>
+// ── Helpers ───────────────────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+function fmt(n, decimals=0) {
+    const num = parseFloat(n) || 0;
+    if (num >= 1e6) return (num/1e6).toFixed(1)+'M';
+    if (num >= 1e3) return (num/1e3).toFixed(1)+'K';
+    return num.toLocaleString('pt-BR', { minimumFractionDigits:decimals, maximumFractionDigits:decimals });
+}
+function fmtBRL(n) {
+    return 'R$ '+(parseFloat(n)||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+function fmtPct(n) { return (parseFloat(n)||0).toFixed(2)+'%'; }
+
+function toast(msg, type='info') {
+    const el = document.createElement('div');
+    el.className = 'toast ' + type;
+    el.textContent = msg;
+    $('toast-area').appendChild(el);
+    setTimeout(() => el.remove(), 4000);
+}
+
+function toggleTheme() {
+    const isLight = document.documentElement.classList.toggle('light');
+    localStorage.setItem('wt_theme', isLight ? 'light' : 'dark');
+}
+
+// Apply saved theme
+if (localStorage.getItem('wt_theme') === 'light') document.documentElement.classList.add('light');
+
+// ── Token from URL ────────────────────────────────────────────────────────
+const TOKEN = new URLSearchParams(location.search).get('token');
+
+// ── State ─────────────────────────────────────────────────────────────────
+let _campaigns = [];
+let _bestAds = [];
+let _bestSortKey = 'spend';
+let _bestPage = 15;
+let _demoCharts = {};
+
+const SORT_OPTS = [
+    { key:'spend',     label:'Gasto' },
+    { key:'impressions', label:'Impressões' },
+    { key:'clicks',    label:'Cliques' },
+    { key:'ctr',       label:'CTR' },
+    { key:'reach',     label:'Alcance' },
+    { key:'results',   label:'Resultados' },
+];
+
+const DEMO_BREAKDOWNS = [
+    { key:'age',                label:'Faixa etária',   icon:'👥' },
+    { key:'gender',             label:'Gênero',         icon:'⚥' },
+    { key:'publisher_platform', label:'Plataforma',     icon:'📱' },
+    { key:'impression_device',  label:'Dispositivo',    icon:'💻' },
+];
+
+const DEMO_COLORS = [
+    '#3b82f6','#10b981','#f59e0b','#8b5cf6','#ec4899','#06b6d4','#ef4444','#84cc16'
+];
+
+// ── Init ──────────────────────────────────────────────────────────────────
+window.onload = () => {
+    if (!TOKEN) {
+        showError('Link inválido. Nenhum token encontrado na URL.');
+        return;
+    }
+    renderSortPills();
+    carregarTudo();
+};
+
+async function carregarTudo() {
+    const datePreset = $('datePreset').value;
+    $('loadingState').style.display = 'flex';
+    $('dashContent').style.display = 'none';
+    $('errorState').style.display = 'none';
+
+    try {
+        const [adsResp, demoPromises] = await Promise.all([
+            fetch(`/api/share-ads?token=${TOKEN}&datePreset=${datePreset}`),
+            Promise.resolve(null)
+        ]);
+
+        const adsData = await adsResp.json();
+        if (adsData.error) { showError(adsData.error); return; }
+
+        _campaigns = adsData.data || [];
+        $('accountName').textContent = adsData.account_name || 'Conta de Anúncios';
+        document.title = (adsData.account_name || 'Anúncios') + ' — Relatório';
+
+        renderSummaryMetrics();
+        renderTable();
+
+        // Load demographics + best ads in parallel
+        const [bestResp, ...demoResps] = await Promise.all([
+            fetch(`/api/share-best?token=${TOKEN}&datePreset=${datePreset}`),
+            ...DEMO_BREAKDOWNS.map(b => fetch(`/api/share-demo?token=${TOKEN}&datePreset=${datePreset}&breakdown=${b.key}`))
+        ]);
+
+        const bestData = await bestResp.json();
+        _bestAds = bestData.data || [];
+        _bestPage = 15;
+        renderBestAds();
+
+        const demoDataArr = await Promise.all(demoResps.map(r => r.json()));
+        renderAllDemos(demoDataArr);
+
+        $('loadingState').style.display = 'none';
+        $('dashContent').style.display = 'block';
+
+    } catch(e) {
+        showError('Erro ao carregar dados: ' + e.message);
+    }
+}
+
+function showError(msg) {
+    $('loadingState').style.display = 'none';
+    $('dashContent').style.display = 'none';
+    $('errorState').style.display = 'block';
+    $('errorState').innerHTML = `<div class="error-box"><strong>Erro</strong><br>${esc(msg)}</div>`;
+}
+
+// ── Summary Metrics ───────────────────────────────────────────────────────
+function getInsights(camp) {
+    return camp.insights?.data?.[0] || null;
+}
+function sumCampaigns(key) {
+    return _campaigns.reduce((acc, c) => {
+        const ins = getInsights(c);
+        return acc + (parseFloat(ins?.[key]) || 0);
+    }, 0);
+}
+function sumActions(camp, actionType) {
+    const ins = getInsights(camp);
+    const actions = ins?.actions || [];
+    const found = actions.find(a => a.action_type === actionType);
+    return parseFloat(found?.value) || 0;
+}
+
+function renderSummaryMetrics() {
+    const totalSpend = sumCampaigns('spend');
+    const totalImpr  = sumCampaigns('impressions');
+    const totalClicks= sumCampaigns('clicks');
+    const totalReach = sumCampaigns('reach');
+    const activeCamp = _campaigns.filter(c => c.status === 'ACTIVE').length;
+    const ctr = totalImpr > 0 ? (totalClicks/totalImpr*100) : 0;
+
+    $('summaryMetrics').innerHTML = [
+        { label:'Gasto Total',   value: fmtBRL(totalSpend),   color:'#10b981' },
+        { label:'Alcance',       value: fmt(totalReach),      color:'#3b82f6' },
+        { label:'Impressões',    value: fmt(totalImpr),       color:'#8b5cf6' },
+        { label:'Cliques',       value: fmt(totalClicks),     color:'#f59e0b' },
+        { label:'CTR Médio',     value: fmtPct(ctr),          color:'#ec4899' },
+        { label:'Campanhas Ativas', value: activeCamp,        color:'#06b6d4' },
+    ].map((m,i) => `
+        <div class="ads-metric" style="animation-delay:${i*.05}s">
+            <div class="ads-metric-val" style="color:${m.color}">${m.value}</div>
+            <div class="ads-metric-lbl">${m.label}</div>
+        </div>
+    `).join('');
+}
+
+// ── Table ─────────────────────────────────────────────────────────────────
+function statusBadge(status) {
+    const map = {
+        ACTIVE:   { bg:'rgba(16,185,129,.15)', color:'#10b981', label:'Ativo' },
+        PAUSED:   { bg:'rgba(107,114,128,.15)', color:'#9ca3af', label:'Pausado' },
+        ARCHIVED: { bg:'rgba(239,68,68,.1)',  color:'#ef4444',  label:'Arquivado' },
+    };
+    const s = map[status] || { bg:'var(--tag)', color:'var(--muted)', label: status };
+    return `<span class="status-badge" style="background:${s.bg};color:${s.color}">${s.label}</span>`;
+}
+
+function renderTable() {
+    $('campCount').textContent = _campaigns.length;
+    if (!_campaigns.length) {
+        $('campTableBody').innerHTML = `<tr class="empty-row"><td colspan="10" style="text-align:center;color:var(--muted);padding:40px">Sem campanhas no período</td></tr>`;
+        return;
+    }
+    $('campTableBody').innerHTML = _campaigns.map(c => {
+        const ins = getInsights(c);
+        const spend = parseFloat(ins?.spend)||0;
+        return `<tr>
+            <td class="td-name">${esc(c.name)}</td>
+            <td>${statusBadge(c.status)}</td>
+            <td>${spend > 0 ? fmtBRL(spend) : '—'}</td>
+            <td>${fmt(ins?.reach)}</td>
+            <td>${fmt(ins?.impressions)}</td>
+            <td>${fmt(ins?.clicks)}</td>
+            <td>${fmtPct(ins?.ctr)}</td>
+            <td>${ins?.cpm ? fmtBRL(ins.cpm) : '—'}</td>
+            <td>${ins?.cpc ? fmtBRL(ins.cpc) : '—'}</td>
+            <td>${parseFloat(ins?.frequency||0).toFixed(2)}</td>
+        </tr>`;
+    }).join('');
+}
+
+// ── Demographics ──────────────────────────────────────────────────────────
+function renderAllDemos(demoDataArr) {
+    $('demoGrid').innerHTML = '';
+    DEMO_BREAKDOWNS.forEach((b, i) => {
+        const resp = demoDataArr[i];
+        if (!resp || resp.error) return;
+        renderDemoCard(b, resp.data || [], resp.period);
+    });
+}
+
+function renderDemoCard(breakdown, data, period) {
+    const totalSpend = data.reduce((a,d) => a+(parseFloat(d.spend)||0), 0);
+    if (totalSpend === 0) return;
+
+    const sorted = [...data].sort((a,b) => (parseFloat(b.spend)||0)-(parseFloat(a.spend)||0));
+    const top = sorted.slice(0,8);
+
+    const card = document.createElement('div');
+    card.className = 'demo-card';
+
+    const chartId = 'demo-chart-' + breakdown.key;
+    const fallbackNote = period === 'maximum' ? ' <span style="font-size:10px;color:var(--muted)">(histórico)</span>' : '';
+
+    card.innerHTML = `
+        <div class="demo-card-title">${breakdown.icon} ${breakdown.label}${fallbackNote}</div>
+        <div class="demo-canvas-wrap"><canvas id="${chartId}"></canvas></div>
+        <div class="demo-legend">
+            ${top.map((d,i) => {
+                const spend = parseFloat(d.spend)||0;
+                const pct = totalSpend > 0 ? (spend/totalSpend*100).toFixed(1) : '0.0';
+                const label = breakdown.key==='gender' ? (d.gender==='male'?'Masculino':'Feminino') : (d[breakdown.key]||d.age||d.gender||'—');
+                return `<div class="demo-legend-row">
+                    <div class="demo-legend-left">
+                        <div class="demo-legend-dot" style="background:${DEMO_COLORS[i%DEMO_COLORS.length]}"></div>
+                        <span>${esc(label)}</span>
+                    </div>
+                    <span class="demo-legend-val">${pct}%</span>
+                </div>`;
+            }).join('')}
+        </div>
+    `;
+    $('demoGrid').appendChild(card);
+
+    // Render chart
+    setTimeout(() => {
+        const ctx = document.getElementById(chartId)?.getContext('2d');
+        if (!ctx) return;
+        if (_demoCharts[breakdown.key]) { _demoCharts[breakdown.key].destroy(); }
+        const labels = top.map(d => {
+            if (breakdown.key==='gender') return d.gender==='male'?'Masc':'Fem';
+            return String(d[breakdown.key]||d.age||d.gender||'—').substring(0,12);
+        });
+        _demoCharts[breakdown.key] = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels,
+                datasets: [{ data: top.map(d=>parseFloat(d.spend)||0), backgroundColor: DEMO_COLORS.slice(0,top.length), borderWidth:0, hoverOffset:4 }]
+            },
+            options: { responsive:true, maintainAspectRatio:true, plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label: ctx => ` ${fmtBRL(ctx.raw)}` } } }, cutout:'65%' }
+        });
+    }, 50);
+}
+
+// ── Best Ads ──────────────────────────────────────────────────────────────
+function renderSortPills() {
+    $('bestSortPills').innerHTML = SORT_OPTS.map(o => `
+        <div class="sort-pill ${o.key===_bestSortKey?'active':''}" onclick="setBestSort('${o.key}')">${o.label}</div>
+    `).join('');
+}
+
+function setBestSort(key) {
+    _bestSortKey = key;
+    _bestPage = 15;
+    renderSortPills();
+    renderBestAds();
+}
+
+function getAdMetric(ad, key) {
+    const ins = ad.insights?.data?.[0];
+    if (!ins) return 0;
+    if (key==='results') {
+        const RESULT_TYPES = ['lead','offsite_conversion.fb_pixel_purchase','onsite_conversion.messaging_first_reply','onsite_conversion.lead_grouped','offsite_conversion.fb_pixel_lead','purchase'];
+        return (ins.actions||[]).filter(a=>RESULT_TYPES.includes(a.action_type)).reduce((s,a)=>s+(parseFloat(a.value)||0),0);
+    }
+    if (key==='clicks') return parseFloat(ins.outbound_clicks?.[0]?.value||ins.clicks) || 0;
+    return parseFloat(ins[key]) || 0;
+}
+
+function renderBestAds() {
+    const sorted = [..._bestAds]
+        .filter(a => a.insights?.data?.length > 0)
+        .sort((a,b) => getAdMetric(b,_bestSortKey)-getAdMetric(a,_bestSortKey));
+
+    const visible = sorted.slice(0, _bestPage);
+    $('bestLoadMore').style.display = sorted.length > _bestPage ? 'flex' : 'none';
+
+    if (!visible.length) {
+        $('bestAdsGrid').innerHTML = `<div style="grid-column:1/-1;text-align:center;color:var(--muted);padding:40px;font-size:14px">Sem anúncios com dados no período</div>`;
+        return;
+    }
+
+    $('bestAdsGrid').innerHTML = visible.map((ad, idx) => {
+        const ins = ad.insights?.data?.[0];
+        const spend = parseFloat(ins?.spend)||0;
+        const creative = ad.creative || {};
+        const thumb = creative.thumbnail_url || creative.image_url || '';
+        const isVideo = creative.object_type === 'VIDEO';
+        const metricVal = getAdMetric(ad, _bestSortKey);
+        const metricLabel = SORT_OPTS.find(o=>o.key===_bestSortKey)?.label || _bestSortKey;
+
+        const thumbHtml = thumb
+            ? `<img class="ad-card-thumb" src="${esc(thumb)}" alt="" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" onclick="abrirMedia('${esc(thumb)}','${esc(ad.name)}',${isVideo})">
+               <div class="ad-card-thumb-placeholder" style="display:none" onclick="abrirMedia('${esc(thumb)}','${esc(ad.name)}',${isVideo})">🖼</div>`
+            : `<div class="ad-card-thumb-placeholder">🖼</div>`;
+
+        const campName = ad.campaign?.name || '';
+        const adsetName = ad.adset?.name || '';
+
+        return `<div class="ad-card">
+            <div style="position:relative">
+                ${thumbHtml}
+                <div class="ad-card-rank">#${idx+1}</div>
+                ${isVideo ? `<div class="ad-card-play"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="white" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>` : ''}
+            </div>
+            <div class="ad-card-body">
+                <div class="ad-card-metric-badge">${metricLabel}: ${_bestSortKey==='spend'?fmtBRL(metricVal):fmt(metricVal,2)}</div>
+                <div class="ad-card-name">${esc(ad.name)}</div>
+                ${campName ? `<div class="ad-card-path">${esc(campName)}${adsetName?' › '+adsetName:''}</div>` : ''}
+                <div class="ad-card-metrics">
+                    <div><div class="ad-card-metric-lbl">Gasto</div><div class="ad-card-metric-val">${spend>0?fmtBRL(spend):'—'}</div></div>
+                    <div><div class="ad-card-metric-lbl">Alcance</div><div class="ad-card-metric-val">${fmt(ins?.reach)}</div></div>
+                    <div><div class="ad-card-metric-lbl">Impressões</div><div class="ad-card-metric-val">${fmt(ins?.impressions)}</div></div>
+                    <div><div class="ad-card-metric-lbl">CTR</div><div class="ad-card-metric-val">${fmtPct(ins?.ctr)}</div></div>
+                </div>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function mostrarMaisAnuncios() {
+    _bestPage += 15;
+    renderBestAds();
+}
+
+// ── Media Modal ───────────────────────────────────────────────────────────
+function abrirMedia(url, name, isVideo) {
+    const overlay = $('mediaOverlay');
+    const content = $('mediaContent');
+    $('mediaName').textContent = name;
+    if (isVideo) {
+        content.innerHTML = `<video class="ad-media-video" src="${esc(url)}" controls autoplay></video>`;
+    } else {
+        content.innerHTML = `<img class="ad-media-img" src="${esc(url)}" alt="${esc(name)}">`;
+    }
+    overlay.classList.add('open');
+}
+
+function fecharMedia(e) {
+    if (e.target === $('mediaOverlay')) fecharMediaBtn();
+}
+
+function fecharMediaBtn() {
+    $('mediaOverlay').classList.remove('open');
+    $('mediaContent').innerHTML = '';
+}
+
+document.addEventListener('keydown', e => { if (e.key==='Escape') fecharMediaBtn(); });
+</script>
+</body>
+</html>

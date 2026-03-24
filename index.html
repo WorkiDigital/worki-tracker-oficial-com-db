@@ -829,6 +829,21 @@
                             <span id="cfgContasSalvo" style="font-size:12px;color:var(--blue);display:none;">✓ Salvo</span>
                         </div>
                     </div>
+
+                    <!-- Links de Acesso -->
+                    <div class="card" style="padding:24px;margin-top:20px;">
+                        <div style="font-size:15px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:8px;">
+                            <i data-lucide="link" style="width:16px;color:var(--blue);"></i>
+                            Links de Acesso para Clientes
+                        </div>
+                        <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">
+                            Gere um link para o cliente ver os dados de anúncios sem precisar fazer login.
+                        </p>
+                        <div id="shareLinksArea">
+                            <p style="font-size:13px;color:var(--muted);">Carregando contas...</p>
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </div><!-- /aba-config -->
@@ -1507,6 +1522,56 @@ function selecionarTodasContas() {
 function desmarcarTodasContas() {
     _cfgChecked.clear();
     filtrarCfgContas();
+}
+
+// ── Share Links ───────────────────────────────────────────────────────────
+function renderShareLinks() {
+    const area = $('shareLinksArea');
+    if (!_todasContas.length) {
+        area.innerHTML = '<p style="font-size:13px;color:var(--muted);">Nenhuma conta carregada. Acesse a aba Anúncios primeiro.</p>';
+        return;
+    }
+    area.innerHTML = _todasContas.map(c => `
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);">
+            <span style="font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(c.name)}</span>
+            <button class="btn btn-primary btn-sm" onclick="gerarLinkCompartilhamento('${esc(c.id)}','${esc(c.name).replace(/'/g,"\\'")}')">
+                <i data-lucide="link" style="width:12px;"></i> Gerar Link
+            </button>
+        </div>
+        <div id="share-url-${esc(c.id)}" style="display:none;margin-top:8px;margin-bottom:4px;"></div>
+    `).join('');
+    lucide.createIcons({ nodes: [area] });
+}
+
+async function gerarLinkCompartilhamento(accountId, accountName) {
+    try {
+        const r = await authFetch('/api/share-create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ account_id: accountId, account_name: accountName })
+        });
+        const data = await r.json();
+        if (data.error) { toast(data.error, 'error'); return; }
+
+        const url = `${location.origin}/share.html?token=${data.token}`;
+        navigator.clipboard.writeText(url).catch(()=>{});
+
+        const box = $('share-url-' + accountId);
+        if (box) {
+            box.style.display = 'block';
+            box.innerHTML = `
+                <div style="display:flex;align-items:center;gap:8px;background:var(--tag);border:1px solid var(--border);border-radius:8px;padding:8px 12px;">
+                    <span style="font-size:12px;color:var(--muted);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(url)}</span>
+                    <button class="btn btn-ghost btn-sm" onclick="navigator.clipboard.writeText('${esc(url)}');toast('Link copiado!','success')">
+                        <i data-lucide="copy" style="width:12px;"></i> Copiar
+                    </button>
+                </div>`;
+            lucide.createIcons({ nodes: [box] });
+        }
+        toast('Link gerado e copiado!', 'success');
+    } catch(e) {
+        toast('Erro ao gerar link: ' + e.message, 'error');
+    }
 }
 
 function navDropdown(e) {
@@ -2518,7 +2583,7 @@ function mudarAba(aba) {
     $('leadsControls').style.display = aba === 'leads' ? 'flex' : 'none';
     lucide.createIcons({ nodes:[$('titulo-pagina')] });
     if (aba === 'anuncios' && !adsCarregado) carregarAnuncios();
-    if (aba === 'config') renderConfigContas();
+    if (aba === 'config') { renderConfigContas(); renderShareLinks(); }
     // Fecha sidebar mobile ao trocar de aba
     $('sidebar').classList.remove('mobile-open');
     $('sidebarOverlay').classList.remove('open');
