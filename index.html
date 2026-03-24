@@ -825,6 +825,7 @@
                                 <i data-lucide="save" style="width:13px;"></i> Salvar
                             </button>
                             <button class="btn btn-ghost btn-sm" onclick="selecionarTodasContas()">Selecionar todas</button>
+                            <button class="btn btn-ghost btn-sm" onclick="desmarcarTodasContas()">Desmarcar todas</button>
                             <span id="cfgContasSalvo" style="font-size:12px;color:var(--blue);display:none;">✓ Salvo</span>
                         </div>
                     </div>
@@ -1500,6 +1501,11 @@ function salvarConfigContas() {
 
 function selecionarTodasContas() {
     _todasContas.forEach(c => _cfgChecked.add(c.id));
+    filtrarCfgContas();
+}
+
+function desmarcarTodasContas() {
+    _cfgChecked.clear();
     filtrarCfgContas();
 }
 
