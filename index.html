@@ -554,8 +554,15 @@
 <!-- Sidebar -->
 <div class="sidebar" id="sidebar">
     <div class="logo">
-        <div class="logo-icon"><i data-lucide="message-square" style="color:#fff;width:20px;"></i></div>
-        <div class="logo-text">WHATSAPP<br>TRACKING</div>
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0">
+            <rect width="32" height="32" rx="8" fill="#3b82f6"/>
+            <rect x="6" y="18" width="4" height="8" rx="1.5" fill="white" opacity="0.6"/>
+            <rect x="12" y="13" width="4" height="13" rx="1.5" fill="white" opacity="0.8"/>
+            <rect x="18" y="8" width="4" height="18" rx="1.5" fill="white"/>
+            <polyline points="21,6 25,6 25,10" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            <line x1="18" y1="9" x2="25" y2="6" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+        <div class="logo-text" style="font-size:15px;font-weight:800;letter-spacing:-0.3px;line-height:1;">adlytics</div>
     </div>
     <nav>
         <a id="btn-leads"      class="nav-item active"  onclick="mudarAba('leads')">
@@ -597,19 +604,8 @@
                 <i data-lucide="menu" style="width:20px;height:20px;"></i>
             </button>
             <div class="title-area">
-                <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
-                    <svg width="28" height="28" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <rect width="32" height="32" rx="8" fill="#3b82f6"/>
-                        <rect x="6" y="18" width="4" height="8" rx="1.5" fill="white" opacity="0.6"/>
-                        <rect x="12" y="13" width="4" height="13" rx="1.5" fill="white" opacity="0.8"/>
-                        <rect x="18" y="8" width="4" height="18" rx="1.5" fill="white"/>
-                        <polyline points="21,6 25,6 25,10" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-                        <line x1="18" y1="9" x2="25" y2="6" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
-                    </svg>
-                    <span style="font-size:18px;font-weight:800;letter-spacing:-0.5px;color:var(--text)">adlytics</span>
-                </div>
-                <h1 id="titulo-pagina" style="font-size:13px;font-weight:400;color:var(--muted);margin:0;"><i data-lucide="users" style="color:var(--blue);width:13px;height:13px;"></i> Leads Reais</h1>
-                <p style="display:none">Projeto: <strong id="nome-projeto">...</strong></p>
+                <h1 id="titulo-pagina"><i data-lucide="users" style="color:var(--blue);"></i> Leads Reais</h1>
+                <p>Projeto: <strong id="nome-projeto">...</strong></p>
             </div>
         </div>
         <div class="topbar-right">
