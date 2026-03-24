@@ -153,20 +153,29 @@
 
         /* ── Account search dropdown ─────────────── */
         .acct-wrap { position:relative; }
-        .acct-input-box { display:flex; align-items:center; background:var(--card); border:1px solid var(--border); border-radius:8px; padding:7px 11px; gap:7px; cursor:text; min-width:220px; transition:border-color .2s; }
-        .acct-input-box:focus-within { border-color:var(--blue); }
-        .acct-input-box input { background:transparent; border:none; color:var(--text); font-size:13px; outline:none; font-family:'Inter'; width:100%; min-width:120px; }
-        .acct-input-box input::placeholder { color:var(--muted); }
+        .acct-btn { display:flex; align-items:center; background:var(--card); border:1px solid var(--border); border-radius:8px; padding:9px 14px; gap:10px; cursor:pointer; min-width:260px; transition:border-color .2s; user-select:none; }
+        .acct-btn:hover { border-color:var(--blue); }
+        .acct-btn.open { border-color:var(--blue); }
+        .acct-btn-label { flex:1; font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .acct-btn-label.placeholder { color:var(--muted); }
         .acct-saved-badge { font-size:10px; background:rgba(59,130,246,.15); color:var(--blue); border-radius:4px; padding:1px 5px; white-space:nowrap; flex-shrink:0; }
-        .acct-dropdown { position:absolute; top:calc(100% + 4px); left:0; min-width:100%; max-width:360px; background:var(--card); border:1px solid var(--border); border-radius:10px; box-shadow:0 8px 24px rgba(0,0,0,.35); z-index:500; max-height:260px; overflow-y:auto; display:none; animation:fadeUp .15s ease; }
+        .acct-chevron { flex-shrink:0; color:var(--muted); transition:transform .2s; }
+        .acct-btn.open .acct-chevron { transform:rotate(180deg); }
+        .acct-dropdown { position:absolute; top:calc(100% + 6px); left:0; min-width:100%; width:340px; background:var(--card); border:1px solid var(--border); border-radius:10px; box-shadow:0 8px 32px rgba(0,0,0,.4); z-index:500; display:none; animation:fadeUp .15s ease; overflow:hidden; }
         .acct-dropdown.open { display:block; }
-        .acct-opt { padding:9px 14px; font-size:13px; cursor:pointer; display:flex; align-items:center; justify-content:space-between; gap:10px; border-radius:6px; margin:3px 4px; }
+        .acct-search-box { display:flex; align-items:center; gap:8px; padding:10px 14px; border-bottom:1px solid var(--border); }
+        .acct-search-box input { background:transparent; border:none; color:var(--text); font-size:13px; outline:none; font-family:'Inter'; width:100%; }
+        .acct-search-box input::placeholder { color:var(--muted); }
+        .acct-list { max-height:260px; overflow-y:auto; padding:4px; }
+        .acct-count { padding:6px 14px 4px; font-size:11px; color:var(--muted); border-bottom:1px solid var(--border); margin-bottom:4px; }
+        .acct-opt { padding:8px 12px; cursor:pointer; border-radius:7px; transition:background .12s; }
         .acct-opt:hover { background:var(--hover); }
-        .acct-opt.selected { color:var(--blue); font-weight:600; }
-        .acct-opt-name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-        .acct-opt-pin { opacity:0; font-size:10px; color:var(--muted); flex-shrink:0; }
-        .acct-opt:hover .acct-opt-pin { opacity:1; }
-        .acct-empty { padding:14px; text-align:center; color:var(--muted); font-size:13px; }
+        .acct-opt.selected { background:rgba(59,130,246,.08); }
+        .acct-opt-name { font-size:13px; font-weight:500; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:2px; }
+        .acct-opt.selected .acct-opt-name { color:var(--blue); }
+        .acct-opt-sub { display:flex; align-items:center; gap:6px; font-size:11px; color:var(--muted); }
+        .acct-status-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
+        .acct-empty { padding:16px; text-align:center; color:var(--muted); font-size:13px; }
 
         /* ── Metrics config panel ────────────────── */
         .metrics-cfg-bar { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
@@ -358,8 +367,9 @@
             .metrics-cfg-sections { grid-template-columns:1fr; gap:14px; }
 
             /* Account input */
-            .acct-input-box { min-width:unset; }
+            .acct-btn { min-width:unset; }
             .acct-wrap { flex:1; }
+            .acct-dropdown { width:100%; }
 
             /* Modal */
             .modal { width:92vw; max-width:420px; }
@@ -563,15 +573,23 @@
 
             <div id="ads-conteudo">
                 <div class="ads-bar">
-                    <!-- Searchable account picker -->
+                    <!-- Account picker -->
                     <div class="acct-wrap" id="acctWrap">
-                        <div class="acct-input-box" onclick="abrirDropdownContas()">
-                            <i data-lucide="search" style="width:13px;color:var(--muted);flex-shrink:0;"></i>
-                            <input id="acctSearch" type="text" placeholder="Buscar conta..."
-                                   oninput="filtrarContas()" onkeydown="navDropdown(event)" autocomplete="off">
+                        <div class="acct-btn" id="acctBtn" onclick="toggleDropdownContas()">
+                            <i data-lucide="building-2" style="width:14px;color:var(--muted);flex-shrink:0;"></i>
+                            <span class="acct-btn-label placeholder" id="acctBtnLabel">Escolha uma conta de anúncios</span>
                             <span id="acctSavedBadge" class="acct-saved-badge" style="display:none;">salva</span>
+                            <i data-lucide="chevron-down" class="acct-chevron" style="width:14px;"></i>
                         </div>
-                        <div class="acct-dropdown" id="acctDropdown"></div>
+                        <div class="acct-dropdown" id="acctDropdown">
+                            <div class="acct-search-box">
+                                <i data-lucide="search" style="width:13px;color:var(--muted);flex-shrink:0;"></i>
+                                <input id="acctSearch" type="text" placeholder="Buscar conta..."
+                                       oninput="filtrarContas()" onkeydown="navDropdown(event)" autocomplete="off">
+                            </div>
+                            <div class="acct-count" id="acctCount"></div>
+                            <div class="acct-list" id="acctList"></div>
+                        </div>
                     </div>
                     <!-- Hidden select mantido para compatibilidade com o resto do código -->
                     <select id="adsAccountSelect" style="display:none;"></select>
@@ -1394,44 +1412,76 @@ async function carregarContasAds() {
     } catch(_) {}
 }
 
+function toggleDropdownContas() {
+    const dd = $('acctDropdown');
+    if (dd.classList.contains('open')) {
+        fecharDropdownContas();
+    } else {
+        abrirDropdownContas();
+    }
+}
+
 function abrirDropdownContas() {
+    $('acctSearch').value = '';
     renderDropdown(_contasVisiveis);
     $('acctDropdown').classList.add('open');
-    $('acctSearch').focus();
+    $('acctBtn').classList.add('open');
+    setTimeout(() => $('acctSearch').focus(), 50);
 }
 
 function fecharDropdownContas() {
     $('acctDropdown').classList.remove('open');
-    // Restaura texto da conta selecionada se input ficar vazio
-    if (_contaSelecionada && !$('acctSearch').value.trim())
-        $('acctSearch').value = _contaSelecionada.name;
+    $('acctBtn').classList.remove('open');
 }
 
 function filtrarContas() {
     const q = ($('acctSearch').value || '').toLowerCase();
     const filtradas = q ? _contasVisiveis.filter(c => c.name.toLowerCase().includes(q)) : _contasVisiveis;
     renderDropdown(filtradas);
-    $('acctDropdown').classList.add('open');
+}
+
+function acctStatusInfo(conta) {
+    const status = conta.account_status;
+    if (status === 1)   return { label:'Ativa',    color:'#10b981' };
+    if (status === 2)   return { label:'Desativada', color:'#ef4444' };
+    if (status === 3)   return { label:'Inadimplente', color:'#f59e0b' };
+    if (status === 9)   return { label:'Em carência', color:'#f59e0b' };
+    if (status === 101) return { label:'Indisponível', color:'#9ca3af' };
+    if (status === 201) return { label:'Encerrada', color:'#ef4444' };
+    return { label:'—', color:'#9ca3af' };
 }
 
 function renderDropdown(lista) {
-    const dd = $('acctDropdown');
+    const listEl = $('acctList');
+    const countEl = $('acctCount');
+    countEl.textContent = `Mostrando ${lista.length} conta${lista.length!==1?'s':''} disponíve${lista.length!==1?'is':'l'}`;
     if (!lista.length) {
-        dd.innerHTML = '<div class="acct-empty">Nenhuma conta encontrada</div>';
+        listEl.innerHTML = '<div class="acct-empty">Nenhuma conta encontrada</div>';
         return;
     }
-    dd.innerHTML = lista.map(c => `
-        <div class="acct-opt${_contaSelecionada?.id === c.id ? ' selected' : ''}"
-             onclick="selecionarConta({id:'${esc(c.id)}',name:'${esc(c.name)}'})">
-            <span class="acct-opt-name">${esc(c.name)}</span>
-            <span class="acct-opt-pin">📌 salvar</span>
-        </div>`).join('');
+    listEl.innerHTML = lista.map(c => {
+        const st = acctStatusInfo(c);
+        const accountId = c.account_id || c.id?.replace('act_','') || c.id;
+        return `<div class="acct-opt${_contaSelecionada?.id === c.id ? ' selected' : ''}"
+             onclick="selecionarConta({id:'${esc(c.id)}',name:'${esc(c.name)}',account_id:'${esc(accountId)}',account_status:${c.account_status||0}})">
+            <div class="acct-opt-name">${esc(c.name)}</div>
+            <div class="acct-opt-sub">
+                <div class="acct-status-dot" style="background:${st.color}"></div>
+                <span style="color:${st.color};font-weight:600">${st.label}</span>
+                <span>·</span>
+                <span>${esc(accountId)}</span>
+            </div>
+        </div>`;
+    }).join('');
 }
 
 function selecionarConta(conta, salvar = true) {
     _contaSelecionada = conta;
-    $('acctSearch').value = conta.name;
-    $('adsAccountSelect').value = conta.id; // sincroniza o hidden select
+    // Atualiza label do botão
+    const lbl = $('acctBtnLabel');
+    lbl.textContent = conta.name;
+    lbl.classList.remove('placeholder');
+    $('adsAccountSelect').value = conta.id;
     fecharDropdownContas();
     if (salvar) {
         localStorage.setItem(ACCT_KEY, JSON.stringify(conta));
@@ -1445,10 +1495,10 @@ function aplicarFiltroContas() {
     _contasVisiveis = saved ? _todasContas.filter(c => saved.includes(c.id)) : _todasContas;
     const sel = $('adsAccountSelect');
     sel.innerHTML = _contasVisiveis.map(c => `<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('');
-    renderDropdown(_contasVisiveis);
     if (_contaSelecionada && !_contasVisiveis.find(c => c.id === _contaSelecionada.id)) {
         _contaSelecionada = null;
-        $('acctSearch').value = '';
+        const lbl = $('acctBtnLabel');
+        if (lbl) { lbl.textContent = 'Escolha uma conta de anúncios'; lbl.classList.add('placeholder'); }
         $('acctSavedBadge').style.display = 'none';
     }
 }
