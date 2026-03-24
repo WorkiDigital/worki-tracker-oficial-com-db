@@ -4,6 +4,7 @@
   "description": "WhatsApp Tracking Dashboard",
   "type": "module",
   "scripts": {
+    "start": "node server.js",
     "dev": "node server.js"
   },
   "dependencies": {
