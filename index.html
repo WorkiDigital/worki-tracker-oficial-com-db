@@ -577,10 +577,10 @@
                     <select id="adsAccountSelect" style="display:none;"></select>
                     <div class="ctrl-box">
                         <select id="adsDatePreset" class="bare">
-                            <option value="today">Hoje</option>
+                            <option value="today" selected>Hoje</option>
                             <option value="yesterday">Ontem</option>
                             <option value="last_7d">7 dias</option>
-                            <option value="last_30d" selected>30 dias</option>
+                            <option value="last_30d">30 dias</option>
                             <option value="this_month">Este mês</option>
                             <option value="last_month">Mês passado</option>
                         </select>
@@ -1421,8 +1421,8 @@ function selecionarConta(conta, salvar = true) {
     if (salvar) {
         localStorage.setItem(ACCT_KEY, JSON.stringify(conta));
         $('acctSavedBadge').style.display = 'inline';
-        toast(`Conta "${conta.name}" salva`, 'success');
     }
+    carregarAnuncios();
 }
 
 function aplicarFiltroContas() {
