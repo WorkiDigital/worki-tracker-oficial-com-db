@@ -1,19 +1,29 @@
 import { createClient } from '@supabase/supabase-js';
 
+const DEFAULT_SECTIONS = { campanhas: true, demograficos: true, melhores_criativos: true };
+const DEFAULT_METRICS  = ['spend','imps','reach','cpm','ctr','leads','cpl','msgs','cpr','active_campaigns'];
+const DEFAULT_COLUMNS  = ['status','spend','imps','reach','cpm','clicks','ctr','leads','cpl','msgs','cpr'];
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
+  const VALID_PRESETS = ['today','yesterday','last_7d','last_14d','last_30d','this_month','last_month','maximum'];
   const { token, datePreset = 'today' } = req.query;
   if (!token) return res.status(400).json({ error: 'token required' });
+  if (!VALID_PRESETS.includes(datePreset)) return res.status(400).json({ error: 'datePreset inválido' });
 
   const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
   const { data: row, error } = await sb
-    .from('share_tokens').select('account_id,account_name').eq('token', token).single();
+    .from('share_tokens')
+    .select('account_id,account_name,client_name,visible_sections,visible_metrics,visible_columns,status_filter,expires_at')
+    .eq('token', token)
+    .single();
 
   if (error || !row) return res.status(404).json({ error: 'Link inválido ou expirado' });
+  if (row.expires_at && new Date(row.expires_at) < new Date()) return res.status(403).json({ error: 'Este link expirou' });
 
   const metaToken = process.env.META_ADS_TOKEN;
   if (!metaToken) return res.status(500).json({ error: 'META_ADS_TOKEN not configured' });
@@ -26,7 +36,18 @@ export default async function handler(req, res) {
     const r = await fetch(url);
     const data = await r.json();
     if (data.error) return res.status(400).json({ error: data.error.message });
-    return res.status(200).json({ ...data, account_name: row.account_name });
+
+    return res.status(200).json({
+      ...data,
+      account_name: row.account_name,
+      client_name: row.client_name || row.account_name,
+      config: {
+        visible_sections: row.visible_sections || DEFAULT_SECTIONS,
+        visible_metrics:  row.visible_metrics  || DEFAULT_METRICS,
+        visible_columns:  row.visible_columns  || DEFAULT_COLUMNS,
+        status_filter:    row.status_filter    || 'ACTIVE',
+      },
+    });
   } catch (e) {
     return res.status(500).json({ error: e.message });
   }

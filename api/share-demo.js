@@ -6,20 +6,22 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
+  const VALID_PRESETS = ['today','yesterday','last_7d','last_14d','last_30d','this_month','last_month','maximum'];
+  const VALID_BREAKDOWNS = ['age', 'gender', 'publisher_platform', 'impression_device'];
   const { token, datePreset = 'today', breakdown = 'age', campaignIds = '' } = req.query;
   if (!token) return res.status(400).json({ error: 'token required' });
+  if (!VALID_PRESETS.includes(datePreset)) return res.status(400).json({ error: 'datePreset inválido' });
+  if (!VALID_BREAKDOWNS.includes(breakdown)) return res.status(400).json({ error: 'breakdown inválido' });
 
   const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
   const { data: row, error } = await sb
-    .from('share_tokens').select('account_id').eq('token', token).single();
+    .from('share_tokens').select('account_id,expires_at').eq('token', token).single();
 
   if (error || !row) return res.status(404).json({ error: 'Link inválido ou expirado' });
+  if (row.expires_at && new Date(row.expires_at) < new Date()) return res.status(403).json({ error: 'Este link expirou' });
 
   const metaToken = process.env.META_ADS_TOKEN;
   if (!metaToken) return res.status(500).json({ error: 'META_ADS_TOKEN not configured' });
-
-  const VALID = ['age', 'gender', 'publisher_platform', 'impression_device'];
-  if (!VALID.includes(breakdown)) return res.status(400).json({ error: 'breakdown inválido' });
 
   const fields = 'spend,impressions,clicks,actions';
 

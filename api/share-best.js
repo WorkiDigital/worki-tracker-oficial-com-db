@@ -6,14 +6,17 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
+  const VALID_PRESETS = ['today','yesterday','last_7d','last_14d','last_30d','this_month','last_month','maximum'];
   const { token, datePreset = 'today' } = req.query;
   if (!token) return res.status(400).json({ error: 'token required' });
+  if (!VALID_PRESETS.includes(datePreset)) return res.status(400).json({ error: 'datePreset inválido' });
 
   const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
   const { data: row, error } = await sb
-    .from('share_tokens').select('account_id').eq('token', token).single();
+    .from('share_tokens').select('account_id,expires_at').eq('token', token).single();
 
   if (error || !row) return res.status(404).json({ error: 'Link inválido ou expirado' });
+  if (row.expires_at && new Date(row.expires_at) < new Date()) return res.status(403).json({ error: 'Este link expirou' });
 
   const metaToken = process.env.META_ADS_TOKEN;
   if (!metaToken) return res.status(500).json({ error: 'META_ADS_TOKEN not configured' });
@@ -39,6 +42,24 @@ export default async function handler(req, res) {
       todos.push(...(data.data || []));
       next = data.paging?.next || null;
     }
+
+    // Enriquecer criativos de vídeo com thumbnail HD + source (em paralelo, até 10 por vez)
+    const videoAds = todos.filter(ad => ad.creative?.video_id);
+    for (let i = 0; i < videoAds.length; i += 10) {
+      await Promise.all(videoAds.slice(i, i + 10).map(async ad => {
+        try {
+          const vUrl = `https://graph.facebook.com/v20.0/${ad.creative.video_id}?fields=source,thumbnails{uri,height,width}&access_token=${metaToken}`;
+          const vr = await fetch(vUrl);
+          const vd = await vr.json();
+          if (vd.error) return;
+          const thumbs = vd.thumbnails?.data || [];
+          const best = thumbs.reduce((b, t) => (!b || t.height > b.height) ? t : b, null);
+          if (best?.uri) ad.creative._hd_thumbnail = best.uri;
+          if (vd.source)  ad.creative._video_source = vd.source;
+        } catch { /* ignora erro individual */ }
+      }));
+    }
+
     return res.status(200).json({ data: todos });
   } catch (e) {
     return res.status(500).json({ error: e.message });

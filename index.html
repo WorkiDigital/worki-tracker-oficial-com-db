@@ -177,6 +177,24 @@
         .acct-status-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
         .acct-empty { padding:16px; text-align:center; color:var(--muted); font-size:13px; }
 
+        /* ── Config dropdown — estilo claro (referência) ── */
+        #cfgContasBtn { background:#ffffff; border:1px solid #e5e7eb; color:#111827; border-radius:10px; padding:10px 16px; }
+        #cfgContasBtn:hover { border-color:#2563eb; }
+        #cfgContasBtn.open { border-color:#2563eb; box-shadow:0 0 0 3px rgba(37,99,235,.1); }
+        #cfgContasBtn .acct-btn-label { color:#111827; font-size:14px; font-weight:500; }
+        #cfgContasBtn .acct-chevron { color:#6b7280; }
+        #cfgContasDropdown { background:#ffffff; border:1px solid #e5e7eb; border-radius:12px; box-shadow:0 4px 24px rgba(0,0,0,.10); width:100%; }
+        #cfgContasDropdown .acct-search-box { background:#ffffff; border-bottom:1px solid #f3f4f6; padding:10px 16px; }
+        #cfgContasDropdown .acct-search-box input { color:#111827; font-size:13px; }
+        #cfgContasDropdown .acct-search-box input::placeholder { color:#9ca3af; }
+        #cfgContasDropdown .acct-search-box i { color:#9ca3af; }
+        #cfgContasDropdown .acct-count { color:#9ca3af; font-size:11px; border-bottom:1px solid #f3f4f6; padding:6px 16px 6px; }
+        #cfgContasList label { padding:9px 16px; border-bottom:1px solid #f3f4f6; border-radius:0; }
+        #cfgContasList label:last-child { border-bottom:none; }
+        #cfgContasList label:hover { background:#f9fafb !important; }
+        #cfgContasList label span { color:#111827; font-size:13px; font-weight:400; }
+        #cfgContasList input[type=checkbox] { accent-color:#2563eb; width:15px; height:15px; border-radius:4px; }
+
         /* ── Metrics config panel ────────────────── */
         .metrics-cfg-bar { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
         .metrics-cfg-bar span { font-size:12px; color:var(--muted); font-weight:600; }
@@ -418,6 +436,104 @@
 
 <!-- Mobile sidebar overlay -->
 <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleMobileSidebar()"></div>
+
+<!-- Share Config Modal -->
+<div id="shareModal" class="modal-overlay" onclick="fecharShareModal(event)">
+    <div class="modal" style="width:480px;max-width:96vw;max-height:90vh;overflow-y:auto;" onclick="event.stopPropagation()">
+        <div class="modal-head">
+            <div class="modal-icon" style="background:var(--blue)"><i data-lucide="link" style="color:#fff;width:20px;height:20px;"></i></div>
+            <div><h3>Configurar Link de Acesso</h3><p id="shareModalAcctName" style="font-size:12px;color:var(--muted);">—</p></div>
+            <button class="modal-close" onclick="fecharShareModal()"><i data-lucide="x" style="width:16px;"></i></button>
+        </div>
+
+        <!-- Nome do cliente -->
+        <div class="input-group">
+            <label>Nome do cliente <span style="color:var(--muted);font-weight:400">(aparece no topo do dashboard)</span></label>
+            <input id="shareClientName" type="text" placeholder="Ex: João Silva, Empresa X...">
+        </div>
+
+        <!-- Seções visíveis -->
+        <div style="margin-bottom:16px;">
+            <div style="font-size:12px;font-weight:600;margin-bottom:8px;">Seções visíveis</div>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
+                    <input type="checkbox" id="secCampanhas" checked style="accent-color:var(--blue);width:14px;height:14px;">
+                    Tabela de Campanhas
+                </label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
+                    <input type="checkbox" id="secDemograficos" checked style="accent-color:var(--blue);width:14px;height:14px;">
+                    Demográficos
+                </label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
+                    <input type="checkbox" id="secMelhores" checked style="accent-color:var(--blue);width:14px;height:14px;">
+                    Melhores Criativos
+                </label>
+            </div>
+        </div>
+
+        <!-- Métricas do resumo -->
+        <div style="margin-bottom:16px;">
+            <div style="font-size:12px;font-weight:600;margin-bottom:8px;">Métricas do resumo</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="spend"            class="share-metric-chk" checked style="accent-color:var(--blue);width:14px;height:14px;"> Gasto Total</label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="imps"             class="share-metric-chk" checked style="accent-color:var(--blue);width:14px;height:14px;"> Impressões</label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="reach"            class="share-metric-chk" checked style="accent-color:var(--blue);width:14px;height:14px;"> Alcance</label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="freq"             class="share-metric-chk"         style="accent-color:var(--blue);width:14px;height:14px;"> Frequência</label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="cpm"              class="share-metric-chk" checked style="accent-color:var(--blue);width:14px;height:14px;"> CPM</label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="cpc"              class="share-metric-chk"         style="accent-color:var(--blue);width:14px;height:14px;"> CPC</label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="ctr"              class="share-metric-chk" checked style="accent-color:var(--blue);width:14px;height:14px;"> CTR Médio</label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="lpv"              class="share-metric-chk"         style="accent-color:var(--blue);width:14px;height:14px;"> Visitas pág. destino</label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="cplpv"            class="share-metric-chk"         style="accent-color:var(--blue);width:14px;height:14px;"> Custo/visita</label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="leads"            class="share-metric-chk" checked style="accent-color:var(--blue);width:14px;height:14px;"> Leads</label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="cpl"              class="share-metric-chk" checked style="accent-color:var(--blue);width:14px;height:14px;"> CPL</label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="msgs"             class="share-metric-chk" checked style="accent-color:var(--blue);width:14px;height:14px;"> Conversas</label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="cpr"              class="share-metric-chk" checked style="accent-color:var(--blue);width:14px;height:14px;"> CPR</label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="seguidores"       class="share-metric-chk"         style="accent-color:var(--blue);width:14px;height:14px;"> Seguidores</label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="cps"              class="share-metric-chk"         style="accent-color:var(--blue);width:14px;height:14px;"> Custo/seguidor</label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="active_campaigns" class="share-metric-chk" checked style="accent-color:var(--blue);width:14px;height:14px;"> Campanhas Ativas</label>
+            </div>
+        </div>
+
+        <!-- Colunas da tabela -->
+        <div style="margin-bottom:16px;">
+            <div style="font-size:12px;font-weight:600;margin-bottom:8px;">Colunas da tabela</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="status"     class="share-col-chk" checked style="accent-color:var(--blue);width:14px;height:14px;"> Status</label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="spend"      class="share-col-chk" checked style="accent-color:var(--blue);width:14px;height:14px;"> Gasto Total</label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="imps"       class="share-col-chk" checked style="accent-color:var(--blue);width:14px;height:14px;"> Impressões</label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="reach"      class="share-col-chk" checked style="accent-color:var(--blue);width:14px;height:14px;"> Alcance</label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="freq"       class="share-col-chk"         style="accent-color:var(--blue);width:14px;height:14px;"> Frequência</label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="cpm"        class="share-col-chk" checked style="accent-color:var(--blue);width:14px;height:14px;"> CPM</label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="clicks"     class="share-col-chk" checked style="accent-color:var(--blue);width:14px;height:14px;"> Cliques (Links)</label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="cpc"        class="share-col-chk"         style="accent-color:var(--blue);width:14px;height:14px;"> CPC</label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="ctr"        class="share-col-chk" checked style="accent-color:var(--blue);width:14px;height:14px;"> CTR</label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="lpv"        class="share-col-chk"         style="accent-color:var(--blue);width:14px;height:14px;"> Visitas pág. destino</label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="cplpv"      class="share-col-chk"         style="accent-color:var(--blue);width:14px;height:14px;"> Custo/visita</label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="leads"      class="share-col-chk" checked style="accent-color:var(--blue);width:14px;height:14px;"> Leads</label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="cpl"        class="share-col-chk" checked style="accent-color:var(--blue);width:14px;height:14px;"> CPL</label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="msgs"       class="share-col-chk" checked style="accent-color:var(--blue);width:14px;height:14px;"> Conversas</label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="cpr"        class="share-col-chk" checked style="accent-color:var(--blue);width:14px;height:14px;"> CPR</label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="seguidores" class="share-col-chk"         style="accent-color:var(--blue);width:14px;height:14px;"> Seguidores</label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="cps"        class="share-col-chk"         style="accent-color:var(--blue);width:14px;height:14px;"> Custo/seguidor</label>
+            </div>
+        </div>
+
+        <!-- Filtro de status padrão -->
+        <div class="input-group" style="margin-bottom:20px;">
+            <label>Status padrão ao abrir o link</label>
+            <select id="shareStatusFilter" style="width:100%;background:var(--tag);border:1px solid var(--border);padding:10px 12px;border-radius:8px;color:var(--text);font-size:13px;outline:none;font-family:'Inter';">
+                <option value="ACTIVE" selected>Somente Ativas</option>
+                <option value="ALL">Todas (ativas + pausadas)</option>
+                <option value="PAUSED">Somente Pausadas</option>
+            </select>
+        </div>
+
+        <button class="btn-confirm" id="btnConfirmarShare" onclick="confirmarGerarLink()">
+            <i data-lucide="link" style="width:15px;display:inline-block;vertical-align:middle;margin-right:6px;"></i>
+            Gerar e Copiar Link
+        </button>
+    </div>
+</div>
 
 <!-- CAPI Modal -->
 <div id="capiModal" class="modal-overlay">
@@ -822,7 +938,7 @@
         <div id="aba-config" class="aba-oculta">
             <div class="content">
                 <div style="max-width:600px;">
-                    <div class="card" style="padding:24px;margin-bottom:20px;">
+                    <div class="card" style="padding:24px;margin-bottom:20px;overflow:visible;">
                         <div style="font-size:15px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:8px;">
                             <i data-lucide="megaphone" style="width:16px;color:var(--blue);"></i>
                             Contas de Anúncio
@@ -830,14 +946,22 @@
                         <p style="font-size:13px;color:var(--muted);margin-bottom:14px;">
                             Selecione as contas que aparecem no seletor em Anúncios.
                         </p>
-                        <!-- Busca -->
-                        <div class="ctrl-box" style="margin-bottom:10px;">
-                            <i data-lucide="search" style="width:13px;color:var(--muted);flex-shrink:0;"></i>
-                            <input id="cfgContasSearch" type="text" placeholder="Pesquisar conta..."
-                                   oninput="filtrarCfgContas()" autocomplete="off"
-                                   style="flex:1;background:transparent;border:none;outline:none;font-size:13px;color:var(--text);">
+                        <!-- Dropdown de contas -->
+                        <div class="acct-wrap" id="cfgContasWrap" style="margin-bottom:14px;">
+                            <div class="acct-btn" id="cfgContasBtn" onclick="toggleCfgDropdown()">
+                                <i data-lucide="building-2" style="width:14px;color:var(--muted);flex-shrink:0;"></i>
+                                <span class="acct-btn-label" id="cfgContasBtnLabel">Carregando...</span>
+                                <i data-lucide="chevron-down" class="acct-chevron" style="width:14px;"></i>
+                            </div>
+                            <div class="acct-dropdown" id="cfgContasDropdown" style="width:100%;">
+                                <div class="acct-search-box">
+                                    <i data-lucide="search" style="width:13px;color:var(--muted);flex-shrink:0;"></i>
+                                    <input id="cfgContasSearch" type="text" placeholder="Pesquisar conta..."
+                                           oninput="filtrarCfgContas()" autocomplete="off">
+                                </div>
+                                <div class="acct-list" id="cfgContasList" style="max-height:220px;"></div>
+                            </div>
                         </div>
-                        <div id="cfgContasList" style="border:1px solid var(--border);border-radius:8px;overflow:hidden;max-height:140px;overflow-y:auto;margin-bottom:16px;"></div>
                         <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
                             <button class="btn btn-primary" onclick="salvarConfigContas()">
                                 <i data-lucide="save" style="width:13px;"></i> Salvar
@@ -906,7 +1030,7 @@
 Chart.register(ChartDataLabels);
 
 // ── State ──────────────────────────────────────────────────────
-let rawData = [], dadosFiltrados = [], META_TOKEN = '';
+let rawData = [], dadosFiltrados = [];
 let sortCol = 'event_time', sortDir = -1;
 let pagAtual = 1; const POR_PAGINA = 50;
 let campanhasRaw = [], adsCarregado = false;
@@ -991,7 +1115,6 @@ async function init() {
     // Config + Auth
     try {
         const cfg = await fetch('/api/config').then(r=>r.json());
-        META_TOKEN = cfg.metaToken || '';
         $('nome-projeto').textContent = cfg.projectName || 'Projeto';
 
         // Verificar sessão Supabase
@@ -1368,6 +1491,8 @@ async function confirmarVenda() {
 let _todasContas = [];        // lista completa carregada da API
 let _contasVisiveis = [];     // lista filtrada por Configurações
 let _contaSelecionada = null; // { id, name }
+let _shareAccountId   = null; // conta atual no modal de share
+let _shareAccountName = null;
 const ACCT_KEY           = 'wt_saved_account';
 const STATUS_FILTER_KEY  = 'wt_status_filter';
 const ACCOUNTS_FILTER_KEY = 'wt_accounts_filter';
@@ -1503,30 +1628,74 @@ function aplicarFiltroContas() {
     }
 }
 
+// Mantém estado de checked ao filtrar (por id) — resetado ao entrar na aba
+const _cfgChecked = new Set();
+let _cfgInicializado = false; // impede re-popula do saved quando usuário desmarcou tudo
+
 async function renderConfigContas() {
     if (!_todasContas.length) {
-        $('cfgContasList').innerHTML = '<p style="font-size:13px;color:var(--muted);padding:10px 14px;">Carregando contas...</p>';
+        $('cfgContasBtnLabel').textContent = 'Carregando...';
         await carregarContasAds();
         if (!_todasContas.length) {
-            $('cfgContasList').innerHTML = '<p style="font-size:13px;color:var(--muted);padding:10px 14px;">Nenhuma conta encontrada.</p>';
+            $('cfgContasBtnLabel').textContent = 'Nenhuma conta encontrada';
             return;
         }
     }
-    // Reseta estado de seleção ao entrar na aba
+    // Inicializa estado de seleção a partir do salvo
     _cfgChecked.clear();
+    _cfgInicializado = false;
     $('cfgContasSearch').value = '';
     _renderCfgLista('');
+    atualizarLabelCfg();
     lucide.createIcons({ nodes: [$('aba-config')] });
+
+    // Fecha ao clicar fora
+    setTimeout(() => {
+        document.addEventListener('click', _fecharCfgFora);
+    }, 10);
 }
 
-// Mantém estado de checked ao filtrar (por id) — resetado ao entrar na aba
-const _cfgChecked = new Set();
+function _fecharCfgFora(e) {
+    const wrap = $('cfgContasWrap');
+    if (wrap && !wrap.contains(e.target)) {
+        fecharCfgDropdown();
+        document.removeEventListener('click', _fecharCfgFora);
+    }
+}
+
+function toggleCfgDropdown() {
+    const dd = $('cfgContasDropdown');
+    if (dd.classList.contains('open')) fecharCfgDropdown();
+    else abrirCfgDropdown();
+}
+
+function abrirCfgDropdown() {
+    $('cfgContasDropdown').classList.add('open');
+    $('cfgContasBtn').classList.add('open');
+    setTimeout(() => $('cfgContasSearch').focus(), 50);
+}
+
+function fecharCfgDropdown() {
+    $('cfgContasDropdown').classList.remove('open');
+    $('cfgContasBtn').classList.remove('open');
+}
+
+function atualizarLabelCfg() {
+    const total = _todasContas.length;
+    const sel = _cfgChecked.size;
+    const lbl = $('cfgContasBtnLabel');
+    if (!lbl) return;
+    lbl.textContent =
+        sel === 0     ? 'Nenhuma conta selecionada' :
+        sel === total ? 'Todas as contas' :
+        `${sel} conta${sel>1?'s':''} selecionada${sel>1?'s':''}`;
+}
 
 function _renderCfgLista(q) {
-    const saved = JSON.parse(ls(ACCOUNTS_FILTER_KEY) || 'null');
-    // Inicializa set na primeira vez
-    if (_cfgChecked.size === 0) {
+    if (!_cfgInicializado) {
+        const saved = JSON.parse(ls(ACCOUNTS_FILTER_KEY) || 'null');
         _todasContas.forEach(c => { if (!saved || saved.includes(c.id)) _cfgChecked.add(c.id); });
+        _cfgInicializado = true;
     }
     const lista = q ? _todasContas.filter(c => c.name.toLowerCase().includes(q)) : _todasContas;
     if (!lista.length) {
@@ -1547,6 +1716,7 @@ function _renderCfgLista(q) {
 
 function _cfgToggle(el) {
     el.checked ? _cfgChecked.add(el.value) : _cfgChecked.delete(el.value);
+    atualizarLabelCfg();
 }
 
 function filtrarCfgContas() {
@@ -1558,6 +1728,7 @@ function salvarConfigContas() {
     const valor = _cfgChecked.size === _todasContas.length ? null : [..._cfgChecked];
     ls(ACCOUNTS_FILTER_KEY, JSON.stringify(valor));
     aplicarFiltroContas();
+    fecharCfgDropdown();
     const badge = $('cfgContasSalvo');
     badge.style.display = 'inline';
     setTimeout(() => badge.style.display = 'none', 2000);
@@ -1565,40 +1736,81 @@ function salvarConfigContas() {
 }
 
 function selecionarTodasContas() {
+    _cfgInicializado = true;
     _todasContas.forEach(c => _cfgChecked.add(c.id));
     filtrarCfgContas();
+    atualizarLabelCfg();
 }
 
 function desmarcarTodasContas() {
+    _cfgInicializado = true;
     _cfgChecked.clear();
     filtrarCfgContas();
+    atualizarLabelCfg();
 }
 
 // ── Share Links ───────────────────────────────────────────────────────────
 function renderShareLinks() {
     const area = $('shareLinksArea');
-    if (!_todasContas.length) {
-        area.innerHTML = '<p style="font-size:13px;color:var(--muted);">Nenhuma conta carregada. Acesse a aba Anúncios primeiro.</p>';
+    const lista = _contasVisiveis.length ? _contasVisiveis : _todasContas;
+    if (!lista.length) {
+        area.innerHTML = '<p style="font-size:13px;color:var(--muted);">Nenhuma conta disponível. Salve as contas na seção acima.</p>';
         return;
     }
-    area.innerHTML = _todasContas.map(c => `
+    area.innerHTML = lista.map(c => `
         <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);">
             <span style="font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(c.name)}</span>
             <button class="btn btn-primary btn-sm" onclick="gerarLinkCompartilhamento('${esc(c.id)}','${esc(c.name).replace(/'/g,"\\'")}')">
                 <i data-lucide="link" style="width:12px;"></i> Gerar Link
             </button>
         </div>
-        <div id="share-url-${esc(c.id)}" style="display:none;margin-top:8px;margin-bottom:4px;"></div>
+        <div id="share-url-${esc(c.id)}" style="display:none;margin-bottom:4px;"></div>
     `).join('');
     lucide.createIcons({ nodes: [area] });
 }
 
-async function gerarLinkCompartilhamento(accountId, accountName) {
+function gerarLinkCompartilhamento(accountId, accountName) {
+    _shareAccountId   = accountId;
+    _shareAccountName = accountName;
+    $('shareModalAcctName').textContent = accountName || accountId;
+    $('shareClientName').value = '';
+    // reset checkboxes to all checked
+    document.querySelectorAll('.share-metric-chk,.share-col-chk').forEach(c => c.checked = true);
+    document.querySelectorAll('#secCampanhas,#secDemograficos,#secMelhores').forEach(c => c.checked = true);
+    $('shareStatusFilter').value = 'ACTIVE';
+    $('shareModal').classList.add('open');
+    lucide.createIcons({ nodes: [$('shareModal')] });
+}
+
+function fecharShareModal(event) {
+    if (event && event.target !== $('shareModal')) return;
+    $('shareModal').classList.remove('open');
+}
+
+async function confirmarGerarLink() {
+    const btn = $('btnConfirmarShare');
+    btn.disabled = true;
+    btn.textContent = 'Gerando...';
+
     try {
+        const visible_sections = {
+            campanhas:         $('secCampanhas').checked,
+            demograficos:      $('secDemograficos').checked,
+            melhores_criativos: $('secMelhores').checked,
+        };
+        const visible_metrics = [...document.querySelectorAll('.share-metric-chk:checked')].map(c => c.value);
+        const visible_columns = [...document.querySelectorAll('.share-col-chk:checked')].map(c => c.value);
+        const status_filter   = $('shareStatusFilter').value;
+        const client_name     = $('shareClientName').value.trim() || null;
+
         const r = await authFetch('/api/share-create', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ account_id: accountId, account_name: accountName })
+            body: JSON.stringify({
+                account_id: _shareAccountId,
+                account_name: _shareAccountName,
+                client_name, visible_sections, visible_metrics, visible_columns, status_filter,
+            })
         });
         const data = await r.json();
         if (data.error) { toast(data.error, 'error'); return; }
@@ -1606,13 +1818,15 @@ async function gerarLinkCompartilhamento(accountId, accountName) {
         const url = `${location.origin}/share.html?token=${data.token}`;
         navigator.clipboard.writeText(url).catch(()=>{});
 
-        const box = $('share-url-' + accountId);
+        $('shareModal').classList.remove('open');
+
+        const box = $('share-url-' + _shareAccountId);
         if (box) {
             box.style.display = 'block';
             box.innerHTML = `
-                <div style="display:flex;align-items:center;gap:8px;background:var(--tag);border:1px solid var(--border);border-radius:8px;padding:8px 12px;">
+                <div style="display:flex;align-items:center;gap:8px;background:var(--tag);border:1px solid var(--border);border-radius:8px;padding:8px 12px;margin-top:4px;">
                     <span style="font-size:12px;color:var(--muted);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(url)}</span>
-                    <button class="btn btn-ghost btn-sm" onclick="navigator.clipboard.writeText('${esc(url)}');toast('Link copiado!','success')">
+                    <button class="btn btn-ghost btn-sm" onclick="navigator.clipboard.writeText('${esc(url)}');toast('Copiado!','success')">
                         <i data-lucide="copy" style="width:12px;"></i> Copiar
                     </button>
                 </div>`;
@@ -1621,6 +1835,10 @@ async function gerarLinkCompartilhamento(accountId, accountName) {
         toast('Link gerado e copiado!', 'success');
     } catch(e) {
         toast('Erro ao gerar link: ' + e.message, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i data-lucide="link" style="width:15px;display:inline-block;vertical-align:middle;margin-right:6px;"></i> Gerar e Copiar Link';
+        lucide.createIcons({ nodes: [btn] });
     }
 }
 
@@ -2456,6 +2674,37 @@ function renderMelhoresAnuncios() {
     $('btnMaisAds').style.display = restantes > 0 ? '' : 'none';
     $('bestAdsRestantes').textContent = restantes;
     lucide.createIcons({ nodes: [$('bestAdsGrid')] });
+    carregarBestThumbsHD(pagina);
+}
+
+const _bestHdCache = {}; // videoId → { source, thumbnail }
+async function carregarBestThumbsHD(ads) {
+    const videoAds = ads.filter(ad =>
+        (ad.creative?.object_type === 'VIDEO' || !!ad.creative?.video_id) && ad.creative?.video_id
+    );
+    for (let i = 0; i < videoAds.length; i += 5) {
+        await Promise.all(videoAds.slice(i, i + 5).map(async ad => {
+            const videoId = ad.creative.video_id;
+            if (_bestHdCache[videoId]) {
+                if (_bestHdCache[videoId].thumbnail) {
+                    const img = document.getElementById(`bestthumb-${ad.id}`);
+                    if (img) { img.src = _bestHdCache[videoId].thumbnail; ad.creative._hd_thumbnail = _bestHdCache[videoId].thumbnail; }
+                }
+                return;
+            }
+            try {
+                const r = await authFetch(`/api/video-source?videoId=${encodeURIComponent(videoId)}`);
+                const data = await r.json();
+                if (data.error) return;
+                _bestHdCache[videoId] = { source: data.source || null, thumbnail: data.thumbnail || null };
+                if (data.thumbnail) {
+                    ad.creative._hd_thumbnail = data.thumbnail;
+                    const img = document.getElementById(`bestthumb-${ad.id}`);
+                    if (img) img.src = data.thumbnail;
+                }
+            } catch { /* silencia */ }
+        }));
+    }
 }
 
 function renderAdCard(ad, rank, sortObj) {
@@ -2495,7 +2744,7 @@ function renderAdCard(ad, rank, sortObj) {
     ];
 
     const thumbHtml = thumb
-        ? `<img class="ad-card-thumb" src="${esc(thumb)}" onclick="abrirAdMedia('${esc(ad.id)}')" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" loading="lazy">
+        ? `<img class="ad-card-thumb" id="bestthumb-${esc(ad.id)}" src="${esc(thumb)}" onclick="abrirAdMedia('${esc(ad.id)}')" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" loading="lazy">
            <div class="ad-card-thumb-placeholder" style="display:none;" onclick="abrirAdMedia('${esc(ad.id)}')">🖼</div>`
         : `<div class="ad-card-thumb-placeholder" onclick="abrirAdMedia('${esc(ad.id)}')">🖼</div>`;
 
