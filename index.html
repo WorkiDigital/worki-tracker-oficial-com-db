@@ -563,6 +563,12 @@
             </select>
         </div>
 
+        <!-- Prazo de validade -->
+        <div class="input-group" style="margin-bottom:20px;">
+            <label>Prazo de validade <span style="color:var(--muted);font-weight:400">(opcional — vazio = permanente)</span></label>
+            <input type="date" id="shareExpiresAt" style="width:100%;background:var(--tag);border:1px solid var(--border);padding:10px 12px;border-radius:8px;color:var(--text);font-size:13px;outline:none;box-sizing:border-box;">
+        </div>
+
         <button class="btn-confirm" id="btnConfirmarShare" onclick="confirmarGerarLink()">
             <i data-lucide="link" style="width:15px;display:inline-block;vertical-align:middle;margin-right:6px;"></i>
             Gerar e Copiar Link
@@ -1810,23 +1816,67 @@ function desmarcarTodasContas() {
 }
 
 // ── Share Links ───────────────────────────────────────────────────────────
-function renderShareLinks() {
+async function renderShareLinks() {
     const area = $('shareLinksArea');
-    const lista = _contasVisiveis.length ? _contasVisiveis : _todasContas;
-    if (!lista.length) {
-        area.innerHTML = '<p style="font-size:13px;color:var(--muted);">Nenhuma conta disponível. Salve as contas na seção acima.</p>';
-        return;
+    area.innerHTML = '<p style="font-size:13px;color:var(--muted);">Carregando links...</p>';
+
+    try {
+        const r = await authFetch('/api/share-list');
+        const { tokens } = await r.json();
+
+        // Popula cache com tokens do banco
+        (tokens || []).forEach(t => {
+            _shareLinks[t.account_id] = {
+                token: t.token,
+                url: `${location.origin}/share.html?token=${t.token}`,
+                config: {
+                    client_name:      t.client_name,
+                    visible_sections: t.visible_sections,
+                    visible_metrics:  t.visible_metrics,
+                    visible_columns:  t.visible_columns,
+                    status_filter:    t.status_filter,
+                    expires_at:       t.expires_at,
+                },
+            };
+        });
+
+        const lista = _contasVisiveis.length ? _contasVisiveis : _todasContas;
+        if (!lista.length) {
+            area.innerHTML = '<p style="font-size:13px;color:var(--muted);">Nenhuma conta disponível. Salve as contas na seção acima.</p>';
+            return;
+        }
+
+        area.innerHTML = lista.map(c => {
+            const ex = _shareLinks[c.id];
+            const expiryLabel = ex?.config?.expires_at
+                ? `Expira: ${new Date(ex.config.expires_at).toLocaleDateString('pt-BR')}`
+                : ex ? 'Permanente' : '';
+            return `
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);">
+                <div style="min-width:0;flex:1;">
+                    <span style="font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;">${esc(c.name)}</span>
+                    ${expiryLabel ? `<span style="font-size:11px;color:var(--muted);">${expiryLabel}</span>` : ''}
+                </div>
+                <button class="btn btn-primary btn-sm" style="flex-shrink:0;" onclick="gerarLinkCompartilhamento('${esc(c.id)}','${esc(c.name).replace(/'/g,"\\'")}')">
+                    <i data-lucide="${ex ? 'settings-2' : 'link'}" style="width:12px;"></i>
+                    ${ex ? 'Editar Link' : 'Gerar Link'}
+                </button>
+            </div>
+            <div id="share-url-${esc(c.id)}" style="${ex ? '' : 'display:none;'}margin-bottom:4px;"></div>`;
+        }).join('');
+
+        // Renderiza caixas de links já existentes
+        lista.forEach(c => {
+            if (_shareLinks[c.id]) {
+                const box = $('share-url-' + c.id);
+                if (box) _renderShareBox(box, _shareLinks[c.id].url, c.id, c.name);
+            }
+        });
+
+        lucide.createIcons({ nodes: [area] });
+    } catch(e) {
+        area.innerHTML = `<p style="color:var(--red);font-size:13px;">Erro ao carregar links: ${e.message}</p>`;
     }
-    area.innerHTML = lista.map(c => `
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);">
-            <span style="font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(c.name)}</span>
-            <button class="btn btn-primary btn-sm" onclick="gerarLinkCompartilhamento('${esc(c.id)}','${esc(c.name).replace(/'/g,"\\'")}')">
-                <i data-lucide="link" style="width:12px;"></i> Gerar Link
-            </button>
-        </div>
-        <div id="share-url-${esc(c.id)}" style="display:none;margin-bottom:4px;"></div>
-    `).join('');
-    lucide.createIcons({ nodes: [area] });
 }
 
 function gerarLinkCompartilhamento(accountId, accountName) {
@@ -1846,6 +1896,7 @@ function gerarLinkCompartilhamento(accountId, accountName) {
         document.querySelectorAll('.share-metric-chk').forEach(chk => chk.checked = (c.visible_metrics||[]).includes(chk.value));
         document.querySelectorAll('.share-col-chk').forEach(chk => chk.checked = (c.visible_columns||[]).includes(chk.value));
         $('shareStatusFilter').value = c.status_filter || 'ACTIVE';
+        $('shareExpiresAt').value = c.expires_at ? c.expires_at.slice(0, 10) : '';
         $('btnConfirmarShare').innerHTML = '<i data-lucide="save" style="width:15px;display:inline-block;vertical-align:middle;margin-right:6px;"></i> Salvar Alterações';
     } else {
         // Modo criação — reset padrão
@@ -1853,6 +1904,7 @@ function gerarLinkCompartilhamento(accountId, accountName) {
         document.querySelectorAll('.share-metric-chk,.share-col-chk').forEach(c => c.checked = true);
         document.querySelectorAll('#secCampanhas,#secDemograficos,#secMelhores').forEach(c => c.checked = true);
         $('shareStatusFilter').value = 'ACTIVE';
+        $('shareExpiresAt').value = '';
         $('btnConfirmarShare').innerHTML = '<i data-lucide="link" style="width:15px;display:inline-block;vertical-align:middle;margin-right:6px;"></i> Gerar e Copiar Link';
     }
 
@@ -1881,7 +1933,8 @@ async function confirmarGerarLink() {
         const visible_columns = [...document.querySelectorAll('.share-col-chk:checked')].map(c => c.value);
         const status_filter   = $('shareStatusFilter').value;
         const client_name     = $('shareClientName').value.trim() || null;
-        const config          = { client_name, visible_sections, visible_metrics, visible_columns, status_filter };
+        const expires_at      = $('shareExpiresAt').value || null;
+        const config          = { client_name, visible_sections, visible_metrics, visible_columns, status_filter, expires_at };
 
         if (_shareEditToken) {
             // ── MODO EDIÇÃO — atualiza token existente ──────────────
@@ -1897,6 +1950,7 @@ async function confirmarGerarLink() {
             _shareLinks[_shareAccountId].config = config;
             $('shareModal').classList.remove('open');
             toast('Configurações atualizadas!', 'success');
+            renderShareLinks();
 
         } else {
             // ── MODO CRIAÇÃO — gera novo token ──────────────────────
@@ -1919,14 +1973,8 @@ async function confirmarGerarLink() {
             _shareLinks[_shareAccountId] = { token: data.token, url, config };
 
             $('shareModal').classList.remove('open');
-
-            const box = $('share-url-' + _shareAccountId);
-            if (box) {
-                box.style.display = 'block';
-                _renderShareBox(box, url, _shareAccountId, _shareAccountName);
-                lucide.createIcons({ nodes: [box] });
-            }
             toast('Link gerado e copiado!', 'success');
+            renderShareLinks();
         }
     } catch(e) {
         toast('Erro: ' + e.message, 'error');

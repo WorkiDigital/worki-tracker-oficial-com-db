@@ -21,6 +21,7 @@ export default async function handler(req, res) {
     visible_metrics,
     visible_columns,
     status_filter,
+    expires_at,
   } = JSON.parse(body || '{}');
 
   if (!account_id) return res.status(400).json({ error: 'account_id required' });
@@ -39,8 +40,7 @@ export default async function handler(req, res) {
   const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
   const token = randomUUID();
 
-  const expiresAt = new Date();
-  expiresAt.setFullYear(expiresAt.getFullYear() + 1); // expira em 1 ano
+  const expiresAt = expires_at ? new Date(expires_at).toISOString() : null;
 
   const { error } = await sb.from('share_tokens').insert({
     token,
@@ -52,7 +52,7 @@ export default async function handler(req, res) {
     visible_metrics: visible_metrics || null,
     visible_columns: visible_columns || null,
     status_filter: status_filter || 'ACTIVE',
-    expires_at: expiresAt.toISOString(),
+    expires_at: expiresAt,
   });
 
   if (error) return res.status(500).json({ error: error.message });

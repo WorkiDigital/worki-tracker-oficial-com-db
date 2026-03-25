@@ -13,15 +13,20 @@ export default async function handler(req, res) {
   let body = '';
   await new Promise(r => { req.on('data', d => body += d); req.on('end', r); });
 
-  const { token, client_name, visible_sections, visible_metrics, visible_columns, status_filter } = JSON.parse(body || '{}');
+  const { token, client_name, visible_sections, visible_metrics, visible_columns, status_filter, expires_at } = JSON.parse(body || '{}');
 
   if (!token) return res.status(400).json({ error: 'token required' });
 
   const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 
+  const updatePayload = { client_name, visible_sections, visible_metrics, visible_columns, status_filter };
+  if (expires_at !== undefined) {
+    updatePayload.expires_at = expires_at === '' ? null : (expires_at ? new Date(expires_at).toISOString() : null);
+  }
+
   const { data, error } = await sb
     .from('share_tokens')
-    .update({ client_name, visible_sections, visible_metrics, visible_columns, status_filter })
+    .update(updatePayload)
     .eq('token', token)
     .eq('user_id', user.id)
     .select('token')
