@@ -43,23 +43,6 @@ export default async function handler(req, res) {
       next = data.paging?.next || null;
     }
 
-    // Enriquecer criativos de vídeo com thumbnail HD + source (em paralelo, até 10 por vez)
-    const videoAds = todos.filter(ad => ad.creative?.video_id);
-    for (let i = 0; i < videoAds.length; i += 10) {
-      await Promise.all(videoAds.slice(i, i + 10).map(async ad => {
-        try {
-          const vUrl = `https://graph.facebook.com/v20.0/${ad.creative.video_id}?fields=source,thumbnails{uri,height,width}&access_token=${metaToken}`;
-          const vr = await fetch(vUrl);
-          const vd = await vr.json();
-          if (vd.error) return;
-          const thumbs = vd.thumbnails?.data || [];
-          const best = thumbs.reduce((b, t) => (!b || t.height > b.height) ? t : b, null);
-          if (best?.uri) ad.creative._hd_thumbnail = best.uri;
-          if (vd.source)  ad.creative._video_source = vd.source;
-        } catch { /* ignora erro individual */ }
-      }));
-    }
-
     return res.status(200).json({ data: todos });
   } catch (e) {
     return res.status(500).json({ error: e.message });

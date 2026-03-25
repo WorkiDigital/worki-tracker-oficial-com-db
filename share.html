@@ -837,7 +837,7 @@ async function carregarThumbsHD(visible) {
                 if (!resp.ok) return;
                 const data = await resp.json();
                 if (data.error) return;
-                _videoDataMap[videoId] = { source: data.source || null, thumbnail: data.thumbnail || null };
+                _videoDataMap[videoId] = { source: data.source || null, thumbnail: data.thumbnail || null, permalink_url: data.permalink_url || null };
                 if (data.thumbnail) {
                     const img = $(`adthumb-${idx}`);
                     if (img) img.src = data.thumbnail;
@@ -866,11 +866,17 @@ async function abrirMedia(idx) {
     }
 
     const videoId = creative.video_id;
-    const hdThumb = creative._hd_thumbnail || creative.thumbnail_url || creative.image_url || '';
+    const hdThumb = creative.thumbnail_url || creative.image_url || '';
 
-    // Se já temos source no criativo (pré-carregado pelo servidor), abre direto
-    if (creative._video_source) {
-        _mostrarVideoPlayer(content, creative._video_source, hdThumb);
+    if (!videoId) {
+        content.innerHTML = `<img class="ad-media-img" src="${esc(hdThumb)}" alt="${esc(name)}">`;
+        return;
+    }
+
+    // Se já temos em cache (carregarThumbsHD já buscou), usa direto
+    let cached = _videoDataMap[videoId];
+    if (cached?.source) {
+        _mostrarVideoPlayer(content, cached.source, cached.thumbnail || hdThumb);
         return;
     }
 
@@ -884,19 +890,12 @@ async function abrirMedia(idx) {
             </div>
         </div>`;
 
-    if (!videoId) {
-        content.innerHTML = `<div style="color:rgba(255,255,255,.7);padding:40px;text-align:center;font-size:14px">Vídeo não disponível para este criativo</div>`;
-        return;
-    }
-
-    // Busca source via share-video (fallback quando servidor não pré-carregou)
-    let cached = _videoDataMap[videoId];
     if (!cached) {
         try {
             const resp = await fetch(`/api/share-video?token=${TOKEN}&videoId=${videoId}`);
             const data = await resp.json();
             if (!data.error) {
-                _videoDataMap[videoId] = { source: data.source || null, thumbnail: data.thumbnail || null };
+                _videoDataMap[videoId] = { source: data.source || null, thumbnail: data.thumbnail || null, permalink_url: data.permalink_url || null };
                 cached = _videoDataMap[videoId];
             }
         } catch { /* ignora */ }
@@ -906,8 +905,17 @@ async function abrirMedia(idx) {
 
     const source = cached?.source;
     const finalThumb = cached?.thumbnail || hdThumb;
+    const permalink = cached?.permalink_url;
+
     if (source) {
         _mostrarVideoPlayer(content, source, finalThumb);
+    } else if (permalink) {
+        content.innerHTML = `
+            <div style="display:flex;flex-direction:column;align-items:center;gap:16px;padding:40px;text-align:center">
+                ${finalThumb ? `<img src="${esc(finalThumb)}" style="max-width:300px;border-radius:8px;opacity:.8">` : ''}
+                <div style="color:rgba(255,255,255,.7);font-size:13px">Reprodução direta indisponível</div>
+                <a href="${esc(permalink)}" target="_blank" style="background:#3b82f6;color:#fff;padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none">Ver vídeo no Facebook ↗</a>
+            </div>`;
     } else {
         content.innerHTML = `<div style="color:rgba(255,255,255,.7);padding:40px;text-align:center;font-size:14px">Vídeo não disponível para este criativo</div>`;
     }
