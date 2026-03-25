@@ -65,8 +65,6 @@
         .ads-metric { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:12px 8px; text-align:center; animation:fadeUp .4s ease; }
         .ads-metric-val { font-size:20px; font-weight:700; margin-bottom:4px; }
         .ads-metric-lbl { font-size:12px; color:var(--muted); font-weight:600; }
-        .ads-metric--highlight { grid-column:span 2; border-color:rgba(16,185,129,.3); background:rgba(16,185,129,.05); }
-        .ads-metric--highlight .ads-metric-val { font-size:28px; }
 
         /* Card / Table */
         .card { background:var(--card); border-radius:12px; border:1px solid var(--border); overflow:hidden; animation:fadeUp .4s ease; margin-bottom:24px; }
@@ -611,7 +609,7 @@ function renderSummaryMetrics() {
     ].filter(c => allowed.includes(c.key));
 
     $('summaryMetrics').innerHTML = ALL_CARDS.map((c,i) => `
-        <div class="ads-metric${c.key === 'spend' ? ' ads-metric--highlight' : ''}" style="animation-delay:${i*.05}s">
+        <div class="ads-metric" style="animation-delay:${i*.05}s">
             <div class="ads-metric-val" style="color:${c.color}">${c.value}</div>
             <div class="ads-metric-lbl">${c.label}</div>
         </div>
@@ -978,14 +976,32 @@ async function abrirMedia(idx) {
     if (source) {
         _mostrarVideoPlayer(content, source, finalThumb);
     } else if (permalink) {
+        const isEmbeddable = /^https?:\/\/(www\.|web\.)?facebook\.com\/.+/i.test(permalink);
+        if (isEmbeddable) {
+            const embedSrc = `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(permalink)}&show_text=0&mute=0`;
+            content.innerHTML = `
+                <iframe
+                    src="${embedSrc}"
+                    style="width:100%;aspect-ratio:16/9;border:none;border-radius:8px;background:#000;"
+                    allowfullscreen
+                    allow="autoplay; clipboard-write; encrypted-media; picture-in-picture">
+                </iframe>`;
+        } else {
+            content.innerHTML = `
+                <div style="display:flex;flex-direction:column;align-items:center;gap:16px;padding:40px;text-align:center">
+                    ${finalThumb ? `<img src="${esc(finalThumb)}" style="max-width:300px;border-radius:8px;opacity:.8">` : ''}
+                    <div style="color:rgba(255,255,255,.7);font-size:13px">Reprodução direta indisponível</div>
+                    <a href="${esc(permalink)}" target="_blank" style="background:#3b82f6;color:#fff;padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none">Ver vídeo no Facebook ↗</a>
+                </div>`;
+        }
+    } else {
+        const fbLink = videoId ? `https://www.facebook.com/watch/?v=${videoId}` : null;
         content.innerHTML = `
             <div style="display:flex;flex-direction:column;align-items:center;gap:16px;padding:40px;text-align:center">
                 ${finalThumb ? `<img src="${esc(finalThumb)}" style="max-width:300px;border-radius:8px;opacity:.8">` : ''}
-                <div style="color:rgba(255,255,255,.7);font-size:13px">Reprodução direta indisponível</div>
-                <a href="${esc(permalink)}" target="_blank" style="background:#3b82f6;color:#fff;padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none">Ver vídeo no Facebook ↗</a>
+                <div style="color:rgba(255,255,255,.7);font-size:13px">Vídeo não disponível para reprodução direta</div>
+                ${fbLink ? `<a href="${fbLink}" target="_blank" style="background:#3b82f6;color:#fff;padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none">Ver no Facebook ↗</a>` : ''}
             </div>`;
-    } else {
-        content.innerHTML = `<div style="color:rgba(255,255,255,.7);padding:40px;text-align:center;font-size:14px">Vídeo não disponível para este criativo</div>`;
     }
 }
 
