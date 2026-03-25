@@ -38,7 +38,10 @@ export default async function handler(req, res) {
   if (!VALID.includes(breakdown))
     return res.status(400).json({ error: 'breakdown inválido' });
 
-  const fields = 'spend,impressions,clicks,actions';
+  // platform_position não pode ser combinado com actions (action_type conflict)
+  const fields = breakdown === 'platform_position'
+    ? 'spend,impressions,clicks'
+    : 'spend,impressions,clicks,actions';
 
   // Filtro por campanhas (quando usuário aplica filtros)
   let filtering = '';

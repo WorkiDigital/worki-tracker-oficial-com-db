@@ -23,7 +23,10 @@ export default async function handler(req, res) {
   const metaToken = process.env.META_ADS_TOKEN;
   if (!metaToken) return res.status(500).json({ error: 'META_ADS_TOKEN not configured' });
 
-  const fields = 'spend,impressions,clicks,actions';
+  // platform_position não pode ser combinado com actions (action_type conflict)
+  const fields = breakdown === 'platform_position'
+    ? 'spend,impressions,clicks'
+    : 'spend,impressions,clicks,actions';
 
   let filtering = '';
   if (campaignIds) {
