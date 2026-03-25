@@ -7,7 +7,7 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   const VALID_PRESETS = ['today','yesterday','last_7d','last_14d','last_30d','this_month','last_month','maximum'];
-  const VALID_BREAKDOWNS = ['age', 'gender', 'publisher_platform', 'impression_device', 'platform_position'];
+  const VALID_BREAKDOWNS = ['age', 'gender', 'publisher_platform', 'impression_device'];
   const { token, datePreset = 'today', breakdown = 'age', campaignIds = '' } = req.query;
   if (!token) return res.status(400).json({ error: 'token required' });
   if (!VALID_PRESETS.includes(datePreset)) return res.status(400).json({ error: 'datePreset inválido' });
@@ -23,10 +23,7 @@ export default async function handler(req, res) {
   const metaToken = process.env.META_ADS_TOKEN;
   if (!metaToken) return res.status(500).json({ error: 'META_ADS_TOKEN not configured' });
 
-  // platform_position não pode ser combinado com actions (action_type conflict)
-  const fields = breakdown === 'platform_position'
-    ? 'spend,impressions,clicks'
-    : 'spend,impressions,clicks,actions';
+  const fields = 'spend,impressions,clicks,actions';
 
   let filtering = '';
   if (campaignIds) {
