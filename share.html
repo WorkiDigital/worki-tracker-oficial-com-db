@@ -676,44 +676,21 @@ function renderAllDemos(demoDataArr) {
 }
 
 function renderDemoCard(breakdown, data, period) {
-    const isPosition = breakdown.key === 'platform_position';
+    const totalSpend = data.reduce((a, d) => a + (parseFloat(d.spend) || 0), 0);
+    if (totalSpend === 0) return;
 
-    let top, total, getValue, getLabel, getLegendVal, tooltipFn;
+    const sorted = [...data].sort((a, b) => (parseFloat(b.spend) || 0) - (parseFloat(a.spend) || 0));
+    const top = sorted.slice(0, 8);
+    const total = totalSpend;
 
-    if (isPosition) {
-        const withRes = data.map(d => ({ ...d, _r: getDemoResults(d) }));
-        const hasResults = withRes.some(d => d._r > 0);
-        // Se tiver resultados, ordena por resultados; senão, cai no gasto
-        if (hasResults) {
-            const sorted = withRes.filter(d => d._r > 0).sort((a, b) => b._r - a._r);
-            top = sorted.slice(0, 8);
-            total = top.reduce((s, d) => s + d._r, 0);
-            getValue  = d => d._r;
-            getLabel  = d => POSITION_LABELS[d[breakdown.key]] || d[breakdown.key] || '—';
-            getLegendVal = d => `${Math.round(d._r)} result.`;
-            tooltipFn = ctx => ` ${Math.round(ctx.raw)} resultados`;
-        } else {
-            const totalSpend = data.reduce((a, d) => a + (parseFloat(d.spend) || 0), 0);
-            if (totalSpend === 0) return;
-            const sorted = [...data].sort((a, b) => (parseFloat(b.spend) || 0) - (parseFloat(a.spend) || 0));
-            top = sorted.slice(0, 8);
-            total = totalSpend;
-            getValue  = d => parseFloat(d.spend) || 0;
-            getLabel  = d => POSITION_LABELS[d[breakdown.key]] || d[breakdown.key] || '—';
-            getLegendVal = d => `${total > 0 ? ((getValue(d) / total) * 100).toFixed(1) : '0.0'}%`;
-            tooltipFn = ctx => ` ${fmtBRL(ctx.raw)}`;
-        }
-    } else {
-        const totalSpend = data.reduce((a, d) => a + (parseFloat(d.spend) || 0), 0);
-        if (totalSpend === 0) return;
-        const sorted = [...data].sort((a, b) => (parseFloat(b.spend) || 0) - (parseFloat(a.spend) || 0));
-        top = sorted.slice(0, 8);
-        total = totalSpend;
-        getValue  = d => parseFloat(d.spend) || 0;
-        getLabel  = d => breakdown.key === 'gender' ? (d.gender === 'male' ? 'Masculino' : 'Feminino') : (d[breakdown.key] || d.age || d.gender || '—');
-        getLegendVal = d => `${total > 0 ? ((getValue(d) / total) * 100).toFixed(1) : '0.0'}%`;
-        tooltipFn = ctx => ` ${fmtBRL(ctx.raw)}`;
-    }
+    const getValue    = d => parseFloat(d.spend) || 0;
+    const getLabel    = d => {
+        if (breakdown.key === 'platform_position') return POSITION_LABELS[d[breakdown.key]] || d[breakdown.key] || '—';
+        if (breakdown.key === 'gender') return d.gender === 'male' ? 'Masculino' : 'Feminino';
+        return d[breakdown.key] || d.age || d.gender || '—';
+    };
+    const getLegendVal = d => `${total > 0 ? ((getValue(d) / total) * 100).toFixed(1) : '0.0'}%`;
+    const tooltipFn   = ctx => ` ${fmtBRL(ctx.raw)}`;
 
     const card = document.createElement('div');
     card.className = 'demo-card';
@@ -742,7 +719,7 @@ function renderDemoCard(breakdown, data, period) {
         if (_demoCharts[breakdown.key]) { _demoCharts[breakdown.key].destroy(); }
         const labels = top.map(d => {
             if (breakdown.key === 'gender') return d.gender === 'male' ? 'Masc' : 'Fem';
-            if (isPosition) return POSITION_LABELS[d[breakdown.key]] || String(d[breakdown.key] || '—').substring(0, 12);
+            if (breakdown.key === 'platform_position') return POSITION_LABELS[d[breakdown.key]] || String(d[breakdown.key] || '—').substring(0, 12);
             return String(d[breakdown.key] || d.age || d.gender || '—').substring(0, 12);
         });
         _demoCharts[breakdown.key] = new Chart(ctx, {
