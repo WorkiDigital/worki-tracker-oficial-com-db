@@ -462,7 +462,7 @@ async function carregarMelhoresAnuncios() {
 }
 
 function skeletonDemo() {
-    return Array(4).fill(0).map(() => `
+    return Array(DEMO_BREAKDOWNS.length).fill(0).map(() => `
         <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;display:flex;flex-direction:column;align-items:center;gap:10px;">
             <div style="height:12px;width:80px;background:var(--border);border-radius:4px;animation:pulse 1.5s infinite;"></div>
             <div style="width:120px;height:120px;border-radius:50%;background:var(--border);animation:pulse 1.5s infinite;"></div>
@@ -681,15 +681,28 @@ function renderDemoCard(breakdown, data, period) {
     let top, total, getValue, getLabel, getLegendVal, tooltipFn;
 
     if (isPosition) {
-        const withRes = data.map(d => ({ ...d, _r: getDemoResults(d) })).filter(d => d._r > 0);
-        if (withRes.length === 0) return;
-        const sorted = withRes.sort((a, b) => b._r - a._r);
-        top = sorted.slice(0, 8);
-        total = top.reduce((s, d) => s + d._r, 0);
-        getValue  = d => d._r;
-        getLabel  = d => POSITION_LABELS[d[breakdown.key]] || d[breakdown.key] || '—';
-        getLegendVal = d => `${Math.round(d._r)} result.`;
-        tooltipFn = ctx => ` ${Math.round(ctx.raw)} resultados`;
+        const withRes = data.map(d => ({ ...d, _r: getDemoResults(d) }));
+        const hasResults = withRes.some(d => d._r > 0);
+        // Se tiver resultados, ordena por resultados; senão, cai no gasto
+        if (hasResults) {
+            const sorted = withRes.filter(d => d._r > 0).sort((a, b) => b._r - a._r);
+            top = sorted.slice(0, 8);
+            total = top.reduce((s, d) => s + d._r, 0);
+            getValue  = d => d._r;
+            getLabel  = d => POSITION_LABELS[d[breakdown.key]] || d[breakdown.key] || '—';
+            getLegendVal = d => `${Math.round(d._r)} result.`;
+            tooltipFn = ctx => ` ${Math.round(ctx.raw)} resultados`;
+        } else {
+            const totalSpend = data.reduce((a, d) => a + (parseFloat(d.spend) || 0), 0);
+            if (totalSpend === 0) return;
+            const sorted = [...data].sort((a, b) => (parseFloat(b.spend) || 0) - (parseFloat(a.spend) || 0));
+            top = sorted.slice(0, 8);
+            total = totalSpend;
+            getValue  = d => parseFloat(d.spend) || 0;
+            getLabel  = d => POSITION_LABELS[d[breakdown.key]] || d[breakdown.key] || '—';
+            getLegendVal = d => `${total > 0 ? ((getValue(d) / total) * 100).toFixed(1) : '0.0'}%`;
+            tooltipFn = ctx => ` ${fmtBRL(ctx.raw)}`;
+        }
     } else {
         const totalSpend = data.reduce((a, d) => a + (parseFloat(d.spend) || 0), 0);
         if (totalSpend === 0) return;
