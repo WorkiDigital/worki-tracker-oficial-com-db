@@ -800,6 +800,7 @@
                                     <label class="metrics-cfg-item"><input type="checkbox" id="demoCfgGender" onchange="toggleDemoBreakdown('gender',this.checked)"> Gênero</label>
                                     <label class="metrics-cfg-item"><input type="checkbox" id="demoCfgPlat"   onchange="toggleDemoBreakdown('plat',this.checked)"> Plataforma</label>
                                     <label class="metrics-cfg-item"><input type="checkbox" id="demoCfgDev"    onchange="toggleDemoBreakdown('dev',this.checked)"> Dispositivo</label>
+                                    <label class="metrics-cfg-item"><input type="checkbox" id="demoCfgPos"    onchange="toggleDemoBreakdown('pos',this.checked)"> Posicionamento</label>
                                 </div>
                             </div>
                             <div>
@@ -835,6 +836,11 @@
                             <div class="demo-card-title"><i data-lucide="smartphone" style="width:13px;color:#10b981;"></i> Dispositivo</div>
                             <div class="demo-canvas-wrap"><canvas id="dDev"></canvas></div>
                             <div class="demo-legend" id="lDev"></div>
+                        </div>
+                        <div class="demo-card">
+                            <div class="demo-card-title"><i data-lucide="map-pin" style="width:13px;color:#f43f5e;"></i> Posicionamento</div>
+                            <div class="demo-canvas-wrap"><canvas id="dPos"></canvas></div>
+                            <div class="demo-legend" id="lPos"></div>
                         </div>
                     </div>
                 </div>
@@ -2001,7 +2007,7 @@ function salvarMetricsCfg() {
 
 // ── Configuração demográficos ──────────────────────────────────
 const DEMO_CFG_KEY = 'wt_demo_cfg';
-let demoCfg = { breakdowns:{ age:true, gender:true, plat:true, dev:true }, style:'doughnut' };
+let demoCfg = { breakdowns:{ age:true, gender:true, plat:true, dev:true, pos:true }, style:'doughnut' };
 
 function carregarDemoCfg() {
     const saved = JSON.parse(localStorage.getItem(DEMO_CFG_KEY) || 'null');
@@ -2022,12 +2028,13 @@ function sincronizarDemoCfgUI() {
     chk('demoCfgGender', demoCfg.breakdowns.gender);
     chk('demoCfgPlat',   demoCfg.breakdowns.plat);
     chk('demoCfgDev',    demoCfg.breakdowns.dev);
+    chk('demoCfgPos',    demoCfg.breakdowns.pos);
     document.querySelectorAll('input[name="demoStyle"]').forEach(r => { r.checked = r.value === demoCfg.style; });
     aplicarDemoCfg();
 }
 
 function aplicarDemoCfg() {
-    const map = { age:'dAge', gender:'dGender', plat:'dPlat', dev:'dDev' };
+    const map = { age:'dAge', gender:'dGender', plat:'dPlat', dev:'dDev', pos:'dPos' };
     Object.keys(map).forEach(k => {
         const card = document.querySelector(`#demo-grid .demo-card:nth-child(${Object.keys(map).indexOf(k)+1})`);
         if (card) card.style.display = demoCfg.breakdowns[k] ? '' : 'none';
@@ -2242,21 +2249,22 @@ async function carregarDemograficos(campaignIds = '') {
     const qs = `accountId=${encodeURIComponent(accountId)}&datePreset=${encodeURIComponent(datePreset)}${campaignIds ? '&campaignIds=' + encodeURIComponent(campaignIds) : ''}`;
 
     try {
-        // 4 breakdowns em paralelo
-        const [resAge, resGender, resPlat, resDev] = await Promise.all([
+        // 5 breakdowns em paralelo
+        const [resAge, resGender, resPlat, resDev, resPos] = await Promise.all([
             authFetch(`/api/ads-demo?breakdown=age&${qs}`).then(r=>r.json()),
             authFetch(`/api/ads-demo?breakdown=gender&${qs}`).then(r=>r.json()),
             authFetch(`/api/ads-demo?breakdown=publisher_platform&${qs}`).then(r=>r.json()),
             authFetch(`/api/ads-demo?breakdown=impression_device&${qs}`).then(r=>r.json()),
+            authFetch(`/api/ads-demo?breakdown=platform_position&${qs}`).then(r=>r.json()),
         ]);
 
         // Verifica erro
-        for (const d of [resAge, resGender, resPlat, resDev]) {
+        for (const d of [resAge, resGender, resPlat, resDev, resPos]) {
             if (d?.error) throw new Error(d.error);
         }
 
         // Mostra aviso se API fez fallback para "maximum" (sem dados no período)
-        const usedFallback = [resAge, resGender, resPlat, resDev].some(r => r.period === 'maximum');
+        const usedFallback = [resAge, resGender, resPlat, resDev, resPos].some(r => r.period === 'maximum');
         const statusTxt = $('demo-status-txt');
         if (usedFallback) {
             statusTxt.textContent = '⚠ Sem dados no período — exibindo todo o histórico';
@@ -2271,6 +2279,7 @@ async function carregarDemograficos(campaignIds = '') {
             gender: resGender.data || [],
             plat:   resPlat.data   || [],
             dev:    resDev.data    || [],
+            pos:    resPos.data    || [],
         };
         window._demoData = demoData;
         renderDemoGraficos(demoData);
@@ -2298,16 +2307,23 @@ const DEMO_LABELS = {
     audience_network:'Aud. Network', whatsapp:'WhatsApp',
     mobile_app:'App Mobile', desktop:'Desktop', mobile_web:'Web Mobile',
     tablet:'Tablet', connected_tv:'TV',
+    // platform_position
+    feed:'Feed', reels:'Reels', story:'Stories',
+    right_hand_column:'Col. Direita', search:'Busca',
+    marketplace:'Marketplace', video_feeds:'Feed de Vídeos',
+    instagram_explore:'Explorar (IG)', instagram_explore_grid_home:'Explore Home',
+    instream_video:'In-Stream', an_classic:'Aud. Network',
 };
 
 const DEMO_CORES = ['#0ea5e9','#8b5cf6','#10b981','#f59e0b','#ef4444','#ec4899','#06b6d4','#f97316'];
 
-function renderDemoGraficos({ age, gender, plat, dev }) {
+function renderDemoGraficos({ age, gender, plat, dev, pos }) {
     const configs = [
         { canvas:'dAge',    legend:'lAge',    data:age,    key:'age',                  bdKey:'age'    },
         { canvas:'dGender', legend:'lGender', data:gender, key:'gender',               bdKey:'gender' },
         { canvas:'dPlat',   legend:'lPlat',   data:plat,   key:'publisher_platform',   bdKey:'plat'   },
         { canvas:'dDev',    legend:'lDev',    data:dev,    key:'impression_device',     bdKey:'dev'    },
+        { canvas:'dPos',    legend:'lPos',    data:pos,    key:'platform_position',     bdKey:'pos'    },
     ];
 
     const isBar = demoCfg.style === 'bar';

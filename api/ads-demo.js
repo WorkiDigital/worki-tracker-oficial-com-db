@@ -34,7 +34,7 @@ export default async function handler(req, res) {
   if (!token)     return res.status(500).json({ error: 'META_ADS_TOKEN not configured' });
   if (!accountId) return res.status(400).json({ error: 'accountId is required' });
 
-  const VALID = ['age', 'gender', 'publisher_platform', 'impression_device'];
+  const VALID = ['age', 'gender', 'publisher_platform', 'impression_device', 'platform_position'];
   if (!VALID.includes(breakdown))
     return res.status(400).json({ error: 'breakdown inválido' });
 
