@@ -333,7 +333,16 @@ const DEMO_BREAKDOWNS = [
     { key:'gender',             label:'Gênero',         icon:'⚥' },
     { key:'publisher_platform', label:'Plataforma',     icon:'📱' },
     { key:'impression_device',  label:'Dispositivo',    icon:'💻' },
+    { key:'platform_position',  label:'Posicionamento', icon:'📍' },
 ];
+
+const POSITION_LABELS = {
+    feed:'Feed', reels:'Reels', story:'Stories',
+    right_hand_column:'Col. Direita', search:'Busca',
+    marketplace:'Marketplace', video_feeds:'Feed de Vídeos',
+    instagram_explore:'Explorar (IG)', instagram_explore_grid_home:'Explore Home',
+    instream_video:'In-Stream', an_classic:'Aud. Network',
+};
 
 const DEMO_COLORS = [
     '#3b82f6','#10b981','#f59e0b','#8b5cf6','#ec4899','#06b6d4','#ef4444','#84cc16'
@@ -394,7 +403,9 @@ async function carregarTudo() {
         // ── Fase 2: demos em background ────────────────────────────
         const demoResps = await Promise.all(
             DEMO_BREAKDOWNS.map(b => showDemo
-                ? fetch(`/api/share-demo?token=${TOKEN}&datePreset=${datePreset}&breakdown=${b.key}`)
+                ? (b.key === 'platform_position'
+                    ? fetch(`/api/share-placement?token=${TOKEN}&datePreset=${datePreset}`)
+                    : fetch(`/api/share-demo?token=${TOKEN}&datePreset=${datePreset}&breakdown=${b.key}`))
                 : Promise.resolve(null)
             )
         );
@@ -670,7 +681,8 @@ function renderDemoCard(breakdown, data, period) {
             ${top.map((d,i) => {
                 const spend = parseFloat(d.spend)||0;
                 const pct = totalSpend > 0 ? (spend/totalSpend*100).toFixed(1) : '0.0';
-                const label = breakdown.key==='gender' ? (d.gender==='male'?'Masculino':'Feminino') : (d[breakdown.key]||d.age||d.gender||'—');
+                const rawLabel = d[breakdown.key]||d.age||d.gender||'—';
+                const label = breakdown.key==='gender' ? (d.gender==='male'?'Masculino':'Feminino') : (breakdown.key==='platform_position' ? (POSITION_LABELS[rawLabel]||rawLabel) : rawLabel);
                 return `<div class="demo-legend-row">
                     <div class="demo-legend-left">
                         <div class="demo-legend-dot" style="background:${DEMO_COLORS[i%DEMO_COLORS.length]}"></div>
@@ -690,7 +702,9 @@ function renderDemoCard(breakdown, data, period) {
         if (_demoCharts[breakdown.key]) { _demoCharts[breakdown.key].destroy(); }
         const labels = top.map(d => {
             if (breakdown.key==='gender') return d.gender==='male'?'Masc':'Fem';
-            return String(d[breakdown.key]||d.age||d.gender||'—').substring(0,12);
+            const raw = String(d[breakdown.key]||d.age||d.gender||'—');
+            if (breakdown.key==='platform_position') return (POSITION_LABELS[raw]||raw).substring(0,12);
+            return raw.substring(0,12);
         });
         _demoCharts[breakdown.key] = new Chart(ctx, {
             type: 'doughnut',
