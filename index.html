@@ -1859,27 +1859,25 @@ async function renderShareLinks() {
             const expiryLabel = ex?.config?.expires_at
                 ? `Expira: ${new Date(ex.config.expires_at).toLocaleDateString('pt-BR')}`
                 : ex ? 'Permanente' : '';
+            const url = ex ? ex.url : '';
             return `
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);">
+            <div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border);">
                 <div style="min-width:0;flex:1;">
-                    <span style="font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;">${esc(c.name)}</span>
-                    ${expiryLabel ? `<span style="font-size:11px;color:var(--muted);">${expiryLabel}</span>` : ''}
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:${ex ? '3px' : '0'};">
+                        <span style="font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(c.name)}</span>
+                        ${expiryLabel ? `<span style="font-size:11px;color:var(--muted);background:var(--tag);padding:2px 7px;border-radius:20px;white-space:nowrap;flex-shrink:0;">${expiryLabel}</span>` : ''}
+                    </div>
+                    ${ex ? `<span style="font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;">${esc(url)}</span>` : ''}
                 </div>
-                <button class="btn btn-primary btn-sm" style="flex-shrink:0;" onclick="gerarLinkCompartilhamento('${esc(c.id)}','${esc(c.name).replace(/'/g,"\\'")}')">
-                    <i data-lucide="${ex ? 'settings-2' : 'link'}" style="width:12px;"></i>
-                    ${ex ? 'Editar Link' : 'Gerar Link'}
-                </button>
-            </div>
-            <div id="share-url-${esc(c.id)}" style="${ex ? '' : 'display:none;'}margin-bottom:4px;"></div>`;
+                <div style="display:flex;gap:6px;flex-shrink:0;">
+                    ${ex ? `<button class="btn btn-ghost btn-sm" onclick="navigator.clipboard.writeText('${esc(url)}');toast('Copiado!','success')" title="Copiar link"><i data-lucide="copy" style="width:12px;"></i></button>` : ''}
+                    <button class="btn ${ex ? 'btn-ghost' : 'btn-primary'} btn-sm" onclick="gerarLinkCompartilhamento('${esc(c.id)}','${esc(c.name).replace(/'/g,"\\'")}')">
+                        <i data-lucide="${ex ? 'settings-2' : 'link'}" style="width:12px;"></i>
+                        ${ex ? 'Editar' : 'Gerar Link'}
+                    </button>
+                </div>
+            </div>`;
         }).join('');
-
-        // Renderiza caixas de links já existentes
-        lista.forEach(c => {
-            if (_shareLinks[c.id]) {
-                const box = $('share-url-' + c.id);
-                if (box) _renderShareBox(box, _shareLinks[c.id].url, c.id, c.name);
-            }
-        });
 
         lucide.createIcons({ nodes: [area] });
     } catch(e) {
