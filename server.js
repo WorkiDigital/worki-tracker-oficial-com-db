@@ -41,6 +41,13 @@ const server = http.createServer(async (req, res) => {
     const url = new URL(req.url, `http://localhost`);
     const pathname = url.pathname;
 
+    // Health check para EasyPanel / Docker
+    if (pathname === '/health' || pathname === '/healthz') {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ status: 'ok' }));
+        return;
+    }
+
     // API routes
     if (pathname.startsWith('/api/')) {
         const route = pathname.slice(5).replace(/\/$/, '') || 'index';
