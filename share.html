@@ -65,6 +65,8 @@
         .ads-metric { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:12px 8px; text-align:center; animation:fadeUp .4s ease; }
         .ads-metric-val { font-size:20px; font-weight:700; margin-bottom:4px; }
         .ads-metric-lbl { font-size:12px; color:var(--muted); font-weight:600; }
+        .ads-metric--highlight { grid-column:span 2; border-color:rgba(16,185,129,.3); background:rgba(16,185,129,.05); }
+        .ads-metric--highlight .ads-metric-val { font-size:28px; }
 
         /* Card / Table */
         .card { background:var(--card); border-radius:12px; border:1px solid var(--border); overflow:hidden; animation:fadeUp .4s ease; margin-bottom:24px; }
@@ -177,8 +179,8 @@
             <line x1="18" y1="9" x2="25" y2="6" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
         </svg>
         <div>
-            <div class="header-title" style="font-size:17px;font-weight:800;letter-spacing:-0.4px;">adlytics</div>
-            <div class="header-account" id="accountName">Carregando...</div>
+            <div class="header-title" id="accountName" style="font-size:16px;font-weight:800;letter-spacing:-0.3px;">Carregando...</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:1px;">via <span style="color:var(--blue);font-weight:600;">adlytics</span></div>
         </div>
     </div>
     <div class="header-right">
@@ -609,7 +611,7 @@ function renderSummaryMetrics() {
     ].filter(c => allowed.includes(c.key));
 
     $('summaryMetrics').innerHTML = ALL_CARDS.map((c,i) => `
-        <div class="ads-metric" style="animation-delay:${i*.05}s">
+        <div class="ads-metric${c.key === 'spend' ? ' ads-metric--highlight' : ''}" style="animation-delay:${i*.05}s">
             <div class="ads-metric-val" style="color:${c.color}">${c.value}</div>
             <div class="ads-metric-lbl">${c.label}</div>
         </div>
