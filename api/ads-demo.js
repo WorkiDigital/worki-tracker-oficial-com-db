@@ -28,6 +28,8 @@ export default async function handler(req, res) {
     datePreset  = 'last_30d',
     breakdown   = 'age',
     campaignIds = '',
+    dateFrom,
+    dateTo,
   } = req.query;
 
   const token = process.env.META_ADS_TOKEN;
@@ -51,25 +53,33 @@ export default async function handler(req, res) {
     }
   }
 
-  const buildUrl = (preset) => [
-    `https://graph.facebook.com/v20.0/${accountId}/insights`,
-    `?fields=${encodeURIComponent(fields)}`,
-    `&breakdowns=${encodeURIComponent(breakdown)}`,
-    `&date_preset=${encodeURIComponent(preset)}`,
-    `&limit=500`,
-    filtering,
-    `&access_token=${token}`,
-  ].join('');
+  const buildUrl = (preset, from, to) => {
+    const datePart = (from && to)
+      ? `&time_range=${encodeURIComponent(JSON.stringify({ since: from, until: to }))}`
+      : `&date_preset=${encodeURIComponent(preset)}`;
+    return [
+      `https://graph.facebook.com/v20.0/${accountId}/insights`,
+      `?fields=${encodeURIComponent(fields)}`,
+      `&breakdowns=${encodeURIComponent(breakdown)}`,
+      datePart,
+      `&limit=500`,
+      filtering,
+      `&access_token=${token}`,
+    ].join('');
+  };
 
   try {
     // Tentativa 1: período selecionado
-    let r    = await fetch(buildUrl(datePreset));
+    let r    = await fetch(buildUrl(datePreset, dateFrom, dateTo));
     let json = await r.json();
     if (json.error) return res.status(400).json({ error: json.error.message });
 
-    // Fallback para "maximum" se não houver dados no período
+    // Fallback para "maximum" se não houver dados no período (apenas para presets, não para custom)
     let usedPeriod = datePreset;
     if (!json.data || json.data.length === 0) {
+      if (dateFrom && dateTo) {
+        return res.status(200).json({ data: [], usedPeriod: 'custom' });
+      }
       r    = await fetch(buildUrl('maximum'));
       json = await r.json();
       if (json.error) return res.status(400).json({ error: json.error.message });

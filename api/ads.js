@@ -9,7 +9,7 @@ export default async function handler(req, res) {
   const user = await verifyAuth(req, res);
   if (!user) return;
 
-  const { datePreset = 'last_30d', accountId } = req.query;
+  const { datePreset = 'last_30d', accountId, dateFrom, dateTo } = req.query;
   const token = process.env.META_ADS_TOKEN;
 
   if (!token) return res.status(500).json({ error: 'META_ADS_TOKEN not configured' });
@@ -18,7 +18,10 @@ export default async function handler(req, res) {
   // Campos de insight: spend, impressions, clicks (todos), outbound_clicks (cliques em links),
   // ctr, reach, actions (conversões, leads, mensagens, seguidores)
   const insightFields = 'spend,impressions,clicks,outbound_clicks,ctr,reach,cpm,cpc,frequency,inline_link_clicks,actions,cost_per_action_type';
-  const fields = `name,status,objective,insights.date_preset(${datePreset}){${insightFields}}`;
+  const insightsParam = (dateFrom && dateTo)
+    ? `insights.time_range({"since":"${dateFrom}","until":"${dateTo}"})`
+    : `insights.date_preset(${datePreset})`;
+  const fields = `name,status,objective,${insightsParam}{${insightFields}}`;
   const url = `https://graph.facebook.com/v20.0/${accountId}/campaigns?fields=${encodeURIComponent(fields)}&limit=200&access_token=${token}`;
 
   try {

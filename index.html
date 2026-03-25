@@ -758,14 +758,21 @@
                     <!-- Hidden select mantido para compatibilidade com o resto do código -->
                     <select id="adsAccountSelect" style="display:none;"></select>
                     <div class="ctrl-box">
-                        <select id="adsDatePreset" class="bare">
+                        <select id="adsDatePreset" class="bare" onchange="onAdsDateChange()">
                             <option value="today" selected>Hoje</option>
                             <option value="yesterday">Ontem</option>
                             <option value="last_7d">7 dias</option>
                             <option value="last_30d">30 dias</option>
                             <option value="this_month">Este mês</option>
                             <option value="last_month">Mês passado</option>
+                            <option value="custom">Personalizado</option>
                         </select>
+                    </div>
+                    <div id="adsCustomRange" style="display:none;align-items:center;gap:6px;" class="ctrl-box">
+                        <input type="date" id="adsDateFrom" style="color-scheme:var(--scheme);border:none;background:transparent;color:var(--text);outline:none;font-size:13px;">
+                        <span style="color:var(--muted);font-size:12px;">→</span>
+                        <input type="date" id="adsDateTo" style="color-scheme:var(--scheme);border:none;background:transparent;color:var(--text);outline:none;font-size:13px;">
+                        <button class="btn btn-primary btn-sm" onclick="carregarAnuncios()">OK</button>
                     </div>
                     <button class="btn btn-primary" id="btnAtualizarAds" onclick="carregarAnuncios()">
                         <i data-lucide="refresh-cw" style="width:13px;"></i> Atualizar
@@ -1799,6 +1806,7 @@ function salvarConfigContas() {
     badge.style.display = 'inline';
     setTimeout(() => badge.style.display = 'none', 2000);
     toast('Contas salvas', 'success');
+    renderShareLinks();
 }
 
 function selecionarTodasContas() {
@@ -2006,10 +2014,27 @@ function navDropdown(e) {
     if (e.key === 'Escape') fecharDropdownContas();
 }
 
+function _getDateQs() {
+    const preset = $('adsDatePreset').value;
+    if (preset === 'custom') {
+        const from = $('adsDateFrom').value;
+        const to   = $('adsDateTo').value;
+        return (from && to) ? `dateFrom=${from}&dateTo=${to}` : null;
+    }
+    return `datePreset=${encodeURIComponent(preset)}`;
+}
+
+function onAdsDateChange() {
+    const val = $('adsDatePreset').value;
+    $('adsCustomRange').style.display = val === 'custom' ? 'flex' : 'none';
+    if (val !== 'custom') carregarAnuncios();
+}
+
 async function carregarAnuncios() {
     const accountId  = $('adsAccountSelect').value;
-    const datePreset = $('adsDatePreset').value;
     if (!accountId) { toast('Selecione uma conta', 'error'); return; }
+    const dateQs = _getDateQs();
+    if (dateQs === null) { toast('Selecione as datas', 'error'); return; }
 
     const errEl  = $('ads-error');
     const loadEl = $('ads-loading');
@@ -2035,7 +2060,7 @@ async function carregarAnuncios() {
     lucide.createIcons({ nodes:[btn] });
 
     try {
-        const data = await authFetch(`/api/ads?accountId=${encodeURIComponent(accountId)}&datePreset=${encodeURIComponent(datePreset)}`).then(r=>r.json());
+        const data = await authFetch(`/api/ads?accountId=${encodeURIComponent(accountId)}&${dateQs}`).then(r=>r.json());
         if (data.error) throw new Error(data.error);
         campanhasRaw = data.data || [];
         adsCarregado = true;
@@ -2504,14 +2529,14 @@ function selecionarMetricaDemo(metrica, el) {
 
 async function carregarDemograficos(campaignIds = '') {
     const accountId  = $('adsAccountSelect').value;
-    const datePreset = $('adsDatePreset').value;
     if (!accountId) return;
 
     $('demo-loading').style.display = 'block';
     $('demo-grid').style.opacity = '0.4';
     lucide.createIcons({ nodes: [$('demo-loading')] });
 
-    const qs = `accountId=${encodeURIComponent(accountId)}&datePreset=${encodeURIComponent(datePreset)}${campaignIds ? '&campaignIds=' + encodeURIComponent(campaignIds) : ''}`;
+    const dateQs = _getDateQs() || `datePreset=last_30d`;
+    const qs = `accountId=${encodeURIComponent(accountId)}&${dateQs}${campaignIds ? '&campaignIds=' + encodeURIComponent(campaignIds) : ''}`;
 
     try {
         // 5 breakdowns em paralelo
@@ -2911,8 +2936,8 @@ async function carregarMelhoresAnuncios() {
     $('bestAdsGrid').innerHTML = '';
     $('btnMaisAds').style.display = 'none';
 
-    const dp   = $('adsDatePreset').value;
-    const data = await authFetch(`/api/ads-best?accountId=${encodeURIComponent(accountId)}&datePreset=${encodeURIComponent(dp)}`)
+    const dateQs = _getDateQs() || `datePreset=last_30d`;
+    const data = await authFetch(`/api/ads-best?accountId=${encodeURIComponent(accountId)}&${dateQs}`)
         .then(r => r.json()).catch(() => ({ error: 'Erro de rede' }));
     $('bestAdsLoading').style.display = 'none';
     if (data.error) { toast(data.error, 'error'); return; }
