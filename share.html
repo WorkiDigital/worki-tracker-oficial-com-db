@@ -333,7 +333,32 @@ const DEMO_BREAKDOWNS = [
     { key:'gender',             label:'Gênero',         icon:'⚥' },
     { key:'publisher_platform', label:'Plataforma',     icon:'📱' },
     { key:'impression_device',  label:'Dispositivo',    icon:'💻' },
+    { key:'platform_position',  label:'Posicionamento', icon:'📍' },
 ];
+
+const POSITION_LABELS = {
+    feed:                        'Feed',
+    reels:                       'Reels',
+    story:                       'Stories',
+    right_hand_column:           'Col. Direita',
+    search:                      'Busca',
+    marketplace:                 'Marketplace',
+    video_feeds:                 'Feed de Vídeos',
+    instagram_explore:           'Explorar (IG)',
+    instagram_explore_grid_home: 'Explore Home',
+    instream_video:              'Vídeo In-Stream',
+    an_classic:                  'Audience Network',
+};
+
+function getDemoResults(item) {
+    if (!item.actions) return 0;
+    const RESULT_TYPES = ['lead','offsite_conversion.fb_pixel_lead',
+        'onsite_conversion.messaging_conversation_started_7d',
+        'onsite_conversion.purchase','offsite_conversion.fb_pixel_purchase'];
+    return item.actions
+        .filter(a => RESULT_TYPES.includes(a.action_type))
+        .reduce((s, a) => s + (parseFloat(a.value) || 0), 0);
+}
 
 const DEMO_COLORS = [
     '#3b82f6','#10b981','#f59e0b','#8b5cf6','#ec4899','#06b6d4','#ef4444','#84cc16'
@@ -651,11 +676,31 @@ function renderAllDemos(demoDataArr) {
 }
 
 function renderDemoCard(breakdown, data, period) {
-    const totalSpend = data.reduce((a,d) => a+(parseFloat(d.spend)||0), 0);
-    if (totalSpend === 0) return;
+    const isPosition = breakdown.key === 'platform_position';
 
-    const sorted = [...data].sort((a,b) => (parseFloat(b.spend)||0)-(parseFloat(a.spend)||0));
-    const top = sorted.slice(0,8);
+    let top, total, getValue, getLabel, getLegendVal, tooltipFn;
+
+    if (isPosition) {
+        const withRes = data.map(d => ({ ...d, _r: getDemoResults(d) })).filter(d => d._r > 0);
+        if (withRes.length === 0) return;
+        const sorted = withRes.sort((a, b) => b._r - a._r);
+        top = sorted.slice(0, 8);
+        total = top.reduce((s, d) => s + d._r, 0);
+        getValue  = d => d._r;
+        getLabel  = d => POSITION_LABELS[d[breakdown.key]] || d[breakdown.key] || '—';
+        getLegendVal = d => `${Math.round(d._r)} result.`;
+        tooltipFn = ctx => ` ${Math.round(ctx.raw)} resultados`;
+    } else {
+        const totalSpend = data.reduce((a, d) => a + (parseFloat(d.spend) || 0), 0);
+        if (totalSpend === 0) return;
+        const sorted = [...data].sort((a, b) => (parseFloat(b.spend) || 0) - (parseFloat(a.spend) || 0));
+        top = sorted.slice(0, 8);
+        total = totalSpend;
+        getValue  = d => parseFloat(d.spend) || 0;
+        getLabel  = d => breakdown.key === 'gender' ? (d.gender === 'male' ? 'Masculino' : 'Feminino') : (d[breakdown.key] || d.age || d.gender || '—');
+        getLegendVal = d => `${total > 0 ? ((getValue(d) / total) * 100).toFixed(1) : '0.0'}%`;
+        tooltipFn = ctx => ` ${fmtBRL(ctx.raw)}`;
+    }
 
     const card = document.createElement('div');
     card.className = 'demo-card';
@@ -667,38 +712,33 @@ function renderDemoCard(breakdown, data, period) {
         <div class="demo-card-title">${breakdown.icon} ${breakdown.label}${fallbackNote}</div>
         <div class="demo-canvas-wrap"><canvas id="${chartId}"></canvas></div>
         <div class="demo-legend">
-            ${top.map((d,i) => {
-                const spend = parseFloat(d.spend)||0;
-                const pct = totalSpend > 0 ? (spend/totalSpend*100).toFixed(1) : '0.0';
-                const label = breakdown.key==='gender' ? (d.gender==='male'?'Masculino':'Feminino') : (d[breakdown.key]||d.age||d.gender||'—');
-                return `<div class="demo-legend-row">
+            ${top.map((d, i) => `<div class="demo-legend-row">
                     <div class="demo-legend-left">
-                        <div class="demo-legend-dot" style="background:${DEMO_COLORS[i%DEMO_COLORS.length]}"></div>
-                        <span>${esc(label)}</span>
+                        <div class="demo-legend-dot" style="background:${DEMO_COLORS[i % DEMO_COLORS.length]}"></div>
+                        <span>${esc(getLabel(d))}</span>
                     </div>
-                    <span class="demo-legend-val">${pct}%</span>
-                </div>`;
-            }).join('')}
+                    <span class="demo-legend-val">${getLegendVal(d)}</span>
+                </div>`).join('')}
         </div>
     `;
     $('demoGrid').appendChild(card);
 
-    // Render chart
     setTimeout(() => {
         const ctx = document.getElementById(chartId)?.getContext('2d');
         if (!ctx) return;
         if (_demoCharts[breakdown.key]) { _demoCharts[breakdown.key].destroy(); }
         const labels = top.map(d => {
-            if (breakdown.key==='gender') return d.gender==='male'?'Masc':'Fem';
-            return String(d[breakdown.key]||d.age||d.gender||'—').substring(0,12);
+            if (breakdown.key === 'gender') return d.gender === 'male' ? 'Masc' : 'Fem';
+            if (isPosition) return POSITION_LABELS[d[breakdown.key]] || String(d[breakdown.key] || '—').substring(0, 12);
+            return String(d[breakdown.key] || d.age || d.gender || '—').substring(0, 12);
         });
         _demoCharts[breakdown.key] = new Chart(ctx, {
             type: 'doughnut',
             data: {
                 labels,
-                datasets: [{ data: top.map(d=>parseFloat(d.spend)||0), backgroundColor: DEMO_COLORS.slice(0,top.length), borderWidth:0, hoverOffset:4 }]
+                datasets: [{ data: top.map(getValue), backgroundColor: DEMO_COLORS.slice(0, top.length), borderWidth: 0, hoverOffset: 4 }]
             },
-            options: { responsive:true, maintainAspectRatio:true, plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label: ctx => ` ${fmtBRL(ctx.raw)}` } } }, cutout:'65%' }
+            options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { display: false }, tooltip: { callbacks: { label: tooltipFn } } }, cutout: '65%' }
         });
     }, 50);
 }

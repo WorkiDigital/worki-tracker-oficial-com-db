@@ -7,7 +7,7 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   const VALID_PRESETS = ['today','yesterday','last_7d','last_14d','last_30d','this_month','last_month','maximum'];
-  const VALID_BREAKDOWNS = ['age', 'gender', 'publisher_platform', 'impression_device'];
+  const VALID_BREAKDOWNS = ['age', 'gender', 'publisher_platform', 'impression_device', 'platform_position'];
   const { token, datePreset = 'today', breakdown = 'age', campaignIds = '' } = req.query;
   if (!token) return res.status(400).json({ error: 'token required' });
   if (!VALID_PRESETS.includes(datePreset)) return res.status(400).json({ error: 'datePreset inválido' });
