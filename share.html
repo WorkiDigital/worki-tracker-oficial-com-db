@@ -85,6 +85,12 @@
 
         /* Demographics */
         .demo-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:24px; }
+        .demo-grid--5 { grid-template-columns:repeat(5,1fr) !important; }
+        .demo-grid--5 .demo-card { padding:14px 10px; }
+        .demo-grid--5 .demo-canvas-wrap { width:110px; height:110px; }
+        .demo-grid--5 .demo-legend-left { max-width:70px; }
+        @media(max-width:1100px) { .demo-grid--5 { grid-template-columns:repeat(3,1fr) !important; } }
+        @media(max-width:960px)  { .demo-grid--5 { grid-template-columns:repeat(2,1fr) !important; } }
         .demo-card { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:18px; display:flex; flex-direction:column; align-items:center; animation:fadeUp .5s ease; }
         .demo-card-title { font-size:12px; font-weight:700; color:var(--text); margin-bottom:14px; display:flex; align-items:center; gap:7px; width:100%; }
         .demo-canvas-wrap { width:150px; height:150px; margin-bottom:14px; }
@@ -134,6 +140,24 @@
 
         /* Section heading */
         .section-label { font-size:13px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; margin-bottom:12px; display:flex; align-items:center; gap:7px; }
+
+        /* ── Funil ── */
+        .funil-spend-badge { display:inline-block; background:var(--blue); color:#fff; font-size:13px; font-weight:700; padding:8px 20px; border-radius:30px; margin:0 auto 12px; }
+        .funil-tri-wrap { display:flex; flex-direction:column; align-items:center; gap:2px; width:100%; max-width:520px; margin:0 auto; }
+        .funil-trap { border-radius:10px; padding:12px 16px; margin:0 auto; transition:width .5s ease; position:relative; box-sizing:border-box; }
+        .funil-trap-top { display:flex; align-items:center; gap:8px; }
+        .funil-trap-label { font-size:13px; font-weight:700; color:#fff; flex:1; }
+        .funil-trap-num { font-size:20px; font-weight:800; color:#fff; }
+        .funil-trap-x { background:rgba(255,255,255,.25); border:none; color:#fff; border-radius:50%; width:22px; height:22px; cursor:pointer; font-size:15px; line-height:1; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:.2s; }
+        .funil-trap-x:hover { background:rgba(255,255,255,.45); }
+        .funil-trap-cost { font-size:11px; color:rgba(255,255,255,.8); margin-top:5px; text-align:center; }
+        .funil-tri-rate { font-size:12px; color:var(--muted); font-weight:600; text-align:center; padding:3px 0; }
+        .funil-add-btn { display:flex; align-items:center; gap:6px; background:var(--tag); border:1px dashed var(--border); color:var(--muted); padding:8px 18px; border-radius:30px; font-size:12px; font-weight:600; cursor:pointer; margin:10px auto 0; transition:.2s; }
+        .funil-add-btn:hover { border-color:var(--blue); color:var(--blue); }
+        .funil-dropdown { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:6px; margin:8px auto 0; width:fit-content; display:none; box-shadow:0 8px 24px rgba(0,0,0,.3); }
+        .funil-dd-item { display:flex; align-items:center; gap:8px; padding:8px 14px; border-radius:8px; cursor:pointer; font-size:13px; color:var(--text); white-space:nowrap; transition:.15s; }
+        .funil-dd-item:hover { background:rgba(255,255,255,.06); }
+        .funil-dd-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
 
         /* Responsive header */
         @media(max-width:640px) { .header { padding:14px 16px; } .content { padding:16px; } }
@@ -232,6 +256,19 @@
             Demográficos
         </div>
         <div class="demo-grid" id="demoGrid"></div>
+        </div>
+
+        <!-- Funil de Conversão -->
+        <div id="funilSectionWrap" style="margin-bottom:24px;">
+            <div class="section-label">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+                Funil de Conversão
+            </div>
+            <div id="funil-view" style="display:flex;flex-direction:column;align-items:center;"></div>
+            <div style="display:flex;flex-direction:column;align-items:center;position:relative;">
+                <button class="funil-add-btn" onclick="toggleFunilDropdown()">+ Adicionar etapa</button>
+                <div class="funil-dropdown" id="funil-dropdown"></div>
+            </div>
         </div>
 
         <!-- Best Ads -->
@@ -385,11 +422,13 @@ async function carregarTudo() {
         }
 
         const sec = _config.visible_sections || {};
-        const showDemo = sec.demograficos      !== false;
-        const showBest = sec.melhores_criativos !== false;
-        $('tableCard').style.display       = sec.campanhas !== false ? '' : 'none';
-        $('demoSectionWrap').style.display = showDemo ? '' : 'none';
-        $('bestAdsSection').style.display  = showBest ? '' : 'none';
+        const showDemo  = sec.demograficos       !== false;
+        const showBest  = sec.melhores_criativos !== false;
+        const showFunil = sec.funil              !== false;
+        $('tableCard').style.display        = sec.campanhas !== false ? '' : 'none';
+        $('demoSectionWrap').style.display  = showDemo  ? '' : 'none';
+        $('funilSectionWrap').style.display = showFunil ? '' : 'none';
+        $('bestAdsSection').style.display   = showBest  ? '' : 'none';
 
         renderSummaryMetrics();
         renderTable();
@@ -511,8 +550,15 @@ function campaignMetrics(campaigns) {
 
 // ── Filters ───────────────────────────────────────────────────────────────
 function filteredCampaigns() {
-    if (_statusFilter === 'ALL') return _campaigns;
-    return _campaigns.filter(c => c.status === _statusFilter);
+    return _campaigns.filter(c => {
+        if (_statusFilter !== 'ALL' && c.status !== _statusFilter) return false;
+        // ACTIVE filtra só campanhas com gasto real no período
+        if (_statusFilter === 'ACTIVE') {
+            const spend = parseFloat(c.insights?.data?.[0]?.spend || 0);
+            if (spend === 0) return false;
+        }
+        return true;
+    });
 }
 
 function aplicarFiltroStatus() {
@@ -568,6 +614,10 @@ function renderSummaryMetrics() {
             <div class="ads-metric-lbl">${c.label}</div>
         </div>
     `).join('');
+
+    // Atualiza funil com métricas atuais
+    _funilData = { spend: m.spend, imps: m.imps, reach: m.reach, clicks: m.clicks, lpv: m.lpv, leads: m.leads, msgs: m.msgs };
+    renderFunil();
 }
 
 // ── Table ─────────────────────────────────────────────────────────────────
@@ -659,6 +709,8 @@ function renderAllDemos(demoDataArr) {
         if (!resp || resp.error) return;
         renderDemoCard(b, resp.data || [], resp.period);
     });
+    const count = $('demoGrid').children.length;
+    $('demoGrid').classList.toggle('demo-grid--5', count === 5);
 }
 
 function renderDemoCard(breakdown, data, period) {
@@ -964,6 +1016,83 @@ function fecharMediaBtn() {
 }
 
 document.addEventListener('keydown', e => { if (e.key==='Escape') fecharMediaBtn(); });
+
+// ── Funil de Conversão ──────────────────────────────────────────────────────
+const FUNIL_DEF = [
+    { key:'imps',   label:'Impressões',     cost:'por impressão', color:'#3b82f6', on:true  },
+    { key:'reach',  label:'Alcance',         cost:'por pessoa',    color:'#0ea5e9', on:false },
+    { key:'clicks', label:'Cliques',         cost:'por clique',    color:'#8b5cf6', on:true  },
+    { key:'lpv',    label:'Visitas destino', cost:'por visita',    color:'#ec4899', on:false },
+    { key:'leads',  label:'Leads',           cost:'por lead',      color:'#10b981', on:true  },
+    { key:'msgs',   label:'Conversas WA',    cost:'por conversa',  color:'#f59e0b', on:true  },
+];
+let funilMetricas = FUNIL_DEF.map(m => ({...m}));
+let _funilData = {};
+
+function renderFunil() {
+    const view = $('funil-view');
+    if (!view) return;
+    const steps = funilMetricas.filter(m => m.on);
+    const spend = _funilData.spend || 0;
+    let html = spend > 0
+        ? `<div class="funil-spend-badge">Valor Investido: ${fmtBRL(spend)}</div>`
+        : '';
+    html += '<div class="funil-tri-wrap">';
+    steps.forEach((m, i) => {
+        const v    = _funilData[m.key] || 0;
+        const wpct = steps.length <= 1 ? 100 : Math.round(100 - (i / (steps.length - 1)) * 54);
+        const custo = spend > 0 && v > 0 ? `${fmtBRL(spend/v)} ${m.cost}` : '—';
+        if (i > 0) {
+            const prev = _funilData[steps[i-1].key] || 0;
+            const rate = prev > 0 ? (v/prev*100).toFixed(1)+'% Conversão' : '—';
+            html += `<div class="funil-tri-rate">${rate}</div>`;
+        }
+        html += `<div class="funil-trap" style="width:${wpct}%;background:${m.color};">
+            <div class="funil-trap-top">
+                <span class="funil-trap-label">${m.label}</span>
+                <span class="funil-trap-num">${v ? fmt(v) : '—'}</span>
+                <button class="funil-trap-x" onclick="removeFunilStep('${m.key}')">×</button>
+            </div>
+            <div class="funil-trap-cost">${custo}</div>
+        </div>`;
+    });
+    html += '</div>';
+    view.innerHTML = html;
+    _renderFunilDropdown();
+}
+
+function removeFunilStep(key) {
+    const m = funilMetricas.find(x => x.key === key);
+    if (!m) return;
+    if (funilMetricas.filter(x => x.on).length <= 1) return;
+    m.on = false;
+    renderFunil();
+}
+
+function toggleFunilDropdown() {
+    const dd = $('funil-dropdown');
+    if (!dd) return;
+    dd.style.display = dd.style.display === 'block' ? 'none' : 'block';
+}
+
+function _renderFunilDropdown() {
+    const dd = $('funil-dropdown');
+    if (!dd) return;
+    const off = funilMetricas.filter(m => !m.on);
+    if (!off.length) { dd.innerHTML = '<div style="padding:8px 14px;font-size:12px;color:var(--muted);">Todas as etapas ativas</div>'; return; }
+    dd.innerHTML = off.map(m => `
+        <div class="funil-dd-item" onclick="addFunilStep('${m.key}')">
+            <span class="funil-dd-dot" style="background:${m.color}"></span>${m.label}
+        </div>`).join('');
+}
+
+function addFunilStep(key) {
+    const m = funilMetricas.find(x => x.key === key);
+    if (m) m.on = true;
+    renderFunil();
+    const dd = $('funil-dropdown');
+    if (dd) dd.style.display = 'none';
+}
 </script>
 </body>
 </html>

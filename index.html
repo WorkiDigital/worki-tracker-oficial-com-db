@@ -261,6 +261,18 @@
 
         /* ── Demográficos ────────────────────────── */
         .demo-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
+        .demo-grid--5 { grid-template-columns:repeat(5,1fr) !important; }
+        .demo-grid--5 .demo-card { padding:14px 10px; }
+        .demo-grid--5 .demo-canvas-wrap { width:110px; height:110px; }
+        .demo-grid--5 .demo-legend-left { max-width:70px; }
+        @media(max-width:1100px) { .demo-grid--5 { grid-template-columns:repeat(3,1fr) !important; } }
+        @media(max-width:960px)  { .demo-grid--5 { grid-template-columns:repeat(2,1fr) !important; } }
+        /* Sidebar aberta → cards levemente menores, 5 colunas se mantêm */
+        .sidebar:not(.collapsed) + .main .demo-grid--5 .demo-card        { padding:10px 8px; min-width:0; overflow:hidden; }
+        .sidebar:not(.collapsed) + .main .demo-grid--5 .demo-canvas-wrap { width:85px; height:85px; }
+        .sidebar:not(.collapsed) + .main .demo-grid--5 .demo-legend-left { max-width:55px; }
+        .sidebar:not(.collapsed) + .main .demo-grid--5 .demo-legend-val  { font-size:10px; }
+        .sidebar:not(.collapsed) + .main .demo-grid--5 .demo-legend-row  { font-size:10px; }
         .demo-card { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:18px; display:flex; flex-direction:column; align-items:center; }
         .demo-card-title { font-size:12px; font-weight:700; color:var(--text); margin-bottom:14px; display:flex; align-items:center; gap:7px; width:100%; }
         .demo-canvas-wrap { width:150px; height:150px; margin-bottom:14px; }
@@ -276,6 +288,29 @@
         html.light .demo-card-title { color:#111; }
         html.light .demo-legend-val { color:#111; }
         @media(max-width:960px) { .demo-grid { grid-template-columns:repeat(2,1fr); } }
+
+        /* ── Funil de Conversão ──────────────────── */
+        .funil-card { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:18px 24px; margin-bottom:20px; animation:fadeInUp .5s; }
+        html.light .funil-card { background:#fff; }
+        .funil-title { font-size:13px; font-weight:700; color:var(--muted); display:flex; align-items:center; gap:7px; }
+        .funil-spend-badge { display:inline-block; background:var(--blue); color:#fff; font-size:13px; font-weight:700; padding:8px 20px; border-radius:30px; margin:0 auto 12px; }
+        .funil-tri-wrap { display:flex; flex-direction:column; align-items:center; gap:2px; width:100%; max-width:520px; margin:0 auto; }
+        .funil-trap { border-radius:10px; padding:12px 16px; margin:0 auto; transition:width .5s ease; position:relative; box-sizing:border-box; }
+        .funil-trap-top { display:flex; align-items:center; gap:8px; }
+        .funil-trap-label { font-size:13px; font-weight:700; color:#fff; flex:1; }
+        .funil-trap-num { font-size:20px; font-weight:800; color:#fff; }
+        .funil-trap-x { background:rgba(255,255,255,.25); border:none; color:#fff; border-radius:50%; width:22px; height:22px; cursor:pointer; font-size:15px; line-height:1; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:.2s; }
+        .funil-trap-x:hover { background:rgba(255,255,255,.45); }
+        .funil-trap-cost { font-size:11px; color:rgba(255,255,255,.8); margin-top:5px; text-align:center; }
+        .funil-tri-rate { font-size:12px; color:var(--muted); font-weight:600; text-align:center; padding:3px 0; }
+        .funil-add-btn { display:flex; align-items:center; gap:6px; background:var(--tag); border:1px dashed var(--border); color:var(--muted); padding:8px 18px; border-radius:30px; font-size:12px; font-weight:600; cursor:pointer; margin:10px auto 0; transition:.2s; }
+        .funil-add-btn:hover { border-color:var(--blue); color:var(--blue); }
+        .funil-dropdown { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:6px; margin:8px auto 0; width:fit-content; display:none; box-shadow:0 8px 24px rgba(0,0,0,.3); }
+        html.light .funil-dropdown { background:#fff; box-shadow:0 4px 16px rgba(0,0,0,.12); }
+        .funil-dd-item { display:flex; align-items:center; gap:8px; padding:8px 14px; border-radius:8px; cursor:pointer; font-size:13px; color:var(--text); white-space:nowrap; transition:.15s; }
+        .funil-dd-item:hover { background:var(--row-hover); }
+        html.light .funil-dd-item { color:#111; }
+        .funil-dd-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
 
         /* ── Melhores Anúncios ───────────────────── */
         .best-ads-section { margin-top:28px; }
@@ -764,6 +799,16 @@
                     <div class="ads-metric" data-card="cpr"><div class="ads-metric-val" id="ads-cpr">—</div><div class="ads-metric-lbl">CPR (custo/conversa)</div></div>
                     <div class="ads-metric" data-card="seguidores"><div class="ads-metric-val" id="ads-seguidores">—</div><div class="ads-metric-lbl">Seguidores (curtidas)</div></div>
                     <div class="ads-metric" data-card="cps"><div class="ads-metric-val" id="ads-cps">—</div><div class="ads-metric-lbl">Custo/seguidor</div></div>
+                </div>
+
+                <!-- Funil de Conversão -->
+                <div class="funil-card" id="funil-section">
+                    <div class="funil-title" style="margin-bottom:14px;"><i data-lucide="filter" style="width:14px;height:14px;"></i> Funil de Conversão</div>
+                    <div id="funil-view" style="display:flex;flex-direction:column;align-items:center;"></div>
+                    <div style="display:flex;flex-direction:column;align-items:center;position:relative;">
+                        <button class="funil-add-btn" onclick="toggleFunilDropdown()">+ Adicionar etapa</button>
+                        <div class="funil-dropdown" id="funil-dropdown"></div>
+                    </div>
                 </div>
 
                 <!-- Demográficos -->
@@ -1506,6 +1551,8 @@ let _contasVisiveis = [];     // lista filtrada por Configurações
 let _contaSelecionada = null; // { id, name }
 let _shareAccountId   = null; // conta atual no modal de share
 let _shareAccountName = null;
+let _shareEditToken   = null; // null = criar novo | string = editar existente
+const _shareLinks     = {};   // { accountId: { token, url, config } }
 const ACCT_KEY           = 'wt_saved_account';
 const STATUS_FILTER_KEY  = 'wt_status_filter';
 const ACCOUNTS_FILTER_KEY = 'wt_accounts_filter';
@@ -1785,12 +1832,31 @@ function renderShareLinks() {
 function gerarLinkCompartilhamento(accountId, accountName) {
     _shareAccountId   = accountId;
     _shareAccountName = accountName;
+    _shareEditToken   = null;
+
+    const existing = _shareLinks[accountId];
+    if (existing) {
+        // Modo edição — pré-popula com config salva
+        _shareEditToken = existing.token;
+        const c = existing.config;
+        $('shareClientName').value = c.client_name || '';
+        $('secCampanhas').checked    = c.visible_sections?.campanhas !== false;
+        $('secDemograficos').checked = c.visible_sections?.demograficos !== false;
+        $('secMelhores').checked     = c.visible_sections?.melhores_criativos !== false;
+        document.querySelectorAll('.share-metric-chk').forEach(chk => chk.checked = (c.visible_metrics||[]).includes(chk.value));
+        document.querySelectorAll('.share-col-chk').forEach(chk => chk.checked = (c.visible_columns||[]).includes(chk.value));
+        $('shareStatusFilter').value = c.status_filter || 'ACTIVE';
+        $('btnConfirmarShare').innerHTML = '<i data-lucide="save" style="width:15px;display:inline-block;vertical-align:middle;margin-right:6px;"></i> Salvar Alterações';
+    } else {
+        // Modo criação — reset padrão
+        $('shareClientName').value = '';
+        document.querySelectorAll('.share-metric-chk,.share-col-chk').forEach(c => c.checked = true);
+        document.querySelectorAll('#secCampanhas,#secDemograficos,#secMelhores').forEach(c => c.checked = true);
+        $('shareStatusFilter').value = 'ACTIVE';
+        $('btnConfirmarShare').innerHTML = '<i data-lucide="link" style="width:15px;display:inline-block;vertical-align:middle;margin-right:6px;"></i> Gerar e Copiar Link';
+    }
+
     $('shareModalAcctName').textContent = accountName || accountId;
-    $('shareClientName').value = '';
-    // reset checkboxes to all checked
-    document.querySelectorAll('.share-metric-chk,.share-col-chk').forEach(c => c.checked = true);
-    document.querySelectorAll('#secCampanhas,#secDemograficos,#secMelhores').forEach(c => c.checked = true);
-    $('shareStatusFilter').value = 'ACTIVE';
     $('shareModal').classList.add('open');
     lucide.createIcons({ nodes: [$('shareModal')] });
 }
@@ -1803,56 +1869,88 @@ function fecharShareModal(event) {
 async function confirmarGerarLink() {
     const btn = $('btnConfirmarShare');
     btn.disabled = true;
-    btn.textContent = 'Gerando...';
+    btn.textContent = _shareEditToken ? 'Salvando...' : 'Gerando...';
 
     try {
         const visible_sections = {
-            campanhas:         $('secCampanhas').checked,
-            demograficos:      $('secDemograficos').checked,
+            campanhas:          $('secCampanhas').checked,
+            demograficos:       $('secDemograficos').checked,
             melhores_criativos: $('secMelhores').checked,
         };
         const visible_metrics = [...document.querySelectorAll('.share-metric-chk:checked')].map(c => c.value);
         const visible_columns = [...document.querySelectorAll('.share-col-chk:checked')].map(c => c.value);
         const status_filter   = $('shareStatusFilter').value;
         const client_name     = $('shareClientName').value.trim() || null;
+        const config          = { client_name, visible_sections, visible_metrics, visible_columns, status_filter };
 
-        const r = await authFetch('/api/share-create', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                account_id: _shareAccountId,
-                account_name: _shareAccountName,
-                client_name, visible_sections, visible_metrics, visible_columns, status_filter,
-            })
-        });
-        const data = await r.json();
-        if (data.error) { toast(data.error, 'error'); return; }
+        if (_shareEditToken) {
+            // ── MODO EDIÇÃO — atualiza token existente ──────────────
+            const r = await authFetch('/api/share-update', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token: _shareEditToken, ...config }),
+            });
+            const data = await r.json();
+            if (data.error) { toast(data.error, 'error'); return; }
 
-        const url = `${location.origin}/share.html?token=${data.token}`;
-        navigator.clipboard.writeText(url).catch(()=>{});
+            // Atualiza cache
+            _shareLinks[_shareAccountId].config = config;
+            $('shareModal').classList.remove('open');
+            toast('Configurações atualizadas!', 'success');
 
-        $('shareModal').classList.remove('open');
+        } else {
+            // ── MODO CRIAÇÃO — gera novo token ──────────────────────
+            const r = await authFetch('/api/share-create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    account_id: _shareAccountId,
+                    account_name: _shareAccountName,
+                    ...config,
+                }),
+            });
+            const data = await r.json();
+            if (data.error) { toast(data.error, 'error'); return; }
 
-        const box = $('share-url-' + _shareAccountId);
-        if (box) {
-            box.style.display = 'block';
-            box.innerHTML = `
-                <div style="display:flex;align-items:center;gap:8px;background:var(--tag);border:1px solid var(--border);border-radius:8px;padding:8px 12px;margin-top:4px;">
-                    <span style="font-size:12px;color:var(--muted);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(url)}</span>
-                    <button class="btn btn-ghost btn-sm" onclick="navigator.clipboard.writeText('${esc(url)}');toast('Copiado!','success')">
-                        <i data-lucide="copy" style="width:12px;"></i> Copiar
-                    </button>
-                </div>`;
-            lucide.createIcons({ nodes: [box] });
+            const url = `${location.origin}/share.html?token=${data.token}`;
+            navigator.clipboard.writeText(url).catch(()=>{});
+
+            // Salva no cache para permitir edição futura
+            _shareLinks[_shareAccountId] = { token: data.token, url, config };
+
+            $('shareModal').classList.remove('open');
+
+            const box = $('share-url-' + _shareAccountId);
+            if (box) {
+                box.style.display = 'block';
+                _renderShareBox(box, url, _shareAccountId, _shareAccountName);
+                lucide.createIcons({ nodes: [box] });
+            }
+            toast('Link gerado e copiado!', 'success');
         }
-        toast('Link gerado e copiado!', 'success');
     } catch(e) {
-        toast('Erro ao gerar link: ' + e.message, 'error');
+        toast('Erro: ' + e.message, 'error');
     } finally {
         btn.disabled = false;
-        btn.innerHTML = '<i data-lucide="link" style="width:15px;display:inline-block;vertical-align:middle;margin-right:6px;"></i> Gerar e Copiar Link';
+        const isEdit = !!_shareEditToken;
+        btn.innerHTML = isEdit
+            ? '<i data-lucide="save" style="width:15px;display:inline-block;vertical-align:middle;margin-right:6px;"></i> Salvar Alterações'
+            : '<i data-lucide="link" style="width:15px;display:inline-block;vertical-align:middle;margin-right:6px;"></i> Gerar e Copiar Link';
         lucide.createIcons({ nodes: [btn] });
     }
+}
+
+function _renderShareBox(box, url, accountId, accountName) {
+    box.innerHTML = `
+        <div style="display:flex;align-items:center;gap:8px;background:var(--tag);border:1px solid var(--border);border-radius:8px;padding:8px 12px;margin-top:4px;">
+            <span style="font-size:12px;color:var(--muted);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(url)}</span>
+            <button class="btn btn-ghost btn-sm" onclick="navigator.clipboard.writeText('${esc(url)}');toast('Copiado!','success')">
+                <i data-lucide="copy" style="width:12px;"></i> Copiar
+            </button>
+            <button class="btn btn-ghost btn-sm" onclick="gerarLinkCompartilhamento('${esc(accountId)}','${esc(accountName)}')" title="Editar configurações">
+                <i data-lucide="settings-2" style="width:12px;"></i> Editar
+            </button>
+        </div>`;
 }
 
 function navDropdown(e) {
@@ -1909,9 +2007,33 @@ async function carregarAnuncios() {
     }
 }
 
+const OBJETIVO_PT = {
+    OUTCOME_LEADS:          'Geração de Leads',
+    OUTCOME_TRAFFIC:        'Tráfego',
+    OUTCOME_AWARENESS:      'Reconhecimento',
+    OUTCOME_ENGAGEMENT:     'Engajamento',
+    OUTCOME_SALES:          'Vendas',
+    OUTCOME_APP_PROMOTION:  'Promoção de App',
+    LINK_CLICKS:            'Cliques no Link',
+    CONVERSIONS:            'Conversões',
+    REACH:                  'Alcance',
+    BRAND_AWARENESS:        'Reconhecimento de Marca',
+    VIDEO_VIEWS:            'Visualizações de Vídeo',
+    MESSAGES:               'Mensagens',
+    POST_ENGAGEMENT:        'Engajamento com Publicação',
+    PAGE_LIKES:             'Curtidas na Página',
+    EVENT_RESPONSES:        'Respostas a Eventos',
+    STORE_VISITS:           'Visitas à Loja',
+    LOCAL_AWARENESS:        'Reconhecimento Local',
+    PRODUCT_CATALOG_SALES:  'Vendas de Catálogo',
+    LEAD_GENERATION:        'Geração de Leads',
+    APP_INSTALLS:           'Instalações de App',
+};
+function fmtObjetivo(o) { return OBJETIVO_PT[o] || o; }
+
 function preencherObjetivos(camps) {
     const objs = [...new Set(camps.map(c=>c.objective).filter(Boolean))];
-    $('filtroObjetivoAds').innerHTML = '<option value="">Todos</option>' + objs.map(o=>`<option value="${esc(o)}">${esc(o)}</option>`).join('');
+    $('filtroObjetivoAds').innerHTML = '<option value="">Todos</option>' + objs.map(o=>`<option value="${esc(o)}">${esc(fmtObjetivo(o))}</option>`).join('');
 }
 
 let demoDebounce = null;
@@ -1925,6 +2047,11 @@ function filtrarCampanhas() {
         if (sf && c.status    !== sf) return false;
         if (of && c.objective !== of) return false;
         if (bf && !(c.name||'').toLowerCase().includes(bf)) return false;
+        // Quando filtrando por ACTIVE, oculta campanhas sem gasto no período
+        if (sf === 'ACTIVE') {
+            const spend = parseFloat(c.insights?.data?.[0]?.spend || 0);
+            if (spend === 0) return false;
+        }
         return true;
     });
 
@@ -2223,7 +2350,97 @@ function calcMetricasAds(camps) {
     $('ads-cpr').textContent      = msgs       ? brl(spend/msgs) : '—';
     $('ads-seguidores').textContent = seguidores ? fmtN(seguidores) : '—';
     $('ads-cps').textContent      = seguidores  ? brl(spend/seguidores) : '—';
+
+    _funilData = { spend, imps, reach, clicks: linkClicks, lpv, leads, msgs };
+    renderFunil();
 }
+
+// ── Funil de Conversão ──────────────────────────────────────────
+const FUNIL_DEF = [
+    { key:'imps',   label:'Impressões',     cost:'por impressão', color:'#3b82f6', on:true  },
+    { key:'reach',  label:'Alcance',         cost:'por pessoa',    color:'#0ea5e9', on:false },
+    { key:'clicks', label:'Cliques',         cost:'por clique',    color:'#8b5cf6', on:true  },
+    { key:'lpv',    label:'Visitas destino', cost:'por visita',    color:'#ec4899', on:false },
+    { key:'leads',  label:'Leads',           cost:'por lead',      color:'#10b981', on:true  },
+    { key:'msgs',   label:'Conversas WA',    cost:'por conversa',  color:'#f59e0b', on:true  },
+];
+let funilMetricas = FUNIL_DEF.map(m => ({...m}));
+let _funilData = {};
+
+function renderFunil() {
+    const view = $('funil-view');
+    if (!view) return;
+    const steps = funilMetricas.filter(m => m.on);
+    const spend = _funilData.spend || 0;
+    const maxV  = _funilData[steps[0]?.key] || 1;
+
+    // Badge spend
+    let html = spend > 0
+        ? `<div class="funil-spend-badge">Valor Investido: ${brl(spend)}</div>`
+        : '';
+
+    html += '<div class="funil-tri-wrap">';
+    steps.forEach((m, i) => {
+        const v    = _funilData[m.key] || 0;
+        const wpct = steps.length <= 1 ? 100 : Math.round(100 - (i / (steps.length - 1)) * 54);
+        const custo = spend > 0 && v > 0 ? `${brl(spend/v)} ${m.cost}` : '—';
+        if (i > 0) {
+            const prev = _funilData[steps[i-1].key] || 0;
+            const rate = prev > 0 ? (v/prev*100).toFixed(1)+'% Conversão' : '—';
+            html += `<div class="funil-tri-rate">${rate}</div>`;
+        }
+        html += `<div class="funil-trap" style="width:${wpct}%;background:${m.color};">
+            <div class="funil-trap-top">
+                <span class="funil-trap-label">${m.label}</span>
+                <span class="funil-trap-num">${v ? fmtN(v) : '—'}</span>
+                <button class="funil-trap-x" onclick="removeFunilStep('${m.key}')">×</button>
+            </div>
+            <div class="funil-trap-cost">${custo}</div>
+        </div>`;
+    });
+    html += '</div>';
+    view.innerHTML = html;
+
+    // Atualiza dropdown
+    _renderFunilDropdown();
+}
+
+function removeFunilStep(key) {
+    const m = funilMetricas.find(x => x.key === key);
+    if (!m) return;
+    if (funilMetricas.filter(x => x.on).length <= 1) return; // mínimo 1
+    m.on = false;
+    renderFunil();
+}
+
+function toggleFunilDropdown() {
+    const dd = $('funil-dropdown');
+    if (!dd) return;
+    dd.style.display = dd.style.display === 'block' ? 'none' : 'block';
+    _renderFunilDropdown();
+}
+
+function _renderFunilDropdown() {
+    const dd = $('funil-dropdown');
+    if (!dd) return;
+    const inativos = funilMetricas.filter(m => !m.on);
+    if (!inativos.length) { dd.innerHTML = '<div class="funil-dd-item" style="color:var(--muted);">Todas as etapas já adicionadas</div>'; return; }
+    dd.innerHTML = inativos.map(m =>
+        `<div class="funil-dd-item" onclick="addFunilStep('${m.key}')">
+            <div class="funil-dd-dot" style="background:${m.color};"></div>${m.label}
+        </div>`
+    ).join('');
+}
+
+function addFunilStep(key) {
+    const m = funilMetricas.find(x => x.key === key);
+    if (m) m.on = true;
+    const dd = $('funil-dropdown');
+    if (dd) dd.style.display = 'none';
+    renderFunil();
+}
+
+function initFunilPills() { renderFunil(); } // compatibilidade
 
 // ── Demográficos ───────────────────────────────────────────────
 let demoMetrica = 'spend'; // métrica ativa nos gráficos
@@ -2375,6 +2592,9 @@ function renderDemoGraficos({ age, gender, plat, dev, pos }) {
             </div>`;
         }).join('');
     });
+
+    const activeCount = configs.filter(c => Array.isArray(c.data) && c.data.length > 0).length;
+    $('demo-grid').classList.toggle('demo-grid--5', activeCount === 5);
 
     aplicarDemoCfg();
     lucide.createIcons({ nodes: [$('demo-section')] });
@@ -2940,7 +3160,7 @@ function toggleTheme() {
 
 // ── Start ──────────────────────────────────────────────────────
 lucide.createIcons();
-document.addEventListener('DOMContentLoaded', init);
+document.addEventListener('DOMContentLoaded', () => { init(); initFunilPills(); });
 </script>
 </body>
 </html>
