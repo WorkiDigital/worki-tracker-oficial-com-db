@@ -765,6 +765,14 @@ function renderBestAds() {
         const campName = ad.campaign?.name || '';
         const adsetName = ad.adset?.name || '';
 
+        const leads      = getAct(ins, ['lead','offsite_conversion.lead']);
+        const msgs       = getAct(ins, ['onsite_conversion.messaging_conversation_started_7d']);
+        const clicks     = getAct(ins, ['link_click']);
+        const freq       = parseFloat(ins?.frequency)||0;
+        const cpm        = parseFloat(ins?.cpm)||0;
+        const cpc        = parseFloat(ins?.cpc)||0;
+        const ctr        = parseFloat(ins?.ctr)||0;
+
         return `<div class="ad-card">
             <div style="position:relative">
                 ${thumbHtml}
@@ -777,9 +785,17 @@ function renderBestAds() {
                 ${campName ? `<div class="ad-card-path">${esc(campName)}${adsetName?' › '+adsetName:''}</div>` : ''}
                 <div class="ad-card-metrics">
                     <div><div class="ad-card-metric-lbl">Gasto</div><div class="ad-card-metric-val">${spend>0?fmtBRL(spend):'—'}</div></div>
-                    <div><div class="ad-card-metric-lbl">Alcance</div><div class="ad-card-metric-val">${fmt(ins?.reach)}</div></div>
                     <div><div class="ad-card-metric-lbl">Impressões</div><div class="ad-card-metric-val">${fmt(ins?.impressions)}</div></div>
-                    <div><div class="ad-card-metric-lbl">CTR</div><div class="ad-card-metric-val">${fmtPct(ins?.ctr)}</div></div>
+                    <div><div class="ad-card-metric-lbl">Alcance</div><div class="ad-card-metric-val">${fmt(ins?.reach)}</div></div>
+                    <div><div class="ad-card-metric-lbl">Frequência</div><div class="ad-card-metric-val">${freq?freq.toFixed(2):'—'}</div></div>
+                    <div><div class="ad-card-metric-lbl">Cliques</div><div class="ad-card-metric-val">${fmt(clicks)}</div></div>
+                    <div><div class="ad-card-metric-lbl">CTR</div><div class="ad-card-metric-val">${ctr?ctr.toFixed(2)+'%':'—'}</div></div>
+                    <div><div class="ad-card-metric-lbl">CPM</div><div class="ad-card-metric-val">${cpm?fmtBRL(cpm):'—'}</div></div>
+                    <div><div class="ad-card-metric-lbl">CPC</div><div class="ad-card-metric-val">${cpc?fmtBRL(cpc):'—'}</div></div>
+                    <div><div class="ad-card-metric-lbl">Leads</div><div class="ad-card-metric-val">${fmt(leads)}</div></div>
+                    <div><div class="ad-card-metric-lbl">CPL</div><div class="ad-card-metric-val">${leads?fmtBRL(spend/leads):'—'}</div></div>
+                    <div><div class="ad-card-metric-lbl">Conversas</div><div class="ad-card-metric-val">${fmt(msgs)}</div></div>
+                    <div><div class="ad-card-metric-lbl">CPR</div><div class="ad-card-metric-val">${msgs?fmtBRL(spend/msgs):'—'}</div></div>
                 </div>
             </div>
         </div>`;
