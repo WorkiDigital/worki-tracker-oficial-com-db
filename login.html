@@ -197,7 +197,7 @@ async function init() {
         // Se já tem sessão ativa, redireciona direto
         const { data: { session } } = await sbClient.auth.getSession();
         if (session) {
-            window.location.href = 'index.html';
+            window.location.href = '/';
         }
     } catch (e) {
         mostrarAlerta('Erro ao conectar com o servidor.', 'error');
@@ -249,7 +249,7 @@ async function fazerLogin() {
     }
 
     btn.innerHTML = '✓ Redirecionando...';
-    window.location.href = 'index.html';
+    window.location.href = '/';
 }
 
 // ── Cadastro ────────────────────────────────────────────────────
