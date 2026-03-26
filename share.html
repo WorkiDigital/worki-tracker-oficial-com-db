@@ -88,17 +88,18 @@
         .demo-grid--5 { grid-template-columns:repeat(5,1fr) !important; }
         .demo-grid--5 .demo-card { padding:14px 10px; }
         .demo-grid--5 .demo-canvas-wrap { width:110px; height:110px; }
-        .demo-grid--5 .demo-legend-left { max-width:70px; }
+
         @media(max-width:1100px) { .demo-grid--5 { grid-template-columns:repeat(3,1fr) !important; } }
         @media(max-width:960px)  { .demo-grid--5 { grid-template-columns:repeat(2,1fr) !important; } }
         .demo-card { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:18px; display:flex; flex-direction:column; align-items:center; animation:fadeUp .5s ease; }
         .demo-card-title { font-size:12px; font-weight:700; color:var(--text); margin-bottom:14px; display:flex; align-items:center; gap:7px; width:100%; }
         .demo-canvas-wrap { width:150px; height:150px; margin-bottom:14px; }
         .demo-legend { width:100%; display:flex; flex-direction:column; gap:7px; }
-        .demo-legend-row { display:flex; align-items:center; justify-content:space-between; font-size:11px; }
-        .demo-legend-left { display:flex; align-items:center; gap:6px; color:var(--muted); white-space:nowrap; overflow:hidden; max-width:90px; }
+        .demo-legend-row { display:flex; align-items:center; justify-content:space-between; font-size:11px; gap:6px; }
+        .demo-legend-left { display:flex; align-items:flex-start; gap:6px; color:var(--muted); flex:1; min-width:0; }
+        .demo-legend-left span { min-width:0; overflow-wrap:break-word; word-break:break-word; }
         .demo-legend-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
-        .demo-legend-val { color:var(--text); font-weight:700; white-space:nowrap; font-size:11px; }
+        .demo-legend-val { color:var(--text); font-weight:700; white-space:nowrap; font-size:11px; flex-shrink:0; }
         html.light .demo-card-title, html.light .demo-legend-val { color:#111; }
         @media(max-width:960px) { .demo-grid { grid-template-columns:repeat(2,1fr); } }
 
@@ -110,7 +111,7 @@
         .sort-pill { background:var(--tag); border:1px solid var(--border); color:var(--muted); padding:5px 12px; border-radius:20px; font-size:11px; font-weight:600; cursor:pointer; transition:.2s; }
         .sort-pill:hover { border-color:var(--blue); color:var(--text); }
         .sort-pill.active { background:rgba(59,130,246,.15); border-color:var(--blue); color:var(--blue); }
-        .best-ads-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
+        .best-ads-grid { display:grid; grid-template-columns:repeat(6,1fr); gap:12px; }
         .ad-card { background:var(--card); border:1px solid var(--border); border-radius:12px; overflow:hidden; animation:fadeUp .3s ease; position:relative; }
         .ad-card-thumb { width:100%; aspect-ratio:1/1; object-fit:cover; display:block; cursor:pointer; background:var(--tag); }
         .ad-card-thumb-placeholder { width:100%; aspect-ratio:1/1; background:var(--tag); display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:28px; cursor:pointer; }
@@ -124,18 +125,20 @@
         .ad-card-metric-lbl { color:var(--muted); font-size:10px; }
         .ad-card-metric-val { font-weight:700; color:var(--text); font-size:11px; }
         .best-ads-load-more { display:flex; justify-content:center; margin-top:20px; }
-        @media(max-width:1100px) { .best-ads-grid { grid-template-columns:repeat(3,1fr); } }
-        @media(max-width:768px) { .best-ads-grid { grid-template-columns:repeat(2,1fr); } .ads-metrics { grid-template-columns:repeat(3,1fr); } }
-        @media(max-width:480px) { .best-ads-grid { grid-template-columns:1fr; } .ads-metrics { grid-template-columns:repeat(2,1fr); } }
+        @media(max-width:1100px) { .best-ads-grid { grid-template-columns:repeat(4,1fr); } }
+        @media(max-width:768px) { .best-ads-grid { grid-template-columns:repeat(3,1fr); } .ads-metrics { grid-template-columns:repeat(3,1fr); } }
+        @media(max-width:480px) { .best-ads-grid { grid-template-columns:repeat(2,1fr); } .ads-metrics { grid-template-columns:repeat(2,1fr); } }
 
         /* Ad media modal */
         .ad-media-overlay { position:fixed; inset:0; background:rgba(0,0,0,.88); backdrop-filter:blur(6px); z-index:1100; display:flex; align-items:center; justify-content:center; opacity:0; visibility:hidden; transition:.2s; }
         .ad-media-overlay.open { opacity:1; visibility:visible; }
-        .ad-media-box { position:relative; max-width:min(90vw,600px); max-height:90vh; display:flex; flex-direction:column; align-items:center; gap:10px; }
+        .ad-media-box { position:relative; width:min(92vw,380px); max-height:92vh; display:flex; flex-direction:column; align-items:center; gap:10px; }
         .ad-media-close { position:absolute; top:-38px; right:0; background:rgba(255,255,255,.12); border:none; color:#fff; width:32px; height:32px; border-radius:50%; font-size:18px; cursor:pointer; display:flex; align-items:center; justify-content:center; z-index:2; }
         .ad-media-close:hover { background:rgba(255,255,255,.22); }
-        .ad-media-img { max-width:100%; max-height:80vh; border-radius:10px; object-fit:contain; display:block; }
-        .ad-media-video { display:block; width:min(90vw,600px); max-height:80vh; border-radius:10px; background:#000; }
+        .ad-media-img { max-width:100%; max-height:85vh; border-radius:10px; object-fit:contain; display:block; }
+        .ad-media-video { display:block; width:100%; max-height:85vh; border-radius:10px; background:#000; }
+        .ad-media-preview-wrap { width:100%; border-radius:10px; overflow:visible; transform:scale(1.2); transform-origin:top center; margin-bottom:calc(min(85vh,600px) * 0.5); }
+        .ad-media-preview-wrap iframe { display:block; border:none; width:100% !important; min-height:min(85vh,600px); }
         .ad-media-name { color:rgba(255,255,255,.75); font-size:12px; text-align:center; max-width:500px; }
 
         /* Section heading */
@@ -379,6 +382,23 @@ const POSITION_LABELS = {
     marketplace:'Marketplace', video_feeds:'Feed de Vídeos',
     instagram_explore:'Explorar (IG)', instagram_explore_grid_home:'Explore Home',
     instream_video:'In-Stream', an_classic:'Aud. Network',
+};
+
+const PLATFORM_LABELS = {
+    facebook:         'Facebook',
+    instagram:        'Instagram',
+    audience_network: 'Audience Network',
+    messenger:        'Messenger',
+};
+
+const DEVICE_LABELS = {
+    iphone:             'iPhone',
+    android_smartphone: 'Android (celular)',
+    android_tablet:     'Android (tablet)',
+    ipad:               'iPad',
+    desktop_computer:   'Desktop',
+    mobile_app:         'App Mobile',
+    connected_tv:       'TV Conectada',
 };
 
 const DEMO_COLORS = [
@@ -734,7 +754,11 @@ function renderDemoCard(breakdown, data, period) {
                 const spend = parseFloat(d.spend)||0;
                 const pct = totalSpend > 0 ? (spend/totalSpend*100).toFixed(1) : '0.0';
                 const rawLabel = d[breakdown.key]||d.age||d.gender||'—';
-                const label = breakdown.key==='gender' ? (d.gender==='male'?'Masculino':'Feminino') : (breakdown.key==='platform_position' ? (POSITION_LABELS[rawLabel]||rawLabel) : rawLabel);
+                const label = breakdown.key==='gender'             ? (d.gender==='male'?'Masculino':'Feminino') :
+                              breakdown.key==='platform_position'  ? (POSITION_LABELS[rawLabel]||rawLabel) :
+                              breakdown.key==='publisher_platform' ? (PLATFORM_LABELS[rawLabel]||rawLabel) :
+                              breakdown.key==='impression_device'  ? (DEVICE_LABELS[rawLabel]||rawLabel) :
+                              rawLabel;
                 return `<div class="demo-legend-row">
                     <div class="demo-legend-left">
                         <div class="demo-legend-dot" style="background:${DEMO_COLORS[i%DEMO_COLORS.length]}"></div>
@@ -876,6 +900,7 @@ function mostrarMaisAnuncios() {
     renderBestAds();
 }
 
+
 async function carregarThumbsHD(visible) {
     const videoAds = visible
         .map((ad, idx) => ({ ad, idx }))
@@ -904,9 +929,31 @@ async function carregarThumbsHD(visible) {
                 const data = await resp.json();
                 if (data.error) return;
                 _videoDataMap[videoId] = { source: data.source || null, thumbnail: data.thumbnail || null, permalink_url: data.permalink_url || null };
-                if (data.thumbnail) {
-                    const img = $(`adthumb-${idx}`);
-                    if (img) img.src = data.thumbnail;
+                const existing = $(`adthumb-${idx}`) || document.querySelector(`[onclick="abrirMedia(${idx})"].ad-card-thumb-placeholder`);
+                if (existing) {
+                    const aplicarImg = (src) => {
+                        const newImg = document.createElement('img');
+                        newImg.className = 'ad-card-thumb';
+                        newImg.id = `adthumb-${idx}`;
+                        newImg.src = src;
+                        newImg.setAttribute('onclick', `abrirMedia(${idx})`);
+                        (existing.isConnected ? existing : $(`adthumb-${idx}`) || existing).replaceWith(newImg);
+                    };
+                    if (data.source) {
+                        const vid = document.createElement('video');
+                        vid.className = 'ad-card-thumb';
+                        vid.id = `adthumb-${idx}`;
+                        vid.src = data.source;
+                        if (data.thumbnail) vid.poster = data.thumbnail;
+                        vid.muted = true; vid.playsInline = true; vid.preload = 'metadata';
+                        vid.style.cursor = 'pointer';
+                        vid.setAttribute('onclick', `abrirMedia(${idx})`);
+                        vid.addEventListener('loadedmetadata', () => { vid.currentTime = 1; }, { once: true });
+                        existing.replaceWith(vid);
+                    } else if (data.thumbnail) {
+                        if (existing.tagName === 'IMG') { existing.src = data.thumbnail; }
+                        else aplicarImg(data.thumbnail);
+                    }
                 }
             } catch { /* silencia erros individuais */ }
         }));
@@ -972,12 +1019,28 @@ async function abrirMedia(idx) {
     const source = cached?.source;
     const finalThumb = cached?.thumbnail || hdThumb;
     const permalink = cached?.permalink_url;
+    const adId = ad.id;
 
     if (source) {
         _mostrarVideoPlayer(content, source, finalThumb);
-    } else if (permalink) {
-        const isEmbeddable = /^https?:\/\/(www\.|web\.)?facebook\.com\/.+/i.test(permalink);
-        if (isEmbeddable) {
+    } else {
+        // Tenta preview oficial da Meta (mesmo mecanismo do app autenticado)
+        let previewBody = null;
+        if (adId) {
+            try {
+                const pr = await fetch(`/api/share-preview?token=${TOKEN}&adId=${encodeURIComponent(adId)}`);
+                const pd = await pr.json();
+                if (!pd.error && pd.body) previewBody = pd.body;
+            } catch { /* ignora */ }
+        }
+
+        if (!overlay.classList.contains('open')) return;
+
+        if (previewBody) {
+            content.innerHTML = `<div class="ad-media-preview-wrap">${previewBody}</div>`;
+            const iframe = content.querySelector('iframe');
+            if (iframe) iframe.style.cssText = 'border:none;border-radius:10px;display:block;max-width:100%;';
+        } else if (permalink) {
             const embedSrc = `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(permalink)}&show_text=0&mute=0`;
             content.innerHTML = `
                 <iframe
@@ -987,21 +1050,14 @@ async function abrirMedia(idx) {
                     allow="autoplay; clipboard-write; encrypted-media; picture-in-picture">
                 </iframe>`;
         } else {
+            const fbLink = videoId ? `https://www.facebook.com/watch/?v=${videoId}` : null;
             content.innerHTML = `
                 <div style="display:flex;flex-direction:column;align-items:center;gap:16px;padding:40px;text-align:center">
                     ${finalThumb ? `<img src="${esc(finalThumb)}" style="max-width:300px;border-radius:8px;opacity:.8">` : ''}
-                    <div style="color:rgba(255,255,255,.7);font-size:13px">Reprodução direta indisponível</div>
-                    <a href="${esc(permalink)}" target="_blank" style="background:#3b82f6;color:#fff;padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none">Ver vídeo no Facebook ↗</a>
+                    <div style="color:rgba(255,255,255,.7);font-size:13px">Vídeo não disponível para reprodução direta</div>
+                    ${fbLink ? `<a href="${fbLink}" target="_blank" style="background:#3b82f6;color:#fff;padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none">Ver no Facebook ↗</a>` : ''}
                 </div>`;
         }
-    } else {
-        const fbLink = videoId ? `https://www.facebook.com/watch/?v=${videoId}` : null;
-        content.innerHTML = `
-            <div style="display:flex;flex-direction:column;align-items:center;gap:16px;padding:40px;text-align:center">
-                ${finalThumb ? `<img src="${esc(finalThumb)}" style="max-width:300px;border-radius:8px;opacity:.8">` : ''}
-                <div style="color:rgba(255,255,255,.7);font-size:13px">Vídeo não disponível para reprodução direta</div>
-                ${fbLink ? `<a href="${fbLink}" target="_blank" style="background:#3b82f6;color:#fff;padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none">Ver no Facebook ↗</a>` : ''}
-            </div>`;
     }
 }
 

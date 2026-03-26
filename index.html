@@ -266,13 +266,11 @@
         .demo-grid--5 { grid-template-columns:repeat(5,1fr) !important; }
         .demo-grid--5 .demo-card { padding:14px 10px; }
         .demo-grid--5 .demo-canvas-wrap { width:110px; height:110px; }
-        .demo-grid--5 .demo-legend-left { max-width:70px; }
         @media(max-width:1100px) { .demo-grid--5 { grid-template-columns:repeat(3,1fr) !important; } }
         @media(max-width:960px)  { .demo-grid--5 { grid-template-columns:repeat(2,1fr) !important; } }
         /* Sidebar aberta → cards levemente menores, 5 colunas se mantêm */
         .sidebar:not(.collapsed) + .main .demo-grid--5 .demo-card        { padding:10px 8px; min-width:0; overflow:hidden; }
         .sidebar:not(.collapsed) + .main .demo-grid--5 .demo-canvas-wrap { width:85px; height:85px; }
-        .sidebar:not(.collapsed) + .main .demo-grid--5 .demo-legend-left { max-width:55px; }
         .sidebar:not(.collapsed) + .main .demo-grid--5 .demo-legend-val  { font-size:10px; }
         .sidebar:not(.collapsed) + .main .demo-grid--5 .demo-legend-row  { font-size:10px; }
         .demo-card { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:18px; display:flex; flex-direction:column; align-items:center; }
@@ -280,7 +278,8 @@
         .demo-canvas-wrap { width:150px; height:150px; margin-bottom:14px; }
         .demo-legend { width:100%; display:flex; flex-direction:column; gap:7px; }
         .demo-legend-row { display:flex; align-items:center; justify-content:space-between; font-size:11px; }
-        .demo-legend-left { display:flex; align-items:center; gap:6px; color:var(--muted); white-space:nowrap; overflow:hidden; max-width:90px; }
+        .demo-legend-left { display:flex; align-items:flex-start; gap:6px; color:var(--muted); flex:1; min-width:0; }
+        .demo-legend-left span { min-width:0; overflow-wrap:break-word; word-break:break-word; }
         .demo-legend-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
         .demo-legend-val { color:var(--text); font-weight:700; white-space:nowrap; font-size:11px; }
         .demo-pill { background:var(--tag); border:1px solid var(--border); color:var(--muted); padding:4px 11px; border-radius:20px; font-size:11px; font-weight:600; cursor:pointer; transition:.2s; }
@@ -323,8 +322,8 @@
         .sort-pill:hover { border-color:var(--blue); color:var(--text); }
         .sort-pill.active { background:rgba(59,130,246,.15); border-color:var(--blue); color:var(--blue); }
         .best-ads-filters { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px; align-items:center; }
-        .best-ads-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
-        @media(max-width:1100px) { .best-ads-grid { grid-template-columns:repeat(3,1fr); } }
+        .best-ads-grid { display:grid; grid-template-columns:repeat(6,1fr); gap:12px; }
+        @media(max-width:1100px) { .best-ads-grid { grid-template-columns:repeat(4,1fr); } }
         .ad-card { background:var(--card); border:1px solid var(--border); border-radius:12px; overflow:hidden; animation:fadeUp .3s ease; position:relative; }
         .ad-card-thumb { width:100%; aspect-ratio:1/1; object-fit:cover; display:block; cursor:pointer; background:var(--tag); }
         .ad-card-thumb-placeholder { width:100%; aspect-ratio:1/1; background:var(--tag); display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:28px; cursor:pointer; }
@@ -343,11 +342,13 @@
         /* ── Ad Media Modal ─────────────────────── */
         .ad-media-overlay { position:fixed; inset:0; background:rgba(0,0,0,.88); backdrop-filter:blur(6px); z-index:1100; display:flex; align-items:center; justify-content:center; opacity:0; visibility:hidden; transition:.2s; }
         .ad-media-overlay.open { opacity:1; visibility:visible; }
-        .ad-media-box { position:relative; max-width:min(90vw,600px); max-height:90vh; display:flex; flex-direction:column; align-items:center; gap:10px; }
+        .ad-media-box { position:relative; width:min(92vw,500px); max-height:92vh; display:flex; flex-direction:column; align-items:center; gap:10px; }
         .ad-media-close { position:absolute; top:-38px; right:0; background:rgba(255,255,255,.12); border:none; color:#fff; width:32px; height:32px; border-radius:50%; font-size:18px; cursor:pointer; display:flex; align-items:center; justify-content:center; z-index:2; }
         .ad-media-close:hover { background:rgba(255,255,255,.22); }
-        .ad-media-img { max-width:100%; max-height:80vh; border-radius:10px; object-fit:contain; display:block; }
-        .ad-media-video { max-width:100%; max-height:80vh; border-radius:10px; background:#000; display:block; }
+        .ad-media-img { max-width:100%; max-height:85vh; border-radius:10px; object-fit:contain; display:block; }
+        .ad-media-video { max-width:100%; max-height:85vh; border-radius:10px; background:#000; display:block; }
+        .ad-media-preview-wrap { width:100%; border-radius:10px; overflow:hidden; }
+        .ad-media-preview-wrap iframe { display:block; border:none; width:100% !important; min-height:min(85vh,700px); }
         .ad-media-name { color:rgba(255,255,255,.75); font-size:12px; text-align:center; max-width:500px; }
         .ad-media-loading { color:#fff; font-size:13px; display:flex; align-items:center; gap:8px; }
         .ad-media-ext-btn { margin-top:4px; font-size:11px; color:rgba(255,255,255,.5); background:none; border:1px solid rgba(255,255,255,.2); border-radius:6px; padding:4px 10px; cursor:pointer; }
@@ -1116,6 +1117,7 @@ let rawData = [], dadosFiltrados = [];
 let sortCol = 'event_time', sortDir = -1;
 let pagAtual = 1; const POR_PAGINA = 50;
 let campanhasRaw = [], adsCarregado = false;
+let _filteredCampIds = null;
 const expandState = {}; // { 'adsets_<id>': true/false }
 
 // ── Melhores Anúncios ─────────────────────────────────────────
@@ -2147,6 +2149,10 @@ function filtrarCampanhas() {
         const ids = filtradas.map(c => c.id).join(',');
         carregarDemograficos(ids);
     }, 400);
+
+    // Sincroniza Melhores Criativos com o filtro de campanhas
+    _filteredCampIds = new Set(filtradas.map(c => c.id));
+    if (typeof bestAdsRaw !== 'undefined' && bestAdsRaw.length) renderMelhoresAnuncios();
 }
 
 // ── Configuração de métricas ───────────────────────────────────
@@ -2606,11 +2612,16 @@ const DEMO_LABELS = {
     audience_network:'Aud. Network', whatsapp:'WhatsApp',
     mobile_app:'App Mobile', desktop:'Desktop', mobile_web:'Web Mobile',
     tablet:'Tablet', connected_tv:'TV',
+    iphone:'iPhone', android_smartphone:'Android (celular)',
+    android_tablet:'Android (tablet)', ipad:'iPad', desktop_computer:'Desktop',
     feed:'Feed', reels:'Reels', story:'Stories',
     right_hand_column:'Col. Direita', search:'Busca',
     marketplace:'Marketplace', video_feeds:'Feed de Vídeos',
     instagram_explore:'Explorar (IG)', instagram_explore_grid_home:'Explore Home',
     instream_video:'In-Stream', an_classic:'Aud. Network',
+    instagram_stories:'Stories (IG)', instagram_reels:'Reels (IG)',
+    facebook_stories:'Stories (FB)', facebook_feed:'Feed (FB)',
+    instagram_feed:'Feed (IG)', facebook_reels:'Reels (FB)',
 };
 
 const DEMO_CORES = ['#0ea5e9','#8b5cf6','#10b981','#f59e0b','#ef4444','#ec4899','#06b6d4','#f97316'];
@@ -2669,7 +2680,7 @@ function renderDemoGraficos({ age, gender, plat, dev, pos }) {
         $(legend).innerHTML = labels.map((l,i) => {
             const pct = total ? Math.round((values[i]/total)*100) : 0;
             return `<div class="demo-legend-row">
-                <div class="demo-legend-left"><div class="demo-legend-dot" style="background:${DEMO_CORES[i%DEMO_CORES.length]};"></div>${esc(l)}</div>
+                <div class="demo-legend-left"><div class="demo-legend-dot" style="background:${DEMO_CORES[i%DEMO_CORES.length]};flex-shrink:0;"></div><span>${esc(l)}</span></div>
                 <div style="display:flex;gap:8px;"><span class="demo-legend-val">${fmt(values[i])}</span><span style="color:var(--muted);font-size:10px;min-width:26px;text-align:right;">${pct}%</span></div>
             </div>`;
         }).join('');
@@ -2985,6 +2996,7 @@ function renderMelhoresAnuncios() {
     let filtered = bestAdsRaw.filter(ad => {
         if (statusFiltro && (ad.effective_status || ad.status) !== statusFiltro) return false;
         if (campFiltro  && ad.campaign?.name !== campFiltro) return false;
+        if (_filteredCampIds && !_filteredCampIds.has(ad.campaign?.id)) return false;
         return true;
     });
     filtered.sort(sortObj.fn);
@@ -3024,7 +3036,20 @@ async function carregarBestThumbsHD(ads) {
                 if (data.thumbnail) {
                     ad.creative._hd_thumbnail = data.thumbnail;
                     const img = document.getElementById(`bestthumb-${ad.id}`);
-                    if (img) img.src = data.thumbnail;
+                    if (img) {
+                        img.src = data.thumbnail;
+                    } else {
+                        const placeholder = document.querySelector(`[onclick="abrirAdMedia('${ad.id}')"].ad-card-thumb-placeholder`);
+                        if (placeholder) {
+                            const newImg = document.createElement('img');
+                            newImg.className = 'ad-card-thumb';
+                            newImg.id = `bestthumb-${ad.id}`;
+                            newImg.src = data.thumbnail;
+                            newImg.loading = 'lazy';
+                            newImg.setAttribute('onclick', `abrirAdMedia('${ad.id}')`);
+                            placeholder.replaceWith(newImg);
+                        }
+                    }
                 }
             } catch { /* silencia */ }
         }));
