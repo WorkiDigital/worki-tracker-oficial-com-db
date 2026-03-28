@@ -22,12 +22,16 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Este email já está cadastrado.' });
     }
 
+    // Verifica se é o primeiro usuário do sistema (que será o Admin mestre)
+    const countRes = await pool.query('SELECT COUNT(*) as qtd FROM usuarios');
+    const isAdmin = countRes.rows[0].qtd === '0';
+
     const salt = await bcrypt.genSalt(10);
     const hash = await bcrypt.hash(password, salt);
 
     const result = await pool.query(
-      'INSERT INTO usuarios (email, senha_hash) VALUES ($1, $2) RETURNING id, email',
-      [email, hash]
+      'INSERT INTO usuarios (email, senha_hash, is_admin) VALUES ($1, $2, $3) RETURNING id, email, is_admin',
+      [email, hash, isAdmin]
     );
 
     return res.status(201).json({ message: 'Conta criada com sucesso!', user: result.rows[0] });

@@ -36,17 +36,24 @@ export default async function handler(req, res) {
 
     if (setClauses.length > 0) {
       values.push(id);
-      const updateQuery = `UPDATE leads_tracking SET ${setClauses.join(', ')} WHERE id = $${queryIndex} RETURNING *`;
+      
+      let updateQuery;
+      if (user.is_admin) {
+        updateQuery = `UPDATE leads_tracking SET ${setClauses.join(', ')} WHERE id = $${queryIndex} RETURNING *`;
+      } else {
+        values.push(user.cliente_id);
+        updateQuery = `UPDATE leads_tracking SET ${setClauses.join(', ')} WHERE id = $${queryIndex} AND cliente_id = $${queryIndex + 1} RETURNING *`;
+      }
+
       const updateResult = await pool.query(updateQuery, values);
       
       if (updateResult.rows.length === 0) {
-        return res.status(404).json({ error: 'Lead não encontrado.' });
+        return res.status(404).json({ error: 'Lead não encontrado ou não pertence ao seu cliente.' });
       }
 
-      // Se virou Venda e foi fornecido um valor, dispara Conversions API
       if (status === 'Vendido' || status === 'Venda') {
         const lead = updateResult.rows[0];
-        await sendCapiPurchase(lead, valor_venda);
+        await sendCapiPurchase(lead, valor_venda, pool);
       }
     }
 
@@ -57,16 +64,24 @@ export default async function handler(req, res) {
   }
 }
 
-async function sendCapiPurchase(lead, value) {
+async function sendCapiPurchase(lead, value, pool) {
   // Pega todos os dados da linha base
-  const { 
+  let { 
     pixel, token, ctw_aci_id, source_id, event_source_url, event_time, 
-    nome, telefone, cidade, estado, pais
+    nome, telefone, cidade, estado, pais, cliente_id
   } = lead;
+
+  if ((!pixel || !token) && cliente_id) {
+     const clientRes = await pool.query('SELECT pixel_padrao, token_meta FROM clientes WHERE id = $1', [cliente_id]);
+     if (clientRes.rows.length > 0) {
+        pixel = pixel || clientRes.rows[0].pixel_padrao;
+        token = token || clientRes.rows[0].token_meta;
+     }
+  }
 
   // Seção de requisitos CAPI: Se não tiver pixel e token, não podemos mandar
   if (!pixel || !token) {
-    console.warn('CAPI não enviada: falta Pixel ou Token no banco para o lead ID', lead.id);
+    console.warn('CAPI não enviada: falta Pixel ou Token no banco (e na config) para o lead ID', lead.id);
     return;
   }
 

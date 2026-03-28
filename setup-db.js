@@ -57,7 +57,33 @@ async function setup() {
           valor_venda NUMERIC(10,2)
       );
     `);
-    console.log('✅ Tabela "leads_tracking" verificada/criada com todas as colunas do N8N.');
+    // Criação da tabela de Clientes (Multi-Tenant)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS public.clientes (
+          id SERIAL PRIMARY KEY,
+          nome VARCHAR(255) NOT NULL,
+          email_contato VARCHAR(255),
+          pixel_padrao VARCHAR(255),
+          token_meta TEXT,
+          criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    console.log('✅ Tabela "clientes" (SaaS) verificada/criada.');
+
+    // Adicionando vínculos na tabela Usuários
+    await client.query(`
+      ALTER TABLE public.usuarios 
+      ADD COLUMN IF NOT EXISTS cliente_id INTEGER REFERENCES public.clientes(id),
+      ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE;
+    `);
+    console.log('✅ Permissões de agência (cliente_id, is_admin) injetadas na tabela "usuarios".');
+
+    // Adicionando vínculo na tabela Leads_Tracking
+    await client.query(`
+      ALTER TABLE public.leads_tracking
+      ADD COLUMN IF NOT EXISTS cliente_id INTEGER REFERENCES public.clientes(id);
+    `);
+    console.log('✅ Vínculo de agência injetado na tabela "leads_tracking".');
 
     client.release();
     console.log('🚀 Finalizado! Estrutura do Banco de Dados pronta para uso.');

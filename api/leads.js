@@ -12,8 +12,15 @@ export default async function handler(req, res) {
 
   try {
     const pool = getPool();
-    // No Postgres puro, precisamos buscar a tabela (no Easypanel o default é public.leads_tracking)
-    const result = await pool.query('SELECT * FROM leads_tracking ORDER BY id DESC');
+    let result;
+    if (user.is_admin) {
+        // Admin geral vê tudo (ou pode filtrar no futuro)
+        result = await pool.query('SELECT * FROM leads_tracking ORDER BY id DESC');
+    } else {
+        // Cliente SÓ VÊ o que pertence à sua loja
+        result = await pool.query('SELECT * FROM leads_tracking WHERE cliente_id = $1 ORDER BY id DESC', [user.cliente_id]);
+    }
+    
     return res.status(200).json(result.rows);
   } catch (error) {
     console.error('Leads GET error:', error);

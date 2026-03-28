@@ -595,6 +595,25 @@
     </div>
 </div>
 
+<!-- Modal Novo Cliente -->
+<div id="modalAddCliente" class="modal-overlay" onclick="if(event.target===this) this.classList.remove('open')">
+    <div class="modal">
+        <div class="modal-head">
+            <div class="modal-icon"><i data-lucide="building" style="color:#fff;width:22px;height:22px;"></i></div>
+            <div><h3>Novo Cliente SaaS</h3><p>Crie um ambiente isolado.</p></div>
+            <button class="modal-close" onclick="$('modalAddCliente').classList.remove('open')"><i data-lucide="x" style="width:16px;"></i></button>
+        </div>
+        <div class="input-group"><label>Nome da Empresa/Loja (Obrigatório)</label><input type="text" id="novoCliNome"></div>
+        <div class="input-group"><label>Pixel Padrão</label><input type="text" id="novoCliPixel" placeholder="Apenas números. Ex: 123456789"></div>
+        <div class="input-group"><label>Token Meta (Opcional)</label><input type="text" id="novoCliToken" placeholder="EAAI... para uso no CAPI do N8N"></div>
+        <hr style="border:none;border-top:1px solid var(--border);margin:15px 0;">
+        <p style="font-size:12px;color:var(--muted);margin-bottom:10px;">Criar Acesso ao Dash do Cliente (Opcional mas Recomendado)</p>
+        <div class="input-group"><label>E-mail (Login)</label><input type="email" id="novoCliEmail" autocomplete="off" placeholder="cliente@loja.com"></div>
+        <div class="input-group"><label>Senha provisória</label><input type="text" id="novoCliSenha" placeholder="Min. 6 caracteres"></div>
+        <button class="btn-confirm" id="btnSalvarCliente" onclick="salvarNovoCliente()">Criar Cliente</button>
+    </div>
+</div>
+
 <!-- Sidebar -->
 <div class="sidebar" id="sidebar">
     <div class="logo">
@@ -618,8 +637,11 @@
         <a id="btn-anuncios"   class="nav-item"          onclick="mudarAba('anuncios')">
             <img src="https://cdn.simpleicons.org/meta/0082FB" style="width:17px;height:17px;flex-shrink:0;" alt="Meta"><span>Meta Ads</span>
         </a>
+        <a id="btn-agencia" class="nav-item" onclick="mudarAba('agencia')" style="display:none;">
+            <i data-lucide="building" style="width:17px;flex-shrink:0;"></i><span>Gestão de Clientes</span>
+        </a>
         <a id="btn-clientes" class="nav-item" onclick="mudarAba('clientes')">
-            <i data-lucide="share-2" style="width:17px;flex-shrink:0;"></i><span>Acesso ao Dash</span>
+            <i data-lucide="share-2" style="width:17px;flex-shrink:0;"></i><span>Compartilhar Dash</span>
         </a>
         <a id="btn-config" class="nav-item" onclick="mudarAba('config')">
             <i data-lucide="workflow" style="width:17px;flex-shrink:0;"></i><span>Integrações</span>
@@ -1011,7 +1033,43 @@
             </div><!-- /ads-conteudo -->
         </div><!-- /aba-anuncios -->
 
-        <!-- ABA: CLIENTES -->
+        <!-- ABA: AGENCIA (SaaS) -->
+        <div id="aba-agencia" class="aba-oculta">
+            <div class="content">
+                <div class="card" style="padding:24px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:15px;">
+                        <div>
+                            <div style="font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px;">
+                                <i data-lucide="building" style="width:16px;color:var(--blue);"></i>
+                                Gestão de Clientes (SaaS)
+                            </div>
+                            <p style="font-size:12px;color:var(--muted);margin-top:4px;">Crie ambientes isolados, gere acessos e defina Pixels e Tokens Meta de forma padronizada para o N8N.</p>
+                        </div>
+                        <button class="btn btn-primary" onclick="abrirModalAddCliente()"><i data-lucide="plus" style="width:14px;"></i> Novo Cliente</button>
+                    </div>
+                    
+                    <div style="overflow-x:auto;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Nome da Empresa</th>
+                                    <th>Token Meta (CAPI)</th>
+                                    <th>Pixel Padrão</th>
+                                    <th>E-mail Principal</th>
+                                    <th>Criado em</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabela-clientes-admin">
+                                <tr><td colspan="6" style="text-align:center;padding:20px;color:var(--muted);">Carregando...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div><!-- /aba-agencia -->
+
+        <!-- ABA: CLIENTES (Compartilhamento Antigo) -->
         <div id="aba-clientes" class="aba-oculta">
             <div class="content">
                 <div>
@@ -1207,6 +1265,10 @@ async function init() {
         if (!token || !user) { window.location.href = 'login.html'; return; }
         AUTH_TOKEN = token;
         $('userEmail').textContent = user.email;
+
+        if (user.is_admin) {
+            $('btn-agencia').style.display = 'flex';
+        }
     } catch(_) {
         window.location.href = 'login.html';
         return;
@@ -3219,31 +3281,107 @@ document.addEventListener('keydown', e => {
 });
 
 // ── Abas ───────────────────────────────────────────────────────
-const ABAS = ['leads','relatorios','anuncios','clientes','config'];
+const ABAS = ['leads','relatorios','anuncios','clientes','config','agencia'];
 const TITULOS = {
     leads:     '<i data-lucide="users" style="color:var(--blue);"></i> Leads Reais',
     relatorios:'<i data-lucide="bar-chart-2" style="color:var(--blue);"></i> Relatórios',
     anuncios:  '<img src="https://cdn.simpleicons.org/meta/0082FB" style="width:16px;height:16px;display:inline;vertical-align:-2px;margin-right:6px;" alt="Meta"> Meta Ads',
-    clientes:  '<i data-lucide="share-2" style="color:var(--blue);"></i> Acesso ao Dash',
+    clientes:  '<i data-lucide="share-2" style="color:var(--blue);"></i> Compartilhar Dash',
     config:    '<i data-lucide="workflow" style="color:var(--blue);"></i> Integrações',
+    agencia:   '<i data-lucide="building" style="color:var(--blue);"></i> Gestão de Clientes',
 };
 
 function mudarAba(aba) {
     ABAS.forEach(a => {
-        $('aba-'+a).classList.add('aba-oculta');
-        $('btn-'+a).classList.remove('active');
+        const el = $('aba-'+a); if(el) el.classList.add('aba-oculta');
+        const btn = $('btn-'+a); if(btn) btn.classList.remove('active');
     });
-    $('aba-'+aba).classList.remove('aba-oculta');
-    $('btn-'+aba).classList.add('active');
+    const el = $('aba-'+aba); if(el) el.classList.remove('aba-oculta');
+    const btn = $('btn-'+aba); if(btn) btn.classList.add('active');
     $('titulo-pagina').innerHTML = TITULOS[aba]||'';
     $('leadsControls').style.display = aba === 'leads' ? 'flex' : 'none';
     lucide.createIcons({ nodes:[$('titulo-pagina')] });
     if (aba === 'anuncios' && !adsCarregado) carregarAnuncios();
     if (aba === 'config')   { renderConfigContas(); }
     if (aba === 'clientes') { renderShareLinks(); }
+    if (aba === 'agencia')  { carregarClientesAdmin(); }
     // Fecha sidebar mobile ao trocar de aba
     $('sidebar').classList.remove('mobile-open');
     $('sidebarOverlay').classList.remove('open');
+}
+
+// ── Admin: Clientes/Agências (SaaS) ────────────────────────────
+function abrirModalAddCliente() {
+    $('novoCliNome').value = '';
+    $('novoCliPixel').value = '';
+    $('novoCliToken').value = '';
+    $('novoCliEmail').value = '';
+    $('novoCliSenha').value = '';
+    $('modalAddCliente').classList.add('open');
+}
+
+async function salvarNovoCliente() {
+    const nome = $('novoCliNome').value.trim();
+    const pixel_padrao = $('novoCliPixel').value.trim();
+    const token_meta = $('novoCliToken').value.trim();
+    const email_contato = $('novoCliEmail').value.trim();
+    const senha_acesso = $('novoCliSenha').value;
+
+    if (!nome) { toast('Nome da empresa é obrigatório!', 'error'); return; }
+
+    const btn = $('btnSalvarCliente');
+    const originalText = btn.textContent;
+    btn.textContent = 'Salvando...'; btn.disabled = true;
+
+    try {
+        const r = await authFetch('/api/clientes', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nome, email_contato, pixel_padrao, token_meta, senha_acesso })
+        });
+        const data = await r.json();
+        if (!r.ok || data.error) throw new Error(data.error || 'Erro ao criar cliente');
+        
+        toast('Cliente criado com sucesso!', 'success');
+        $('modalAddCliente').classList.remove('open');
+        carregarClientesAdmin();
+    } catch(e) {
+        toast(e.message, 'error');
+    } finally {
+        btn.textContent = originalText; btn.disabled = false;
+    }
+}
+
+async function carregarClientesAdmin() {
+    const tbody = $('tabela-clientes-admin');
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--muted);">Carregando...</td></tr>';
+    
+    try {
+        const r = await authFetch('/api/clientes');
+        const clientes = await r.json();
+        if (!r.ok || clientes.error) throw new Error(clientes?.error || 'Erro de API');
+
+        if (!Array.isArray(clientes) || clientes.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--muted);">Nenhum cliente cadastrado.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = clientes.map(c => `
+            <tr>
+                <td style="color:var(--muted);font-size:13px;">#${c.id}</td>
+                <td style="font-weight:600;color:var(--text);">${esc(c.nome)}</td>
+                <td style="font-size:12px;color:var(--muted);max-width:150px;overflow:hidden;text-overflow:ellipsis;" title="${esc(c.token_meta)}">${c.token_meta ? esc(c.token_meta) : '—'}</td>
+                <td style="font-family:monospace;font-size:13px;color:var(--muted);">${c.pixel_padrao ? esc(c.pixel_padrao) : '—'}</td>
+                <td style="font-size:13px;color:var(--muted);">${c.email_contato ? esc(c.email_contato) : '—'}</td>
+                <td style="font-size:12px;color:var(--muted);">${new Date(c.created_at).toLocaleDateString('pt-BR')}</td>
+            </tr>
+        `).join('');
+
+    } catch(e) {
+        tbody.innerHTML = `<tr><td colspan="6" style="color:var(--red);text-align:center;padding:20px;">Erro: ${e.message}</td></tr>`;
+        toast('Falha ao carregar clientes: ' + e.message, 'error');
+    }
 }
 
 // ── Sidebar mobile ─────────────────────────────────────────────

@@ -17,7 +17,7 @@ export default async function handler(req, res) {
 
   try {
     const pool = getPool();
-    const result = await pool.query('SELECT id, email, senha_hash FROM usuarios WHERE email = $1', [email]);
+    const result = await pool.query('SELECT id, email, senha_hash, is_admin, cliente_id FROM usuarios WHERE email = $1', [email]);
     
     if (result.rows.length === 0) {
       return res.status(401).json({ error: 'Email ou senha incorretos.' });
@@ -31,11 +31,17 @@ export default async function handler(req, res) {
     }
 
     const secret = process.env.JWT_SECRET || 'SECRET_LOCAL_DEV';
-    const token = jwt.sign({ id: user.id, email: user.email }, secret, { expiresIn: '7d' });
+    const payload = { 
+        id: user.id, 
+        email: user.email, 
+        is_admin: user.is_admin, 
+        cliente_id: user.cliente_id 
+    };
+    const token = jwt.sign(payload, secret, { expiresIn: '7d' });
 
     return res.status(200).json({ 
         token, 
-        user: { id: user.id, email: user.email }
+        user: payload
     });
   } catch (error) {
     console.error('Login error:', error);
