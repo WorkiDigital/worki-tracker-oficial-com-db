@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import jwt from 'jsonwebtoken';
 
 /**
  * Verifica o JWT do usuário via Authorization header.
@@ -11,16 +11,12 @@ export async function verifyAuth(req, res) {
     return null;
   }
 
-  const sb = createClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_KEY
-  );
-
-  const { data, error } = await sb.auth.getUser(token);
-  if (error || !data?.user) {
+  try {
+    const secret = process.env.JWT_SECRET || 'SECRET_LOCAL_DEV';
+    const decoded = jwt.verify(token, secret);
+    return decoded; // { id, email, iat, exp }
+  } catch (error) {
     res.status(401).json({ error: 'Sessão inválida ou expirada' });
     return null;
   }
-
-  return data.user;
 }

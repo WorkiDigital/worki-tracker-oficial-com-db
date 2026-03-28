@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Adlytics</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+
     <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
@@ -1153,7 +1153,7 @@ const graficos = {};
 const CORES = ['#0ea5e9','#10b981','#8b5cf6','#f59e0b','#ef4444','#ec4899','#06b6d4','#f97316'];
 let debounceTimer = null;
 let autoRefreshTimer = null;
-let sbClient = null, AUTH_TOKEN = '';
+let AUTH_TOKEN = '';
 
 // Fetch autenticado — adiciona Bearer token em todas as chamadas de API
 function authFetch(url, opts = {}) {
@@ -1201,12 +1201,12 @@ async function init() {
         const cfg = await fetch('/api/config').then(r=>r.json());
         $('nome-projeto').textContent = cfg.projectName || 'Projeto';
 
-        // Verificar sessão Supabase
-        sbClient = supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
-        const { data: { session } } = await sbClient.auth.getSession();
-        if (!session) { window.location.href = 'login.html'; return; }
-        AUTH_TOKEN = session.access_token;
-        $('userEmail').textContent = session.user.email;
+        const token = localStorage.getItem('adlytics_token');
+        const user = JSON.parse(localStorage.getItem('adlytics_user'));
+        
+        if (!token || !user) { window.location.href = 'login.html'; return; }
+        AUTH_TOKEN = token;
+        $('userEmail').textContent = user.email;
     } catch(_) {
         window.location.href = 'login.html';
         return;
@@ -1221,7 +1221,8 @@ async function init() {
 }
 
 async function fazerLogout() {
-    if (sbClient) await sbClient.auth.signOut();
+    localStorage.removeItem('adlytics_token');
+    localStorage.removeItem('adlytics_user');
     window.location.href = 'login.html';
 }
 

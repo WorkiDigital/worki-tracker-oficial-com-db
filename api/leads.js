@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { getPool } from './_db.js';
 import { verifyAuth } from './_auth.js';
 
 export default async function handler(req, res) {
@@ -8,22 +8,18 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   const user = await verifyAuth(req, res);
-  if (!user) return;
+  if (!user) return; // verifyAuth já envia os headers de erro 401.
 
-  const supabase = createClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_KEY
-  );
-
-  const table = process.env.SUPABASE_TABLE || 'rei_dos_colchoes';
-
-  const { data, error } = await supabase
-    .from(table)
-    .select('*');
-
-  if (error) {
-    return res.status(500).json({ error: error.message });
+  try {
+    const pool = getPool();
+    // No Postgres puro, precisamos buscar a tabela (no Easypanel o default é public.leads_tracking)
+    const result = await pool.query('SELECT * FROM leads_tracking ORDER BY id DESC');
+    return res.status(200).json(result.rows);
+  } catch (error) {
+    console.error('Leads GET error:', error);
+    if (error.code === '42P01') {
+        return res.status(200).json([]); // Retorna array vazio se a tabela ainda não existir
+    }
+    return res.status(500).json({ error: error.message || 'Erro ao buscar leads.' });
   }
-
-  return res.status(200).json(data);
 }

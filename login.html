@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - WhatsApp Tracking</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+
     <style>
         :root {
             --bg: #06080d; --card: #0b0e14; --text: #ffffff; --muted: #8a8f98;
@@ -186,21 +186,12 @@
 </div>
 
 <script>
-let sbClient = null;
+let TOKEN = localStorage.getItem('adlytics_token');
 
 // ── Inicialização ───────────────────────────────────────────────
 async function init() {
-    try {
-        const cfg = await fetch('/api/config').then(r => r.json());
-        sbClient = supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
-
-        // Se já tem sessão ativa, redireciona direto
-        const { data: { session } } = await sbClient.auth.getSession();
-        if (session) {
-            window.location.href = '/';
-        }
-    } catch (e) {
-        mostrarAlerta('Erro ao conectar com o servidor.', 'error');
+    if (TOKEN) {
+        window.location.href = '/';
     }
 }
 
@@ -225,7 +216,6 @@ function esconderAlerta() {
 
 // ── Login ───────────────────────────────────────────────────────
 async function fazerLogin() {
-    if (!sbClient) return;
     const email = document.getElementById('loginEmail').value.trim();
     const senha  = document.getElementById('loginSenha').value;
 
@@ -236,25 +226,35 @@ async function fazerLogin() {
     btn.innerHTML = '<div class="spinner"></div> Entrando...';
     esconderAlerta();
 
-    const { error } = await sbClient.auth.signInWithPassword({ email, password: senha });
+    try {
+        const res = await fetch('/api/auth-login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password: senha })
+        });
+        const data = await res.json();
 
-    if (error) {
-        let msg = 'Erro ao fazer login.';
-        if (error.message.includes('Invalid login'))      msg = 'Email ou senha incorretos.';
-        if (error.message.includes('Email not confirmed')) msg = 'Confirme seu email antes de entrar. Verifique sua caixa de entrada.';
-        mostrarAlerta(msg);
+        if (!res.ok) {
+            mostrarAlerta(data.error || 'Email ou senha incorretos.');
+            btn.disabled = false;
+            btn.innerHTML = 'Entrar';
+            return;
+        }
+
+        localStorage.setItem('adlytics_token', data.token);
+        localStorage.setItem('adlytics_user', JSON.stringify(data.user));
+
+        btn.innerHTML = '✓ Redirecionando...';
+        window.location.href = '/';
+    } catch (e) {
+        mostrarAlerta('Erro ao conectar com o servidor.', 'error');
         btn.disabled = false;
         btn.innerHTML = 'Entrar';
-        return;
     }
-
-    btn.innerHTML = '✓ Redirecionando...';
-    window.location.href = '/';
 }
 
 // ── Cadastro ────────────────────────────────────────────────────
 async function fazerCadastro() {
-    if (!sbClient) return;
     const email    = document.getElementById('cadEmail').value.trim();
     const senha    = document.getElementById('cadSenha').value;
     const senhaConf = document.getElementById('cadSenhaConf').value;
@@ -268,21 +268,40 @@ async function fazerCadastro() {
     btn.innerHTML = '<div class="spinner"></div> Criando conta...';
     esconderAlerta();
 
-    const { error } = await sbClient.auth.signUp({ email, password: senha });
+    try {
+        const res = await fetch('/api/auth-register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password: senha })
+        });
+        const data = await res.json();
 
-    if (error) {
-        let msg = 'Erro ao criar conta.';
-        if (error.message.includes('already registered')) msg = 'Este email já está cadastrado. Faça login.';
-        mostrarAlerta(msg);
+        if (!res.ok) {
+            mostrarAlerta(data.error || 'Erro ao criar conta.');
+            btn.disabled = false;
+            btn.innerHTML = 'Criar conta';
+            return;
+        }
+
+        // Exibe tela sucesso
+        document.getElementById('emailSentAddr').textContent = email;
+        document.getElementById('cadastroForm').style.display = 'none';
+        
+        const emailSentDiv = document.getElementById('emailSent');
+        emailSentDiv.querySelector('h3').textContent = 'Conta criada!';
+        document.querySelector('.email-sent p:nth-of-type(2)').style.display = 'none';
+        emailSentDiv.innerHTML = `
+            <div class="email-sent-icon">✅</div>
+            <h3>Conta criada!</h3>
+            <p>Sua conta para <span class="email-highlight">${email}</span> foi cadastrada.</p>
+            <button class="btn-back" onclick="mudarTab('login')">Fazer Login agora</button>
+        `;
+        emailSentDiv.classList.add('show');
+    } catch (e) {
+        mostrarAlerta('Erro ao conectar com o servidor.', 'error');
         btn.disabled = false;
         btn.innerHTML = 'Criar conta';
-        return;
     }
-
-    // Exibe tela de "confirme seu email"
-    document.getElementById('emailSentAddr').textContent = email;
-    document.getElementById('cadastroForm').style.display = 'none';
-    document.getElementById('emailSent').classList.add('show');
 }
 
 // ── Enter para submeter ─────────────────────────────────────────
