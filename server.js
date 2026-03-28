@@ -23,7 +23,19 @@ async function callApiHandler(modulePath, req, res) {
 function wrapReq(req) {
     const url = new URL(req.url, `http://localhost`);
     req.query = Object.fromEntries(url.searchParams);
+    req.body = {};
     return req;
+}
+
+function parseBody(req) {
+    return new Promise((resolve) => {
+        let data = '';
+        req.on('data', chunk => data += chunk);
+        req.on('end', () => {
+            try { req.body = data ? JSON.parse(data) : {}; } catch { req.body = {}; }
+            resolve();
+        });
+    });
 }
 
 // Wrap ServerResponse to look like Vercel's res
@@ -53,7 +65,9 @@ const server = http.createServer(async (req, res) => {
         const route = pathname.slice(5).replace(/\/$/, '') || 'index';
         const handlerPath = path.join(__dirname, 'api', route + '.js');
         if (fs.existsSync(handlerPath)) {
-            return callApiHandler(pathToFileURL(handlerPath).href, wrapReq(req), wrapRes(res));
+            const wrappedReq = wrapReq(req);
+            await parseBody(wrappedReq);
+            return callApiHandler(pathToFileURL(handlerPath).href, wrappedReq, wrapRes(res));
         }
         res.writeHead(404); res.end('Not found');
         return;

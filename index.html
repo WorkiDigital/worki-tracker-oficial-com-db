@@ -1534,6 +1534,7 @@ async function confirmarVenda() {
         const lnH=await sha256(ln); if(lnH) ud.ln=lnH;
         const phH=await sha256(ph); if(phH) ud.ph=phH;
         if (chumboAtivo.ctw_aci_id) ud.ctwa_clid = chumboAtivo.ctw_aci_id;
+        if (chumboAtivo.page_id)    ud.page_id   = chumboAtivo.page_id;
 
         const payload = { data:[{
             event_name:'Purchase', event_time:Math.floor(Date.now()/1000),
@@ -1541,7 +1542,7 @@ async function confirmarVenda() {
             user_data:ud, custom_data:{ value:parseFloat(valor), currency:'BRL', content_name:produto }
         }]};
 
-        const r = await fetch(`https://graph.facebook.com/v20.0/${pixelId}/events`, {
+        const r = await fetch(`https://graph.facebook.com/v25.0/${pixelId}/events`, {
             method:'POST',
             headers:{ 'Content-Type':'application/json', 'Authorization':`Bearer ${token}` },
             body:JSON.stringify(payload)
@@ -1549,16 +1550,21 @@ async function confirmarVenda() {
         const result = await r.json();
 
         if (result.events_received) {
-            try {
-                await fetch('https://automacao.workidigital.tech/webhook/atualizar-venda', {
-                    method:'POST', headers:{'Content-Type':'application/json'},
-                    body:JSON.stringify({ id_lead:chumboAtivo.id, novo_status:'purchase', valor:parseFloat(valor) })
-                });
-                // Atualizar localmente sem recarregar
-                const idx = rawData.findIndex(l=>l.id===chumboAtivo.id);
-                if (idx!==-1) { rawData[idx].status='purchase'; rawData[idx].valor_venda=parseFloat(valor); }
-                aplicarFiltros();
-            } catch(_) {}
+            // Atualizar Supabase diretamente
+            await authFetch('/api/leads-update', {
+                method:'PATCH',
+                headers:{'Content-Type':'application/json'},
+                body:JSON.stringify({ id:chumboAtivo.id, status:'purchase', valor_venda:parseFloat(valor) })
+            }).catch(()=>{});
+            // Webhook externo (secundário, falha silenciosa)
+            fetch('https://automacao.workidigital.tech/webhook/atualizar-venda', {
+                method:'POST', headers:{'Content-Type':'application/json'},
+                body:JSON.stringify({ id_lead:chumboAtivo.id, novo_status:'purchase', valor:parseFloat(valor) })
+            }).catch(()=>{});
+            // Atualizar localmente sem recarregar
+            const idx = rawData.findIndex(l=>l.id===chumboAtivo.id);
+            if (idx!==-1) { rawData[idx].status='purchase'; rawData[idx].valor_venda=parseFloat(valor); }
+            aplicarFiltros();
             toast('Venda enviada para a Meta!', 'success');
             fecharModal();
         } else {
