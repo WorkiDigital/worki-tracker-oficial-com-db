@@ -17,7 +17,8 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Configuração da Evolution API ausente no .env do servidor.' });
   }
 
-  const { action, instanceName } = req.body || req.query;
+  const action = req.query?.action ?? req.body?.action;
+  const instanceName = req.query?.instanceName ?? req.body?.instanceName;
 
   // Prefixo para garantir isolamento
   const prefix = user.is_admin ? 'admin_' : `cliente_${user.cliente_id}_`;
