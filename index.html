@@ -598,12 +598,11 @@
     <div class="modal">
         <div class="modal-head">
             <div class="modal-icon"><i data-lucide="building" style="color:#fff;width:22px;height:22px;"></i></div>
-            <div><h3>Novo Cliente SaaS</h3><p>Cada cliente tem token e pixel próprios.</p></div>
+            <div><h3>Novo Cliente SaaS</h3><p>O token Meta é compartilhado da agência via .env</p></div>
             <button class="modal-close" onclick="$('modalAddCliente').classList.remove('open')"><i data-lucide="x" style="width:16px;"></i></button>
         </div>
         <div class="input-group"><label>Nome da Empresa/Loja <span style="color:var(--red)">*</span></label><input type="text" id="novoCliNome" placeholder="Ex: Loja do João"></div>
         <div class="input-group"><label>Pixel Meta do Cliente <span style="color:var(--red)">*</span></label><input type="text" id="novoCliPixel" placeholder="Apenas números. Ex: 123456789"></div>
-        <div class="input-group"><label>Token Meta do Cliente <span style="color:var(--red)">*</span></label><input type="text" id="novoCliToken" placeholder="EAAI... (token de acesso do cliente)"></div>
         <hr style="border:none;border-top:1px solid var(--border);margin:15px 0;">
         <p style="font-size:12px;color:var(--muted);margin-bottom:10px;">Acesso ao Portal do Cliente <span style="color:var(--red)">*</span></p>
         <div class="input-group"><label>E-mail (Login) <span style="color:var(--red)">*</span></label><input type="email" id="novoCliEmail" autocomplete="off" placeholder="cliente@loja.com"></div>
@@ -814,6 +813,7 @@
                                 <th>Telefone</th>
                                 <th class="sortable" onclick="sortBy('status')">Status <span class="sort-icon" id="sort-status">↕</span></th>
                                 <th>Mensagem</th>
+                                <th>Instância</th>
                                 <th>Plataforma</th>
                                 <th class="sortable" onclick="sortBy('event_time')">Data <span class="sort-icon" id="sort-event_time">↕</span></th>
                                 <th>Anúncio</th>
@@ -1581,6 +1581,7 @@ function renderTabela() {
             <td>${esc(lead.telefone)||'N/A'}</td>
             <td><span class="tag" style="color:${stColor};border:${stBorder};">${esc(status)}</span></td>
             <td title="${esc(lead.mensagem_recebida)}" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;">${esc(msg)}${lead.mensagem_recebida?.length>35?'…':''}</td>
+            <td style="font-size:12px;color:var(--muted);">${esc(lead.instancia||'—')}</td>
             <td><div class="platform-icon ${platCls}">${esc(lead.plataforma||'instagram')}</div></td>
             <td title="${esc(lead.event_time)}" style="white-space:nowrap;">${data}</td>
             <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;">${esc(lead.utm_content||'—')}</td>
@@ -3426,7 +3427,6 @@ function mudarAba(aba) {
 function abrirModalAddCliente() {
     $('novoCliNome').value = '';
     $('novoCliPixel').value = '';
-    $('novoCliToken').value = '';
     $('novoCliEmail').value = '';
     $('novoCliSenha').value = '';
     $('modalAddCliente').classList.add('open');
@@ -3435,13 +3435,11 @@ function abrirModalAddCliente() {
 async function salvarNovoCliente() {
     const nome = $('novoCliNome').value.trim();
     const pixel_padrao = $('novoCliPixel').value.trim();
-    const token_meta = $('novoCliToken').value.trim();
     const email_contato = $('novoCliEmail').value.trim();
     const senha_acesso = $('novoCliSenha').value;
 
     if (!nome) { toast('Nome da empresa é obrigatório!', 'error'); return; }
     if (!pixel_padrao) { toast('Pixel Padrão é obrigatório — cada cliente tem seu próprio pixel!', 'error'); return; }
-    if (!token_meta) { toast('Token Meta é obrigatório — cada cliente tem seu próprio token!', 'error'); return; }
     if (!email_contato) { toast('E-mail de acesso é obrigatório!', 'error'); return; }
     if (!senha_acesso || senha_acesso.length < 6) { toast('Senha deve ter no mínimo 6 caracteres!', 'error'); return; }
 
@@ -3453,14 +3451,14 @@ async function salvarNovoCliente() {
         const r = await authFetch('/api/clientes', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ nome, email_contato, pixel_padrao, token_meta, senha_acesso })
+            body: JSON.stringify({ nome, email_contato, pixel_padrao, senha_acesso })
         });
         const data = await r.json();
         if (!r.ok || data.error) throw new Error(data.error || 'Erro ao criar cliente');
 
         $('modalAddCliente').classList.remove('open');
         // Limpar campos
-        ['novoCliNome','novoCliPixel','novoCliToken','novoCliEmail','novoCliSenha'].forEach(id => { const el = $(id); if(el) el.value = ''; });
+        ['novoCliNome','novoCliPixel','novoCliEmail','novoCliSenha'].forEach(id => { const el = $(id); if(el) el.value = ''; });
         // Mostrar modal de credenciais
         $('credEmail').textContent = email_contato;
         $('credSenha').textContent = senha_acesso;

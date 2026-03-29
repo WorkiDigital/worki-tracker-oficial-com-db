@@ -69,9 +69,9 @@ export default async function handler(req, res) {
       // É um LEAD NOVO
       const insertResult = await pool.query(`
         INSERT INTO leads_tracking (
-          cliente_id, nome, telefone, mensagem_recebida, ctw_aci_id, source_id, 
-          event_source_url, anuncio_thumbnail_url, status, event_time
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'Pendente', to_timestamp($9))
+          cliente_id, nome, telefone, mensagem_recebida, ctw_aci_id, source_id,
+          event_source_url, anuncio_thumbnail_url, instancia, status, event_time
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'Pendente', to_timestamp($10))
         RETURNING *
       `, [
         cliente_id,
@@ -82,6 +82,7 @@ export default async function handler(req, res) {
         source_id || '',
         event_source_url || '',
         anuncio_thumbnail_url || '',
+        instance || '',
         Math.floor(Date.now() / 1000)
       ]);
 
@@ -95,13 +96,13 @@ export default async function handler(req, res) {
 }
 
 async function sendCapiPurchase(lead, pool) {
-  let { pixel, token, ctw_aci_id, source_id, event_source_url, telefone, cidade, estado, cliente_id, valor_venda } = lead;
+  let { pixel, ctw_aci_id, event_source_url, telefone, cidade, estado, cliente_id, valor_venda } = lead;
 
-  const clientRes = await pool.query('SELECT pixel_padrao, token_meta FROM clientes WHERE id = $1', [cliente_id]);
+  const clientRes = await pool.query('SELECT pixel_padrao FROM clientes WHERE id = $1', [cliente_id]);
   if (clientRes.rows.length > 0) {
     pixel = pixel || clientRes.rows[0].pixel_padrao;
-    token = token || clientRes.rows[0].token_meta;
   }
+  const token = process.env.META_ADS_TOKEN || null;
 
   if (!pixel || !token) return;
 

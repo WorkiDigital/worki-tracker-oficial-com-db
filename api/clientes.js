@@ -31,18 +31,17 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'POST') {
-      const { nome, email_contato, pixel_padrao, token_meta, senha_acesso } = req.body;
+      const { nome, email_contato, pixel_padrao, senha_acesso } = req.body;
       if (!nome) return res.status(400).json({ error: 'Nome da Agência/Cliente é obrigatório' });
       if (!email_contato) return res.status(400).json({ error: 'Email de contato é obrigatório' });
       if (!senha_acesso) return res.status(400).json({ error: 'Senha de acesso é obrigatória' });
       if (!pixel_padrao) return res.status(400).json({ error: 'Pixel Padrão é obrigatório — cada cliente tem seu próprio pixel' });
-      if (!token_meta) return res.status(400).json({ error: 'Token Meta é obrigatório — cada cliente tem seu próprio token de acesso' });
 
       try {
           // 1. Cria a configuração raiz do Cliente
           const clientResult = await pool.query(
-              'INSERT INTO clientes (nome, email_contato, pixel_padrao, token_meta) VALUES ($1, $2, $3, $4) RETURNING id',
-              [nome, email_contato, pixel_padrao, token_meta]
+              'INSERT INTO clientes (nome, email_contato, pixel_padrao) VALUES ($1, $2, $3) RETURNING id',
+              [nome, email_contato, pixel_padrao]
           );
           const cliente_id = clientResult.rows[0].id;
 

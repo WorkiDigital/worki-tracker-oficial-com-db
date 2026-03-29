@@ -71,17 +71,15 @@ async function sendCapiPurchase(lead, value, pool) {
     nome, telefone, cidade, estado, pais, cliente_id
   } = lead;
 
-  if ((!pixel || !token) && cliente_id) {
-     const clientRes = await pool.query('SELECT pixel_padrao, token_meta FROM clientes WHERE id = $1', [cliente_id]);
-     if (clientRes.rows.length > 0) {
-        pixel = pixel || clientRes.rows[0].pixel_padrao;
-        token = token || clientRes.rows[0].token_meta;
-     }
+  if (!pixel && cliente_id) {
+     const clientRes = await pool.query('SELECT pixel_padrao FROM clientes WHERE id = $1', [cliente_id]);
+     if (clientRes.rows.length > 0) pixel = clientRes.rows[0].pixel_padrao;
   }
+  token = process.env.META_ADS_TOKEN || null;
 
   // Seção de requisitos CAPI: Se não tiver pixel e token, não podemos mandar
   if (!pixel || !token) {
-    console.warn('CAPI não enviada: falta Pixel ou Token no banco (e na config) para o lead ID', lead.id);
+    console.warn('CAPI não enviada: falta Pixel ou META_ADS_TOKEN para o lead ID', lead.id);
     return;
   }
 

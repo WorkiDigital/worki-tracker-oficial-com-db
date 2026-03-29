@@ -80,6 +80,20 @@ export default async function handler(req, res) {
          return res.status(400).json({ error: data.message || 'Erro ao criar instância' });
       }
 
+      // Auto-configura webhook do N8N na instância criada
+      if (process.env.N8N_WEBHOOK_URL) {
+        await fetch(`${EVO_URL}/webhook/set/${finalInstanceName}`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            url: process.env.N8N_WEBHOOK_URL,
+            webhook_by_events: false,
+            webhook_base64: false,
+            events: ["MESSAGES_UPSERT"]
+          })
+        });
+      }
+
       const rQR = await fetch(`${EVO_URL}/instance/connect/${finalInstanceName}`, { headers });
       const dataQR = await rQR.json();
       return res.status(200).json(dataQR);
