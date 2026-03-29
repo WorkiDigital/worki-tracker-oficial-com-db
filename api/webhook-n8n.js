@@ -25,14 +25,21 @@ export default async function handler(req, res) {
     valor_venda
   } = req.body;
 
-  // Auto-derivar cliente_id do nome da instância Evolution (ex: "cliente_7_Loja" → 7)
+  // 1. Auto-derivar cliente_id do prefixo da instância (ex: "cliente_7_Loja" → 7)
   if (!cliente_id && instance) {
     const match = String(instance).match(/^cliente_(\d+)_/);
     if (match) cliente_id = parseInt(match[1]);
   }
 
+  // 2. Fallback: buscar na tabela de mapeamento (instâncias externas vinculadas pelo admin)
+  if (!cliente_id && instance) {
+    const pool = getPool();
+    const map = await pool.query('SELECT cliente_id FROM instancias_mapeamento WHERE instance_name = $1', [instance]);
+    if (map.rows.length > 0) cliente_id = map.rows[0].cliente_id;
+  }
+
   if (!cliente_id || !telefone) {
-    return res.status(400).json({ error: 'Informe cliente_id ou um campo instance com prefixo "cliente_N_". telefone também é obrigatório.' });
+    return res.status(400).json({ error: 'Instância não reconhecida. Vincule-a a um cliente no painel ou use prefixo "cliente_N_". telefone também é obrigatório.' });
   }
 
   try {

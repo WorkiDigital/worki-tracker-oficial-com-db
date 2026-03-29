@@ -1,4 +1,5 @@
 import { verifyAuth } from './_auth.js';
+import { getPool } from './_db.js';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -37,21 +38,68 @@ export default async function handler(req, res) {
         const r = await fetch(`${EVO_URL}/instance/fetchInstances`, { headers });
         const data = await r.json();
         const instances = Array.isArray(data) ? data : [];
+
+        // Instâncias com prefixo do usuário
         const myInstances = instances.filter(i => {
            const name = i.instance?.instanceName || i.instanceName || i.name;
            return name && String(name).startsWith(prefix);
         }).map(i => {
            const name = i.instance?.instanceName || i.instanceName || i.name;
            const rawState = i.instance?.state || i.instance?.connectionStatus || i.state || i.connectionStatus || '';
-           // Normaliza para 'open' qualquer valor que signifique conectado
            const state = ['open','connected','online'].includes(rawState) ? 'open' : rawState;
-           return {
-               fullName: name,
-               displayName: name.replace(prefix, ''),
-               state: state
-           };
+           return { fullName: name, displayName: name.replace(prefix, ''), state, linked: false };
         });
+
+        // Para admin: também busca instâncias vinculadas via tabela de mapeamento
+        if (user.is_admin) {
+            const pool = getPool();
+            const mapped = await pool.query('SELECT instance_name, cliente_id FROM instancias_mapeamento');
+            for (const row of mapped.rows) {
+                if (myInstances.find(i => i.fullName === row.instance_name)) continue; // já listada
+                const evoInst = instances.find(i => (i.instance?.instanceName || i.instanceName || i.name) === row.instance_name);
+                const rawState = evoInst ? (evoInst.instance?.state || evoInst.state || '') : 'unknown';
+                const state = ['open','connected','online'].includes(rawState) ? 'open' : rawState;
+                myInstances.push({ fullName: row.instance_name, displayName: row.instance_name, state, linked: true, cliente_id: row.cliente_id });
+            }
+        }
+
         return res.status(200).json(myInstances);
+    }
+
+    if (action === 'list-all') {
+        if (!user.is_admin) return res.status(403).json({ error: 'Apenas admin pode listar todas as instâncias.' });
+        const r = await fetch(`${EVO_URL}/instance/fetchInstances`, { headers });
+        const data = await r.json();
+        const instances = Array.isArray(data) ? data : [];
+        return res.status(200).json(instances.map(i => {
+            const name = i.instance?.instanceName || i.instanceName || i.name;
+            const rawState = i.instance?.state || i.state || '';
+            const state = ['open','connected','online'].includes(rawState) ? 'open' : rawState;
+            return { fullName: name, state };
+        }));
+    }
+
+    if (action === 'link') {
+        if (!user.is_admin) return res.status(403).json({ error: 'Apenas admin pode vincular instâncias.' });
+        const { cliente_id: cid } = req.body;
+        if (!cid) return res.status(400).json({ error: 'cliente_id obrigatório' });
+        if (!instanceName) return res.status(400).json({ error: 'instanceName obrigatório' });
+
+        const pool = getPool();
+        await pool.query(
+            'INSERT INTO instancias_mapeamento (instance_name, cliente_id) VALUES ($1, $2) ON CONFLICT (instance_name) DO UPDATE SET cliente_id=$2',
+            [instanceName, cid]
+        );
+
+        // Configura webhook N8N na instância existente
+        if (process.env.N8N_WEBHOOK_URL) {
+            const webhookBody = { webhook: { enabled: true, url: process.env.N8N_WEBHOOK_URL, webhookByEvents: false, webhookBase64: false, events: ["MESSAGES_UPSERT"] } };
+            const wRes = await fetch(`${EVO_URL}/webhook/set/${instanceName}`, { method: 'POST', headers, body: JSON.stringify(webhookBody) });
+            const wData = wRes.headers.get('content-type')?.includes('json') ? await wRes.json() : {};
+            console.log(`[evo-manager] Webhook vinculado em ${instanceName} (${wRes.status}):`, JSON.stringify(wData));
+        }
+
+        return res.status(200).json({ message: 'Instância vinculada com sucesso!' });
     }
 
     if (action === 'status') {

@@ -110,6 +110,17 @@ async function setup() {
     `);
     console.log('✅ Tabela "share_tokens" verificada/criada.');
 
+    // Tabela de mapeamento: instâncias externas da Evolution → cliente
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS public.instancias_mapeamento (
+          id SERIAL PRIMARY KEY,
+          instance_name VARCHAR(255) UNIQUE NOT NULL,
+          cliente_id INTEGER REFERENCES public.clientes(id) ON DELETE CASCADE,
+          criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    console.log('✅ Tabela "instancias_mapeamento" verificada/criada.');
+
     client.release();
     console.log('🚀 Finalizado! Estrutura do Banco de Dados pronta para uso.');
     process.exit(0);

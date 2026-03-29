@@ -633,6 +633,29 @@
 </div>
 
 <!-- Modal Editar Cliente -->
+<!-- Modal Vincular Instância Existente -->
+<div id="modalVincularInstancia" class="modal-overlay" onclick="if(event.target===this) this.classList.remove('open')">
+    <div class="modal" style="max-width:520px;">
+        <div class="modal-head">
+            <div class="modal-icon" style="background:#25D366;"><i data-lucide="link" style="color:#fff;width:22px;height:22px;"></i></div>
+            <div><h3>Conectar Instância Existente</h3><p>Vincule uma instância Evolution já criada a um cliente.</p></div>
+            <button class="modal-close" onclick="$('modalVincularInstancia').classList.remove('open')"><i data-lucide="x" style="width:16px;"></i></button>
+        </div>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">Selecione a instância e o cliente que vai receber os leads:</p>
+        <div id="listaInstanciasEvo" style="max-height:240px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin-bottom:16px;">
+            <div style="text-align:center;padding:20px;color:var(--muted);">Carregando instâncias...</div>
+        </div>
+        <div class="input-group" style="margin-bottom:8px;">
+            <label>Vincular ao Cliente <span style="color:var(--red)">*</span></label>
+            <select id="selectClienteVincular" class="form-control">
+                <option value="">Selecione o cliente...</option>
+            </select>
+        </div>
+        <div id="instanciaSelecionadaInfo" style="font-size:12px;color:var(--green);margin-bottom:16px;min-height:18px;"></div>
+        <button class="btn-confirm" id="btnConfirmarVincular" onclick="confirmarVincularInstancia()">Vincular Instância</button>
+    </div>
+</div>
+
 <div id="modalEditCliente" class="modal-overlay" onclick="if(event.target===this) this.classList.remove('open')">
     <div class="modal" style="max-width:480px;">
         <div class="modal-head">
@@ -1241,9 +1264,14 @@
                         <h3 style="margin-bottom: 4px; font-size:20px;"><i data-lucide="smartphone" style="color:#25D366;width:24px;height:24px;vertical-align:middle;margin-right:8px;"></i> Conexões WhatsApp</h3>
                         <p style="color:var(--muted);font-size:13px;margin:0;">Gerencie números oficiais para disparos via SaaS.</p>
                     </div>
-                    <button class="btn btn-primary btn-sm" id="btnNovaConexao" onclick="mostrarWaCriar()">
-                        <i data-lucide="plus" style="width:14px;"></i> Nova Conexão
-                    </button>
+                    <div style="display:flex;gap:8px;" id="btnNovaConexao">
+                        <button class="btn btn-primary btn-sm" onclick="mostrarWaCriar()">
+                            <i data-lucide="plus" style="width:14px;"></i> Nova Conexão
+                        </button>
+                        <button class="btn btn-ghost btn-sm" id="btnConectarExistente" onclick="abrirModalVincular()" style="display:none;">
+                            <i data-lucide="link" style="width:14px;"></i> Conectar Existente
+                        </button>
+                    </div>
                 </div>
                 
                 <!-- LIST LISTA -->
@@ -3632,6 +3660,11 @@ function setWaView(view) {
 
 async function carregarListaWa() {
     setWaView('waList');
+    // Mostrar botão "Conectar Existente" só para admin
+    const _waUser = JSON.parse(localStorage.getItem('adlytics_user') || '{}');
+    const btnExist = $('btnConectarExistente');
+    if (btnExist) btnExist.style.display = _waUser.is_admin ? 'flex' : 'none';
+
     const listEl = $('waList');
     listEl.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted);">Carregando conexões...</div>';
     
@@ -3803,6 +3836,84 @@ async function waDesconectar(name) {
         setTimeout(carregarListaWa, 1200);
     } catch(e) {
         toast("Erro ao desconectar.", "error");
+    }
+}
+
+let _instanciaSelecionada = null;
+
+async function abrirModalVincular() {
+    _instanciaSelecionada = null;
+    $('instanciaSelecionadaInfo').textContent = '';
+    $('selectClienteVincular').innerHTML = '<option value="">Selecione o cliente...</option>';
+    $('listaInstanciasEvo').innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);">Carregando instâncias...</div>';
+    $('modalVincularInstancia').classList.add('open');
+
+    // Busca todas as instâncias da Evolution
+    try {
+        const [rInst, rCli] = await Promise.all([
+            authFetch('/api/evo-manager?action=list-all'),
+            authFetch('/api/clientes')
+        ]);
+        const instancias = await rInst.json();
+        const clientes = await rCli.json();
+
+        // Popula select de clientes
+        $('selectClienteVincular').innerHTML = '<option value="">Selecione o cliente...</option>' +
+            (clientes || []).map(c => `<option value="${c.id}">${esc(c.nome)}</option>`).join('');
+
+        // Renderiza lista de instâncias
+        if (!instancias.length) {
+            $('listaInstanciasEvo').innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);">Nenhuma instância encontrada na Evolution.</div>';
+            return;
+        }
+        $('listaInstanciasEvo').innerHTML = instancias.map(inst => {
+            const up = inst.state === 'open';
+            const badgeColor = up ? '#10b981' : '#ef4444';
+            const badgeLabel = up ? '● Conectado' : '● Desconectado';
+            return `<div class="inst-item" onclick="selecionarInstancia('${esc(inst.fullName)}')"
+                style="cursor:pointer;padding:10px 14px;border-radius:8px;border:1px solid var(--border);background:var(--card);display:flex;align-items:center;justify-content:space-between;transition:border .15s;"
+                id="instItem_${esc(inst.fullName)}">
+                <span style="font-weight:600;font-size:14px;">${esc(inst.fullName)}</span>
+                <span style="font-size:11px;font-weight:600;color:${badgeColor};">${badgeLabel}</span>
+            </div>`;
+        }).join('');
+        lucide.createIcons({ nodes: [$('listaInstanciasEvo')] });
+    } catch(e) {
+        $('listaInstanciasEvo').innerHTML = `<div style="color:var(--red);padding:20px;">${e.message}</div>`;
+    }
+}
+
+function selecionarInstancia(name) {
+    _instanciaSelecionada = name;
+    // Highlight selecionado
+    document.querySelectorAll('.inst-item').forEach(el => el.style.borderColor = 'var(--border)');
+    const el = $('instItem_' + name);
+    if (el) el.style.borderColor = '#25D366';
+    $('instanciaSelecionadaInfo').textContent = `Instância selecionada: ${name}`;
+}
+
+async function confirmarVincularInstancia() {
+    if (!_instanciaSelecionada) { toast('Selecione uma instância', 'error'); return; }
+    const cliente_id = $('selectClienteVincular').value;
+    if (!cliente_id) { toast('Selecione o cliente', 'error'); return; }
+
+    const btn = $('btnConfirmarVincular');
+    btn.textContent = 'Vinculando...'; btn.disabled = true;
+    try {
+        const r = await authFetch('/api/evo-manager', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'link', instanceName: _instanciaSelecionada, cliente_id: parseInt(cliente_id) })
+        });
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error || 'Erro ao vincular');
+        toast('Instância vinculada com sucesso!', 'success');
+        $('modalVincularInstancia').classList.remove('open');
+        setTimeout(carregarListaWa, 600);
+    } catch(e) {
+        toast(e.message, 'error');
+    } finally {
+        btn.textContent = 'Vincular Instância'; btn.disabled = false;
     }
 }
 
