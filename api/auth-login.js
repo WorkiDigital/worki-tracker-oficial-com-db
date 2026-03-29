@@ -18,7 +18,7 @@ export default async function handler(req, res) {
   try {
     const pool = getPool();
     const result = await pool.query('SELECT id, email, senha_hash, is_admin, cliente_id FROM usuarios WHERE email = $1', [email]);
-    
+
     if (result.rows.length === 0) {
       return res.status(401).json({ error: 'Email ou senha incorretos.' });
     }
@@ -30,12 +30,22 @@ export default async function handler(req, res) {
       return res.status(401).json({ error: 'Email ou senha incorretos.' });
     }
 
+    // Busca permissões do cliente (se não for admin)
+    let permissoes = { leads: true, anuncios: true, relatorios: true, whatsapp: true, config: true };
+    if (!user.is_admin && user.cliente_id) {
+        const cliRes = await pool.query('SELECT permissoes FROM clientes WHERE id = $1', [user.cliente_id]);
+        if (cliRes.rows.length > 0 && cliRes.rows[0].permissoes) {
+            permissoes = cliRes.rows[0].permissoes;
+        }
+    }
+
     const secret = process.env.JWT_SECRET || 'SECRET_LOCAL_DEV';
-    const payload = { 
-        id: user.id, 
-        email: user.email, 
-        is_admin: user.is_admin, 
-        cliente_id: user.cliente_id 
+    const payload = {
+        id: user.id,
+        email: user.email,
+        is_admin: user.is_admin,
+        cliente_id: user.cliente_id,
+        permissoes
     };
     const token = jwt.sign(payload, secret, { expiresIn: '7d' });
 

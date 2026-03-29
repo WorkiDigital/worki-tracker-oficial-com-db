@@ -85,6 +85,13 @@ async function setup() {
     `);
     console.log('✅ Vínculo de agência injetado na tabela "leads_tracking".');
 
+    // Adicionando coluna de permissões na tabela clientes
+    await client.query(`
+      ALTER TABLE public.clientes
+      ADD COLUMN IF NOT EXISTS permissoes JSONB DEFAULT '{"leads":true,"anuncios":true,"relatorios":true,"whatsapp":true,"config":true}';
+    `);
+    console.log('✅ Coluna "permissoes" injetada na tabela "clientes".');
+
     // Criação da tabela de Tokens de Compartilhamento
     await client.query(`
       CREATE TABLE IF NOT EXISTS public.share_tokens (

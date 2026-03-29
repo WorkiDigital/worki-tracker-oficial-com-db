@@ -633,6 +633,52 @@
     </div>
 </div>
 
+<!-- Modal Editar Cliente -->
+<div id="modalEditCliente" class="modal-overlay" onclick="if(event.target===this) this.classList.remove('open')">
+    <div class="modal" style="max-width:480px;">
+        <div class="modal-head">
+            <div class="modal-icon" style="background:var(--blue);"><i data-lucide="edit-3" style="color:#fff;width:22px;height:22px;"></i></div>
+            <div><h3>Editar Cliente</h3><p id="editCliSubtitle">Atualize dados e permissões.</p></div>
+            <button class="modal-close" onclick="$('modalEditCliente').classList.remove('open')"><i data-lucide="x" style="width:16px;"></i></button>
+        </div>
+        <input type="hidden" id="editCliId">
+        <div class="input-group"><label>Nome da Empresa</label><input type="text" id="editCliNome"></div>
+        <div class="input-group"><label>Pixel Meta</label><input type="text" id="editCliPixel"></div>
+        <div class="input-group"><label>Token Meta</label><input type="text" id="editCliToken"></div>
+        <div class="input-group"><label>E-mail (Login)</label><input type="email" id="editCliEmail"></div>
+        <div class="input-group"><label>Nova Senha <span style="color:var(--muted);font-weight:400;font-size:11px;">(deixe em branco para não alterar)</span></label><input type="text" id="editCliSenha" placeholder="Nova senha (opcional)"></div>
+        <hr style="border:none;border-top:1px solid var(--border);margin:16px 0 12px;">
+        <p style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:12px;">Permissões de Acesso</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
+            <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--tag);border-radius:8px;cursor:pointer;">
+                <input type="checkbox" id="permLeads" style="width:16px;height:16px;accent-color:var(--blue);">
+                <span style="font-size:13px;">Leads Reais</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--tag);border-radius:8px;cursor:pointer;">
+                <input type="checkbox" id="permAnuncios" style="width:16px;height:16px;accent-color:var(--blue);">
+                <span style="font-size:13px;">Meta Ads</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--tag);border-radius:8px;cursor:pointer;">
+                <input type="checkbox" id="permRelatorios" style="width:16px;height:16px;accent-color:var(--blue);">
+                <span style="font-size:13px;">Relatórios</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--tag);border-radius:8px;cursor:pointer;">
+                <input type="checkbox" id="permWhatsapp" style="width:16px;height:16px;accent-color:var(--blue);">
+                <span style="font-size:13px;">Conexão WhatsApp</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--tag);border-radius:8px;cursor:pointer;">
+                <input type="checkbox" id="permConfig" style="width:16px;height:16px;accent-color:var(--blue);">
+                <span style="font-size:13px;">Integrações</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--tag);border-radius:8px;cursor:pointer;">
+                <input type="checkbox" id="permClientes" style="width:16px;height:16px;accent-color:var(--blue);">
+                <span style="font-size:13px;">Compartilhar Dash</span>
+            </label>
+        </div>
+        <button class="btn-confirm" id="btnSalvarEditCliente" onclick="salvarEdicaoCliente()">Salvar Alterações</button>
+    </div>
+</div>
+
 <!-- Sidebar -->
 <div class="sidebar" id="sidebar">
     <div class="logo">
@@ -1076,14 +1122,15 @@
                                 <tr>
                                     <th>ID</th>
                                     <th>Nome da Empresa</th>
-                                    <th>Token Meta (CAPI)</th>
-                                    <th>Pixel Padrão</th>
-                                    <th>E-mail Principal</th>
+                                    <th>E-mail / Login</th>
+                                    <th>Pixel</th>
+                                    <th>Permissões</th>
                                     <th>Criado em</th>
+                                    <th></th>
                                 </tr>
                             </thead>
                             <tbody id="tabela-clientes-admin">
-                                <tr><td colspan="6" style="text-align:center;padding:20px;color:var(--muted);">Carregando...</td></tr>
+                                <tr><td colspan="7" style="text-align:center;padding:20px;color:var(--muted);">Carregando...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -1347,6 +1394,27 @@ async function init() {
 
         if (user.is_admin) {
             $('btn-agencia').style.display = 'flex';
+        } else {
+            // Aplicar permissões do cliente — ocultar abas sem acesso
+            const p = user.permissoes || {};
+            const tabMap = {
+                'btn-leads':      p.leads     !== false,
+                'btn-anuncios':   p.anuncios  !== false,
+                'btn-relatorios': p.relatorios!== false,
+                'btn-whatsapp':   p.whatsapp  !== false,
+                'btn-config':     p.config    !== false,
+                'btn-clientes':   p.clientes  !== false,
+            };
+            Object.entries(tabMap).forEach(([btnId, allowed]) => {
+                const el = $(btnId);
+                if (el) el.style.display = allowed ? 'flex' : 'none';
+            });
+            // Navegar para a primeira aba disponível
+            const firstAllowed = Object.entries(tabMap).find(([,v]) => v);
+            if (firstAllowed) {
+                const abaName = firstAllowed[0].replace('btn-', '');
+                mudarAba(abaName);
+            }
         }
     } catch(_) {
         window.location.href = 'login.html';
@@ -3417,32 +3485,107 @@ function copiarCredenciais() {
 async function carregarClientesAdmin() {
     const tbody = $('tabela-clientes-admin');
     if (!tbody) return;
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--muted);">Carregando...</td></tr>';
-    
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--muted);">Carregando...</td></tr>';
+
     try {
         const r = await authFetch('/api/clientes');
         const clientes = await r.json();
         if (!r.ok || clientes.error) throw new Error(clientes?.error || 'Erro de API');
 
         if (!Array.isArray(clientes) || clientes.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--muted);">Nenhum cliente cadastrado.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--muted);">Nenhum cliente cadastrado.</td></tr>';
             return;
         }
 
-        tbody.innerHTML = clientes.map(c => `
+        const PERM_LABELS = { leads:'Leads', anuncios:'Meta Ads', relatorios:'Relatórios', whatsapp:'WhatsApp', config:'Integrações', clientes:'Compartilhar' };
+
+        tbody.innerHTML = clientes.map(c => {
+            const p = c.permissoes || { leads:true, anuncios:true, relatorios:true, whatsapp:true, config:true, clientes:true };
+            const badges = Object.entries(PERM_LABELS).map(([k, label]) =>
+                `<span style="display:inline-block;font-size:10px;padding:2px 6px;border-radius:4px;margin:1px;background:${p[k] ? 'rgba(59,130,246,0.15)' : 'rgba(239,68,68,0.1)'};color:${p[k] ? 'var(--blue)' : 'var(--red)'};">${label}</span>`
+            ).join('');
+            // Serialize client data for the edit button (escaping for onclick attribute)
+            const dataAttr = esc(JSON.stringify({ id:c.id, nome:c.nome, email_contato:c.email_contato, pixel_padrao:c.pixel_padrao, token_meta:c.token_meta, permissoes:p }));
+            return `
             <tr>
                 <td style="color:var(--muted);font-size:13px;">#${c.id}</td>
                 <td style="font-weight:600;color:var(--text);">${esc(c.nome)}</td>
-                <td style="font-size:12px;color:var(--muted);max-width:150px;overflow:hidden;text-overflow:ellipsis;" title="${esc(c.token_meta)}">${c.token_meta ? esc(c.token_meta) : '—'}</td>
-                <td style="font-family:monospace;font-size:13px;color:var(--muted);">${c.pixel_padrao ? esc(c.pixel_padrao) : '—'}</td>
                 <td style="font-size:13px;color:var(--muted);">${c.email_contato ? esc(c.email_contato) : '—'}</td>
-                <td style="font-size:12px;color:var(--muted);">${new Date(c.created_at).toLocaleDateString('pt-BR')}</td>
-            </tr>
-        `).join('');
+                <td style="font-family:monospace;font-size:12px;color:var(--muted);">${c.pixel_padrao ? esc(c.pixel_padrao) : '—'}</td>
+                <td style="max-width:200px;">${badges}</td>
+                <td style="font-size:12px;color:var(--muted);">${new Date(c.criado_em).toLocaleDateString('pt-BR')}</td>
+                <td><button class="btn btn-ghost btn-sm" onclick='abrirEditCliente(${JSON.stringify({id:c.id,nome:c.nome,email_contato:c.email_contato,pixel_padrao:c.pixel_padrao,token_meta:c.token_meta,permissoes:p})})'><i data-lucide="edit-3" style="width:14px;"></i> Editar</button></td>
+            </tr>`;
+        }).join('');
+
+        lucide.createIcons({ nodes: [tbody] });
 
     } catch(e) {
-        tbody.innerHTML = `<tr><td colspan="6" style="color:var(--red);text-align:center;padding:20px;">Erro: ${e.message}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" style="color:var(--red);text-align:center;padding:20px;">Erro: ${e.message}</td></tr>`;
         toast('Falha ao carregar clientes: ' + e.message, 'error');
+    }
+}
+
+function abrirEditCliente(c) {
+    $('editCliId').value       = c.id;
+    $('editCliNome').value     = c.nome || '';
+    $('editCliPixel').value    = c.pixel_padrao || '';
+    $('editCliToken').value    = c.token_meta || '';
+    $('editCliEmail').value    = c.email_contato || '';
+    $('editCliSenha').value    = '';
+    $('editCliSubtitle').textContent = c.nome;
+    const p = c.permissoes || {};
+    $('permLeads').checked     = p.leads     !== false;
+    $('permAnuncios').checked  = p.anuncios  !== false;
+    $('permRelatorios').checked= p.relatorios!== false;
+    $('permWhatsapp').checked  = p.whatsapp  !== false;
+    $('permConfig').checked    = p.config    !== false;
+    $('permClientes').checked  = p.clientes  !== false;
+    $('modalEditCliente').classList.add('open');
+    lucide.createIcons({ nodes: [$('modalEditCliente')] });
+}
+
+async function salvarEdicaoCliente() {
+    const id = parseInt($('editCliId').value);
+    if (!id) return;
+
+    const body = {
+        id,
+        nome:          $('editCliNome').value.trim()  || undefined,
+        email_contato: $('editCliEmail').value.trim() || undefined,
+        pixel_padrao:  $('editCliPixel').value.trim() || undefined,
+        token_meta:    $('editCliToken').value.trim() || undefined,
+        permissoes: {
+            leads:      $('permLeads').checked,
+            anuncios:   $('permAnuncios').checked,
+            relatorios: $('permRelatorios').checked,
+            whatsapp:   $('permWhatsapp').checked,
+            config:     $('permConfig').checked,
+            clientes:   $('permClientes').checked,
+        }
+    };
+    const senha = $('editCliSenha').value;
+    if (senha) body.senha_acesso = senha;
+
+    const btn = $('btnSalvarEditCliente');
+    const orig = btn.textContent;
+    btn.textContent = 'Salvando...'; btn.disabled = true;
+
+    try {
+        const r = await authFetch('/api/clientes', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+        const data = await r.json();
+        if (!r.ok || data.error) throw new Error(data.error || 'Erro ao salvar');
+        toast('Cliente atualizado!', 'success');
+        $('modalEditCliente').classList.remove('open');
+        carregarClientesAdmin();
+    } catch(e) {
+        toast(e.message, 'error');
+    } finally {
+        btn.textContent = orig; btn.disabled = false;
     }
 }
 
