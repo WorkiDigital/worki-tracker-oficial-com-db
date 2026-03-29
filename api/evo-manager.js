@@ -42,7 +42,9 @@ export default async function handler(req, res) {
            return name && String(name).startsWith(prefix);
         }).map(i => {
            const name = i.instance?.instanceName || i.instanceName || i.name;
-           const state = i.instance?.state || i.state;
+           const rawState = i.instance?.state || i.instance?.connectionStatus || i.state || i.connectionStatus || '';
+           // Normaliza para 'open' qualquer valor que signifique conectado
+           const state = ['open','connected','online'].includes(rawState) ? 'open' : rawState;
            return {
                fullName: name,
                displayName: name.replace(prefix, ''),
