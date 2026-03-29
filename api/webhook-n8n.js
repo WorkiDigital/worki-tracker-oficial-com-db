@@ -9,9 +9,10 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
 
-  const {
+  let {
     cliente_id,
-    evento, // 'lead' ou 'purchase'
+    instance,   // "cliente_7_NomeLoja" — alternativa ao cliente_id explícito
+    evento,     // 'lead' ou 'purchase'
     nome,
     telefone,
     mensagem_recebida,
@@ -24,8 +25,14 @@ export default async function handler(req, res) {
     valor_venda
   } = req.body;
 
+  // Auto-derivar cliente_id do nome da instância Evolution (ex: "cliente_7_Loja" → 7)
+  if (!cliente_id && instance) {
+    const match = String(instance).match(/^cliente_(\d+)_/);
+    if (match) cliente_id = parseInt(match[1]);
+  }
+
   if (!cliente_id || !telefone) {
-    return res.status(400).json({ error: 'cliente_id e telefone são obrigatórios' });
+    return res.status(400).json({ error: 'Informe cliente_id ou um campo instance com prefixo "cliente_N_". telefone também é obrigatório.' });
   }
 
   try {
