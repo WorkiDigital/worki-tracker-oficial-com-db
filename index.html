@@ -3697,12 +3697,14 @@ async function verConexao(name) {
 }
 
 async function deletarConexao(name) {
-    if (!confirm(`Excluir permanentemente a conexão "${name}"?`)) return;
+    if (!confirm(`Excluir permanentemente a conexão "${name}"? Isso remove da Evolution também.`)) return;
     try {
-        await authFetch('/api/evo-manager', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({action:'delete', instanceName: name}) });
-        toast("Conexão excluída.", "success");
-        carregarListaWa();
-    } catch(e) { toast('Erro ao excluir', 'error'); }
+        const r = await authFetch('/api/evo-manager', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({action:'delete', instanceName: name}) });
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error || 'Erro ao excluir');
+        toast("Conexão excluída da Evolution.", "success");
+        setTimeout(carregarListaWa, 800);
+    } catch(e) { toast('Erro ao excluir: ' + e.message, 'error'); }
 }
 
 async function checkWaStatus(fetchQrIfNotOpen = false) {
