@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
@@ -103,6 +103,21 @@ export default async function handler(req, res) {
               return res.status(400).json({ error: 'Este e-mail já está em uso por outro usuário.' });
           }
           return res.status(500).json({ error: 'Erro ao atualizar cliente.' });
+      }
+  }
+
+  if (req.method === 'DELETE') {
+      const { id } = req.body;
+      if (!id) return res.status(400).json({ error: 'ID obrigatório' });
+      try {
+          await pool.query('DELETE FROM usuarios WHERE cliente_id=$1 AND is_admin=false', [id]);
+          await pool.query('DELETE FROM leads_tracking WHERE cliente_id=$1', [id]);
+          const r = await pool.query('DELETE FROM clientes WHERE id=$1 RETURNING id', [id]);
+          if (r.rowCount === 0) return res.status(404).json({ error: 'Cliente não encontrado' });
+          return res.status(200).json({ message: 'Cliente excluído com sucesso' });
+      } catch(err) {
+          console.error(err);
+          return res.status(500).json({ error: 'Erro ao excluir cliente' });
       }
   }
 

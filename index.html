@@ -3514,7 +3514,10 @@ async function carregarClientesAdmin() {
                 <td style="font-family:monospace;font-size:12px;color:var(--muted);">${c.pixel_padrao ? esc(c.pixel_padrao) : '—'}</td>
                 <td style="max-width:200px;">${badges}</td>
                 <td style="font-size:12px;color:var(--muted);">${new Date(c.criado_em).toLocaleDateString('pt-BR')}</td>
-                <td><button class="btn btn-ghost btn-sm" onclick='abrirEditCliente(${JSON.stringify({id:c.id,nome:c.nome,email_contato:c.email_contato,pixel_padrao:c.pixel_padrao,token_meta:c.token_meta,permissoes:p})})'><i data-lucide="edit-3" style="width:14px;"></i> Editar</button></td>
+                <td style="display:flex;gap:6px;align-items:center;">
+                    <button class="btn btn-ghost btn-sm" onclick='abrirEditCliente(${JSON.stringify({id:c.id,nome:c.nome,email_contato:c.email_contato,pixel_padrao:c.pixel_padrao,token_meta:c.token_meta,permissoes:p})})'><i data-lucide="edit-3" style="width:14px;"></i> Editar</button>
+                    <button class="btn btn-ghost btn-sm" onclick="excluirCliente(${c.id}, '${esc(c.nome)}')" style="color:var(--red);border-color:rgba(239,68,68,0.2);"><i data-lucide="trash-2" style="width:14px;"></i></button>
+                </td>
             </tr>`;
         }).join('');
 
@@ -3803,6 +3806,17 @@ async function waDesconectar(name) {
     } catch(e) {
         toast("Erro ao desconectar.", "error");
     }
+}
+
+async function excluirCliente(id, nome) {
+    if (!confirm(`Excluir permanentemente o cliente "${nome}"?\n\nIsso apaga o usuário de acesso e TODOS os leads vinculados.`)) return;
+    try {
+        const r = await authFetch('/api/clientes', { method: 'DELETE', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id }) });
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error || 'Erro ao excluir');
+        toast('Cliente excluído.', 'success');
+        carregarClientesAdmin();
+    } catch(e) { toast(e.message, 'error'); }
 }
 
 // ── Start ──────────────────────────────────────────────────────
