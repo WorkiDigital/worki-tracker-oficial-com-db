@@ -3646,31 +3646,38 @@ async function carregarListaWa() {
         }
 
         listEl.innerHTML = '<div style="display:flex;flex-direction:column;gap:12px;">' + data.map(inst => {
-            const up = inst.state === 'open';
-            const statusColor = up ? '#10b981' : '#f59e0b';
-            const statusLabel = up ? 'Conectado' : (inst.state === 'connecting' ? 'Conectando' : 'Desconectado');
-            
+            const up      = inst.state === 'open';
+            const mid     = inst.state === 'connecting';
+            const badgeBg = up ? 'rgba(16,185,129,0.15)' : mid ? 'rgba(245,158,11,0.15)' : 'rgba(239,68,68,0.12)';
+            const badgeColor = up ? '#10b981' : mid ? '#f59e0b' : '#ef4444';
+            const statusLabel = up ? '● Conectado' : mid ? '● Conectando...' : '● Desconectado';
+
             return `
-            <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;display:flex;align-items:center;justify-content:space-between;">
-                <div style="display:flex;align-items:center;gap:14px;">
-                    <div style="width:40px;height:40px;border-radius:8px;background:rgba(37,211,102,0.1);display:flex;align-items:center;justify-content:center;">
-                        <i data-lucide="smartphone" style="color:#25D366;width:20px;"></i>
-                    </div>
-                    <div>
-                        <h4 style="margin:0 0 4px;font-size:15px;color:var(--text);">${esc(inst.displayName)}</h4>
-                        <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);">
-                            <div style="width:8px;height:8px;border-radius:50%;background:${statusColor}"></div> ${statusLabel}
+            <div style="background:var(--card);border:1px solid ${up ? 'rgba(16,185,129,0.3)' : 'var(--border)'};border-radius:12px;padding:16px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+                    <div style="display:flex;align-items:center;gap:14px;">
+                        <div style="width:44px;height:44px;border-radius:10px;background:rgba(37,211,102,0.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                            <i data-lucide="smartphone" style="color:#25D366;width:22px;"></i>
+                        </div>
+                        <div>
+                            <h4 style="margin:0 0 4px;font-size:15px;font-weight:700;color:var(--text);">${esc(inst.displayName)}</h4>
+                            <span style="display:inline-block;font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;background:${badgeBg};color:${badgeColor};">${statusLabel}</span>
                         </div>
                     </div>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                        ${up
+                            ? `<button class="btn btn-ghost btn-sm" onclick="waDesconectar('${esc(inst.displayName)}')" style="color:var(--red);border-color:rgba(239,68,68,0.3);"><i data-lucide="log-out" style="width:13px;"></i> Desconectar</button>`
+                            : `<button class="btn btn-green btn-sm" onclick="verConexao('${esc(inst.displayName)}')"><i data-lucide="qr-code" style="width:13px;"></i> Conectar QR</button>`
+                        }
+                        <button class="btn btn-ghost btn-sm" onclick="deletarConexao('${esc(inst.displayName)}')"><i data-lucide="trash-2" style="width:13px;color:var(--red);"></i></button>
+                    </div>
                 </div>
-                <div style="display:flex;gap:8px;">
-                    ${up ? `<button class="btn btn-ghost btn-sm" onclick="verConexao('${esc(inst.displayName)}')">Ver</button>` 
-                         : `<button class="btn btn-green btn-sm" onclick="verConexao('${esc(inst.displayName)}')">Conectar</button>`}
-                    <button class="btn btn-ghost btn-sm" onclick="deletarConexao('${esc(inst.displayName)}')"><i data-lucide="trash-2" style="width:14px;color:var(--red);"></i></button>
+                <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:11px;color:var(--muted);">
+                    N8N instance: <code style="font-family:monospace;background:var(--tag);padding:1px 6px;border-radius:4px;">${esc(inst.fullName)}</code>
                 </div>
             </div>`;
         }).join('') + '</div>';
-        
+
         lucide.createIcons({ nodes: [listEl] });
 
     } catch(e) {
@@ -3707,10 +3714,9 @@ async function checkWaStatus(fetchQrIfNotOpen = false) {
         const isConnected = state === 'open';
         
         if (isConnected) {
-            setWaView('waConnectedView');
-            $('waConnTitle').textContent = `Conexão: ${currentWaInstance}`;
-            $('btnWaLogout').onclick = () => waLogout(currentWaInstance);
-            if (waPollTimer) clearInterval(waPollTimer);
+            if (waPollTimer) { clearInterval(waPollTimer); waPollTimer = null; }
+            toast(`✅ WhatsApp conectado: ${currentWaInstance}`, 'success');
+            setTimeout(carregarListaWa, 1200);
         } else {
             setWaView('waQrView');
             $('waQrTitle').textContent = `Conectar: ${currentWaInstance}`;
@@ -3783,6 +3789,17 @@ async function waLogout(name) {
         setTimeout(carregarListaWa, 1500);
     } catch(e) {
         toast("Erro ao tentar deslogar.", "error");
+    }
+}
+
+async function waDesconectar(name) {
+    if(!confirm(`Desconectar o dispositivo vinculado em "${name}"?`)) return;
+    try {
+        await authFetch('/api/evo-manager', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({action:'logout', instanceName: name}) });
+        toast("Dispositivo desconectado.", "success");
+        setTimeout(carregarListaWa, 1200);
+    } catch(e) {
+        toast("Erro ao desconectar.", "error");
     }
 }
 
