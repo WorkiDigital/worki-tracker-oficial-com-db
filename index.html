@@ -646,6 +646,9 @@
         <a id="btn-config" class="nav-item" onclick="mudarAba('config')">
             <i data-lucide="workflow" style="width:17px;flex-shrink:0;"></i><span>Integrações</span>
         </a>
+        <a id="btn-whatsapp" class="nav-item" onclick="mudarAba('whatsapp')">
+            <i data-lucide="smartphone" style="width:17px;flex-shrink:0;"></i><span>Conexão WhatsApp</span>
+        </a>
     </nav>
     <div class="sidebar-bottom">
         <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;margin-bottom:8px;overflow:hidden;">
@@ -1160,6 +1163,33 @@
                     <h3><i data-lucide="award" style="width:14px;color:#f59e0b;"></i> Plataformas / Vendas</h3>
                     <div class="canvas-wrap"><canvas id="c4"></canvas></div>
                     <div class="legend" id="l4"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ABA: WHATSAPP -->
+        <div id="aba-whatsapp" class="aba-oculta">
+            <div class="card" style="max-width:550px; margin: 40px auto; padding: 40px; text-align:center;">
+                <h3 style="margin-bottom: 8px; font-size:22px;"><i data-lucide="smartphone" style="color:#25D366;width:28px;height:28px;vertical-align:middle;margin-right:8px;"></i> WhatsApp Oficial</h3>
+                <p style="color:var(--muted);font-size:14px;margin-bottom:32px;">Conecte ou gerencie seu número oficial para disparos automáticos via SaaS.</p>
+                
+                <div id="waConectado" style="display:none;">
+                    <div style="width:90px;height:90px;background:rgba(37, 211, 102, 0.15);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 24px;">
+                        <i data-lucide="check-circle" style="color:#25D366;width:44px;height:44px;"></i>
+                    </div>
+                    <h4 style="margin-bottom:12px;font-size:18px;color:var(--green);">WhatsApp Conectado</h4>
+                    <p style="color:var(--muted);font-size:13px;margin-bottom:28px;">A instância está ativa e processando mensagens.</p>
+                    <button class="btn btn-ghost" onclick="waLogout()" style="margin:0 auto;color:var(--red);border-color:rgba(239,68,68,0.3);">Desconectar Dispositivo</button>
+                </div>
+
+                <div id="waDesconectado" style="display:none;">
+                    <div style="background:var(--tag); border-radius:12px; padding:20px; margin-bottom:24px; min-height: 250px; display:flex; align-items:center; justify-content:center;">
+                        <img id="waQrImage" src="" style="width:240px;height:240px;display:none;border-radius:10px;background:#fff;padding:10px;">
+                        <div id="waWaitQr" style="color:var(--muted);font-size:14px;">
+                            Nenhuma instância conectada no momento.
+                        </div>
+                    </div>
+                    <button class="btn btn-green" id="btnGerarQr" onclick="waCreateInstance()" style="margin:0 auto;width:100%;justify-content:center;padding:14px;font-size:15px;">Ler QR Code (Gerar nova Instância)</button>
                 </div>
             </div>
         </div>
@@ -3281,7 +3311,7 @@ document.addEventListener('keydown', e => {
 });
 
 // ── Abas ───────────────────────────────────────────────────────
-const ABAS = ['leads','relatorios','anuncios','clientes','config','agencia'];
+const ABAS = ['leads','relatorios','anuncios','clientes','config','agencia','whatsapp'];
 const TITULOS = {
     leads:     '<i data-lucide="users" style="color:var(--blue);"></i> Leads Reais',
     relatorios:'<i data-lucide="bar-chart-2" style="color:var(--blue);"></i> Relatórios',
@@ -3289,6 +3319,7 @@ const TITULOS = {
     clientes:  '<i data-lucide="share-2" style="color:var(--blue);"></i> Compartilhar Dash',
     config:    '<i data-lucide="workflow" style="color:var(--blue);"></i> Integrações',
     agencia:   '<i data-lucide="building" style="color:var(--blue);"></i> Gestão de Clientes',
+    whatsapp:  '<i data-lucide="smartphone" style="color:#25D366;"></i> Conexão WhatsApp SaaS',
 };
 
 function mudarAba(aba) {
@@ -3305,6 +3336,7 @@ function mudarAba(aba) {
     if (aba === 'config')   { renderConfigContas(); }
     if (aba === 'clientes') { renderShareLinks(); }
     if (aba === 'agencia')  { carregarClientesAdmin(); }
+    if (aba === 'whatsapp') { checkWaStatus(); }
     // Fecha sidebar mobile ao trocar de aba
     $('sidebar').classList.remove('mobile-open');
     $('sidebarOverlay').classList.remove('open');
@@ -3410,6 +3442,76 @@ function toggleTheme() {
     icon.setAttribute('data-lucide', light ? 'moon' : 'sun');
     lucide.createIcons({ nodes:[$('btnTheme')] });
     Object.values(graficos).forEach(g => g?.update?.());
+}
+
+let waPollTimer;
+async function checkWaStatus() {
+    try {
+        const r = await authFetch('/api/evo-manager', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({action:'status'}) });
+        const data = await r.json();
+        const isConnected = data?.instance?.state === 'open';
+        
+        if (isConnected) {
+            $('waConectado').style.display = 'block';
+            $('waDesconectado').style.display = 'none';
+            if (waPollTimer) clearInterval(waPollTimer);
+        } else {
+            $('waConectado').style.display = 'none';
+            $('waDesconectado').style.display = 'block';
+            $('waQrImage').style.display = 'none';
+            $('waWaitQr').style.display = 'block';
+            $('waWaitQr').innerHTML = 'Nenhuma instância conectada no momento.';
+            $('btnGerarQr').style.display = 'flex';
+        }
+    } catch(e) {
+        $('waConectado').style.display = 'none';
+        $('waDesconectado').style.display = 'block';
+        $('btnGerarQr').style.display = 'flex';
+    }
+}
+
+async function waCreateInstance() {
+    $('waWaitQr').style.display = 'block';
+    $('waWaitQr').innerHTML = 'Configurando contêiner Evolution...';
+    $('waQrImage').style.display = 'none';
+    $('btnGerarQr').style.display = 'none';
+
+    try {
+        const r = await authFetch('/api/evo-manager', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({action:'create'}) });
+        const data = await r.json();
+
+        if (!r.ok || data.error) throw new Error(data.error || 'Falha ao conectar na Evolution');
+
+        if (data.base64) {
+            $('waQrImage').src = data.base64;
+            $('waQrImage').style.display = 'block';
+            $('waWaitQr').style.display = 'none';
+            toast("QR Code gerado! Aponte o celular.", "success");
+            
+            if (waPollTimer) clearInterval(waPollTimer);
+            waPollTimer = setInterval(checkWaStatus, 4000);
+        } else if (data.instance?.state === 'open') {
+            checkWaStatus();
+        } else {
+            throw new Error("Não foi possível renderizar a imagem Base64 do WhatsApp.");
+        }
+    } catch(e) {
+        toast(e.message, 'error');
+        $('btnGerarQr').style.display = 'flex';
+        $('waWaitQr').style.display = 'block';
+        $('waWaitQr').innerHTML = 'Erro ao processar.';
+    }
+}
+
+async function waLogout() {
+    if(!confirm("Atenção: Você tem certeza que deseja deslogar o dispositivo?")) return;
+    try {
+        await authFetch('/api/evo-manager', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({action:'logout'}) });
+        toast("Sessão encerrada remotamente.", "success");
+        setTimeout(checkWaStatus, 1500);
+    } catch(e) {
+        toast("Erro ao tentar deslogar.", "error");
+    }
 }
 
 // ── Start ──────────────────────────────────────────────────────

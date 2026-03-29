@@ -85,6 +85,24 @@ async function setup() {
     `);
     console.log('✅ Vínculo de agência injetado na tabela "leads_tracking".');
 
+    // Criação da tabela de Tokens de Compartilhamento
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS public.share_tokens (
+          token VARCHAR(255) PRIMARY KEY,
+          account_id VARCHAR(255) NOT NULL,
+          account_name VARCHAR(255),
+          user_id INTEGER REFERENCES public.usuarios(id),
+          client_name VARCHAR(255),
+          visible_sections JSONB,
+          visible_metrics JSONB,
+          visible_columns JSONB,
+          status_filter VARCHAR(50) DEFAULT 'ACTIVE',
+          expires_at TIMESTAMP,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    console.log('✅ Tabela "share_tokens" verificada/criada.');
+
     client.release();
     console.log('🚀 Finalizado! Estrutura do Banco de Dados pronta para uso.');
     process.exit(0);
