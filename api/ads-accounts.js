@@ -10,7 +10,7 @@ export default async function handler(req, res) {
   if (!user) return;
 
   const token = await getTokenForUser(user);
-  if (!token) return res.status(500).json({ error: 'META_ADS_TOKEN not configured' });
+  if (!token) return res.status(403).json({ error: 'Token Meta não configurado para sua conta. Solicite ao administrador da plataforma.' });
 
   try {
     // Busca todas as páginas (Meta pagina por padrão em 25)

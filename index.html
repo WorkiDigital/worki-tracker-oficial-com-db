@@ -588,10 +588,8 @@
             <button class="modal-close" onclick="fecharModal()"><i data-lucide="x" style="width:16px;"></i></button>
         </div>
         <div class="input-group"><label>Produto / Anúncio</label><input type="text" id="capiProduto" placeholder="Ex: Jasmim Plus King Size"></div>
-        <div class="input-group"><label>Valor da Venda (R$)</label><input type="number" id="capiValor" placeholder="0,00" step="0.01"></div>
-        <input type="hidden" id="capiPixel">
-        <input type="hidden" id="capiToken">
-        <button class="btn-confirm" id="btnConfirmarCapi" onclick="confirmarVenda()">Confirmar Venda 🚀</button>
+        <div class="input-group"><label>Valor da Venda (R$) <span style="color:var(--red)">*</span></label><input type="number" id="capiValor" placeholder="0,00" step="0.01" min="0.01"></div>
+        <button class="btn-confirm" id="btnConfirmarCapi" onclick="confirmarVenda()">Confirmar Venda e Enviar CAPI 🚀</button>
     </div>
 </div>
 
@@ -600,17 +598,38 @@
     <div class="modal">
         <div class="modal-head">
             <div class="modal-icon"><i data-lucide="building" style="color:#fff;width:22px;height:22px;"></i></div>
-            <div><h3>Novo Cliente SaaS</h3><p>Crie um ambiente isolado.</p></div>
+            <div><h3>Novo Cliente SaaS</h3><p>Cada cliente tem token e pixel próprios.</p></div>
             <button class="modal-close" onclick="$('modalAddCliente').classList.remove('open')"><i data-lucide="x" style="width:16px;"></i></button>
         </div>
-        <div class="input-group"><label>Nome da Empresa/Loja (Obrigatório)</label><input type="text" id="novoCliNome"></div>
-        <div class="input-group"><label>Pixel Padrão</label><input type="text" id="novoCliPixel" placeholder="Apenas números. Ex: 123456789"></div>
-        <div class="input-group"><label>Token Meta (Opcional)</label><input type="text" id="novoCliToken" placeholder="EAAI... para uso no CAPI do N8N"></div>
+        <div class="input-group"><label>Nome da Empresa/Loja <span style="color:var(--red)">*</span></label><input type="text" id="novoCliNome" placeholder="Ex: Loja do João"></div>
+        <div class="input-group"><label>Pixel Meta do Cliente <span style="color:var(--red)">*</span></label><input type="text" id="novoCliPixel" placeholder="Apenas números. Ex: 123456789"></div>
+        <div class="input-group"><label>Token Meta do Cliente <span style="color:var(--red)">*</span></label><input type="text" id="novoCliToken" placeholder="EAAI... (token de acesso do cliente)"></div>
         <hr style="border:none;border-top:1px solid var(--border);margin:15px 0;">
-        <p style="font-size:12px;color:var(--muted);margin-bottom:10px;">Criar Acesso ao Dash do Cliente (Opcional mas Recomendado)</p>
-        <div class="input-group"><label>E-mail (Login)</label><input type="email" id="novoCliEmail" autocomplete="off" placeholder="cliente@loja.com"></div>
-        <div class="input-group"><label>Senha provisória</label><input type="text" id="novoCliSenha" placeholder="Min. 6 caracteres"></div>
+        <p style="font-size:12px;color:var(--muted);margin-bottom:10px;">Acesso ao Portal do Cliente <span style="color:var(--red)">*</span></p>
+        <div class="input-group"><label>E-mail (Login) <span style="color:var(--red)">*</span></label><input type="email" id="novoCliEmail" autocomplete="off" placeholder="cliente@loja.com"></div>
+        <div class="input-group"><label>Senha de Acesso <span style="color:var(--red)">*</span></label><input type="text" id="novoCliSenha" placeholder="Min. 6 caracteres"></div>
         <button class="btn-confirm" id="btnSalvarCliente" onclick="salvarNovoCliente()">Criar Cliente</button>
+    </div>
+</div>
+
+<!-- Modal Credenciais do Cliente Criado -->
+<div id="modalCredenciais" class="modal-overlay" onclick="if(event.target===this) this.classList.remove('open')">
+    <div class="modal">
+        <div class="modal-head">
+            <div class="modal-icon" style="background:var(--green);"><i data-lucide="check-circle" style="color:#fff;width:22px;height:22px;"></i></div>
+            <div><h3>Cliente Criado!</h3><p>Envie as credenciais ao cliente.</p></div>
+            <button class="modal-close" onclick="$('modalCredenciais').classList.remove('open')"><i data-lucide="x" style="width:16px;"></i></button>
+        </div>
+        <div style="background:var(--tag);border-radius:10px;padding:16px;margin-bottom:16px;">
+            <p style="font-size:12px;color:var(--muted);margin-bottom:8px;">Login de Acesso ao Portal:</p>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                <span style="font-size:13px;font-weight:600;color:var(--text);">E-mail: <span id="credEmail" style="font-weight:400;"></span></span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-size:13px;font-weight:600;color:var(--text);">Senha: <span id="credSenha" style="font-weight:400;font-family:monospace;"></span></span>
+            </div>
+        </div>
+        <button class="btn-confirm" onclick="copiarCredenciais()"><i data-lucide="copy" style="width:14px;"></i> Copiar Credenciais</button>
     </div>
 </div>
 
@@ -1617,8 +1636,6 @@ function abrirModal(idx) {
     chumboAtivo = dadosFiltrados[idx];
     $('modalLeadNome').textContent = `Lead: ${chumboAtivo.nome || 'Desconhecido'}`;
     $('capiProduto').value = chumboAtivo.utm_content || '';
-    $('capiPixel').value   = chumboAtivo.pixel || '';
-    $('capiToken').value   = chumboAtivo.token || '';
     $('capiValor').value   = '';
     $('capiModal').classList.add('open');
     lucide.createIcons({ nodes: [$('capiModal')] });
@@ -1635,68 +1652,33 @@ async function sha256(msg) {
 
 async function confirmarVenda() {
     if (!chumboAtivo) return;
-    const produto = $('capiProduto').value.trim();
-    const valor   = $('capiValor').value;
-    const pixelId = $('capiPixel').value.trim();
-    const token   = $('capiToken').value.trim();
-
-    if (!produto || !valor || !pixelId || !token) {
-        toast('Preencha todos os campos obrigatórios', 'error'); return;
-    }
+    const valor = parseFloat($('capiValor').value);
+    if (!valor || valor <= 0) { toast('Informe o valor da venda', 'error'); return; }
 
     const btn = $('btnConfirmarCapi');
-    btn.textContent = 'Enviando...'; btn.disabled = true;
+    const originalLabel = btn.textContent;
+    btn.textContent = 'Enviando CAPI...'; btn.disabled = true;
 
     try {
-        const fn = (chumboAtivo.nome||'').trim().split(' ')[0];
-        const ln = (chumboAtivo.sobrenome||'').trim();
-        const ph = (chumboAtivo.telefone||'').replace(/\D/g,'');
-
-        const ud = {};
-        const fnH=await sha256(fn); if(fnH) ud.fn=fnH;
-        const lnH=await sha256(ln); if(lnH) ud.ln=lnH;
-        const phH=await sha256(ph); if(phH) ud.ph=phH;
-        if (chumboAtivo.ctw_aci_id) ud.ctwa_clid = chumboAtivo.ctw_aci_id;
-        if (chumboAtivo.page_id)    ud.page_id   = chumboAtivo.page_id;
-
-        const payload = { data:[{
-            event_name:'Purchase', event_time:Math.floor(Date.now()/1000),
-            action_source:'business_messaging', messaging_channel:'whatsapp',
-            user_data:ud, custom_data:{ value:parseFloat(valor), currency:'BRL', content_name:produto }
-        }]};
-
-        const r = await fetch(`https://graph.facebook.com/v25.0/${pixelId}/events`, {
-            method:'POST',
-            headers:{ 'Content-Type':'application/json', 'Authorization':`Bearer ${token}` },
-            body:JSON.stringify(payload)
+        // O backend busca pixel e token do cliente de forma segura e dispara CAPI
+        const r = await authFetch('/api/leads-update', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: chumboAtivo.id, status: 'Vendido', valor_venda: valor })
         });
         const result = await r.json();
+        if (!r.ok || result.error) throw new Error(result.error || 'Erro ao registrar venda');
 
-        if (result.events_received) {
-            // Atualizar Supabase diretamente
-            await authFetch('/api/leads-update', {
-                method:'PATCH',
-                headers:{'Content-Type':'application/json'},
-                body:JSON.stringify({ id:chumboAtivo.id, status:'purchase', valor_venda:parseFloat(valor) })
-            }).catch(()=>{});
-            // Webhook externo (secundário, falha silenciosa)
-            fetch('https://automacao.workidigital.tech/webhook/atualizar-venda', {
-                method:'POST', headers:{'Content-Type':'application/json'},
-                body:JSON.stringify({ id_lead:chumboAtivo.id, novo_status:'purchase', valor:parseFloat(valor) })
-            }).catch(()=>{});
-            // Atualizar localmente sem recarregar
-            const idx = rawData.findIndex(l=>l.id===chumboAtivo.id);
-            if (idx!==-1) { rawData[idx].status='purchase'; rawData[idx].valor_venda=parseFloat(valor); }
-            aplicarFiltros();
-            toast('Venda enviada para a Meta!', 'success');
-            fecharModal();
-        } else {
-            toast('Erro Meta: ' + (result.error?.message||'Desconhecido'), 'error');
-        }
+        // Atualizar localmente sem recarregar
+        const idx = rawData.findIndex(l => l.id === chumboAtivo.id);
+        if (idx !== -1) { rawData[idx].status = 'Vendido'; rawData[idx].valor_venda = valor; }
+        aplicarFiltros();
+        toast('Venda registrada e CAPI enviado para a Meta!', 'success');
+        fecharModal();
     } catch(e) {
-        toast('Erro ao processar venda: ' + e.message, 'error');
+        toast('Erro: ' + e.message, 'error');
     } finally {
-        btn.textContent = 'Confirmar Venda 🚀'; btn.disabled = false;
+        btn.textContent = originalLabel; btn.disabled = false;
     }
 }
 
@@ -3390,6 +3372,10 @@ async function salvarNovoCliente() {
     const senha_acesso = $('novoCliSenha').value;
 
     if (!nome) { toast('Nome da empresa é obrigatório!', 'error'); return; }
+    if (!pixel_padrao) { toast('Pixel Padrão é obrigatório — cada cliente tem seu próprio pixel!', 'error'); return; }
+    if (!token_meta) { toast('Token Meta é obrigatório — cada cliente tem seu próprio token!', 'error'); return; }
+    if (!email_contato) { toast('E-mail de acesso é obrigatório!', 'error'); return; }
+    if (!senha_acesso || senha_acesso.length < 6) { toast('Senha deve ter no mínimo 6 caracteres!', 'error'); return; }
 
     const btn = $('btnSalvarCliente');
     const originalText = btn.textContent;
@@ -3403,15 +3389,29 @@ async function salvarNovoCliente() {
         });
         const data = await r.json();
         if (!r.ok || data.error) throw new Error(data.error || 'Erro ao criar cliente');
-        
-        toast('Cliente criado com sucesso!', 'success');
+
         $('modalAddCliente').classList.remove('open');
+        // Limpar campos
+        ['novoCliNome','novoCliPixel','novoCliToken','novoCliEmail','novoCliSenha'].forEach(id => { const el = $(id); if(el) el.value = ''; });
+        // Mostrar modal de credenciais
+        $('credEmail').textContent = email_contato;
+        $('credSenha').textContent = senha_acesso;
+        $('modalCredenciais').classList.add('open');
         carregarClientesAdmin();
     } catch(e) {
         toast(e.message, 'error');
     } finally {
         btn.textContent = originalText; btn.disabled = false;
     }
+}
+
+function copiarCredenciais() {
+    const email = $('credEmail').textContent;
+    const senha = $('credSenha').textContent;
+    const url = window.location.origin + '/login.html';
+    navigator.clipboard.writeText(`Portal Adlytics\nURL: ${url}\nE-mail: ${email}\nSenha: ${senha}`)
+        .then(() => toast('Credenciais copiadas!', 'success'))
+        .catch(() => toast('Não foi possível copiar automaticamente', 'error'));
 }
 
 async function carregarClientesAdmin() {

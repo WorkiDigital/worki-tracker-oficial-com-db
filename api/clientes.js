@@ -33,6 +33,10 @@ export default async function handler(req, res) {
   if (req.method === 'POST') {
       const { nome, email_contato, pixel_padrao, token_meta, senha_acesso } = req.body;
       if (!nome) return res.status(400).json({ error: 'Nome da Agência/Cliente é obrigatório' });
+      if (!email_contato) return res.status(400).json({ error: 'Email de contato é obrigatório' });
+      if (!senha_acesso) return res.status(400).json({ error: 'Senha de acesso é obrigatória' });
+      if (!pixel_padrao) return res.status(400).json({ error: 'Pixel Padrão é obrigatório — cada cliente tem seu próprio pixel' });
+      if (!token_meta) return res.status(400).json({ error: 'Token Meta é obrigatório — cada cliente tem seu próprio token de acesso' });
 
       try {
           // 1. Cria a configuração raiz do Cliente
@@ -43,14 +47,12 @@ export default async function handler(req, res) {
           const cliente_id = clientResult.rows[0].id;
 
           // 2. Cria o usuário com Acesso Restrito (Login e Senha do cliente) amarrado ao ID dele
-          if (email_contato && senha_acesso) {
-              const salt = await bcrypt.genSalt(10);
-              const hash = await bcrypt.hash(senha_acesso, salt);
-              await pool.query(
-                  'INSERT INTO usuarios (email, senha_hash, cliente_id, is_admin) VALUES ($1, $2, $3, false)',
-                  [email_contato, hash, cliente_id]
-              );
-          }
+          const salt = await bcrypt.genSalt(10);
+          const hash = await bcrypt.hash(senha_acesso, salt);
+          await pool.query(
+              'INSERT INTO usuarios (email, senha_hash, cliente_id, is_admin) VALUES ($1, $2, $3, false)',
+              [email_contato, hash, cliente_id]
+          );
 
           return res.status(201).json({ message: 'Cliente registrado com Conta de Acesso criada!', cliente_id });
       } catch (err) {

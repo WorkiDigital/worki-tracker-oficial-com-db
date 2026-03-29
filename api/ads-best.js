@@ -11,7 +11,7 @@ export default async function handler(req, res) {
 
   const { accountId, datePreset = 'last_30d', dateFrom, dateTo } = req.query;
   const token = await getTokenForUser(user);
-  if (!token)     return res.status(500).json({ error: 'META_ADS_TOKEN not configured' });
+  if (!token) return res.status(403).json({ error: 'Token Meta não configurado para sua conta. Solicite ao administrador da plataforma.' });
   if (!accountId) return res.status(400).json({ error: 'accountId is required' });
 
   const insightFields = 'spend,impressions,clicks,outbound_clicks,ctr,reach,cpm,cpc,frequency,inline_link_clicks,actions,cost_per_action_type';

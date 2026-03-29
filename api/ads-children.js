@@ -12,7 +12,7 @@ export default async function handler(req, res) {
   const { level, parentId, datePreset = 'last_30d' } = req.query;
   const token = await getTokenForUser(user);
 
-  if (!token)    return res.status(500).json({ error: 'META_ADS_TOKEN not configured' });
+  if (!token)    return res.status(403).json({ error: 'Token Meta não configurado para sua conta. Solicite ao administrador da plataforma.' });
   if (!parentId) return res.status(400).json({ error: 'parentId is required' });
   if (!['adsets', 'ads'].includes(level))
     return res.status(400).json({ error: 'level must be adsets or ads' });
