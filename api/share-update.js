@@ -13,7 +13,9 @@ export default async function handler(req, res) {
   let body = '';
   await new Promise(r => { req.on('data', d => body += d); req.on('end', r); });
 
-  const { token, client_name, visible_sections, visible_metrics, visible_columns, status_filter, expires_at } = JSON.parse(body || '{}');
+  let parsed;
+  try { parsed = JSON.parse(body || '{}'); } catch { return res.status(400).json({ error: 'Body JSON inválido' }); }
+  const { token, client_name, visible_sections, visible_metrics, visible_columns, status_filter, expires_at } = parsed;
 
   if (!token) return res.status(400).json({ error: 'token required' });
 

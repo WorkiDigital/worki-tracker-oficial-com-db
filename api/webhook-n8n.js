@@ -143,5 +143,5 @@ async function sendCapiPurchase(lead, pool) {
       body: JSON.stringify(payload)
     });
     console.log("CAPI Purchase Response:", await req.json());
-  } catch (err) { }
+  } catch (err) { console.error('CAPI Purchase error:', err.message || err); }
 }

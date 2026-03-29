@@ -88,7 +88,7 @@ export default async function handler(req, res) {
       for (const act of (row.actions || [])) {
         const existing = agg[pos].actions.find(a => a.action_type === act.action_type);
         if (existing) {
-          existing.value = String(parseFloat(existing.value) + parseFloat(act.value || 0));
+          existing.value = String(parseFloat(existing.value || 0) + parseFloat(act.value || 0));
         } else {
           agg[pos].actions.push({ action_type: act.action_type, value: act.value });
         }

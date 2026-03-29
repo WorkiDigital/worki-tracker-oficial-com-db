@@ -96,8 +96,8 @@ export default async function handler(req, res) {
           headers,
           body: JSON.stringify(webhookBody)
         });
-        const wData = await wRes.json();
-        console.log(`[evo-manager] Webhook set para ${finalInstanceName}:`, JSON.stringify(wData));
+        const wData = wRes.headers.get('content-type')?.includes('json') ? await wRes.json() : {};
+        console.log(`[evo-manager] Webhook set para ${finalInstanceName} (${wRes.status}):`, JSON.stringify(wData));
       } else {
         console.warn('[evo-manager] N8N_WEBHOOK_URL não definida — webhook não configurado');
       }

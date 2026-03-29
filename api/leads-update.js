@@ -75,7 +75,7 @@ async function sendCapiPurchase(lead, value, pool) {
      const clientRes = await pool.query('SELECT pixel_padrao FROM clientes WHERE id = $1', [cliente_id]);
      if (clientRes.rows.length > 0) pixel = clientRes.rows[0].pixel_padrao;
   }
-  token = process.env.META_ADS_TOKEN || null;
+  const token = process.env.META_ADS_TOKEN || null;
 
   // Seção de requisitos CAPI: Se não tiver pixel e token, não podemos mandar
   if (!pixel || !token) {
@@ -84,8 +84,8 @@ async function sendCapiPurchase(lead, value, pool) {
   }
 
   // Prepara Hash de user data (SHA256 em lowercase sem espaços especiais)
-  const hash = str => validateHash(str) ? str : crypto.createHash('sha256').update((str||'').toLowerCase().trim()).digest('hex');
   const validateHash = str => /^[a-f0-9]{64}$/.test(str);
+  const hash = str => validateHash(str) ? str : crypto.createHash('sha256').update((str||'').toLowerCase().trim()).digest('hex');
 
   const ph = (telefone||'').replace(/\D/g, ''); // só dígitos no telefone
   
