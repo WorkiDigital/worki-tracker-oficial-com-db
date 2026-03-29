@@ -66,8 +66,8 @@ export default async function handler(req, res) {
 
 async function sendCapiPurchase(lead, value, pool) {
   // Pega todos os dados da linha base
-  let { 
-    pixel, token, ctw_aci_id, source_id, event_source_url, event_time, 
+  let {
+    pixel, ctw_aci_id, event_source_url,
     nome, telefone, cidade, estado, pais, cliente_id
   } = lead;
 
