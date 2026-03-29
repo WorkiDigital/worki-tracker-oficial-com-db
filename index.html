@@ -1169,28 +1169,58 @@
 
         <!-- ABA: WHATSAPP -->
         <div id="aba-whatsapp" class="aba-oculta">
-            <div class="card" style="max-width:550px; margin: 40px auto; padding: 40px; text-align:center;">
-                <h3 style="margin-bottom: 8px; font-size:22px;"><i data-lucide="smartphone" style="color:#25D366;width:28px;height:28px;vertical-align:middle;margin-right:8px;"></i> WhatsApp Oficial</h3>
-                <p style="color:var(--muted);font-size:14px;margin-bottom:32px;">Conecte ou gerencie seu número oficial para disparos automáticos via SaaS.</p>
-                
-                <div id="waConectado" style="display:none;">
-                    <div style="width:90px;height:90px;background:rgba(37, 211, 102, 0.15);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 24px;">
-                        <i data-lucide="check-circle" style="color:#25D366;width:44px;height:44px;"></i>
+            <div class="card" style="max-width:650px; margin: 40px auto; padding: 30px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 24px;">
+                    <div>
+                        <h3 style="margin-bottom: 4px; font-size:20px;"><i data-lucide="smartphone" style="color:#25D366;width:24px;height:24px;vertical-align:middle;margin-right:8px;"></i> Conexões WhatsApp</h3>
+                        <p style="color:var(--muted);font-size:13px;margin:0;">Gerencie números oficiais para disparos via SaaS.</p>
                     </div>
-                    <h4 style="margin-bottom:12px;font-size:18px;color:var(--green);">WhatsApp Conectado</h4>
-                    <p style="color:var(--muted);font-size:13px;margin-bottom:28px;">A instância está ativa e processando mensagens.</p>
-                    <button class="btn btn-ghost" onclick="waLogout()" style="margin:0 auto;color:var(--red);border-color:rgba(239,68,68,0.3);">Desconectar Dispositivo</button>
+                    <button class="btn btn-primary btn-sm" id="btnNovaConexao" onclick="mostrarWaCriar()">
+                        <i data-lucide="plus" style="width:14px;"></i> Nova Conexão
+                    </button>
                 </div>
+                
+                <!-- LIST LISTA -->
+                <div id="waList" style="display:none;"></div>
 
-                <div id="waDesconectado" style="display:none;">
-                    <div style="background:var(--tag); border-radius:12px; padding:20px; margin-bottom:24px; min-height: 250px; display:flex; align-items:center; justify-content:center;">
-                        <img id="waQrImage" src="" style="width:240px;height:240px;display:none;border-radius:10px;background:#fff;padding:10px;">
-                        <div id="waWaitQr" style="color:var(--muted);font-size:14px;">
-                            Nenhuma instância conectada no momento.
+                <!-- CREATE VIEW -->
+                <div id="waCreate" style="display:none; text-align:center; padding: 20px 0;">
+                    <div style="background:var(--tag); border-radius:12px; padding:24px; margin-bottom:20px; text-align:left;">
+                        <label style="display:block;font-size:13px;font-weight:600;margin-bottom:8px;">Nome da Instância / Conexão</label>
+                        <input type="text" id="waInstanceName" class="form-control" placeholder="Ex: Loja Principal" style="width:100%;margin-bottom:16px;">
+                        <div style="display:flex; gap:10px;">
+                            <button class="btn btn-green" id="btnGerarQr" onclick="waCreateInstance()" style="flex:1;">Gerar QR Code</button>
+                            <button class="btn btn-ghost" onclick="carregarListaWa()">Cancelar</button>
                         </div>
                     </div>
-                    <button class="btn btn-green" id="btnGerarQr" onclick="waCreateInstance()" style="margin:0 auto;width:100%;justify-content:center;padding:14px;font-size:15px;">Ler QR Code (Gerar nova Instância)</button>
                 </div>
+
+                <!-- VIEW DO QR CODE -->
+                <div id="waQrView" style="display:none; text-align:center; padding: 20px 0;">
+                    <h4 id="waQrTitle" style="margin-bottom:12px;">Conectar: </h4>
+                    <div style="background:var(--tag); border-radius:12px; padding:20px; margin:0 auto 20px; display:inline-block; min-height: 250px; min-width: 250px; display:flex; align-items:center; justify-content:center;">
+                        <img id="waQrImage" src="" style="width:240px;height:240px;display:none;border-radius:10px;background:#fff;padding:10px;">
+                        <div id="waWaitQr" style="color:var(--muted);font-size:14px;">Carregando QR Code...</div>
+                    </div>
+                    <div>
+                        <button class="btn btn-ghost btn-sm" onclick="carregarListaWa()">Voltar para a lista</button>
+                    </div>
+                </div>
+
+                <!-- VIEW CONECTADO -->
+                <div id="waConnectedView" style="display:none; text-align:center; padding: 20px 0;">
+                    <h4 id="waConnTitle" style="margin-bottom:20px;">Instância</h4>
+                    <div style="width:80px;height:80px;background:rgba(37, 211, 102, 0.15);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;">
+                        <i data-lucide="check-circle" style="color:#25D366;width:40px;height:40px;"></i>
+                    </div>
+                    <h4 style="margin-bottom:10px;font-size:18px;color:var(--green);">WhatsApp Conectado</h4>
+                    <p style="color:var(--muted);font-size:13px;margin-bottom:24px;">A instância está ativa e processando mensagens.</p>
+                    <div style="display:flex; gap:10px; justify-content:center;">
+                        <button class="btn btn-ghost" onclick="carregarListaWa()">Voltar</button>
+                        <button class="btn btn-ghost" id="btnWaLogout" style="color:var(--red);border-color:rgba(239,68,68,0.3);">Desconectar Dispositivo</button>
+                    </div>
+                </div>
+
             </div>
         </div>
 
@@ -3336,7 +3366,7 @@ function mudarAba(aba) {
     if (aba === 'config')   { renderConfigContas(); }
     if (aba === 'clientes') { renderShareLinks(); }
     if (aba === 'agencia')  { carregarClientesAdmin(); }
-    if (aba === 'whatsapp') { checkWaStatus(); }
+    if (aba === 'whatsapp') { carregarListaWa(); }
     // Fecha sidebar mobile ao trocar de aba
     $('sidebar').classList.remove('mobile-open');
     $('sidebarOverlay').classList.remove('open');
@@ -3445,42 +3475,141 @@ function toggleTheme() {
 }
 
 let waPollTimer;
-async function checkWaStatus() {
+let currentWaInstance = null;
+
+function setWaView(view) {
+    if (waPollTimer) clearInterval(waPollTimer);
+    ['waList','waCreate','waQrView','waConnectedView'].forEach(id => {
+        const el = $(id); if (el) el.style.display = 'none';
+    });
+    const target = $(view); if (target) target.style.display = view === 'waList' || view === 'waCreate' ? 'block' : 'block'; // block/flex
+    $('btnNovaConexao').style.display = view === 'waList' ? 'flex' : 'none';
+}
+
+async function carregarListaWa() {
+    setWaView('waList');
+    const listEl = $('waList');
+    listEl.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted);">Carregando conexões...</div>';
+    
     try {
-        const r = await authFetch('/api/evo-manager', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({action:'status'}) });
+        const r = await authFetch('/api/evo-manager?action=list');
         const data = await r.json();
-        const isConnected = data?.instance?.state === 'open';
+        
+        if (!r.ok || data.error) throw new Error(data.error || 'Erro ao listar');
+        
+        if (!data || data.length === 0) {
+            listEl.innerHTML = '<div style="text-align:center;padding:40px;background:var(--tag);border-radius:10px;color:var(--muted);">Nenhuma conexão configurada.<br><button class="btn btn-primary" style="margin-top:15px;" onclick="mostrarWaCriar()">Criar Conexão</button></div>';
+            return;
+        }
+
+        listEl.innerHTML = '<div style="display:flex;flex-direction:column;gap:12px;">' + data.map(inst => {
+            const up = inst.state === 'open';
+            const statusColor = up ? '#10b981' : '#f59e0b';
+            const statusLabel = up ? 'Conectado' : (inst.state === 'connecting' ? 'Conectando' : 'Desconectado');
+            
+            return `
+            <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;display:flex;align-items:center;justify-content:space-between;">
+                <div style="display:flex;align-items:center;gap:14px;">
+                    <div style="width:40px;height:40px;border-radius:8px;background:rgba(37,211,102,0.1);display:flex;align-items:center;justify-content:center;">
+                        <i data-lucide="smartphone" style="color:#25D366;width:20px;"></i>
+                    </div>
+                    <div>
+                        <h4 style="margin:0 0 4px;font-size:15px;color:var(--text);">${esc(inst.displayName)}</h4>
+                        <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);">
+                            <div style="width:8px;height:8px;border-radius:50%;background:${statusColor}"></div> ${statusLabel}
+                        </div>
+                    </div>
+                </div>
+                <div style="display:flex;gap:8px;">
+                    ${up ? `<button class="btn btn-ghost btn-sm" onclick="verConexao('${esc(inst.displayName)}')">Ver</button>` 
+                         : `<button class="btn btn-green btn-sm" onclick="verConexao('${esc(inst.displayName)}')">Conectar</button>`}
+                    <button class="btn btn-ghost btn-sm" onclick="deletarConexao('${esc(inst.displayName)}')"><i data-lucide="trash-2" style="width:14px;color:var(--red);"></i></button>
+                </div>
+            </div>`;
+        }).join('') + '</div>';
+        
+        lucide.createIcons({ nodes: [listEl] });
+
+    } catch(e) {
+        listEl.innerHTML = `<div style="text-align:center;padding:20px;color:var(--red);">Erro: ${e.message}</div>`;
+    }
+}
+
+function mostrarWaCriar() {
+    setWaView('waCreate');
+    $('waInstanceName').value = '';
+    $('waInstanceName').focus();
+}
+
+async function verConexao(name) {
+    currentWaInstance = name;
+    checkWaStatus(true);
+}
+
+async function deletarConexao(name) {
+    if (!confirm(`Excluir permanentemente a conexão "${name}"?`)) return;
+    try {
+        await authFetch('/api/evo-manager', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({action:'delete', instanceName: name}) });
+        toast("Conexão excluída.", "success");
+        carregarListaWa();
+    } catch(e) { toast('Erro ao excluir', 'error'); }
+}
+
+async function checkWaStatus(fetchQrIfNotOpen = false) {
+    if (!currentWaInstance) return;
+    try {
+        const r = await authFetch(`/api/evo-manager?action=status&instanceName=${encodeURIComponent(currentWaInstance)}`);
+        const data = await r.json();
+        const state = data?.instance?.state || data?.state;
+        const isConnected = state === 'open';
         
         if (isConnected) {
-            $('waConectado').style.display = 'block';
-            $('waDesconectado').style.display = 'none';
+            setWaView('waConnectedView');
+            $('waConnTitle').textContent = `Conexão: ${currentWaInstance}`;
+            $('btnWaLogout').onclick = () => waLogout(currentWaInstance);
             if (waPollTimer) clearInterval(waPollTimer);
         } else {
-            $('waConectado').style.display = 'none';
-            $('waDesconectado').style.display = 'block';
-            $('waQrImage').style.display = 'none';
-            $('waWaitQr').style.display = 'block';
-            $('waWaitQr').innerHTML = 'Nenhuma instância conectada no momento.';
-            $('btnGerarQr').style.display = 'flex';
+            setWaView('waQrView');
+            $('waQrTitle').textContent = `Conectar: ${currentWaInstance}`;
+            if (fetchQrIfNotOpen) {
+                $('waQrImage').style.display = 'none';
+                $('waWaitQr').style.display = 'block';
+                const rQR = await authFetch(`/api/evo-manager?action=connect&instanceName=${encodeURIComponent(currentWaInstance)}`);
+                const qd = await rQR.json();
+                if (qd.base64) {
+                    $('waQrImage').src = qd.base64;
+                    $('waQrImage').style.display = 'block';
+                    $('waWaitQr').style.display = 'none';
+                    if (!waPollTimer) waPollTimer = setInterval(() => checkWaStatus(false), 4000);
+                } else if (qd?.instance?.state === 'open') {
+                    checkWaStatus(false);
+                }
+            } else {
+                if (!waPollTimer) waPollTimer = setInterval(() => checkWaStatus(false), 4000);
+            }
         }
     } catch(e) {
-        $('waConectado').style.display = 'none';
-        $('waDesconectado').style.display = 'block';
-        $('btnGerarQr').style.display = 'flex';
+        if (waPollTimer) clearInterval(waPollTimer);
     }
 }
 
 async function waCreateInstance() {
-    $('waWaitQr').style.display = 'block';
-    $('waWaitQr').innerHTML = 'Configurando contêiner Evolution...';
-    $('waQrImage').style.display = 'none';
-    $('btnGerarQr').style.display = 'none';
+    const name = $('waInstanceName').value.trim();
+    if (!name) { toast('Dê um nome para a conexão', 'error'); return; }
+
+    const btn = $('btnGerarQr');
+    const old = btn.innerHTML;
+    btn.innerHTML = 'Gerando...'; btn.disabled = true;
 
     try {
-        const r = await authFetch('/api/evo-manager', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({action:'create'}) });
+        const r = await authFetch('/api/evo-manager', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({action:'create', instanceName: name}) });
         const data = await r.json();
 
         if (!r.ok || data.error) throw new Error(data.error || 'Falha ao conectar na Evolution');
+
+        currentWaInstance = name;
+        setWaView('waQrView');
+        $('waQrTitle').textContent = `Conectar: ${name}`;
 
         if (data.base64) {
             $('waQrImage').src = data.base64;
@@ -3489,26 +3618,26 @@ async function waCreateInstance() {
             toast("QR Code gerado! Aponte o celular.", "success");
             
             if (waPollTimer) clearInterval(waPollTimer);
-            waPollTimer = setInterval(checkWaStatus, 4000);
-        } else if (data.instance?.state === 'open') {
+            waPollTimer = setInterval(() => checkWaStatus(false), 4000);
+        } else if (data.instance?.state === 'open' || data.state === 'open') {
             checkWaStatus();
         } else {
-            throw new Error("Não foi possível renderizar a imagem Base64 do WhatsApp.");
+            throw new Error("Não foi possível gerar a imagem Base64 do WhatsApp.");
         }
     } catch(e) {
         toast(e.message, 'error');
-        $('btnGerarQr').style.display = 'flex';
-        $('waWaitQr').style.display = 'block';
-        $('waWaitQr').innerHTML = 'Erro ao processar.';
+        setWaView('waCreate');
+    } finally {
+        btn.innerHTML = old; btn.disabled = false;
     }
 }
 
-async function waLogout() {
-    if(!confirm("Atenção: Você tem certeza que deseja deslogar o dispositivo?")) return;
+async function waLogout(name) {
+    if(!confirm(`Atenção: Deslogar permanentemente o aparelho conectado em "${name}"?`)) return;
     try {
-        await authFetch('/api/evo-manager', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({action:'logout'}) });
+        await authFetch('/api/evo-manager', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({action:'logout', instanceName: name}) });
         toast("Sessão encerrada remotamente.", "success");
-        setTimeout(checkWaStatus, 1500);
+        setTimeout(carregarListaWa, 1500);
     } catch(e) {
         toast("Erro ao tentar deslogar.", "error");
     }

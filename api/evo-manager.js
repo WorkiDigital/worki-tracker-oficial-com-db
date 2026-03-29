@@ -19,9 +19,12 @@ export default async function handler(req, res) {
 
   const { action, instanceName } = req.body || req.query;
 
-  // Usa o prefixo do cliente ou admin
-  const baseName = user.is_admin ? (instanceName || 'admin_master') : `cliente_${user.cliente_id}`;
-  const finalInstanceName = baseName.replace(/[^a-zA-Z0-9_]/g, '');
+  // Prefixo para garantir isolamento
+  const prefix = user.is_admin ? 'admin_' : `cliente_${user.cliente_id}_`;
+  
+  // Nome final seguro para criação/ação específica (ex: admin_suporte)
+  const safeName = instanceName ? instanceName.replace(/[^a-zA-Z0-9_-]/g, '') : 'default';
+  const finalInstanceName = `${prefix}${safeName}`;
 
   try {
     const headers = {
@@ -29,15 +32,32 @@ export default async function handler(req, res) {
       'Content-Type': 'application/json'
     };
 
+    if (action === 'list') {
+        const r = await fetch(`${EVO_URL}/instance/fetchInstances`, { headers });
+        const data = await r.json();
+        const instances = Array.isArray(data) ? data : [];
+        const myInstances = instances.filter(i => {
+           const name = i.instance?.instanceName || i.instanceName || i.name;
+           return name && String(name).startsWith(prefix);
+        }).map(i => {
+           const name = i.instance?.instanceName || i.instanceName || i.name;
+           const state = i.instance?.state || i.state;
+           return {
+               fullName: name,
+               displayName: name.replace(prefix, ''),
+               state: state
+           };
+        });
+        return res.status(200).json(myInstances);
+    }
+
     if (action === 'status') {
-      // Checa status
       const r = await fetch(`${EVO_URL}/instance/connectionState/${finalInstanceName}`, { headers });
       const data = await r.json();
       return res.status(200).json(data);
     }
 
     if (action === 'create') {
-      // Cria a instância (Se já existe a Evolution retorna erro 400 mas não quebra tudo se tratarmos)
       const body = {
         instanceName: finalInstanceName,
         qrcode: true,
@@ -51,21 +71,18 @@ export default async function handler(req, res) {
       });
       let data = await r.json();
 
-      // Se já existia, vamos apensar tentar buscar o QRCode
       if (!r.ok && data.message && data.message.includes('already exists')) {
-         // Cai no connect pra gerar o QR
+         // Ignores and proceeds to fetch QR
       } else if (!r.ok) {
          return res.status(400).json({ error: data.message || 'Erro ao criar instância' });
       }
 
-      // Conecta para pegar o Base64 do QrCode imediatamente
       const rQR = await fetch(`${EVO_URL}/instance/connect/${finalInstanceName}`, { headers });
       const dataQR = await rQR.json();
       return res.status(200).json(dataQR);
     }
 
     if (action === 'connect') {
-      // Tenta gerar/buscar QRCode de uma instância já criada
       const r = await fetch(`${EVO_URL}/instance/connect/${finalInstanceName}`, { headers });
       const data = await r.json();
       return res.status(200).json(data);
