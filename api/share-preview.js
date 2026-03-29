@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { getPool } from './_db.js';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -10,10 +10,20 @@ export default async function handler(req, res) {
   if (!token) return res.status(400).json({ error: 'token required' });
   if (!adId)  return res.status(400).json({ error: 'adId required' });
 
-  const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
-  const { data: row, error } = await sb
-    .from('share_tokens').select('account_id,expires_at').eq('token', token).single();
-  if (error || !row) return res.status(404).json({ error: 'Link inválido' });
+  const pool = getPool();
+  let row;
+  try {
+    const { rows } = await pool.query(
+      `SELECT account_id, expires_at FROM share_tokens WHERE token = $1`,
+      [token]
+    );
+    if (rows.length === 0) return res.status(404).json({ error: 'Link inválido' });
+    row = rows[0];
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: 'Erro ao buscar dados do link' });
+  }
+
   if (row.expires_at && new Date(row.expires_at) < new Date())
     return res.status(403).json({ error: 'Link expirado' });
 

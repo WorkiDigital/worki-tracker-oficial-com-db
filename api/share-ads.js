@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { getPool } from './_db.js';
 
 const DEFAULT_SECTIONS = { campanhas: true, demograficos: true, melhores_criativos: true };
 const DEFAULT_METRICS  = ['spend','imps','reach','cpm','ctr','leads','cpl','msgs','cpr','active_campaigns'];
@@ -15,14 +15,22 @@ export default async function handler(req, res) {
   if (!token) return res.status(400).json({ error: 'token required' });
   if (!VALID_PRESETS.includes(datePreset)) return res.status(400).json({ error: 'datePreset inválido' });
 
-  const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
-  const { data: row, error } = await sb
-    .from('share_tokens')
-    .select('account_id,account_name,client_name,visible_sections,visible_metrics,visible_columns,status_filter,expires_at')
-    .eq('token', token)
-    .single();
+  const pool = getPool();
+  let row;
+  try {
+    const { rows } = await pool.query(
+      `SELECT account_id, account_name, client_name, visible_sections, visible_metrics, visible_columns, status_filter, expires_at 
+       FROM share_tokens 
+       WHERE token = $1`,
+      [token]
+    );
+    if (rows.length === 0) return res.status(404).json({ error: 'Link inválido ou expirado' });
+    row = rows[0];
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: 'Erro ao buscar dados do link' });
+  }
 
-  if (error || !row) return res.status(404).json({ error: 'Link inválido ou expirado' });
   if (row.expires_at && new Date(row.expires_at) < new Date()) return res.status(403).json({ error: 'Este link expirou' });
 
   const metaToken = process.env.META_ADS_TOKEN;

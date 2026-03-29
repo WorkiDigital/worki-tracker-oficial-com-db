@@ -1,5 +1,5 @@
 import { verifyAuth } from './_auth.js';
-import { createClient } from '@supabase/supabase-js';
+import { getPool } from './_db.js';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -17,21 +17,42 @@ export default async function handler(req, res) {
 
   if (!token) return res.status(400).json({ error: 'token required' });
 
-  const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
+  const pool = getPool();
+  
+  const updates = [];
+  const values = [];
+  let paramCount = 1;
 
-  const updatePayload = { client_name, visible_sections, visible_metrics, visible_columns, status_filter };
+  if (client_name !== undefined) { updates.push(`client_name = $${paramCount++}`); values.push(client_name); }
+  if (visible_sections !== undefined) { updates.push(`visible_sections = $${paramCount++}`); values.push(JSON.stringify(visible_sections)); }
+  if (visible_metrics !== undefined) { updates.push(`visible_metrics = $${paramCount++}`); values.push(JSON.stringify(visible_metrics)); }
+  if (visible_columns !== undefined) { updates.push(`visible_columns = $${paramCount++}`); values.push(JSON.stringify(visible_columns)); }
+  if (status_filter !== undefined) { updates.push(`status_filter = $${paramCount++}`); values.push(status_filter); }
   if (expires_at !== undefined) {
-    updatePayload.expires_at = expires_at === '' ? null : (expires_at ? new Date(expires_at).toISOString() : null);
+    updates.push(`expires_at = $${paramCount++}`);
+    values.push(expires_at === '' ? null : (expires_at ? new Date(expires_at).toISOString() : null));
   }
 
-  const { data, error } = await sb
-    .from('share_tokens')
-    .update(updatePayload)
-    .eq('token', token)
-    .eq('user_id', user.id)
-    .select('token')
-    .single();
+  if (updates.length === 0) return res.status(400).json({ error: 'Nenhum dado para atualizar' });
 
-  if (error || !data) return res.status(404).json({ error: 'Token não encontrado ou sem permissão' });
-  return res.status(200).json({ ok: true });
+  values.push(token);
+  const tokenParam = paramCount++;
+  values.push(user.id);
+  const userParam = paramCount++;
+
+  try {
+    const result = await pool.query(
+      `UPDATE share_tokens SET ${updates.join(', ')} WHERE token = $${tokenParam} AND user_id = $${userParam} RETURNING token`,
+      values
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'Token não encontrado ou sem permissão' });
+    }
+    
+    return res.status(200).json({ ok: true });
+  } catch(e) {
+    console.error(e);
+    return res.status(500).json({ error: 'Erro de banco de dados ao atualizar token' });
+  }
 }

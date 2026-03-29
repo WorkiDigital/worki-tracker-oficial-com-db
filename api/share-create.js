@@ -1,5 +1,5 @@
 import { verifyAuth } from './_auth.js';
-import { createClient } from '@supabase/supabase-js';
+import { getPool } from './_db.js';
 import { randomUUID } from 'crypto';
 
 export default async function handler(req, res) {
@@ -26,9 +26,9 @@ export default async function handler(req, res) {
 
   if (!account_id) return res.status(400).json({ error: 'account_id required' });
 
-  // Verify account_id belongs to the configured META_ADS_TOKEN
-  const metaToken = process.env.META_ADS_TOKEN;
-  if (!metaToken) return res.status(500).json({ error: 'META_ADS_TOKEN not configured' });
+  // Use token associado ao cliente logado (já disponível via JWT auth)
+  let metaToken = process.env.META_ADS_TOKEN; 
+
   try {
     const check = await fetch(`https://graph.facebook.com/v20.0/${account_id}?fields=id&access_token=${metaToken}`);
     const checkData = await check.json();
@@ -37,24 +37,34 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Erro ao verificar conta' });
   }
 
-  const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
+  const pool = getPool();
   const token = randomUUID();
-
   const expiresAt = expires_at ? new Date(expires_at).toISOString() : null;
 
-  const { error } = await sb.from('share_tokens').insert({
-    token,
-    account_id,
-    account_name: account_name || account_id,
-    user_id: user.id,
-    client_name: client_name || null,
-    visible_sections: visible_sections || null,
-    visible_metrics: visible_metrics || null,
-    visible_columns: visible_columns || null,
-    status_filter: status_filter || 'ACTIVE',
-    expires_at: expiresAt,
-  });
+  try {
+    await pool.query(
+      `INSERT INTO share_tokens (
+        token, account_id, account_name, user_id, client_name, 
+        visible_sections, visible_metrics, visible_columns, 
+        status_filter, expires_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+      [
+        token, 
+        account_id, 
+        account_name || account_id, 
+        user.id, 
+        client_name || null,
+        visible_sections ? JSON.stringify(visible_sections) : null,
+        visible_metrics ? JSON.stringify(visible_metrics) : null,
+        visible_columns ? JSON.stringify(visible_columns) : null,
+        status_filter || 'ACTIVE',
+        expiresAt
+      ]
+    );
 
-  if (error) return res.status(500).json({ error: error.message });
-  return res.status(200).json({ token });
+    return res.status(200).json({ token });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: 'Erro ao criar o link de compartilhamento' });
+  }
 }

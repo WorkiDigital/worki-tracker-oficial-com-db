@@ -1,4 +1,4 @@
-import { verifyAuth } from './_auth.js';
+import { verifyAuth, getTokenForUser } from './_auth.js';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -9,7 +9,7 @@ export default async function handler(req, res) {
   const user = await verifyAuth(req, res);
   if (!user) return;
 
-  const token = process.env.META_ADS_TOKEN;
+  const token = await getTokenForUser(user);
   if (!token) return res.status(500).json({ error: 'META_ADS_TOKEN not configured' });
 
   try {

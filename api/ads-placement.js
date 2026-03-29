@@ -4,7 +4,7 @@
  * Usa level=ad + breakdowns=publisher_platform,platform_position para obter actions.
  * Agrega os resultados por platform_position (soma FB + IG + etc).
  */
-import { verifyAuth } from './_auth.js';
+import { verifyAuth, getTokenForUser } from './_auth.js';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -21,7 +21,7 @@ export default async function handler(req, res) {
     campaignIds = '',
   } = req.query;
 
-  const token = process.env.META_ADS_TOKEN;
+  const token = await getTokenForUser(user);
   if (!token)     return res.status(500).json({ error: 'META_ADS_TOKEN not configured' });
   if (!accountId) return res.status(400).json({ error: 'accountId is required' });
 
