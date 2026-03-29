@@ -82,16 +82,24 @@ export default async function handler(req, res) {
 
       // Auto-configura webhook do N8N na instância criada
       if (process.env.N8N_WEBHOOK_URL) {
-        await fetch(`${EVO_URL}/webhook/set/${finalInstanceName}`, {
+        const webhookBody = {
+          webhook: {
+            enabled: true,
+            url: process.env.N8N_WEBHOOK_URL,
+            webhookByEvents: false,
+            webhookBase64: false,
+            events: ["MESSAGES_UPSERT"]
+          }
+        };
+        const wRes = await fetch(`${EVO_URL}/webhook/set/${finalInstanceName}`, {
           method: 'POST',
           headers,
-          body: JSON.stringify({
-            url: process.env.N8N_WEBHOOK_URL,
-            webhook_by_events: false,
-            webhook_base64: false,
-            events: ["MESSAGES_UPSERT"]
-          })
+          body: JSON.stringify(webhookBody)
         });
+        const wData = await wRes.json();
+        console.log(`[evo-manager] Webhook set para ${finalInstanceName}:`, JSON.stringify(wData));
+      } else {
+        console.warn('[evo-manager] N8N_WEBHOOK_URL não definida — webhook não configurado');
       }
 
       const rQR = await fetch(`${EVO_URL}/instance/connect/${finalInstanceName}`, { headers });
