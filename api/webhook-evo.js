@@ -187,7 +187,7 @@ async function sendCapiLead(lead, pixel, token) {
     ctwa_clid: lead.ctw_aci_id,
   };
 
-  if (ph)           userData.ph      = [hash(ph)];
+  if (ph)           userData.ph      = hash(ph);
   if (lead.page_id) userData.page_id = lead.page_id;
 
   const payload = {
@@ -201,7 +201,7 @@ async function sendCapiLead(lead, pixel, token) {
   };
 
   try {
-    const r = await fetch(`https://graph.facebook.com/v20.0/${pixel}/events?access_token=${token}`, {
+    const r = await fetch(`https://graph.facebook.com/v25.0/${pixel}/events?access_token=${token}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
@@ -220,13 +220,13 @@ async function sendCapiPurchase(lead, pixel, token) {
     ctwa_clid: lead.ctw_aci_id || undefined,
   };
 
-  if (ph)                userData.ph      = [hash(ph)];
+  if (ph)                userData.ph      = hash(ph);
   if (nomeParts[0])      userData.fn      = hash(nomeParts[0]);
   if (nomeParts[1])      userData.ln      = hash(nomeParts.slice(1).join(' '));
-  if (lead.estado)       userData.st      = [hash(lead.estado)];
-  if (lead.cidade)       userData.ct      = [hash(lead.cidade)];
+  if (lead.estado)       userData.st      = hash(lead.estado);
+  if (lead.cidade)       userData.ct      = hash(lead.cidade);
   if (lead.page_id)      userData.page_id = lead.page_id;
-  userData.country = [hash('br')];
+  userData.country = hash('br');
 
   const payload = {
     data: [{
@@ -243,7 +243,7 @@ async function sendCapiPurchase(lead, pixel, token) {
   };
 
   try {
-    const r = await fetch(`https://graph.facebook.com/v20.0/${pixel}/events?access_token=${token}`, {
+    const r = await fetch(`https://graph.facebook.com/v25.0/${pixel}/events?access_token=${token}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
