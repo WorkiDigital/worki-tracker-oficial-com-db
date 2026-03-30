@@ -18,3 +18,9 @@ export function cacheSet(key, data, ttlMs = TTL_MS) {
 export function cacheKey(...parts) {
   return parts.join(':');
 }
+
+/** Gera chave com escopo de usuário para evitar cross-user data leak */
+export function userCacheKey(user, ...parts) {
+  const scope = user?.cliente_id ?? `admin_${user?.id ?? 'unknown'}`;
+  return [scope, ...parts].join(':');
+}

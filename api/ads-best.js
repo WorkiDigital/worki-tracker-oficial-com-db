@@ -1,4 +1,5 @@
 import { verifyAuth, getTokenForUser } from './_auth.js';
+import { verifyAccountAccess } from './_validate.js';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -13,6 +14,7 @@ export default async function handler(req, res) {
   const token = await getTokenForUser(user);
   if (!token) return res.status(403).json({ error: 'Token Meta não configurado para sua conta. Solicite ao administrador da plataforma.' });
   if (!accountId) return res.status(400).json({ error: 'accountId is required' });
+  if (!(await verifyAccountAccess(user, accountId))) return res.status(403).json({ error: 'Acesso negado a esta conta de anúncios.' });
 
   const insightFields = 'spend,impressions,clicks,outbound_clicks,ctr,reach,cpm,cpc,frequency,inline_link_clicks,actions,cost_per_action_type';
   const insightsParam = (dateFrom && dateTo)

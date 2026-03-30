@@ -1,4 +1,5 @@
 import { verifyAuth, getTokenForUser } from './_auth.js';
+import { getClientAccountId } from './_validate.js';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -25,9 +26,15 @@ export default async function handler(req, res) {
       url = data.paging?.next || null; // segue para próxima página se existir
     }
 
-    // Ordena por nome
-    todas.sort((a, b) => a.name.localeCompare(b.name));
-    return res.status(200).json(todas);
+    // Para clientes (não-admin): filtra apenas a conta vinculada no painel
+    const allowedId = await getClientAccountId(user);
+    const lista = allowedId
+      ? todas.filter(a => String(a.account_id) === String(allowedId).replace(/^act_/, '') ||
+                          String(a.id) === `act_${String(allowedId).replace(/^act_/, '')}`)
+      : todas;
+
+    lista.sort((a, b) => a.name.localeCompare(b.name));
+    return res.status(200).json(lista);
   } catch (e) {
     return res.status(500).json({ error: e.message });
   }

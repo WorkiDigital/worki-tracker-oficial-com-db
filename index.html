@@ -667,6 +667,7 @@
         <div class="input-group"><label>Nome da Empresa</label><input type="text" id="editCliNome"></div>
         <div class="input-group"><label>Pixel Meta</label><input type="text" id="editCliPixel"></div>
         <div class="input-group"><label>Token Meta</label><input type="text" id="editCliToken"></div>
+        <div class="input-group"><label>ID da Conta de Anúncios <span style="color:var(--muted);font-weight:400;font-size:11px;">(ex: act_123456789)</span></label><input type="text" id="editCliAccountId" placeholder="act_XXXXXXXXX"></div>
         <div class="input-group"><label>E-mail (Login)</label><input type="email" id="editCliEmail"></div>
         <div class="input-group"><label>Nova Senha <span style="color:var(--muted);font-weight:400;font-size:11px;">(deixe em branco para não alterar)</span></label><input type="text" id="editCliSenha" placeholder="Nova senha (opcional)"></div>
         <hr style="border:none;border-top:1px solid var(--border);margin:16px 0 12px;">
@@ -2187,7 +2188,7 @@ async function renderShareLinks() {
 
         lucide.createIcons({ nodes: [area] });
     } catch(e) {
-        area.innerHTML = `<p style="color:var(--red);font-size:13px;">Erro ao carregar links: ${e.message}</p>`;
+        area.innerHTML = `<p style="color:var(--red);font-size:13px;">Erro ao carregar links: ${esc(e.message)}</p>`;
     }
 }
 
@@ -3628,7 +3629,7 @@ async function carregarClientesAdmin() {
                 <td style="max-width:200px;">${badges}</td>
                 <td style="font-size:12px;color:var(--muted);">${new Date(c.criado_em).toLocaleDateString('pt-BR')}</td>
                 <td style="display:flex;gap:6px;align-items:center;">
-                    <button class="btn btn-ghost btn-sm" onclick='abrirEditCliente(${JSON.stringify({id:c.id,nome:c.nome,email_contato:c.email_contato,pixel_padrao:c.pixel_padrao,token_meta:c.token_meta,permissoes:p})})'><i data-lucide="edit-3" style="width:14px;"></i> Editar</button>
+                    <button class="btn btn-ghost btn-sm" onclick='abrirEditCliente(${JSON.stringify({id:c.id,nome:c.nome,email_contato:c.email_contato,pixel_padrao:c.pixel_padrao,token_meta:c.token_meta,account_id:c.account_id,permissoes:p})})'><i data-lucide="edit-3" style="width:14px;"></i> Editar</button>
                     <button class="btn btn-ghost btn-sm" onclick="excluirCliente(${c.id}, '${esc(c.nome)}')" style="color:var(--red);border-color:rgba(239,68,68,0.2);"><i data-lucide="trash-2" style="width:14px;"></i></button>
                 </td>
             </tr>`;
@@ -3637,7 +3638,7 @@ async function carregarClientesAdmin() {
         lucide.createIcons({ nodes: [tbody] });
 
     } catch(e) {
-        tbody.innerHTML = `<tr><td colspan="7" style="color:var(--red);text-align:center;padding:20px;">Erro: ${e.message}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" style="color:var(--red);text-align:center;padding:20px;">Erro: ${esc(e.message)}</td></tr>`;
         toast('Falha ao carregar clientes: ' + e.message, 'error');
     }
 }
@@ -3646,8 +3647,9 @@ function abrirEditCliente(c) {
     $('editCliId').value       = c.id;
     $('editCliNome').value     = c.nome || '';
     $('editCliPixel').value    = c.pixel_padrao || '';
-    $('editCliToken').value    = c.token_meta || '';
-    $('editCliEmail').value    = c.email_contato || '';
+    $('editCliToken').value     = c.token_meta || '';
+    $('editCliAccountId').value = c.account_id || '';
+    $('editCliEmail').value     = c.email_contato || '';
     $('editCliSenha').value    = '';
     $('editCliSubtitle').textContent = c.nome;
     const p = c.permissoes || {};
@@ -3671,6 +3673,7 @@ async function salvarEdicaoCliente() {
         email_contato: $('editCliEmail').value.trim() || undefined,
         pixel_padrao:  $('editCliPixel').value.trim() || undefined,
         token_meta:    $('editCliToken').value.trim() || undefined,
+        account_id:    $('editCliAccountId').value.trim() || undefined,
         permissoes: {
             leads:      $('permLeads').checked,
             anuncios:   $('permAnuncios').checked,
@@ -3840,7 +3843,7 @@ async function carregarListaWa() {
         lucide.createIcons({ nodes: [listEl] });
 
     } catch(e) {
-        listEl.innerHTML = `<div style="text-align:center;padding:20px;color:var(--red);">Erro: ${e.message}</div>`;
+        listEl.innerHTML = `<div style="text-align:center;padding:20px;color:var(--red);">Erro: ${esc(e.message)}</div>`;
     }
 }
 
@@ -4004,7 +4007,7 @@ async function abrirModalVincular() {
         }).join('');
         lucide.createIcons({ nodes: [$('listaInstanciasEvo')] });
     } catch(e) {
-        $('listaInstanciasEvo').innerHTML = `<div style="color:var(--red);padding:20px;">${e.message}</div>`;
+        $('listaInstanciasEvo').innerHTML = `<div style="color:var(--red);padding:20px;">${esc(e.message)}</div>`;
     }
 }
 
