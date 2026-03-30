@@ -1,5 +1,10 @@
 import jwt from 'jsonwebtoken';
 
+// Alerta crítico em produção se JWT_SECRET não estiver configurado
+if (!process.env.JWT_SECRET) {
+  console.error('[SECURITY] CRÍTICO: JWT_SECRET não definido. Qualquer pessoa pode forjar tokens de admin. Configure a variável de ambiente imediatamente.');
+}
+
 /**
  * Verifica o JWT do usuário via Authorization header.
  * Retorna o objeto user ou null (já respondendo 401 se inválido).

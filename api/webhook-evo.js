@@ -19,6 +19,12 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
 
+  // Valida segredo do webhook (se configurado em WEBHOOK_SECRET)
+  const webhookSecret = process.env.WEBHOOK_SECRET;
+  if (webhookSecret && req.headers['x-webhook-secret'] !== webhookSecret) {
+    return res.status(401).json({ error: 'Webhook secret inválido.' });
+  }
+
   const body     = req.body;
   const instance = body.instance || '';
   let   cid      = null; // será preenchido após identificar o cliente

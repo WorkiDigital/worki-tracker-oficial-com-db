@@ -1,6 +1,7 @@
 import { verifyAuth } from './_auth.js';
 import { getPool } from './_db.js';
 import { randomUUID } from 'crypto';
+import { verifyAccountAccess } from './_validate.js';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -25,6 +26,7 @@ export default async function handler(req, res) {
   } = JSON.parse(body || '{}');
 
   if (!account_id) return res.status(400).json({ error: 'account_id required' });
+  if (!(await verifyAccountAccess(user, account_id))) return res.status(403).json({ error: 'Acesso negado a esta conta de anúncios.' });
 
   // Use token associado ao cliente logado (já disponível via JWT auth)
   let metaToken = process.env.META_ADS_TOKEN; 

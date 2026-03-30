@@ -1430,9 +1430,15 @@ let debounceTimer = null;
 let autoRefreshTimer = null;
 let AUTH_TOKEN = '';
 
-// Fetch autenticado — adiciona Bearer token em todas as chamadas de API
-function authFetch(url, opts = {}) {
-    return fetch(url, { ...opts, headers: { ...(opts.headers||{}), 'Authorization': `Bearer ${AUTH_TOKEN}` } });
+// Fetch autenticado — adiciona Bearer token e faz logout automático se sessão expirar
+async function authFetch(url, opts = {}) {
+    const r = await fetch(url, { ...opts, headers: { ...(opts.headers||{}), 'Authorization': `Bearer ${AUTH_TOKEN}` } });
+    if (r.status === 401) {
+        localStorage.removeItem('adlytics_token');
+        localStorage.removeItem('adlytics_user');
+        window.location.href = '/login.html';
+    }
+    return r;
 }
 
 // ── Utils ──────────────────────────────────────────────────────
@@ -3613,13 +3619,15 @@ async function carregarClientesAdmin() {
 
         const PERM_LABELS = { leads:'Leads', anuncios:'Meta Ads', relatorios:'Relatórios', whatsapp:'WhatsApp', config:'Integrações', clientes:'Compartilhar' };
 
+        // Armazena dados completos em memória — token_meta nunca entra no HTML
+        window._clientesMap = {};
+        clientes.forEach(c => { window._clientesMap[c.id] = c; });
+
         tbody.innerHTML = clientes.map(c => {
             const p = c.permissoes || { leads:true, anuncios:true, relatorios:true, whatsapp:true, config:true, clientes:true };
             const badges = Object.entries(PERM_LABELS).map(([k, label]) =>
                 `<span style="display:inline-block;font-size:10px;padding:2px 6px;border-radius:4px;margin:1px;background:${p[k] ? 'rgba(59,130,246,0.15)' : 'rgba(239,68,68,0.1)'};color:${p[k] ? 'var(--blue)' : 'var(--red)'};">${label}</span>`
             ).join('');
-            // Serialize client data for the edit button (escaping for onclick attribute)
-            const dataAttr = esc(JSON.stringify({ id:c.id, nome:c.nome, email_contato:c.email_contato, pixel_padrao:c.pixel_padrao, token_meta:c.token_meta, permissoes:p }));
             return `
             <tr>
                 <td style="color:var(--muted);font-size:13px;">#${c.id}</td>
@@ -3629,7 +3637,7 @@ async function carregarClientesAdmin() {
                 <td style="max-width:200px;">${badges}</td>
                 <td style="font-size:12px;color:var(--muted);">${new Date(c.criado_em).toLocaleDateString('pt-BR')}</td>
                 <td style="display:flex;gap:6px;align-items:center;">
-                    <button class="btn btn-ghost btn-sm" onclick='abrirEditCliente(${JSON.stringify({id:c.id,nome:c.nome,email_contato:c.email_contato,pixel_padrao:c.pixel_padrao,token_meta:c.token_meta,account_id:c.account_id,permissoes:p})})'><i data-lucide="edit-3" style="width:14px;"></i> Editar</button>
+                    <button class="btn btn-ghost btn-sm" onclick="abrirEditCliente(${c.id})"><i data-lucide="edit-3" style="width:14px;"></i> Editar</button>
                     <button class="btn btn-ghost btn-sm" onclick="excluirCliente(${c.id}, '${esc(c.nome)}')" style="color:var(--red);border-color:rgba(239,68,68,0.2);"><i data-lucide="trash-2" style="width:14px;"></i></button>
                 </td>
             </tr>`;
@@ -3643,22 +3651,23 @@ async function carregarClientesAdmin() {
     }
 }
 
-function abrirEditCliente(c) {
-    $('editCliId').value       = c.id;
-    $('editCliNome').value     = c.nome || '';
-    $('editCliPixel').value    = c.pixel_padrao || '';
+function abrirEditCliente(id) {
+    const c = (window._clientesMap || {})[id] || { id };
+    $('editCliId').value        = c.id;
+    $('editCliNome').value      = c.nome || '';
+    $('editCliPixel').value     = c.pixel_padrao || '';
     $('editCliToken').value     = c.token_meta || '';
     $('editCliAccountId').value = c.account_id || '';
     $('editCliEmail').value     = c.email_contato || '';
-    $('editCliSenha').value    = '';
-    $('editCliSubtitle').textContent = c.nome;
+    $('editCliSenha').value     = '';
+    $('editCliSubtitle').textContent = c.nome || '';
     const p = c.permissoes || {};
-    $('permLeads').checked     = p.leads     !== false;
-    $('permAnuncios').checked  = p.anuncios  !== false;
-    $('permRelatorios').checked= p.relatorios!== false;
-    $('permWhatsapp').checked  = p.whatsapp  !== false;
-    $('permConfig').checked    = p.config    !== false;
-    $('permClientes').checked  = p.clientes  !== false;
+    $('permLeads').checked      = p.leads      !== false;
+    $('permAnuncios').checked   = p.anuncios   !== false;
+    $('permRelatorios').checked = p.relatorios !== false;
+    $('permWhatsapp').checked   = p.whatsapp   !== false;
+    $('permConfig').checked     = p.config     !== false;
+    $('permClientes').checked   = p.clientes   !== false;
     $('modalEditCliente').classList.add('open');
     lucide.createIcons({ nodes: [$('modalEditCliente')] });
 }
