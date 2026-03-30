@@ -3470,7 +3470,7 @@ function mudarAba(aba) {
     const el = $('aba-'+aba); if(el) el.classList.remove('aba-oculta');
     const btn = $('btn-'+aba); if(btn) btn.classList.add('active');
     $('titulo-pagina').innerHTML = TITULOS[aba]||'';
-    $('leadsControls').style.display = aba === 'leads' ? 'flex' : 'none';
+    $('leadsControls').style.display = ['leads','relatorios'].includes(aba) ? 'flex' : 'none';
     lucide.createIcons({ nodes:[$('titulo-pagina')] });
     if (aba === 'anuncios' && !adsCarregado) carregarAnuncios();
     if (aba === 'config')   { renderConfigContas(); }
