@@ -1627,8 +1627,8 @@ function renderTabela() {
         const idx      = inicio + i;
         const plat     = (lead.plataforma||'instagram').toLowerCase();
         const platCls  = plat.includes('face') ? 'facebook' : plat.includes('whats') ? 'whatsapp' : 'instagram';
-        const status   = (lead.status||'lead').toLowerCase();
-        const purchase = status === 'purchase';
+        const status   = (lead.status||'Lead').toLowerCase();
+        const purchase = status === 'vendido';
         const stColor  = purchase ? '#10b981' : '';
         const stBorder = purchase ? '1px solid rgba(16,185,129,.3)' : 'transparent';
         const msg      = (lead.mensagem_recebida||'Sem mensagem').substring(0,35);
@@ -1698,7 +1698,7 @@ function exportarCSV() {
 // ── Relatórios ─────────────────────────────────────────────────
 function renderRelatorios() {
     const total  = dadosFiltrados.length;
-    const vendas = dadosFiltrados.filter(l => (l.status||'').toLowerCase() === 'purchase');
+    const vendas = dadosFiltrados.filter(l => (l.status||'').toLowerCase() === 'vendido');
     const receita = vendas.reduce((s,l) => s + parseFloat(l.valor_venda||0), 0);
     const conv   = total ? ((vendas.length/total)*100).toFixed(1) : 0;
 
