@@ -23,7 +23,12 @@ export default async function handler(req, res) {
     anuncio_thumbnail_url,
     cidade,
     estado,
-    valor_venda
+    valor_venda,
+    utm_campaign,
+    utm_medium,
+    utm_content,
+    page_id,
+    plataforma
   } = req.body;
 
   // Normaliza: aceita tanto ctw_aci_id quanto ctwaClid
@@ -86,8 +91,9 @@ export default async function handler(req, res) {
       const insertResult = await pool.query(`
         INSERT INTO leads_tracking (
           cliente_id, nome, telefone, mensagem_recebida, ctw_aci_id, source_id,
-          event_source_url, anuncio_thumbnail_url, instancia, status, event_time
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'Pendente', to_timestamp($10))
+          event_source_url, anuncio_thumbnail_url, instancia, status, event_time,
+          utm_campaign, utm_medium, utm_content, page_id, plataforma
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'Pendente', to_timestamp($10), $11, $12, $13, $14, $15)
         RETURNING *
       `, [
         cliente_id,
@@ -99,8 +105,16 @@ export default async function handler(req, res) {
         event_source_url || '',
         anuncio_thumbnail_url || '',
         instance || '',
-        Math.floor(Date.now() / 1000)
+        Math.floor(Date.now() / 1000),
+        utm_campaign || null,
+        utm_medium || null,
+        utm_content || null,
+        page_id || null,
+        plataforma || null
       ]);
+
+      // Dispara CAPI Lead após salvar no banco
+      await sendCapiLead(insertResult.rows[0], pool);
 
       return res.status(200).json({ success: true, message: 'Lead salvo com sucesso', lead: insertResult.rows[0] });
     }
@@ -111,8 +125,53 @@ export default async function handler(req, res) {
   }
 }
 
+async function sendCapiLead(lead, pool) {
+  let { pixel, ctw_aci_id, page_id, telefone, cliente_id } = lead;
+
+  const clientRes = await pool.query('SELECT pixel_padrao FROM clientes WHERE id = $1', [cliente_id]);
+  if (clientRes.rows.length > 0) {
+    pixel = pixel || clientRes.rows[0].pixel_padrao;
+  }
+  const token = process.env.META_ADS_TOKEN || null;
+
+  if (!pixel || !token || !ctw_aci_id) return;
+
+  const hash = str => /^[a-f0-9]{64}$/.test(str) ? str : crypto.createHash('sha256').update((str || '').toLowerCase().trim()).digest('hex');
+  const ph = (telefone || '').replace(/\D/g, '');
+
+  const userData = {
+    client_ip_address: "0.0.0.0",
+    client_user_agent: "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36",
+    ctwa_clid: ctw_aci_id,
+    messaging_channel: "whatsapp",
+  };
+
+  if (ph) userData.ph = [hash(ph)];
+  if (page_id) userData.page_id = page_id;
+
+  const payload = {
+    data: [
+      {
+        event_name: "Lead",
+        event_time: Math.floor(Date.now() / 1000),
+        action_source: "business_messaging",
+        user_data: userData,
+      }
+    ]
+  };
+
+  try {
+    const r = await fetch(`https://graph.facebook.com/v20.0/${pixel}/events?access_token=${token}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    console.log("CAPI Lead Response:", await r.json());
+  } catch (err) { console.error('CAPI Lead error:', err.message || err); }
+}
+
 async function sendCapiPurchase(lead, pool) {
-  let { pixel, ctw_aci_id, event_source_url, telefone, cidade, estado, cliente_id, valor_venda } = lead;
+  let { pixel, ctw_aci_id, telefone, cidade, estado, page_id, cliente_id, valor_venda } = lead;
 
   const clientRes = await pool.query('SELECT pixel_padrao FROM clientes WHERE id = $1', [cliente_id]);
   if (clientRes.rows.length > 0) {
@@ -123,26 +182,27 @@ async function sendCapiPurchase(lead, pool) {
   if (!pixel || !token) return;
 
   const hash = str => /^[a-f0-9]{64}$/.test(str) ? str : crypto.createHash('sha256').update((str || '').toLowerCase().trim()).digest('hex');
-  const ph = (telefone || '').replace(/\D/g, ''); 
+  const ph = (telefone || '').replace(/\D/g, '');
 
   const userData = {
-    client_ip_address: lead.client_ip_address || "0.0.0.0",
-    client_user_agent: lead.user_agent || "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
-    ctwa_clid: ctw_aci_id || undefined, 
+    client_ip_address: "0.0.0.0",
+    client_user_agent: "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36",
+    ctwa_clid: ctw_aci_id || undefined,
+    messaging_channel: "whatsapp",
   };
 
   if (ph) userData.ph = [hash(ph)];
   if (estado) userData.st = [hash(estado)];
   if (cidade) userData.ct = [hash(cidade)];
-  userData.country = [hash('br')]; 
+  if (page_id) userData.page_id = page_id;
+  userData.country = [hash('br')];
 
   const payload = {
     data: [
       {
         event_name: "Purchase",
-        event_time: Math.floor(Date.now() / 1000), 
-        action_source: "website",
-        event_source_url: event_source_url || "https://seusite.com",
+        event_time: Math.floor(Date.now() / 1000),
+        action_source: "business_messaging",
         user_data: userData,
         custom_data: {
           currency: "BRL",
@@ -153,11 +213,11 @@ async function sendCapiPurchase(lead, pool) {
   };
 
   try {
-    const req = await fetch(`https://graph.facebook.com/v20.0/${pixel}/events?access_token=${token}`, {
+    const r = await fetch(`https://graph.facebook.com/v20.0/${pixel}/events?access_token=${token}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
-    console.log("CAPI Purchase Response:", await req.json());
+    console.log("CAPI Purchase Response:", await r.json());
   } catch (err) { console.error('CAPI Purchase error:', err.message || err); }
 }
