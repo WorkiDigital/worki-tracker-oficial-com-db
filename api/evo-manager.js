@@ -52,14 +52,18 @@ export default async function handler(req, res) {
 
         // Para admin: também busca instâncias vinculadas via tabela de mapeamento
         if (user.is_admin) {
-            const pool = getPool();
-            const mapped = await pool.query('SELECT instance_name, cliente_id FROM instancias_mapeamento');
-            for (const row of mapped.rows) {
-                if (myInstances.find(i => i.fullName === row.instance_name)) continue; // já listada
-                const evoInst = instances.find(i => (i.instance?.instanceName || i.instanceName || i.name) === row.instance_name);
-                const rawState = evoInst ? (evoInst.instance?.state || evoInst.state || '') : 'unknown';
-                const state = ['open','connected','online'].includes(rawState) ? 'open' : rawState;
-                myInstances.push({ fullName: row.instance_name, displayName: row.instance_name, state, linked: true, cliente_id: row.cliente_id });
+            try {
+                const pool = getPool();
+                const mapped = await pool.query('SELECT instance_name, cliente_id FROM instancias_mapeamento');
+                for (const row of mapped.rows) {
+                    if (myInstances.find(i => i.fullName === row.instance_name)) continue; // já listada
+                    const evoInst = instances.find(i => (i.instance?.instanceName || i.instanceName || i.name) === row.instance_name);
+                    const rawState = evoInst ? (evoInst.instance?.state || evoInst.state || '') : 'unknown';
+                    const state = ['open','connected','online'].includes(rawState) ? 'open' : rawState;
+                    myInstances.push({ fullName: row.instance_name, displayName: row.instance_name, state, linked: true, cliente_id: row.cliente_id });
+                }
+            } catch (dbErr) {
+                console.warn('[evo-manager] Tabela instancias_mapeamento não encontrada:', dbErr.message);
             }
         }
 
