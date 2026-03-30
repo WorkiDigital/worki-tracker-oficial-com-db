@@ -123,7 +123,7 @@ export default async function handler(req, res) {
 
   // 4b. fromMe = true → COMPRA
   if (fromMe) {
-    const msg = data.message?.conversation || data.message?.extendedTextMessage?.text || '';
+    const msg = data.message?.conversation || data.message?.extendedTextMessage?.text || data.message?.imageMessage?.caption || data.message?.documentMessage?.caption || '';
 
     const get = (labels) => {
       for (const label of labels) {
