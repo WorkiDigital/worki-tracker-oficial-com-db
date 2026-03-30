@@ -39,9 +39,6 @@ export default async function handler(req, res) {
         const data = await r.json();
         const instances = Array.isArray(data) ? data : [];
 
-        // Debug: loga o primeiro item para ver a estrutura real
-        if (instances.length > 0) console.log('[evo-manager] sample instance:', JSON.stringify(instances[0]));
-
         const CONNECTED = ['open','connected','online','CONNECTED'];
 
         // Instâncias com prefixo do usuário
@@ -52,10 +49,13 @@ export default async function handler(req, res) {
            const name = i.instance?.instanceName || i.instanceName || i.name;
            const rawState = i.instance?.state || i.instance?.connectionStatus || i.instance?.status || i.state || i.connectionStatus || i.status || '';
            const state = CONNECTED.includes(rawState) ? 'open' : rawState;
-           return { fullName: name, displayName: name.replace(prefix, ''), state, linked: false };
+           // Extrai cliente_id do prefixo cliente_N_
+           const prefixMatch = name.match(/^cliente_(\d+)_/);
+           const cliente_id = prefixMatch ? parseInt(prefixMatch[1]) : null;
+           return { fullName: name, displayName: name.replace(prefix, ''), state, linked: false, cliente_id };
         });
 
-        // Para admin: também busca instâncias vinculadas via tabela de mapeamento
+        // Para admin: também busca instâncias vinculadas via tabela de mapeamento + nomes dos clientes
         if (user.is_admin) {
             try {
                 const pool = getPool();
@@ -67,8 +67,21 @@ export default async function handler(req, res) {
                     const state = CONNECTED.includes(rawState) ? 'open' : rawState;
                     myInstances.push({ fullName: row.instance_name, displayName: row.instance_name, state, linked: true, cliente_id: row.cliente_id });
                 }
+
+                // Busca nomes dos clientes para agrupamento
+                const clientIds = [...new Set(myInstances.filter(i => i.cliente_id).map(i => i.cliente_id))];
+                if (clientIds.length > 0) {
+                    const clientRes = await pool.query('SELECT id, nome FROM clientes WHERE id = ANY($1)', [clientIds]);
+                    const clientMap = {};
+                    for (const row of clientRes.rows) clientMap[row.id] = row.nome;
+                    for (const inst of myInstances) {
+                        if (inst.cliente_id && clientMap[inst.cliente_id]) {
+                            inst.cliente_nome = clientMap[inst.cliente_id];
+                        }
+                    }
+                }
             } catch (dbErr) {
-                console.warn('[evo-manager] Tabela instancias_mapeamento não encontrada:', dbErr.message);
+                console.warn('[evo-manager] Erro ao buscar dados do banco:', dbErr.message);
             }
         }
 
