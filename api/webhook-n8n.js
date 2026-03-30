@@ -17,6 +17,7 @@ export default async function handler(req, res) {
     telefone,
     mensagem_recebida,
     ctw_aci_id,
+    ctwaClid,   // alias alternativo enviado pelo N8N
     source_id,
     event_source_url,
     anuncio_thumbnail_url,
@@ -24,6 +25,9 @@ export default async function handler(req, res) {
     estado,
     valor_venda
   } = req.body;
+
+  // Normaliza: aceita tanto ctw_aci_id quanto ctwaClid
+  ctw_aci_id = ctw_aci_id || ctwaClid || null;
 
   // 1. Auto-derivar cliente_id do prefixo da instância (ex: "cliente_7_Loja" → 7)
   if (!cliente_id && instance) {
@@ -40,6 +44,11 @@ export default async function handler(req, res) {
 
   if (!cliente_id || !telefone) {
     return res.status(400).json({ error: 'Instância não reconhecida. Vincule-a a um cliente no painel ou use prefixo "cliente_N_". telefone também é obrigatório.' });
+  }
+
+  // Só salva leads que vieram de anúncio (identificados pelo ctwaClid)
+  if (evento !== 'purchase' && !ctw_aci_id) {
+    return res.status(200).json({ ignored: true, message: 'Contato sem ctwaClid — não veio de anúncio, ignorado.' });
   }
 
   try {
