@@ -736,6 +736,9 @@
         <a id="btn-whatsapp" class="nav-item" onclick="mudarAba('whatsapp')">
             <i data-lucide="smartphone" style="width:17px;flex-shrink:0;"></i><span>Conexão WhatsApp</span>
         </a>
+        <a id="btn-logs" class="nav-item" onclick="mudarAba('logs')">
+            <i data-lucide="terminal" style="width:17px;flex-shrink:0;"></i><span>Logs do Sistema</span>
+        </a>
     </nav>
     <div class="sidebar-bottom">
         <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;margin-bottom:8px;overflow:hidden;">
@@ -1322,6 +1325,57 @@
                     </div>
                 </div>
 
+            </div>
+        </div>
+
+        <!-- ABA: LOGS -->
+        <div id="aba-logs" class="aba-oculta">
+            <div class="card" style="padding:24px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+                    <div>
+                        <h3 style="margin:0;font-size:18px;">Logs do Sistema</h3>
+                        <p style="color:var(--muted);font-size:12px;margin:4px 0 0;">Histórico completo da jornada de rastreamento</p>
+                    </div>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+                        <select id="log-filter-level" onchange="carregarLogs()" style="background:var(--card);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px;">
+                            <option value="">Todos os níveis</option>
+                            <option value="info">Info</option>
+                            <option value="warn">Aviso</option>
+                        </select>
+                        <select id="log-filter-tag" onchange="carregarLogs()" style="background:var(--card);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px;">
+                            <option value="">Todas as etapas</option>
+                            <option value="recv">Recebimento</option>
+                            <option value="auth">Autenticação</option>
+                            <option value="filter">Filtro</option>
+                            <option value="lead">Lead</option>
+                            <option value="meta-api">Meta API</option>
+                            <option value="db">Banco de Dados</option>
+                            <option value="capi-lead">CAPI Lead</option>
+                            <option value="purchase">Compra</option>
+                            <option value="capi-purchase">CAPI Purchase</option>
+                        </select>
+                        <button class="btn btn-ghost btn-sm" onclick="carregarLogs()">
+                            <i data-lucide="refresh-cw" style="width:13px;"></i> Atualizar
+                        </button>
+                    </div>
+                </div>
+                <div style="overflow-x:auto;">
+                    <table style="width:100%;border-collapse:collapse;font-size:12px;">
+                        <thead>
+                            <tr style="border-bottom:1px solid var(--border);color:var(--muted);text-align:left;">
+                                <th style="padding:8px 10px;font-weight:600;">Horário</th>
+                                <th style="padding:8px 10px;font-weight:600;">Instância</th>
+                                <th style="padding:8px 10px;font-weight:600;">Etapa</th>
+                                <th style="padding:8px 10px;font-weight:600;">Nível</th>
+                                <th style="padding:8px 10px;font-weight:600;">Mensagem</th>
+                                <th style="padding:8px 10px;font-weight:600;">Dados</th>
+                            </tr>
+                        </thead>
+                        <tbody id="logs-tbody">
+                            <tr><td colspan="6" style="padding:40px;text-align:center;color:var(--muted);">Carregando...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
@@ -3451,7 +3505,7 @@ document.addEventListener('keydown', e => {
 });
 
 // ── Abas ───────────────────────────────────────────────────────
-const ABAS = ['leads','relatorios','anuncios','clientes','config','agencia','whatsapp'];
+const ABAS = ['leads','relatorios','anuncios','clientes','config','agencia','whatsapp','logs'];
 const TITULOS = {
     leads:     '<i data-lucide="users" style="color:var(--blue);"></i> Leads Reais',
     relatorios:'<i data-lucide="bar-chart-2" style="color:var(--blue);"></i> Relatórios',
@@ -3460,6 +3514,7 @@ const TITULOS = {
     config:    '<i data-lucide="workflow" style="color:var(--blue);"></i> Integrações',
     agencia:   '<i data-lucide="building" style="color:var(--blue);"></i> Gestão de Clientes',
     whatsapp:  '<i data-lucide="smartphone" style="color:#25D366;"></i> Conexão WhatsApp SaaS',
+    logs:      '<i data-lucide="terminal" style="color:var(--blue);"></i> Logs do Sistema',
 };
 
 function mudarAba(aba) {
@@ -3477,6 +3532,7 @@ function mudarAba(aba) {
     if (aba === 'clientes') { renderShareLinks(); }
     if (aba === 'agencia')  { carregarClientesAdmin(); }
     if (aba === 'whatsapp') { carregarListaWa(); }
+    if (aba === 'logs')     { carregarLogs(); }
     // Fecha sidebar mobile ao trocar de aba
     $('sidebar').classList.remove('mobile-open');
     $('sidebarOverlay').classList.remove('open');
@@ -3962,6 +4018,63 @@ async function excluirCliente(id, nome) {
 // ── Start ──────────────────────────────────────────────────────
 lucide.createIcons();
 document.addEventListener('DOMContentLoaded', () => { init(); initFunilPills(); });
+// ── Logs do Sistema ───────────────────────────────────────────────────────────
+const LOG_TAG_COLORS = {
+    'recv':         { bg:'rgba(59,130,246,.15)',  color:'#60a5fa' },
+    'auth':         { bg:'rgba(139,92,246,.15)',  color:'#a78bfa' },
+    'filter':       { bg:'rgba(156,163,175,.12)', color:'#9ca3af' },
+    'lead':         { bg:'rgba(16,185,129,.15)',  color:'#34d399' },
+    'meta-api':     { bg:'rgba(14,165,233,.15)',  color:'#38bdf8' },
+    'db':           { bg:'rgba(245,158,11,.12)',  color:'#fbbf24' },
+    'capi-lead':    { bg:'rgba(16,185,129,.15)',  color:'#34d399' },
+    'purchase':     { bg:'rgba(236,72,153,.15)',  color:'#f472b6' },
+    'capi-purchase':{ bg:'rgba(236,72,153,.15)',  color:'#f472b6' },
+};
+
+async function carregarLogs() {
+    const level = document.getElementById('log-filter-level')?.value || '';
+    const tag   = document.getElementById('log-filter-tag')?.value   || '';
+    const tbody = $('logs-tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="6" style="padding:30px;text-align:center;color:var(--muted);">Carregando...</td></tr>';
+
+    let url = '/api/logs?limit=300';
+    if (level) url += `&level=${level}`;
+    if (tag)   url += `&tag=${tag}`;
+
+    try {
+        const r    = await authFetch(url);
+        const logs = await r.json();
+
+        if (!Array.isArray(logs) || logs.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" style="padding:40px;text-align:center;color:var(--muted);">Nenhum log encontrado.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = logs.map(l => {
+            const tc   = LOG_TAG_COLORS[l.tag] || { bg:'rgba(156,163,175,.12)', color:'#9ca3af' };
+            const isWarn = l.level === 'warn';
+            const dt   = l.created_at ? new Date(l.created_at).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit' }) : '-';
+            const dataStr = l.data ? JSON.stringify(l.data) : '';
+            const dataShort = dataStr.length > 60 ? dataStr.substring(0, 60) + '…' : dataStr;
+            return `<tr style="border-bottom:1px solid var(--border);${isWarn ? 'background:rgba(245,158,11,.04)' : ''}">
+                <td style="padding:8px 10px;color:var(--muted);white-space:nowrap;">${dt}</td>
+                <td style="padding:8px 10px;"><span style="font-size:11px;color:var(--text);">${esc(l.instance||'-')}</span></td>
+                <td style="padding:8px 10px;">
+                    <span style="padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;background:${tc.bg};color:${tc.color};">${esc(l.tag)}</span>
+                </td>
+                <td style="padding:8px 10px;">
+                    <span style="font-size:11px;font-weight:600;color:${isWarn ? '#f59e0b' : '#10b981'};">${isWarn ? '⚠ aviso' : '✓ info'}</span>
+                </td>
+                <td style="padding:8px 10px;color:var(--text);">${esc(l.message)}</td>
+                <td style="padding:8px 10px;color:var(--muted);font-size:11px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(dataStr)}">${esc(dataShort)}</td>
+            </tr>`;
+        }).join('');
+        lucide.createIcons({ nodes: [tbody] });
+    } catch(e) {
+        tbody.innerHTML = `<tr><td colspan="6" style="padding:30px;text-align:center;color:#ef4444;">Erro ao carregar logs: ${esc(e.message)}</td></tr>`;
+    }
+}
 </script>
 </body>
 </html>
