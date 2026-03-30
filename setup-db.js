@@ -47,7 +47,7 @@ async function setup() {
           token TEXT,
           source_id VARCHAR(255),
           page_id VARCHAR(100),
-          ctw_aci_id VARCHAR(255),
+          ctw_aci_id TEXT,
           event_source_url TEXT,
           anuncio_thumbnail_url TEXT,
           status VARCHAR(50) DEFAULT 'Pendente',
@@ -120,6 +120,13 @@ async function setup() {
       );
     `);
     console.log('✅ Tabela "instancias_mapeamento" verificada/criada.');
+
+    // Migração: ampliar ctw_aci_id para TEXT (ctwaClid pode ter >255 chars)
+    await client.query(`
+      ALTER TABLE public.leads_tracking
+      ALTER COLUMN ctw_aci_id TYPE TEXT;
+    `);
+    console.log('✅ Coluna ctw_aci_id migrada para TEXT.');
 
     client.release();
     console.log('🚀 Finalizado! Estrutura do Banco de Dados pronta para uso.');
