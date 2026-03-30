@@ -143,7 +143,6 @@ async function sendCapiLead(lead, pool) {
     client_ip_address: "0.0.0.0",
     client_user_agent: "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36",
     ctwa_clid: ctw_aci_id,
-    messaging_channel: "whatsapp",
   };
 
   if (ph) userData.ph = [hash(ph)];
@@ -152,10 +151,11 @@ async function sendCapiLead(lead, pool) {
   const payload = {
     data: [
       {
-        event_name: "Lead",
-        event_time: Math.floor(Date.now() / 1000),
-        action_source: "business_messaging",
-        user_data: userData,
+        event_name:        "Lead",
+        event_time:        Math.floor(Date.now() / 1000),
+        action_source:     "business_messaging",
+        messaging_channel: "whatsapp",
+        user_data:         userData,
       }
     ]
   };
@@ -188,7 +188,6 @@ async function sendCapiPurchase(lead, pool) {
     client_ip_address: "0.0.0.0",
     client_user_agent: "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36",
     ctwa_clid: ctw_aci_id || undefined,
-    messaging_channel: "whatsapp",
   };
 
   if (ph) userData.ph = [hash(ph)];
@@ -200,10 +199,11 @@ async function sendCapiPurchase(lead, pool) {
   const payload = {
     data: [
       {
-        event_name: "Purchase",
-        event_time: Math.floor(Date.now() / 1000),
-        action_source: "business_messaging",
-        user_data: userData,
+        event_name:        "Purchase",
+        event_time:        Math.floor(Date.now() / 1000),
+        action_source:     "business_messaging",
+        messaging_channel: "whatsapp",
+        user_data:         userData,
         custom_data: {
           currency: "BRL",
           value: parseFloat(valor_venda || 0)
