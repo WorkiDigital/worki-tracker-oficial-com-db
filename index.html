@@ -1474,7 +1474,8 @@ async function fazerLogout() {
 
 // ── Seletor de cliente (admin) ──────────────────────────────────
 async function popularSeletorAdmin() {
-    if (!user?.is_admin) return;
+    const u = JSON.parse(localStorage.getItem('adlytics_user') || '{}');
+    if (!u?.is_admin) return;
     document.getElementById('adminClienteFilter').style.display = '';
     const r = await authFetch('/api/clientes');
     const clientes = await r.json();
