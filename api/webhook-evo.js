@@ -184,17 +184,15 @@ async function sendCapiLead(lead, pixel, token) {
   const ph = (lead.telefone || '').replace(/\D/g, '');
 
   const userData = {
-    client_ip_address: '0.0.0.0',
-    client_user_agent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36',
     ctwa_clid: lead.ctw_aci_id,
   };
 
-  if (ph)          userData.ph      = [hash(ph)];
+  if (ph)           userData.ph      = [hash(ph)];
   if (lead.page_id) userData.page_id = lead.page_id;
 
   const payload = {
     data: [{
-      event_name:        'Lead',
+      event_name:        'LeadSubmitted',
       event_time:        Math.floor(Date.now() / 1000),
       action_source:     'business_messaging',
       messaging_channel: 'whatsapp',
@@ -217,16 +215,17 @@ async function sendCapiPurchase(lead, pixel, token) {
 
   const ph = (lead.telefone || '').replace(/\D/g, '');
 
+  const nomeParts = (lead.nome || '').trim().split(/\s+/);
   const userData = {
-    client_ip_address: '0.0.0.0',
-    client_user_agent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36',
-    ctwa_clid:         lead.ctw_aci_id || undefined,
+    ctwa_clid: lead.ctw_aci_id || undefined,
   };
 
-  if (ph)           userData.ph      = [hash(ph)];
-  if (lead.estado)  userData.st      = [hash(lead.estado)];
-  if (lead.cidade)  userData.ct      = [hash(lead.cidade)];
-  if (lead.page_id) userData.page_id = lead.page_id;
+  if (ph)                userData.ph      = [hash(ph)];
+  if (nomeParts[0])      userData.fn      = hash(nomeParts[0]);
+  if (nomeParts[1])      userData.ln      = hash(nomeParts.slice(1).join(' '));
+  if (lead.estado)       userData.st      = [hash(lead.estado)];
+  if (lead.cidade)       userData.ct      = [hash(lead.cidade)];
+  if (lead.page_id)      userData.page_id = lead.page_id;
   userData.country = [hash('br')];
 
   const payload = {

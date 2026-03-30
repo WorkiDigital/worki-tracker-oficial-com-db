@@ -151,7 +151,7 @@ async function sendCapiLead(lead, pool) {
   const payload = {
     data: [
       {
-        event_name:        "Lead",
+        event_name:        "LeadSubmitted",
         event_time:        Math.floor(Date.now() / 1000),
         action_source:     "business_messaging",
         messaging_channel: "whatsapp",
@@ -184,16 +184,17 @@ async function sendCapiPurchase(lead, pool) {
   const hash = str => /^[a-f0-9]{64}$/.test(str) ? str : crypto.createHash('sha256').update((str || '').toLowerCase().trim()).digest('hex');
   const ph = (telefone || '').replace(/\D/g, '');
 
+  const nomeParts = (nome || '').trim().split(/\s+/);
   const userData = {
-    client_ip_address: "0.0.0.0",
-    client_user_agent: "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36",
     ctwa_clid: ctw_aci_id || undefined,
   };
 
-  if (ph) userData.ph = [hash(ph)];
-  if (estado) userData.st = [hash(estado)];
-  if (cidade) userData.ct = [hash(cidade)];
-  if (page_id) userData.page_id = page_id;
+  if (ph)             userData.ph      = [hash(ph)];
+  if (nomeParts[0])   userData.fn      = hash(nomeParts[0]);
+  if (nomeParts[1])   userData.ln      = hash(nomeParts.slice(1).join(' '));
+  if (estado)         userData.st      = [hash(estado)];
+  if (cidade)         userData.ct      = [hash(cidade)];
+  if (page_id)        userData.page_id = page_id;
   userData.country = [hash('br')];
 
   const payload = {
