@@ -39,14 +39,19 @@ export default async function handler(req, res) {
         const data = await r.json();
         const instances = Array.isArray(data) ? data : [];
 
+        // Debug: loga o primeiro item para ver a estrutura real
+        if (instances.length > 0) console.log('[evo-manager] sample instance:', JSON.stringify(instances[0]));
+
+        const CONNECTED = ['open','connected','online','CONNECTED'];
+
         // Instâncias com prefixo do usuário
         const myInstances = instances.filter(i => {
            const name = i.instance?.instanceName || i.instanceName || i.name;
            return name && String(name).startsWith(prefix);
         }).map(i => {
            const name = i.instance?.instanceName || i.instanceName || i.name;
-           const rawState = i.instance?.state || i.instance?.connectionStatus || i.state || i.connectionStatus || '';
-           const state = ['open','connected','online'].includes(rawState) ? 'open' : rawState;
+           const rawState = i.instance?.state || i.instance?.connectionStatus || i.instance?.status || i.state || i.connectionStatus || i.status || '';
+           const state = CONNECTED.includes(rawState) ? 'open' : rawState;
            return { fullName: name, displayName: name.replace(prefix, ''), state, linked: false };
         });
 
@@ -58,8 +63,8 @@ export default async function handler(req, res) {
                 for (const row of mapped.rows) {
                     if (myInstances.find(i => i.fullName === row.instance_name)) continue; // já listada
                     const evoInst = instances.find(i => (i.instance?.instanceName || i.instanceName || i.name) === row.instance_name);
-                    const rawState = evoInst ? (evoInst.instance?.state || evoInst.state || '') : 'unknown';
-                    const state = ['open','connected','online'].includes(rawState) ? 'open' : rawState;
+                    const rawState = evoInst ? (evoInst.instance?.state || evoInst.instance?.connectionStatus || evoInst.instance?.status || evoInst.state || evoInst.connectionStatus || '') : 'unknown';
+                    const state = CONNECTED.includes(rawState) ? 'open' : rawState;
                     myInstances.push({ fullName: row.instance_name, displayName: row.instance_name, state, linked: true, cliente_id: row.cliente_id });
                 }
             } catch (dbErr) {
