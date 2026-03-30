@@ -779,6 +779,13 @@
             </button>
             <!-- Controles exclusivos da aba Leads -->
             <div id="leadsControls" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                <!-- Client selector (admin only) -->
+                <div id="adminClienteFilter" style="display:none;" class="ctrl-box">
+                    <i data-lucide="users" style="width:14px;color:var(--muted);flex-shrink:0;"></i>
+                    <select id="selectClienteAdmin" class="bare" onchange="trocarClienteAdmin(this.value)">
+                        <option value="">Todos os clientes</option>
+                    </select>
+                </div>
                 <!-- Search -->
                 <div class="ctrl-box">
                     <i data-lucide="search" style="width:14px;color:var(--muted);flex-shrink:0;"></i>
@@ -1328,6 +1335,7 @@ Chart.register(ChartDataLabels);
 let rawData = [], dadosFiltrados = [];
 let sortCol = 'event_time', sortDir = -1;
 let pagAtual = 1; const POR_PAGINA = 50;
+let clienteAdminSelecionado = null;
 let campanhasRaw = [], adsCarregado = false;
 let _filteredCampIds = null;
 const expandState = {}; // { 'adsets_<id>': true/false }
@@ -1452,6 +1460,7 @@ async function init() {
     carregarMetricsCfg();
     await recarregarLeads();
     await carregarContasAds();
+    popularSeletorAdmin();
 
     // Auto-refresh leads a cada 30s
     autoRefreshTimer = setInterval(() => recarregarLeads(true), 30000);
@@ -1461,6 +1470,26 @@ async function fazerLogout() {
     localStorage.removeItem('adlytics_token');
     localStorage.removeItem('adlytics_user');
     window.location.href = 'login.html';
+}
+
+// ── Seletor de cliente (admin) ──────────────────────────────────
+async function popularSeletorAdmin() {
+    if (!user?.is_admin) return;
+    document.getElementById('adminClienteFilter').style.display = '';
+    const r = await authFetch('/api/clientes');
+    const clientes = await r.json();
+    const sel = document.getElementById('selectClienteAdmin');
+    clientes.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.id;
+        opt.textContent = c.nome;
+        sel.appendChild(opt);
+    });
+}
+
+function trocarClienteAdmin(id) {
+    clienteAdminSelecionado = id ? parseInt(id) : null;
+    aplicarFiltros();
 }
 
 // ── Leads ──────────────────────────────────────────────────────
@@ -1531,6 +1560,7 @@ function aplicarFiltros() {
     const range   = calcRange(periodo);
 
     dadosFiltrados = rawData.filter(l => {
+        if (clienteAdminSelecionado && l.cliente_id !== clienteAdminSelecionado) return false;
         if (busca) {
             const n = (l.nome||'').toLowerCase();
             const t = (l.telefone||'').toLowerCase();
