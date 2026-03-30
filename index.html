@@ -3774,27 +3774,29 @@ async function carregarListaWa() {
             const statusLabel = up ? '● Conectado' : mid ? '● Conectando...' : '● Desconectado';
 
             return `
-            <div style="background:var(--card);border:1px solid ${up ? 'rgba(16,185,129,0.3)' : 'var(--border)'};border-radius:12px;padding:16px;">
-                <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+            <div style="background:var(--card);border:1px solid ${up ? 'rgba(16,185,129,0.3)' : 'var(--border)'};border-radius:12px;padding:18px;transition:.2s;">
+                <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
                     <div style="display:flex;align-items:center;gap:14px;">
-                        <div style="width:44px;height:44px;border-radius:10px;background:rgba(37,211,102,0.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                            <i data-lucide="smartphone" style="color:#25D366;width:22px;"></i>
+                        <div style="width:46px;height:46px;border-radius:12px;background:${up ? 'rgba(37,211,102,0.12)' : 'rgba(156,163,175,0.08)'};display:flex;align-items:center;justify-content:center;flex-shrink:0;border:1px solid ${up ? 'rgba(37,211,102,0.2)' : 'var(--border)'};">
+                            <i data-lucide="smartphone" style="color:${up ? '#25D366' : 'var(--muted)'};width:22px;"></i>
                         </div>
                         <div>
-                            <h4 style="margin:0 0 4px;font-size:15px;font-weight:700;color:var(--text);">${esc(inst.displayName)}</h4>
-                            <span style="display:inline-block;font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;background:${badgeBg};color:${badgeColor};">${statusLabel}</span>
+                            <h4 style="margin:0 0 5px;font-size:15px;font-weight:700;color:var(--text);">${esc(inst.displayName)}</h4>
+                            <span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;background:${badgeBg};color:${badgeColor};">${statusLabel}</span>
                         </div>
                     </div>
-                    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
                         ${up
                             ? `<button class="btn btn-ghost btn-sm" onclick="waDesconectar('${esc(inst.displayName)}')" style="color:var(--red);border-color:rgba(239,68,68,0.3);"><i data-lucide="log-out" style="width:13px;"></i> Desconectar</button>`
                             : `<button class="btn btn-green btn-sm" onclick="verConexao('${esc(inst.displayName)}')"><i data-lucide="qr-code" style="width:13px;"></i> Conectar QR</button>`
                         }
-                        <button class="btn btn-ghost btn-sm" onclick="deletarConexao('${esc(inst.displayName)}')"><i data-lucide="trash-2" style="width:13px;color:var(--red);"></i></button>
+                        <button class="btn btn-ghost btn-sm" onclick="deletarConexao('${esc(inst.displayName)}')" title="Excluir instância"><i data-lucide="trash-2" style="width:13px;color:var(--red);"></i></button>
                     </div>
                 </div>
-                <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:11px;color:var(--muted);">
-                    N8N instance: <code style="font-family:monospace;background:var(--tag);padding:1px 6px;border-radius:4px;">${esc(inst.fullName)}</code>
+                <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                    <span style="font-size:11px;color:var(--muted);">Instância Evolution:</span>
+                    <code style="font-family:monospace;font-size:11px;background:var(--tag);padding:2px 8px;border-radius:4px;color:var(--text);">${esc(inst.fullName)}</code>
+                    ${up ? `<span style="margin-left:auto;font-size:11px;color:#10b981;">✓ Webhook ativo</span>` : `<span style="margin-left:auto;font-size:11px;color:var(--muted);">Escaneie o QR para conectar</span>`}
                 </div>
             </div>`;
         }).join('') + '</div>';
