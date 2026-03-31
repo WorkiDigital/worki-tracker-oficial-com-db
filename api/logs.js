@@ -28,7 +28,7 @@ export default async function handler(req, res) {
   const pool = getPool();
   await ensureTable(pool);
 
-  const { limit = 300, instance, level, tag } = req.query;
+  const { limit = 300, instance, level, tag, date_from, date_to } = req.query;
 
   let query = 'SELECT * FROM webhook_logs WHERE 1=1';
   const params = [];
@@ -39,9 +39,11 @@ export default async function handler(req, res) {
     params.push(user.cliente_id);
   }
 
-  if (instance) { query += ` AND instance = $${idx++}`; params.push(instance); }
-  if (level)    { query += ` AND level = $${idx++}`;    params.push(level); }
-  if (tag)      { query += ` AND tag = $${idx++}`;      params.push(tag); }
+  if (instance)  { query += ` AND instance ILIKE $${idx++}`;  params.push(`%${instance}%`); }
+  if (level)     { query += ` AND level = $${idx++}`;          params.push(level); }
+  if (tag)       { query += ` AND tag = $${idx++}`;            params.push(tag); }
+  if (date_from) { query += ` AND created_at >= $${idx++}`;   params.push(date_from); }
+  if (date_to)   { query += ` AND created_at < $${idx++}`;    params.push(date_to + ' 23:59:59'); }
 
   query += ` ORDER BY id DESC LIMIT $${idx}`;
   params.push(Math.min(parseInt(limit) || 300, 500));

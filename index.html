@@ -1338,6 +1338,9 @@
                         <p style="color:var(--muted);font-size:12px;margin:4px 0 0;">Histórico completo da jornada de rastreamento</p>
                     </div>
                     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+                        <input id="log-filter-instance" type="text" placeholder="Instância..." onkeyup="if(event.key==='Enter')carregarLogs()" style="background:var(--card);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px;width:160px;">
+                        <input id="log-filter-date-from" type="date" onchange="carregarLogs()" style="background:var(--card);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px;">
+                        <input id="log-filter-date-to" type="date" onchange="carregarLogs()" style="background:var(--card);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px;">
                         <select id="log-filter-level" onchange="carregarLogs()" style="background:var(--card);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px;">
                             <option value="">Todos os níveis</option>
                             <option value="info">Info</option>
@@ -4081,16 +4084,39 @@ const LOG_TAG_COLORS = {
     'capi-purchase':{ bg:'rgba(236,72,153,.15)',  color:'#f472b6' },
 };
 
+function abrirLogJson(dataStr) {
+    try {
+        const formatted = JSON.stringify(JSON.parse(dataStr), null, 2);
+        const modal = document.createElement('div');
+        modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+        modal.innerHTML = `<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;max-width:700px;width:100%;max-height:80vh;display:flex;flex-direction:column;">
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--border);">
+                <span style="font-weight:600;font-size:14px;">Dados do Log</span>
+                <button onclick="this.closest('[style*=fixed]').remove()" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:20px;">×</button>
+            </div>
+            <pre style="overflow:auto;padding:20px;margin:0;font-size:12px;color:var(--text);white-space:pre-wrap;word-break:break-all;">${esc(formatted)}</pre>
+        </div>`;
+        modal.onclick = e => { if (e.target === modal) modal.remove(); };
+        document.body.appendChild(modal);
+    } catch(_) {}
+}
+
 async function carregarLogs() {
-    const level = document.getElementById('log-filter-level')?.value || '';
-    const tag   = document.getElementById('log-filter-tag')?.value   || '';
+    const level    = document.getElementById('log-filter-level')?.value    || '';
+    const tag      = document.getElementById('log-filter-tag')?.value      || '';
+    const instance = document.getElementById('log-filter-instance')?.value || '';
+    const dateFrom = document.getElementById('log-filter-date-from')?.value || '';
+    const dateTo   = document.getElementById('log-filter-date-to')?.value   || '';
     const tbody = $('logs-tbody');
     if (!tbody) return;
     tbody.innerHTML = '<tr><td colspan="6" style="padding:30px;text-align:center;color:var(--muted);">Carregando...</td></tr>';
 
     let url = '/api/logs?limit=300';
-    if (level) url += `&level=${level}`;
-    if (tag)   url += `&tag=${tag}`;
+    if (level)    url += `&level=${encodeURIComponent(level)}`;
+    if (tag)      url += `&tag=${encodeURIComponent(tag)}`;
+    if (instance) url += `&instance=${encodeURIComponent(instance)}`;
+    if (dateFrom) url += `&date_from=${encodeURIComponent(dateFrom)}`;
+    if (dateTo)   url += `&date_to=${encodeURIComponent(dateTo)}`;
 
     try {
         const r    = await authFetch(url);
@@ -4107,6 +4133,11 @@ async function carregarLogs() {
             const dt   = l.created_at ? new Date(l.created_at).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit' }) : '-';
             const dataStr = l.data ? JSON.stringify(l.data) : '';
             const dataShort = dataStr.length > 60 ? dataStr.substring(0, 60) + '…' : dataStr;
+            const dataCell = dataStr
+                ? `<td style="padding:8px 10px;font-size:11px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                    <span onclick="abrirLogJson(${JSON.stringify(dataStr).replace(/"/g,'&quot;')})" style="cursor:pointer;color:#60a5fa;text-decoration:underline dotted;" title="Clique para ver completo">${esc(dataShort)}</span>
+                  </td>`
+                : `<td style="padding:8px 10px;color:var(--muted);font-size:11px;">—</td>`;
             return `<tr style="border-bottom:1px solid var(--border);${isWarn ? 'background:rgba(245,158,11,.04)' : ''}">
                 <td style="padding:8px 10px;color:var(--muted);white-space:nowrap;">${dt}</td>
                 <td style="padding:8px 10px;"><span style="font-size:11px;color:var(--text);">${esc(l.instance||'-')}</span></td>
@@ -4117,7 +4148,7 @@ async function carregarLogs() {
                     <span style="font-size:11px;font-weight:600;color:${isWarn ? '#f59e0b' : '#10b981'};">${isWarn ? '⚠ aviso' : '✓ info'}</span>
                 </td>
                 <td style="padding:8px 10px;color:var(--text);">${esc(l.message)}</td>
-                <td style="padding:8px 10px;color:var(--muted);font-size:11px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(dataStr)}">${esc(dataShort)}</td>
+                ${dataCell}
             </tr>`;
         }).join('');
         lucide.createIcons({ nodes: [tbody] });
