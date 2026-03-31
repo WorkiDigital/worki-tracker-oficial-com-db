@@ -1,4 +1,4 @@
-import { getPool } from '../api/_db.js';
+import { getPool } from './_db.js';
 import crypto from 'crypto';
 
 function saveLog(instance, cliente_id, level, tag, message, data) {

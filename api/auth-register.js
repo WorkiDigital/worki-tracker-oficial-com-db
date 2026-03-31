@@ -1,4 +1,4 @@
-import { getPool } from '../api/_db.js';
+import { getPool } from './_db.js';
 import bcrypt from 'bcryptjs';
 
 export default async function handler(req, res) {

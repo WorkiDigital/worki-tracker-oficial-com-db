@@ -12,8 +12,8 @@
  * Response:
  *   { data: [...], period: 'last_30d' | 'maximum' }
  */
-import { verifyAuth, getTokenForUser } from '../api/_auth.js';
-import { verifyAccountAccess } from '../api/_validate.js';
+import { verifyAuth, getTokenForUser } from './_auth.js';
+import { verifyAccountAccess } from './_validate.js';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');

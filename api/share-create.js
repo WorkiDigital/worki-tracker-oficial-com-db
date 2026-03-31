@@ -1,7 +1,7 @@
-import { verifyAuth } from '../api/_auth.js';
-import { getPool } from '../api/_db.js';
+import { verifyAuth } from './_auth.js';
+import { getPool } from './_db.js';
 import { randomUUID } from 'crypto';
-import { verifyAccountAccess } from '../api/_validate.js';
+import { verifyAccountAccess } from './_validate.js';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');

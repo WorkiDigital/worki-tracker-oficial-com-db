@@ -1,5 +1,5 @@
-import { getPool } from '../api/_db.js';
-import { verifyAuth } from '../api/_auth.js';
+import { getPool } from './_db.js';
+import { verifyAuth } from './_auth.js';
 import crypto from 'crypto';
 
 export default async function handler(req, res) {

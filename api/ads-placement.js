@@ -1,40 +1,31 @@
 /**
- * GET /api/share-placement?token=&datePreset=&campaignIds=
- * Endpoint público (token) para posicionamento.
+ * GET /api/ads-placement?accountId=&datePreset=&campaignIds=
+ * Retorna dados de posicionamento da Meta Ads.
  * Usa level=ad + breakdowns=publisher_platform,platform_position para obter actions.
- * Agrega os resultados por platform_position.
+ * Agrega os resultados por platform_position (soma FB + IG + etc).
  */
-import { getPool } from '../api/_db.js';
+import { verifyAuth, getTokenForUser } from './_auth.js';
+import { verifyAccountAccess } from './_validate.js';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  const VALID_PRESETS = ['today','yesterday','last_7d','last_14d','last_30d','this_month','last_month','maximum'];
-  const { token, datePreset = 'last_30d', campaignIds = '' } = req.query;
-  if (!token) return res.status(400).json({ error: 'token required' });
-  if (!VALID_PRESETS.includes(datePreset)) return res.status(400).json({ error: 'datePreset inválido' });
+  const user = await verifyAuth(req, res);
+  if (!user) return;
 
-  const pool = getPool();
-  let row;
-  try {
-    const { rows } = await pool.query(
-      `SELECT account_id, expires_at FROM share_tokens WHERE token = $1`,
-      [token]
-    );
-    if (rows.length === 0) return res.status(404).json({ error: 'Link inválido ou expirado' });
-    row = rows[0];
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: 'Erro ao buscar dados do link' });
-  }
+  const {
+    accountId,
+    datePreset  = 'last_30d',
+    campaignIds = '',
+  } = req.query;
 
-  if (row.expires_at && new Date(row.expires_at) < new Date()) return res.status(403).json({ error: 'Este link expirou' });
-
-  const metaToken = process.env.META_ADS_TOKEN;
-  if (!metaToken) return res.status(500).json({ error: 'META_ADS_TOKEN not configured' });
+  const token = await getTokenForUser(user);
+  if (!token)     return res.status(403).json({ error: 'Token Meta não configurado para sua conta. Solicite ao administrador da plataforma.' });
+  if (!accountId) return res.status(400).json({ error: 'accountId is required' });
+  if (!(await verifyAccountAccess(user, accountId))) return res.status(403).json({ error: 'Acesso negado a esta conta de anúncios.' });
 
   const fields = 'spend,impressions,clicks,inline_link_clicks,actions';
 
@@ -49,14 +40,14 @@ export default async function handler(req, res) {
   }
 
   const buildUrl = (preset) => [
-    `https://graph.facebook.com/v20.0/${row.account_id}/insights`,
+    `https://graph.facebook.com/v20.0/${accountId}/insights`,
     `?fields=${encodeURIComponent(fields)}`,
     `&level=ad`,
     `&breakdowns=publisher_platform%2Cplatform_position`,
     `&date_preset=${encodeURIComponent(preset)}`,
     `&limit=500`,
     filtering,
-    `&access_token=${metaToken}`,
+    `&access_token=${token}`,
   ].join('');
 
   try {
@@ -85,10 +76,11 @@ export default async function handler(req, res) {
       agg[pos].clicks       += parseInt(row.clicks         || 0, 10);
       agg[pos].inline_link_clicks += parseInt(row.inline_link_clicks || 0, 10);
 
+      // Mesclar actions
       for (const act of (row.actions || [])) {
         const existing = agg[pos].actions.find(a => a.action_type === act.action_type);
         if (existing) {
-          existing.value = String(parseFloat(existing.value || 0) + parseFloat(act.value || 0));
+          existing.value = String(parseFloat(existing.value) + parseFloat(act.value || 0));
         } else {
           agg[pos].actions.push({ action_type: act.action_type, value: act.value });
         }
