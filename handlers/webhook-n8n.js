@@ -1,4 +1,4 @@
-import { getPool } from './_db.js';
+import { getPool } from '../api/_db.js';
 import crypto from 'crypto';
 
 export default async function handler(req, res) {

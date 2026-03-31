@@ -1,4 +1,4 @@
-import { verifyAuth, getTokenForUser } from './_auth.js';
+import { verifyAuth, getTokenForUser } from '../api/_auth.js';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');

@@ -1,4 +1,4 @@
-import { getPool } from './_db.js';
+import { getPool } from '../api/_db.js';
 
 const DEFAULT_SECTIONS = { campanhas: true, demograficos: true, melhores_criativos: true };
 const DEFAULT_METRICS  = ['spend','imps','reach','cpm','ctr','leads','cpl','msgs','cpr','active_campaigns'];

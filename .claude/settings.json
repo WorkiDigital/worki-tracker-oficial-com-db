@@ -1,0 +1,36 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -E \"\\\\.env$|server\\\\.js\")",
+      "Bash(node -e \":*)",
+      "Bash(ls -la \"c:\\\\Users\\\\Samsung\\\\Tracking-aTT\\\\whatsapp-traking-oficial\\\\api\"\" | grep -E \"ads-accounts)",
+      "Bash(share-list)",
+      "Bash(share-update)",
+      "Bash(share-create)",
+      "Bash(share-demo)",
+      "Bash(share-placement)",
+      "Bash(share-best)",
+      "Bash(share-preview)",
+      "Bash(share-video)",
+      "Bash(ads-demo)",
+      "Bash(ads-placement)",
+      "Bash(ads-best)",
+      "Bash(video-source)",
+      "Bash(ad-preview \")",
+      "Bash(find c:UsersSamsungTracking-aTTwhatsapp-traking-oficialapi -name *relatorio* -o -name *report*)",
+      "Bash(curl -s -X POST \"https://n8n-worki-tracker-oficial-2.ubufeb.easypanel.host/api/webhook-n8n\" -H \"Content-Type: application/json\" -d '{:*)",
+      "Bash(curl -s -X POST https://n8n-worki-tracker-oficial-2.ubufeb.easypanel.host/api/webhook-evo -H \"Content-Type: application/json\" -d '{:*)",
+      "Bash(find c:UsersSamsungTracking-aTTwhatsapp-traking-oficialapi -type f -name *.js -o -name *.ts -o -name *.py -o -name *.java -o -name *.php)",
+      "Bash(for file:*)",
+      "Bash(do echo:*)",
+      "Read(//c/Users/Samsung/Tracking-aTT/whatsapp-traking-oficial/**)",
+      "Bash(done)",
+      "Bash(grep -o \"function [a-zA-Z_$][a-zA-Z0-9_$]*\" index.html)",
+      "Bash(grep -o \"function [a-zA-Z_$][a-zA-Z0-9_$]*\" login.html)",
+      "Bash(grep -o \"function [a-zA-Z_$][a-zA-Z0-9_$]*\" share.html)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\Samsung\\.claude\\projects\\c--Users-Samsung-Tracking-aTT-whatsapp-traking-oficial\\memory"
+    ]
+  }
+}

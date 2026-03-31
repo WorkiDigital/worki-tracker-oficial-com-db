@@ -1,5 +1,5 @@
-import { verifyAuth } from './_auth.js';
-import { getPool } from './_db.js';
+import { verifyAuth } from '../api/_auth.js';
+import { getPool } from '../api/_db.js';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -115,7 +115,21 @@ export default async function handler(req, res) {
 
         // Configura webhook N8N na instância existente
         if (process.env.N8N_WEBHOOK_URL) {
-            const webhookBody = { webhook: { enabled: true, url: process.env.N8N_WEBHOOK_URL, webhookByEvents: false, webhookBase64: false, events: ["MESSAGES_UPSERT"] } };
+            let webhookUrl = process.env.N8N_WEBHOOK_URL;
+            if (process.env.WEBHOOK_SECRET) {
+                const sep = webhookUrl.includes('?') ? '&' : '?';
+                webhookUrl += `${sep}secret=${process.env.WEBHOOK_SECRET}`;
+            }
+            const webhookBody = { 
+                webhook: { 
+                    enabled: true, 
+                    url: webhookUrl, 
+                    webhookByEvents: false, 
+                    webhookBase64: false, 
+                    events: ["MESSAGES_UPSERT"],
+                    webhookSecret: process.env.WEBHOOK_SECRET || undefined
+                } 
+            };
             const wRes = await fetch(`${EVO_URL}/webhook/set/${instanceName}`, { method: 'POST', headers, body: JSON.stringify(webhookBody) });
             const wData = wRes.headers.get('content-type')?.includes('json') ? await wRes.json() : {};
             console.log(`[evo-manager] Webhook vinculado em ${instanceName} (${wRes.status}):`, JSON.stringify(wData));
@@ -152,13 +166,19 @@ export default async function handler(req, res) {
 
       // Auto-configura webhook do N8N na instância criada
       if (process.env.N8N_WEBHOOK_URL) {
+        let webhookUrl = process.env.N8N_WEBHOOK_URL;
+        if (process.env.WEBHOOK_SECRET) {
+            const sep = webhookUrl.includes('?') ? '&' : '?';
+            webhookUrl += `${sep}secret=${process.env.WEBHOOK_SECRET}`;
+        }
         const webhookBody = {
           webhook: {
             enabled: true,
-            url: process.env.N8N_WEBHOOK_URL,
+            url: webhookUrl,
             webhookByEvents: false,
             webhookBase64: false,
-            events: ["MESSAGES_UPSERT"]
+            events: ["MESSAGES_UPSERT"],
+            webhookSecret: process.env.WEBHOOK_SECRET || undefined
           }
         };
         const wRes = await fetch(`${EVO_URL}/webhook/set/${finalInstanceName}`, {
@@ -193,6 +213,11 @@ export default async function handler(req, res) {
       const data = await r.json();
       if (!r.ok) return res.status(400).json({ error: data.message || 'Erro ao excluir instância na Evolution' });
       return res.status(200).json(data);
+    }
+
+    if (action === 'unlink') {
+      await pool.query('DELETE FROM instancias_mapeamento WHERE instance_name = $1', [finalInstanceName]);
+      return res.status(200).json({ ok: true });
     }
 
     return res.status(400).json({ error: 'Action inválida.' });

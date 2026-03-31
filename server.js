@@ -63,7 +63,7 @@ const server = http.createServer(async (req, res) => {
     // API routes
     if (pathname.startsWith('/api/')) {
         const route = pathname.slice(5).replace(/\/$/, '') || 'index';
-        const handlerPath = path.join(__dirname, 'api', route + '.js');
+        const handlerPath = path.join(__dirname, 'handlers', route + '.js');
         if (fs.existsSync(handlerPath)) {
             const wrappedReq = wrapReq(req);
             await parseBody(wrappedReq);

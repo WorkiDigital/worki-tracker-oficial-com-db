@@ -1,4 +1,4 @@
-import { getPool } from './_db.js';
+import { getPool } from '../api/_db.js';
 import crypto from 'crypto';
 
 function saveLog(instance, cliente_id, level, tag, message, data) {
@@ -21,8 +21,11 @@ export default async function handler(req, res) {
 
   // Valida segredo do webhook (se configurado em WEBHOOK_SECRET)
   const webhookSecret = process.env.WEBHOOK_SECRET;
-  if (webhookSecret && req.headers['x-webhook-secret'] !== webhookSecret) {
-    return res.status(401).json({ error: 'Webhook secret inválido.' });
+  if (webhookSecret) {
+    const receivedSecret = req.query.secret || req.headers['x-webhook-secret'] || req.headers['x-api-key'] || req.headers['apikey'];
+    if (receivedSecret !== webhookSecret) {
+      return res.status(401).json({ error: 'Webhook secret inválido ou ausente.' });
+    }
   }
 
   const body     = req.body;

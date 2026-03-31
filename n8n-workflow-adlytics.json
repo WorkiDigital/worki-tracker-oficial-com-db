@@ -1,0 +1,478 @@
+{
+  "name": "Adlytics - WhatsApp Tracking",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "adlytcs-tracking",
+        "options": {}
+      },
+      "id": "0c3d3766-e957-436f-890a-4cb60419b38f",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -1088,
+        3152
+      ],
+      "webhookId": "adlytcs-tracking-wh"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "dfbd7bfd-6b6e-426d-aa8c-1145d308c9a1",
+              "name": "lead.celular",
+              "value": "={{ $('Webhook').item.json.body.data.key.remoteJidAlt.split('@')[0] || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "95d9e6fc-4346-4dea-ac22-2a8dced13105",
+              "name": "lead.lid",
+              "value": "={{ $('Webhook').item.json.body.data.key.remoteJid.split('@')[0] || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "49029297-2152-4c64-94dc-08bc50156263",
+              "name": "lead.name",
+              "value": "={{ $json.body.data?.pushName || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "5d61ab5f-0fb2-425c-9569-e5c72265e339",
+              "name": "message.message_id",
+              "value": "={{ $('Webhook').item.json.body.data.key.id }}",
+              "type": "string"
+            },
+            {
+              "id": "5e02a54c-ead1-40bc-b2b9-808c4e001790",
+              "name": "message.content",
+              "value": "={{ $('Webhook').item.json.body.data.message?.conversation || $('Webhook').item.json.body.data.message?.imageMessage?.caption || $('Webhook').item.json.body.data.message?.documentMessage?.caption || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "103e2ac8-7093-4d3e-8569-be628127504c",
+              "name": "message.event",
+              "value": "={{ $('Webhook').item.json.body.data.key.fromMe ? 'outcoming' : 'incoming' }}",
+              "type": "string"
+            },
+            {
+              "id": "02808fd4-8fa5-4bfc-a974-2874647ca30d",
+              "name": "message.date",
+              "value": "={{ $json.body.date_time }}",
+              "type": "string"
+            },
+            {
+              "id": "62d55578-37d6-4120-9ed8-0023f49fbe17",
+              "name": "instance",
+              "value": "={{ $json.body.instance }}",
+              "type": "string"
+            },
+            {
+              "id": "aa1d8841-8b38-4263-9f62-ec993c4520c4",
+              "name": "evo.apikey",
+              "value": "={{ $json.body.apikey }}",
+              "type": "string"
+            },
+            {
+              "id": "dd7d974a-9fd5-4442-93a8-58341c3547c0",
+              "name": "anuncio.ctawclid",
+              "value": "={{ $json.body.data.contextInfo?.externalAdReply?.ctwaClid || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "3fb61e0f-cff0-4ffe-923c-688f0977e5a2",
+              "name": "anuncio.sourceId",
+              "value": "={{ $json.body.data.contextInfo?.externalAdReply?.sourceId || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "d38acb59-f42e-42b2-9ee7-6363c4b2c352",
+              "name": "anuncio.source_url",
+              "value": "={{ $json.body.data.contextInfo?.externalAdReply?.sourceUrl || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "5e5b6790-c3cc-4f34-b816-786374f7e3ac",
+              "name": "anuncio.plataforma",
+              "value": "={{ $json.body.data.contextInfo?.entryPointConversionApp || ($json.body.data.contextInfo?.externalAdReply?.mediaType === 2 ? 'instagram' : 'facebook') }}",
+              "type": "string"
+            },
+            {
+              "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+              "name": "anuncio.thumbnail_url",
+              "value": "={{ $json.body.data.contextInfo?.externalAdReply?.thumbnailUrl || '' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -832,
+        3152
+      ],
+      "id": "7c1efcc0-600b-4803-af4d-a109e5742112",
+      "name": "Normalizar [Lead]"
+    },
+    {
+      "parameters": {
+        "dataToSave": {
+          "values": [
+            {
+              "key": "celular",
+              "value": "={{ $json.lead.celular }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executionData",
+      "typeVersion": 1.1,
+      "position": [
+        -656,
+        3152
+      ],
+      "id": "a6f1557c-3d5b-4a0f-8902-dfc91e2e06e3",
+      "name": "Execution Data"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "8a896d89-7b20-4836-b721-324698265322",
+                    "leftValue": "={{ $json.message.event }}",
+                    "rightValue": "outcoming",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "atendente"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.message.event }}",
+                    "rightValue": "incoming",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "9241f722-af96-4a43-bd37-57704df38337"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "lead"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.3,
+      "position": [
+        -352,
+        3152
+      ],
+      "id": "80b2fc3e-4c8c-42d5-992f-5b0ba8b6084d",
+      "name": "EventType"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "cond_ctwa",
+              "leftValue": "={{ $json.anuncio.ctawclid }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "6b81f095-01cd-4249-950e-06c5b1b6ec46",
+      "name": "Tem ctwaClid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -48,
+        3200
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ 'https://graph.facebook.com/v25.0/' + $('Normalizar [Lead]').item.json.anuncio.sourceId }}",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "fields",
+              "value": "name,adset{name},campaign{name},tracking_specs"
+            },
+            {
+              "name": "access_token",
+              "value": "={{ $env.META_ADS_TOKEN }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "93a04b27-9624-49bb-bab8-ae784eb0cb7a",
+      "name": "BuscaRastreio + Pixel",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        448,
+        3200
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const meta = $input.first().json;\nconst norm = $('Normalizar [Lead]').first().json;\n\n// Extrai page_id de tracking_specs\nconst specs = Array.isArray(meta.tracking_specs) ? meta.tracking_specs : [];\nlet page_id = null;\nfor (const spec of specs) {\n  if (spec.page && spec.page.length > 0) {\n    page_id = String(spec.page[0]);\n    break;\n  }\n}\n\nreturn [{\n  json: {\n    instance:              norm.instance,\n    evento:                'lead',\n    nome:                  norm.lead?.name || '',\n    telefone:              norm.lead?.celular || '',\n    mensagem_recebida:     norm.message?.content || '',\n    ctwaClid:              norm.anuncio?.ctawclid || '',\n    source_id:             norm.anuncio?.sourceId || '',\n    event_source_url:      norm.anuncio?.source_url || '',\n    anuncio_thumbnail_url: norm.anuncio?.thumbnail_url || '',\n    plataforma:            norm.anuncio?.plataforma || '',\n    utm_campaign:          meta.campaign?.name || null,\n    utm_medium:            meta.adset?.name   || null,\n    utm_content:           meta.name          || null,\n    page_id:               page_id\n  }\n}];"
+      },
+      "id": "5dfe7f3c-a02e-445e-ad4f-4dbf4173ae2e",
+      "name": "Montar Payload Lead",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        672,
+        3200
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://n8n-worki-tracker-oficial-2.ubufeb.easypanel.host/api/webhook-n8n",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "478817af-fc5b-46b1-b266-32aa4261d80b",
+      "name": "Envia Lead \u2192 App",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        3200
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const wh = $('Webhook').item.json;\nconst data = wh.body.data;\nconst msg  = data.message?.conversation || data.message?.extendedTextMessage?.text || data.message?.imageMessage?.caption || '';\nconst telefone = (data.key.remoteJidAlt || data.key.remoteJid || '').split('@')[0];\nconst instance = wh.body.instance;\n\nconst get = (labels) => {\n  for (const label of labels) {\n    const re = new RegExp(`${label}[:\\\\s]+([^\\\\n]+)`, 'i');\n    const m  = msg.match(re);\n    if (m) return m[1].trim();\n  }\n  return null;\n};\n\nconst valorRaw = get(['valor', 'venda', 'total']) || '0';\nconst valor    = parseFloat(valorRaw.replace(/[^0-9,.]/g, '').replace(',', '.')) || 0;\n\nreturn [{\n  json: {\n    instance,\n    evento:      'purchase',\n    telefone,\n    nome:        get(['nome', 'cliente']),\n    valor_venda: valor,\n    cidade:      get(['cidade']),\n    estado:      get(['estado', 'uf'])\n  }\n}];"
+      },
+      "id": "1d5a1e6e-9ce7-4018-b874-02f35ca9c1fc",
+      "name": "Normalizar Compra",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -64,
+        3008
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "cond_valor",
+              "leftValue": "={{ $json.valor_venda }}",
+              "rightValue": 0,
+              "operator": { "type": "number", "operation": "gt" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "filter-compra-valor",
+      "name": "Tem valor?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [160, 3024]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://n8n-worki-tracker-oficial-2.ubufeb.easypanel.host/api/webhook-n8n",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "6b02c4fa-2ada-41a8-a225-eb55581895a1",
+      "name": "Envia Compra \u2192 App",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        304,
+        3024
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Normalizar [Lead]",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalizar [Lead]": {
+      "main": [
+        [
+          {
+            "node": "Execution Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execution Data": {
+      "main": [
+        [
+          {
+            "node": "EventType",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "EventType": {
+      "main": [
+        [
+          {
+            "node": "Normalizar Compra",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Tem ctwaClid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tem ctwaClid?": {
+      "main": [
+        [
+          {
+            "node": "BuscaRastreio + Pixel",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "BuscaRastreio + Pixel": {
+      "main": [
+        [
+          {
+            "node": "Montar Payload Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Montar Payload Lead": {
+      "main": [
+        [
+          {
+            "node": "Envia Lead \u2192 App",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalizar Compra": {
+      "main": [
+        [
+          {
+            "node": "Tem valor?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tem valor?": {
+      "main": [
+        [
+          {
+            "node": "Envia Compra \u2192 App",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "tags": []
+}

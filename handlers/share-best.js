@@ -1,4 +1,4 @@
-import { getPool } from './_db.js';
+import { getPool } from '../api/_db.js';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
