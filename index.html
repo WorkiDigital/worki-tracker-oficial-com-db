@@ -787,7 +787,6 @@
                 <div id="adminClienteFilter" style="display:none;" class="ctrl-box">
                     <i data-lucide="users" style="width:14px;color:var(--muted);flex-shrink:0;"></i>
                     <select id="selectClienteAdmin" class="bare" onchange="trocarClienteAdmin(this.value)">
-                        <option value="">Todos os clientes</option>
                     </select>
                 </div>
                 <!-- Search -->
@@ -1550,6 +1549,10 @@ async function popularSeletorAdmin() {
         opt.textContent = c.nome;
         sel.appendChild(opt);
     });
+    if (clientes.length > 0) {
+        sel.value = clientes[0].id;
+        trocarClienteAdmin(clientes[0].id);
+    }
 }
 
 function trocarClienteAdmin(id) {
