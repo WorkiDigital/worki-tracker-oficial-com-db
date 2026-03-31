@@ -216,7 +216,7 @@ export default async function handler(req, res) {
     }
 
     if (action === 'unlink') {
-      await pool.query('DELETE FROM instancias_mapeamento WHERE instance_name = $1', [finalInstanceName]);
+      await pool.query('DELETE FROM instancias_mapeamento WHERE instance_name = $1', [instanceName]);
       return res.status(200).json({ ok: true });
     }
 
