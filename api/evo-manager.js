@@ -59,12 +59,14 @@ export default async function handler(req, res) {
            return { fullName: name, displayName: name.replace(prefix, ''), state, linked: false, cliente_id };
         });
 
-        // Para admin: também busca instâncias vinculadas via tabela de mapeamento + nomes dos clientes
-        if (user.is_admin) {
-            try {
-                const pool = getPool();
-                const mapped = await pool.query('SELECT instance_name, cliente_id FROM instancias_mapeamento');
-                for (const row of mapped.rows) {
+        // Busca instâncias vinculadas via tabela de mapeamento (admin: todas; cliente: só as suas)
+        try {
+            const pool = getPool();
+            const mapped = user.is_admin
+                ? await pool.query('SELECT instance_name, cliente_id FROM instancias_mapeamento')
+                : await pool.query('SELECT instance_name, cliente_id FROM instancias_mapeamento WHERE cliente_id = $1', [user.cliente_id]);
+
+            for (const row of mapped.rows) {
                     if (myInstances.find(i => i.fullName === row.instance_name)) continue; // já listada
                     const evoInst = instances.find(i => (i.instance?.instanceName || i.instanceName || i.name) === row.instance_name);
                     const rawState = evoInst ? (evoInst.instance?.state || evoInst.instance?.connectionStatus || evoInst.instance?.status || evoInst.state || evoInst.connectionStatus || '') : 'unknown';
@@ -84,9 +86,8 @@ export default async function handler(req, res) {
                         }
                     }
                 }
-            } catch (dbErr) {
-                console.warn('[evo-manager] Erro ao buscar dados do banco:', dbErr.message);
-            }
+        } catch (dbErr) {
+            console.warn('[evo-manager] Erro ao buscar dados do banco:', dbErr.message);
         }
 
         return res.status(200).json(myInstances);
