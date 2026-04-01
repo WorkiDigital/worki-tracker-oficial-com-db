@@ -308,13 +308,17 @@ async function sendCapiPurchase(lead, pixel, token, log, warn) {
   const ph = (lead.telefone || '').replace(/\D/g, '');
   const nomeParts = (lead.nome || '').trim().split(/\s+/);
   const userData = { ctwa_clid: lead.ctw_aci_id || undefined };
-  if (ph)           userData.ph      = hash(ph);
-  if (nomeParts[0]) userData.fn      = hash(nomeParts[0]);
-  if (nomeParts[1]) userData.ln      = hash(nomeParts.slice(1).join(' '));
-  if (lead.estado)  userData.st      = hash(lead.estado);
-  if (lead.cidade)  userData.ct      = hash(lead.cidade);
-  if (lead.page_id) userData.page_id = lead.page_id;
+  if (ph)           userData.ph          = hash(ph);
+  if (nomeParts[0]) userData.fn          = hash(nomeParts[0]);
+  if (nomeParts[1]) userData.ln          = hash(nomeParts.slice(1).join(' '));
+  if (lead.estado)  userData.st          = hash(lead.estado);
+  if (lead.cidade)  userData.ct          = hash(lead.cidade);
+  if (lead.cpf)     userData.external_id = hash(lead.cpf.replace(/\D/g, ''));
+  if (lead.page_id) userData.page_id     = lead.page_id;
   userData.country = hash('br');
+
+  const customData = { currency: 'BRL', value: parseFloat(lead.valor_venda || 0) };
+  if (lead.produto) customData.content_name = lead.produto;
 
   const payload = {
     data: [{
@@ -323,7 +327,7 @@ async function sendCapiPurchase(lead, pixel, token, log, warn) {
       action_source:     'business_messaging',
       messaging_channel: 'whatsapp',
       user_data:         userData,
-      custom_data:       { currency: 'BRL', value: parseFloat(lead.valor_venda || 0) }
+      custom_data:       customData
     }]
   };
 
