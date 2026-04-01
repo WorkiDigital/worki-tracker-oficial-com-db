@@ -22,8 +22,12 @@ export default async function handler(req, res) {
   const instanceName = req.query?.instanceName ?? req.body?.instanceName;
 
   // Prefixo para garantir isolamento
-  const prefix = user.is_admin ? 'admin_' : `cliente_${user.cliente_id}_`;
-  
+  // Admin pode criar instância para cliente específico passando target_cliente_id
+  const targetClienteId = req.body?.target_cliente_id || req.query?.target_cliente_id || null;
+  const prefix = user.is_admin
+    ? (targetClienteId ? `cliente_${targetClienteId}_` : 'admin_')
+    : `cliente_${user.cliente_id}_`;
+
   // Nome final seguro para criação/ação específica (ex: admin_suporte)
   const safeName = instanceName ? instanceName.replace(/[^a-zA-Z0-9_-]/g, '') : 'default';
   const finalInstanceName = `${prefix}${safeName}`;
