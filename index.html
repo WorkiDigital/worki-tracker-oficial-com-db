@@ -687,7 +687,10 @@
             <div class="input-group">
                 <label>Template de Venda <span style="color:var(--muted);font-weight:400;font-size:11px;">(formato da mensagem do atendente)</span></label>
                 <textarea id="editCliTemplate" rows="8" placeholder="Ex:&#10;Nome completo: {nome}&#10;Produto: {produto}&#10;Valor da Compra: {valor}&#10;Endereço: {endereco}&#10;Cidade: {cidade}" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);font-family:monospace;font-size:12px;resize:vertical;margin-top:6px;box-sizing:border-box;"></textarea>
-                <p style="font-size:11px;color:var(--muted);margin-top:4px;">Use: <code>{valor}</code> <code>{nome}</code> <code>{produto}</code> <code>{endereco}</code> <code>{cidade}</code> <code>{cor}</code> <code>{pagamento}</code> <code>{cpf}</code></p>
+                <p style="font-size:11px;color:var(--muted);margin-top:4px;">
+                    Enviados à Meta: <code>{valor}</code> <code>{nome}</code> <code>{cidade}</code> <code>{produto}</code> <code>{email}</code> <code>{cpf}</code> &nbsp;|&nbsp;
+                    Só banco: <code>{endereco}</code> <code>{cor}</code> <code>{pagamento}</code>
+                </p>
             </div>
             <hr style="border:none;border-top:1px solid var(--border);margin:16px 0 12px;">
             <p style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:12px;">Permissões de Acesso</p>

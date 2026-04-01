@@ -217,6 +217,7 @@ export default async function handler(req, res) {
     const cor     = extract('cor');
     const forma_pagamento = extract('pagamento') || extract('forma_pagamento');
     const cpf     = extract('cpf');
+    const email   = extract('email');
 
     log('purchase', 'Dados de venda extraídos', { valor, nome, cidadeF, estado, produto });
 
@@ -242,11 +243,12 @@ export default async function handler(req, res) {
           endereco        = COALESCE($6, endereco),
           cor             = COALESCE($7, cor),
           forma_pagamento = COALESCE($8, forma_pagamento),
-          cpf             = COALESCE($9, cpf)
-      WHERE id = $10 RETURNING *
+          cpf             = COALESCE($9, cpf),
+          email           = COALESCE($10, email)
+      WHERE id = $11 RETURNING *
     `, [valor, cidadeF || null, estado || null, nome || null,
         produto || null, endereco || null, cor || null,
-        forma_pagamento || null, cpf || null, leadQuery.rows[0].id]);
+        forma_pagamento || null, cpf || null, email || null, leadQuery.rows[0].id]);
 
     const leadAtualizado = updateResult.rows[0];
     log('purchase', 'Lead atualizado para Vendido', { id: leadAtualizado.id, valor_venda: leadAtualizado.valor_venda });
@@ -313,6 +315,7 @@ async function sendCapiPurchase(lead, pixel, token, log, warn) {
   if (nomeParts[1]) userData.ln          = hash(nomeParts.slice(1).join(' '));
   if (lead.estado)  userData.st          = hash(lead.estado);
   if (lead.cidade)  userData.ct          = hash(lead.cidade);
+  if (lead.email)   userData.em          = hash(lead.email.toLowerCase().trim());
   if (lead.cpf)     userData.external_id = hash(lead.cpf.replace(/\D/g, ''));
   if (lead.page_id) userData.page_id     = lead.page_id;
   userData.country = hash('br');

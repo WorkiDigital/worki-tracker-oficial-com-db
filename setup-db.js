@@ -142,7 +142,8 @@ async function setup() {
       ADD COLUMN IF NOT EXISTS endereco TEXT,
       ADD COLUMN IF NOT EXISTS cor VARCHAR(100),
       ADD COLUMN IF NOT EXISTS forma_pagamento VARCHAR(100),
-      ADD COLUMN IF NOT EXISTS cpf VARCHAR(20);
+      ADD COLUMN IF NOT EXISTS cpf VARCHAR(20),
+      ADD COLUMN IF NOT EXISTS email VARCHAR(255);
     `);
     console.log('✅ Campos de venda (produto, endereco, cor, forma_pagamento, cpf) injetados em "leads_tracking".');
 
