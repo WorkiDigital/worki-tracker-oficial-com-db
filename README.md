@@ -1,29 +1,33 @@
-# Adlytics — WhatsApp Tracking + Meta Ads SaaS
+# Adlytics — WhatsApp Tracking + Meta Ads CAPI (SaaS Multi-Tenant)
 
-Sistema multi-tenant de rastreamento de leads via WhatsApp com envio automático de eventos para a Meta CAPI (Conversions API).
+Sistema SaaS de rastreamento de leads via WhatsApp com envio automático de eventos para a Meta CAPI (Conversions API). Cada cliente tem seu próprio pixel, instâncias WhatsApp e template de venda.
 
 ---
 
-## Visão Geral
+## Como funciona
 
 ```
-Cliente manda mensagem no WhatsApp
-  → Evolution API recebe
-  → N8N normaliza e envia para /api/webhook-n8n
-  → Backend salva lead no banco (PostgreSQL)
-  → Ao marcar como Venda → CAPI envia evento Purchase para a Meta
+Lead clica no anúncio → abre WhatsApp → Evolution API recebe
+  → POST /api/webhook-evo
+  → identifica cliente pelo nome da instância
+  → salva lead no banco + envia LeadSubmitted para Meta CAPI
+
+Atendente envia mensagem de venda (conforme template configurado)
+  → webhook detecta valor > 0
+  → atualiza lead para "Vendido"
+  → envia Purchase para Meta CAPI com nome, telefone, cidade, produto, email, CPF
 ```
 
 ---
 
 ## Pré-requisitos
 
-| Serviço | Descrição |
-|---------|-----------|
-| **EasyPanel** | Hospedagem do backend Node.js + PostgreSQL |
+| Serviço | Função |
+|---------|--------|
+| **Node.js 18+** | Runtime do backend |
+| **PostgreSQL** | Banco de dados |
 | **Evolution API** | Gerenciamento de instâncias WhatsApp (Baileys) |
-| **N8N** | Automação: recebe webhook da Evolution e repassa para o backend |
-| **PostgreSQL** | Banco de dados (provisionado pelo EasyPanel) |
+| **EasyPanel** (recomendado) | Hospedagem com auto-deploy via GitHub |
 | **Meta Business** | Pixel + Token de acesso para CAPI |
 
 ---
@@ -40,16 +44,18 @@ Cliente manda mensagem no WhatsApp
 
 ### 2. Variáveis de ambiente
 
-Adicionar no painel **Environment** do serviço:
+Adicionar em **Environment** do serviço:
 
 ```env
 DATABASE_URL=postgresql://user:senha@host:5432/banco
-JWT_SECRET=uma_string_longa_e_aleatoria
-META_ADS_TOKEN=EAAI...  # Token da agência com acesso a todos os pixels
+JWT_SECRET=uma_string_longa_e_aleatoria_minimo_32_chars
+META_ADS_TOKEN=EAAI...
 EVOLUTION_API_URL=https://evolution.seudominio.com
 EVOLUTION_GLOBAL_KEY=sua_chave_global_evolution
-N8N_WEBHOOK_URL=https://n8n.seudominio.com/webhook/XXXX  # URL do webhook N8N
+WEBHOOK_SECRET=segredo_para_validar_webhooks   # opcional mas recomendado
 ```
+
+> **JWT_SECRET ausente = qualquer pessoa pode forjar tokens de admin.** Nunca deixe em branco em produção.
 
 ### 3. Criar as tabelas no banco
 
@@ -59,9 +65,9 @@ No terminal do serviço (EasyPanel → Terminal):
 node setup-db.js
 ```
 
-### 4. Criar o usuário admin
+Cria todas as tabelas e colunas. É seguro rodar múltiplas vezes (usa `IF NOT EXISTS`).
 
-No terminal do serviço:
+### 4. Criar o usuário admin
 
 ```bash
 node -e "
@@ -82,83 +88,139 @@ import('dotenv/config').then(async () => {
 ## Estrutura Multi-tenant
 
 ```
-Agência (admin)
+Agência (admin, is_admin=true)
   └── Cliente A (cliente_id=1) → pixel: 111111111
   └── Cliente B (cliente_id=2) → pixel: 222222222
   └── Cliente C (cliente_id=3) → pixel: 333333333
 ```
 
 - **Token Meta:** único da agência (`META_ADS_TOKEN`), com acesso a todos os pixels
-- **Pixel:** cada cliente tem o seu próprio
-- **Instâncias Evolution:** prefixadas automaticamente (`cliente_1_NomeLoja`)
+- **Pixel:** cada cliente tem o seu próprio (`clientes.pixel_padrao`)
+- **Token por cliente:** se `clientes.token_meta` preenchido, usa ele; caso contrário usa o da agência
+- **Instâncias Evolution:** prefixadas automaticamente
+  - Admin: `admin_nome`
+  - Cliente: `cliente_{id}_nome`
+  - Instâncias externas vinculadas via `instancias_mapeamento`
 
 ---
 
-## Configuração do N8N
+## Adicionar clientes
 
-### Importar o fluxo
+1. Logar como admin
+2. Menu **Agência** → **+ Novo Cliente**
+3. Preencher: Nome, Pixel Meta, E-mail, Senha
+4. Sistema cria o cliente + usuário de acesso automaticamente
+5. Compartilhar login com o cliente
 
-1. N8N → **Import from JSON**
-2. Importar o arquivo `n8n-workflow.json` fornecido junto com o projeto
+---
 
-### O fluxo faz:
+## Configurar template de venda
 
-1. **Trigger:** Recebe webhook da Evolution (`MESSAGES_UPSERT`)
-2. **Filtra:** Apenas mensagens recebidas de contatos (não grupos)
-3. **Normaliza Lead:** Extrai nome, telefone, mensagem, instance
-4. **POST** para `https://seuapp.easypanel.host/api/webhook-n8n`
+Cada cliente define o formato exato da mensagem que o atendente envia para registrar uma venda.
 
-### Payload enviado pelo N8N:
+1. Menu **Agência** → **Editar** cliente → aba **Venda**
+2. Colar o template com as variáveis no formato `Label: {campo}`:
 
-```json
-{
-  "instance": "cliente_7_LojaPrincipal",
-  "evento": "lead",
-  "nome": "João Silva",
-  "telefone": "5511999999999",
-  "mensagem_recebida": "Olá, vi o anúncio...",
-  "ctw_aci_id": "...",
-  "source_id": "...",
-  "event_source_url": "https://loja.com",
-  "anuncio_thumbnail_url": "https://..."
-}
+```
+Parabéns pela sua compra!
+Nome: {nome}
+Produto: {produto}
+Valor da Compra: {valor}
+Endereço: {endereco}
+Cidade: {cidade}
+E-mail: {email}
+CPF: {cpf}
 ```
 
-O campo `instance` identifica automaticamente o cliente — **não precisa de cliente_id hardcoded**.
+3. Clicar em **Salvar Alterações**
+
+A partir desse momento, o webhook usa esse template para extrair os dados da mensagem.
+
+### Campos suportados
+
+| Variável | Enviado à Meta CAPI | Campo no banco |
+|----------|--------------------|----|
+| `{valor}` | `custom_data.value` | `valor_venda` |
+| `{nome}` | `fn` + `ln` (hash) | `nome` |
+| `{cidade}` | `ct` (hash) | `cidade` |
+| `{produto}` | `content_name` | `produto` |
+| `{email}` | `em` (hash) | `email` |
+| `{cpf}` | `external_id` (hash) | `cpf` |
+| `{endereco}` | — | `endereco` |
+| `{cor}` | — | `cor` |
+| `{pagamento}` | — | `forma_pagamento` |
+
+> Campos ausentes na mensagem são ignorados — os outros são enviados normalmente.
+
+### Como o atendente usa
+
+O atendente copia o template (sem as variáveis), preenche e envia no WhatsApp:
+
+```
+Parabéns pela sua compra!
+Nome: Herickson Maia
+Produto: Cama Queen
+Valor da Compra: 2.000
+Endereço: Rua 31 de janeiro N 620
+Cidade: Fortaleza - CE
+```
+
+> `Cidade: Fortaleza - CE` → o sistema separa automaticamente cidade e estado.
 
 ---
 
-## Adicionar Clientes
+## Conectar WhatsApp
 
-1. Logar como admin em `https://seuapp.easypanel.host`
-2. Menu **Agência** → **Novo Cliente**
-3. Preencher: Nome, Pixel Meta, E-mail, Senha
-4. O sistema cria o cliente + usuário de acesso automaticamente
-5. Compartilhar email/senha com o cliente
+### Opção 1 — Nova instância (cliente cria a própria)
 
----
+1. Logar como cliente (ou admin)
+2. Menu **Conexão WhatsApp** → **+ Nova Conexão**
+3. Digitar nome da instância (ex: `Loja Principal`)
+4. Sistema cria a instância na Evolution e configura o webhook automaticamente
+5. Escanear QR Code
 
-## Conectar WhatsApp do Cliente
+### Opção 2 — Vincular instância existente (só admin)
 
-1. Logar como o cliente (ou como admin)
-2. Menu **Conexão WhatsApp** → **Nova Conexão**
-3. Digitar o nome da instância (ex: `Loja Principal`)
-4. Sistema cria a instância na Evolution **e já configura o webhook do N8N automaticamente**
-5. Escanear QR Code com o celular
-6. Pronto — leads chegando automaticamente
+1. Logar como admin
+2. Menu **Conexão WhatsApp** → **Conectar Existente**
+3. Selecionar a instância e o cliente
+4. Sistema vincula e configura o webhook
 
 ---
 
-## Fluxo de Venda (CAPI Purchase)
+## Banco de dados
 
-1. No painel **Leads Reais**, localizar o lead
-2. Clicar em **Venda**
-3. Informar o valor
-4. Backend atualiza status para `Vendido` e envia evento `Purchase` para a Meta CAPI
+### Tabelas
+
+| Tabela | Descrição |
+|--------|-----------|
+| `usuarios` | Logins (admin + clientes) |
+| `clientes` | Dados de cada cliente (pixel, token, template) |
+| `leads_tracking` | Todos os leads com campos de venda |
+| `instancias_mapeamento` | Instâncias externas vinculadas a clientes |
+| `share_tokens` | Tokens de compartilhamento de dashboard |
+| `webhook_logs` | Logs de todos os webhooks recebidos |
+
+### Colunas principais de `leads_tracking`
+
+| Coluna | Tipo | Descrição |
+|--------|------|-----------|
+| `cliente_id` | INTEGER | Vínculo multi-tenant |
+| `status` | VARCHAR | `Lead`, `Vendido`, `Pendente` |
+| `valor_venda` | NUMERIC | Valor da compra |
+| `produto` | VARCHAR | Produto vendido |
+| `endereco` | TEXT | Endereço do cliente |
+| `cidade` / `estado` | VARCHAR | Localização |
+| `email` | VARCHAR | E-mail do cliente |
+| `cpf` | VARCHAR | CPF do cliente |
+| `cor` | VARCHAR | Cor/variação do produto |
+| `forma_pagamento` | VARCHAR | Forma de pagamento |
+| `ctw_aci_id` | TEXT | Click ID do anúncio |
+| `utm_campaign` / `utm_medium` / `utm_content` | VARCHAR | UTMs extraídos da Meta API |
 
 ---
 
-## Atualizar o Banco (migrations)
+## Atualizar o banco após deploy
 
 Sempre que houver mudança de schema, rode no terminal do EasyPanel:
 
@@ -166,4 +228,39 @@ Sempre que houver mudança de schema, rode no terminal do EasyPanel:
 node setup-db.js
 ```
 
-O script usa `IF NOT EXISTS` e `ADD COLUMN IF NOT EXISTS` — é seguro rodar múltiplas vezes.
+---
+
+## Segurança implementada
+
+- JWT com `JWT_SECRET` obrigatório (alerta crítico se ausente)
+- Rate limiting no login: 10 tentativas/IP por 15 minutos
+- Validação de `WEBHOOK_SECRET` nos webhooks Evolution
+- IDOR protegido: `verifyAccountAccess()` valida posse do `account_id`
+- Cache isolado por usuário (`userCacheKey()`)
+- `token_meta` nunca exposto no HTML — armazenado em `window._clientesMap`
+- XSS sanitizado com `esc()` em todos os `innerHTML`
+
+---
+
+## Estrutura de arquivos
+
+```
+/
+├── server.js              # Entry point — roteador de /api/*
+├── setup-db.js            # Cria/migra todas as tabelas
+├── index.html             # SPA do painel (admin + cliente)
+├── api/
+│   ├── _db.js             # Pool PostgreSQL
+│   ├── _auth.js           # Verificação JWT
+│   ├── _cache.js          # Cache isolado por usuário
+│   ├── _validate.js       # Validações de segurança (IDOR)
+│   ├── auth-login.js      # POST /api/auth-login
+│   ├── clientes.js        # CRUD de clientes (admin)
+│   ├── leads.js           # GET leads do cliente
+│   ├── webhook-evo.js     # POST /api/webhook-evo (Evolution → Lead/Purchase)
+│   ├── evo-manager.js     # Gerenciamento de instâncias WhatsApp
+│   ├── ads.js             # Meta Ads (anúncios, métricas)
+│   ├── logs.js            # GET logs do webhook
+│   └── share-*.js         # Endpoints de dashboard compartilhado
+└── docs/                  # Documentação interna
+```
