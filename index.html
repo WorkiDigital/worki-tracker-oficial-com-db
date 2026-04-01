@@ -666,10 +666,9 @@
         <input type="hidden" id="editCliId">
         <!-- Abas -->
         <div style="display:flex;gap:4px;margin-bottom:20px;background:var(--tag);border-radius:10px;padding:4px;">
-            <button id="editTab-dados"     onclick="switchEditTab('dados')"     style="flex:1;padding:8px;border:none;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;background:var(--blue);color:#fff;">Dados</button>
-            <button id="editTab-meta"      onclick="switchEditTab('meta')"      style="flex:1;padding:8px;border:none;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;background:transparent;color:var(--text-muted);">Meta Ads</button>
-            <button id="editTab-venda"     onclick="switchEditTab('venda')"     style="flex:1;padding:8px;border:none;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;background:transparent;color:var(--text-muted);">Venda</button>
-            <button id="editTab-whatsapp"  onclick="switchEditTab('whatsapp')"  style="flex:1;padding:8px;border:none;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;background:transparent;color:var(--text-muted);">WhatsApp</button>
+            <button id="editTab-dados"  onclick="switchEditTab('dados')"  style="flex:1;padding:8px;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;background:var(--blue);color:#fff;">Dados</button>
+            <button id="editTab-meta"   onclick="switchEditTab('meta')"   style="flex:1;padding:8px;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;background:transparent;color:var(--text-muted);">Meta Ads</button>
+            <button id="editTab-venda"  onclick="switchEditTab('venda')"  style="flex:1;padding:8px;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;background:transparent;color:var(--text-muted);">Venda</button>
         </div>
         <!-- Aba: Dados -->
         <div id="editPanel-dados">
@@ -720,24 +719,6 @@
                     <input type="checkbox" id="permClientes" style="width:16px;height:16px;accent-color:var(--blue);">
                     <span style="font-size:13px;">Compartilhar Dash</span>
                 </label>
-            </div>
-        </div>
-        <!-- Aba: WhatsApp -->
-        <div id="editPanel-whatsapp" style="display:none;">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-                <span style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;">Instâncias vinculadas</span>
-                <button class="btn btn-green btn-sm" onclick="editCliCriarInstancia()" style="font-size:12px;padding:5px 12px;"><i data-lucide="plus" style="width:13px;"></i> Nova</button>
-            </div>
-            <div id="editCliWaList" style="display:flex;flex-direction:column;gap:8px;">
-                <div style="text-align:center;padding:24px;color:var(--text-muted);font-size:13px;">Carregando...</div>
-            </div>
-            <div id="editCliWaCreate" style="display:none;margin-top:12px;padding:14px;background:var(--tag);border-radius:10px;">
-                <p style="font-size:13px;font-weight:600;margin-bottom:10px;">Nome da nova instância</p>
-                <input type="text" id="editCliWaName" placeholder="Ex: Loja Principal" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);font-size:13px;box-sizing:border-box;margin-bottom:10px;">
-                <div style="display:flex;gap:8px;">
-                    <button class="btn btn-green btn-sm" onclick="editCliConfirmarNovaInstancia()" style="flex:1;">Criar e gerar QR</button>
-                    <button class="btn btn-ghost btn-sm" onclick="$('editCliWaCreate').style.display='none';$('editCliWaList').style.display='flex';">Cancelar</button>
-                </div>
             </div>
         </div>
         <button class="btn-confirm" id="btnSalvarEditCliente" onclick="salvarEdicaoCliente()">Salvar Alterações</button>
@@ -3700,75 +3681,12 @@ async function carregarClientesAdmin() {
 }
 
 function switchEditTab(tab) {
-    ['dados','meta','venda','whatsapp'].forEach(t => {
+    ['dados','meta','venda'].forEach(t => {
         $('editPanel-' + t).style.display = t === tab ? '' : 'none';
         const btn = $('editTab-' + t);
         btn.style.background = t === tab ? 'var(--blue)' : 'transparent';
         btn.style.color      = t === tab ? '#fff' : 'var(--text-muted)';
     });
-    if (tab === 'whatsapp') carregarInstanciasCliente();
-}
-
-async function carregarInstanciasCliente() {
-    const clienteId = parseInt($('editCliId').value);
-    const listEl = $('editCliWaList');
-    listEl.style.display = 'flex';
-    $('editCliWaCreate').style.display = 'none';
-    listEl.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text-muted);font-size:13px;">Carregando...</div>';
-    try {
-        const r = await authFetch('/api/evo-manager?action=list');
-        const data = await r.json();
-        const instancias = (Array.isArray(data) ? data : []).filter(i => i.cliente_id === clienteId);
-        if (instancias.length === 0) {
-            listEl.innerHTML = '<div style="text-align:center;padding:24px;background:var(--tag);border-radius:10px;color:var(--text-muted);font-size:13px;">Nenhuma instância vinculada.<br>Clique em <strong>+ Nova</strong> para criar.</div>';
-            return;
-        }
-        listEl.innerHTML = instancias.map(inst => {
-            const up = inst.state === 'open';
-            const badgeBg    = up ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.12)';
-            const badgeColor = up ? '#10b981' : '#ef4444';
-            return `<div style="background:var(--card);border:1px solid ${up ? 'rgba(16,185,129,0.3)' : 'var(--border)'};border-radius:10px;padding:12px;display:flex;align-items:center;gap:10px;">
-                <i data-lucide="smartphone" style="color:${up ? '#25D366' : 'var(--muted)'};width:18px;flex-shrink:0;"></i>
-                <div style="flex:1;min-width:0;">
-                    <div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(inst.displayName)}</div>
-                    <span style="font-size:10px;font-weight:600;padding:1px 7px;border-radius:20px;background:${badgeBg};color:${badgeColor};">${up ? '● Conectado' : '● Desconectado'}</span>
-                </div>
-                <div style="display:flex;gap:6px;">
-                    ${!up ? `<button class="btn btn-green btn-sm" onclick="verConexao('${esc(inst.displayName)}')" style="font-size:11px;padding:4px 10px;"><i data-lucide="qr-code" style="width:11px;"></i> QR</button>` : ''}
-                    <button class="btn btn-ghost btn-sm" onclick="deletarConexao('${esc(inst.displayName)}');setTimeout(carregarInstanciasCliente,900);" style="padding:4px 8px;"><i data-lucide="trash-2" style="width:11px;color:var(--red);"></i></button>
-                </div>
-            </div>`;
-        }).join('');
-        lucide.createIcons({ nodes: [$('editCliWaList')] });
-    } catch(e) {
-        listEl.innerHTML = `<div style="color:var(--red);font-size:13px;">${esc(e.message)}</div>`;
-    }
-}
-
-function editCliCriarInstancia() {
-    $('editCliWaCreate').style.display = 'block';
-    $('editCliWaList').style.display = 'none';
-    $('editCliWaName').value = '';
-    $('editCliWaName').focus();
-}
-
-async function editCliConfirmarNovaInstancia() {
-    const name = $('editCliWaName').value.trim();
-    if (!name) return toast('Digite um nome para a instância', 'error');
-    const clienteId = parseInt($('editCliId').value);
-    try {
-        const r = await authFetch('/api/evo-manager', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'create', instanceName: name, target_cliente_id: clienteId })
-        });
-        const data = await r.json();
-        if (!r.ok) throw new Error(data.error || 'Erro ao criar');
-        $('editCliWaCreate').style.display = 'none';
-        $('editCliWaList').style.display = 'flex';
-        toast('Instância criada! Conecte via QR na aba WhatsApp.', 'success');
-        carregarInstanciasCliente();
-    } catch(e) { toast(e.message, 'error'); }
 }
 
 function abrirEditCliente(id) {
