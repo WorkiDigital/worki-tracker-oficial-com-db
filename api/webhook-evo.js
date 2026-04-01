@@ -1,6 +1,15 @@
 import { getPool } from './_db.js';
 import crypto from 'crypto';
 
+function normalizarNome(str) {
+  if (!str) return '';
+  return str
+    .replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, '')
+    .replace(/[^\p{L}\p{N}\s'.,-]/gu, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 function parseTemplate(template) {
   const map = {};
   for (const line of template.split('\n')) {
@@ -121,7 +130,7 @@ export default async function handler(req, res) {
     const event_source_url      = adReply.sourceUrl || '';
     const anuncio_thumbnail_url = adReply.thumbnailUrl || '';
     const plataforma            = ctx.entryPointConversionApp || (adReply.mediaType === 2 ? 'instagram' : 'facebook');
-    const nome                  = data.pushName || '';
+    const nome                  = normalizarNome(data.pushName);
     const mensagem_recebida     = data.message?.conversation || data.message?.extendedTextMessage?.text || '';
 
     log('lead', 'Lead de anúncio identificado', { telefone, nome, plataforma, sourceId, ctwaClid: ctwaClid.substring(0, 20) + '...' });
