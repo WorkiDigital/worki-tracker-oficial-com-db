@@ -85,12 +85,13 @@ async function setup() {
     `);
     console.log('✅ Vínculo de agência injetado na tabela "leads_tracking".');
 
-    // Adicionando coluna de permissões na tabela clientes
+    // Adicionando colunas extras na tabela clientes
     await client.query(`
       ALTER TABLE public.clientes
-      ADD COLUMN IF NOT EXISTS permissoes JSONB DEFAULT '{"leads":true,"anuncios":true,"relatorios":true,"whatsapp":true,"config":true}';
+      ADD COLUMN IF NOT EXISTS permissoes JSONB DEFAULT '{"leads":true,"anuncios":true,"relatorios":true,"whatsapp":true,"config":true}',
+      ADD COLUMN IF NOT EXISTS account_id VARCHAR(255);
     `);
-    console.log('✅ Coluna "permissoes" injetada na tabela "clientes".');
+    console.log('✅ Colunas "permissoes" e "account_id" injetadas na tabela "clientes".');
 
     // Criação da tabela de Tokens de Compartilhamento
     await client.query(`
@@ -145,7 +146,7 @@ async function setup() {
       ADD COLUMN IF NOT EXISTS cpf VARCHAR(20),
       ADD COLUMN IF NOT EXISTS email VARCHAR(255);
     `);
-    console.log('✅ Campos de venda (produto, endereco, cor, forma_pagamento, cpf) injetados em "leads_tracking".');
+    console.log('✅ Campos de venda (produto, endereco, cor, forma_pagamento, cpf, email) injetados em "leads_tracking".');
 
     client.release();
     console.log('🚀 Finalizado! Estrutura do Banco de Dados pronta para uso.');
