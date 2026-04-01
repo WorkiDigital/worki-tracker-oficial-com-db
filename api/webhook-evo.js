@@ -159,15 +159,15 @@ export default async function handler(req, res) {
       INSERT INTO leads_tracking (
         cliente_id, nome, telefone, mensagem_recebida, ctw_aci_id, source_id,
         event_source_url, anuncio_thumbnail_url, instancia, status, event_time,
-        utm_campaign, utm_medium, utm_content, page_id, plataforma
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'Lead',to_timestamp($10),$11,$12,$13,$14,$15)
+        utm_campaign, utm_medium, utm_content, page_id, plataforma, pixel
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'Lead',to_timestamp($10),$11,$12,$13,$14,$15,$16)
       RETURNING *
     `, [
       cliente_id, nome, telefone, mensagem_recebida,
       ctwaClid, sourceId || '',
       event_source_url, anuncio_thumbnail_url,
       instance, Math.floor(Date.now() / 1000),
-      utm_campaign, utm_medium, utm_content, page_id, plataforma
+      utm_campaign, utm_medium, utm_content, page_id, plataforma, pixel
     ]);
 
     const lead = insertResult.rows[0];
