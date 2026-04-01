@@ -664,44 +664,59 @@
             <button class="modal-close" onclick="$('modalEditCliente').classList.remove('open')"><i data-lucide="x" style="width:16px;"></i></button>
         </div>
         <input type="hidden" id="editCliId">
-        <div class="input-group"><label>Nome da Empresa</label><input type="text" id="editCliNome"></div>
-        <div class="input-group"><label>Pixel Meta</label><input type="text" id="editCliPixel"></div>
-        <div class="input-group"><label>Token Meta</label><input type="text" id="editCliToken"></div>
-        <div class="input-group"><label>ID da Conta de Anúncios <span style="color:var(--muted);font-weight:400;font-size:11px;">(ex: act_123456789)</span></label><input type="text" id="editCliAccountId" placeholder="act_XXXXXXXXX"></div>
-        <div class="input-group">
-            <label>Template de Venda <span style="color:var(--muted);font-weight:400;font-size:11px;">(formato da mensagem do atendente)</span></label>
-            <textarea id="editCliTemplate" rows="8" placeholder="Ex:&#10;Nome completo: {nome}&#10;Produto: {produto}&#10;Valor da Compra: {valor}&#10;Endereço: {endereco}&#10;Cidade: {cidade}" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);font-family:monospace;font-size:12px;resize:vertical;margin-top:6px;box-sizing:border-box;"></textarea>
-            <p style="font-size:11px;color:var(--muted);margin-top:4px;">Use: <code>{valor}</code> <code>{nome}</code> <code>{produto}</code> <code>{endereco}</code> <code>{cidade}</code> <code>{cor}</code> <code>{pagamento}</code> <code>{cpf}</code></p>
+        <!-- Abas -->
+        <div style="display:flex;gap:4px;margin-bottom:20px;background:var(--tag);border-radius:10px;padding:4px;">
+            <button id="editTab-dados"  onclick="switchEditTab('dados')"  style="flex:1;padding:8px;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;background:var(--blue);color:#fff;">Dados</button>
+            <button id="editTab-meta"   onclick="switchEditTab('meta')"   style="flex:1;padding:8px;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;background:transparent;color:var(--text-muted);">Meta Ads</button>
+            <button id="editTab-venda"  onclick="switchEditTab('venda')"  style="flex:1;padding:8px;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;background:transparent;color:var(--text-muted);">Venda</button>
         </div>
-        <div class="input-group"><label>E-mail (Login)</label><input type="email" id="editCliEmail"></div>
-        <div class="input-group"><label>Nova Senha <span style="color:var(--muted);font-weight:400;font-size:11px;">(deixe em branco para não alterar)</span></label><input type="text" id="editCliSenha" placeholder="Nova senha (opcional)"></div>
-        <hr style="border:none;border-top:1px solid var(--border);margin:16px 0 12px;">
-        <p style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:12px;">Permissões de Acesso</p>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
-            <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--tag);border-radius:8px;cursor:pointer;">
-                <input type="checkbox" id="permLeads" style="width:16px;height:16px;accent-color:var(--blue);">
-                <span style="font-size:13px;">Leads Reais</span>
-            </label>
-            <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--tag);border-radius:8px;cursor:pointer;">
-                <input type="checkbox" id="permAnuncios" style="width:16px;height:16px;accent-color:var(--blue);">
-                <span style="font-size:13px;">Meta Ads</span>
-            </label>
-            <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--tag);border-radius:8px;cursor:pointer;">
-                <input type="checkbox" id="permRelatorios" style="width:16px;height:16px;accent-color:var(--blue);">
-                <span style="font-size:13px;">Relatórios</span>
-            </label>
-            <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--tag);border-radius:8px;cursor:pointer;">
-                <input type="checkbox" id="permWhatsapp" style="width:16px;height:16px;accent-color:var(--blue);">
-                <span style="font-size:13px;">Conexão WhatsApp</span>
-            </label>
-            <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--tag);border-radius:8px;cursor:pointer;">
-                <input type="checkbox" id="permConfig" style="width:16px;height:16px;accent-color:var(--blue);">
-                <span style="font-size:13px;">Integrações</span>
-            </label>
-            <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--tag);border-radius:8px;cursor:pointer;">
-                <input type="checkbox" id="permClientes" style="width:16px;height:16px;accent-color:var(--blue);">
-                <span style="font-size:13px;">Compartilhar Dash</span>
-            </label>
+        <!-- Aba: Dados -->
+        <div id="editPanel-dados">
+            <div class="input-group"><label>Nome da Empresa</label><input type="text" id="editCliNome"></div>
+            <div class="input-group"><label>E-mail (Login)</label><input type="email" id="editCliEmail"></div>
+            <div class="input-group"><label>Nova Senha <span style="color:var(--muted);font-weight:400;font-size:11px;">(deixe em branco para não alterar)</span></label><input type="text" id="editCliSenha" placeholder="Nova senha (opcional)"></div>
+        </div>
+        <!-- Aba: Meta Ads -->
+        <div id="editPanel-meta" style="display:none;">
+            <div class="input-group"><label>Pixel Meta</label><input type="text" id="editCliPixel"></div>
+            <div class="input-group"><label>Token Meta</label><input type="text" id="editCliToken"></div>
+            <div class="input-group"><label>ID da Conta de Anúncios <span style="color:var(--muted);font-weight:400;font-size:11px;">(ex: act_123456789)</span></label><input type="text" id="editCliAccountId" placeholder="act_XXXXXXXXX"></div>
+        </div>
+        <!-- Aba: Venda -->
+        <div id="editPanel-venda" style="display:none;">
+            <div class="input-group">
+                <label>Template de Venda <span style="color:var(--muted);font-weight:400;font-size:11px;">(formato da mensagem do atendente)</span></label>
+                <textarea id="editCliTemplate" rows="8" placeholder="Ex:&#10;Nome completo: {nome}&#10;Produto: {produto}&#10;Valor da Compra: {valor}&#10;Endereço: {endereco}&#10;Cidade: {cidade}" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);font-family:monospace;font-size:12px;resize:vertical;margin-top:6px;box-sizing:border-box;"></textarea>
+                <p style="font-size:11px;color:var(--muted);margin-top:4px;">Use: <code>{valor}</code> <code>{nome}</code> <code>{produto}</code> <code>{endereco}</code> <code>{cidade}</code> <code>{cor}</code> <code>{pagamento}</code> <code>{cpf}</code></p>
+            </div>
+            <hr style="border:none;border-top:1px solid var(--border);margin:16px 0 12px;">
+            <p style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:12px;">Permissões de Acesso</p>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
+                <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--tag);border-radius:8px;cursor:pointer;">
+                    <input type="checkbox" id="permLeads" style="width:16px;height:16px;accent-color:var(--blue);">
+                    <span style="font-size:13px;">Leads Reais</span>
+                </label>
+                <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--tag);border-radius:8px;cursor:pointer;">
+                    <input type="checkbox" id="permAnuncios" style="width:16px;height:16px;accent-color:var(--blue);">
+                    <span style="font-size:13px;">Meta Ads</span>
+                </label>
+                <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--tag);border-radius:8px;cursor:pointer;">
+                    <input type="checkbox" id="permRelatorios" style="width:16px;height:16px;accent-color:var(--blue);">
+                    <span style="font-size:13px;">Relatórios</span>
+                </label>
+                <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--tag);border-radius:8px;cursor:pointer;">
+                    <input type="checkbox" id="permWhatsapp" style="width:16px;height:16px;accent-color:var(--blue);">
+                    <span style="font-size:13px;">Conexão WhatsApp</span>
+                </label>
+                <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--tag);border-radius:8px;cursor:pointer;">
+                    <input type="checkbox" id="permConfig" style="width:16px;height:16px;accent-color:var(--blue);">
+                    <span style="font-size:13px;">Integrações</span>
+                </label>
+                <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--tag);border-radius:8px;cursor:pointer;">
+                    <input type="checkbox" id="permClientes" style="width:16px;height:16px;accent-color:var(--blue);">
+                    <span style="font-size:13px;">Compartilhar Dash</span>
+                </label>
+            </div>
         </div>
         <button class="btn-confirm" id="btnSalvarEditCliente" onclick="salvarEdicaoCliente()">Salvar Alterações</button>
     </div>
@@ -3662,7 +3677,17 @@ async function carregarClientesAdmin() {
     }
 }
 
+function switchEditTab(tab) {
+    ['dados','meta','venda'].forEach(t => {
+        $('editPanel-' + t).style.display = t === tab ? '' : 'none';
+        const btn = $('editTab-' + t);
+        btn.style.background = t === tab ? 'var(--blue)' : 'transparent';
+        btn.style.color      = t === tab ? '#fff' : 'var(--text-muted)';
+    });
+}
+
 function abrirEditCliente(id) {
+    switchEditTab('dados');
     const c = (window._clientesMap || {})[id] || { id };
     $('editCliId').value        = c.id;
     $('editCliNome').value      = c.nome || '';
