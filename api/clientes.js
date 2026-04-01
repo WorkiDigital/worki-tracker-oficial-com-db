@@ -64,7 +64,7 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'PATCH') {
-      const { id, nome, email_contato, pixel_padrao, token_meta, account_id, senha_acesso, permissoes } = req.body;
+      const { id, nome, email_contato, pixel_padrao, token_meta, account_id, senha_acesso, permissoes, template_venda } = req.body;
       if (!id) return res.status(400).json({ error: 'ID do cliente é obrigatório' });
 
       try {
@@ -78,6 +78,7 @@ export default async function handler(req, res) {
           if (token_meta)   { fields.push(`token_meta=$${idx++}`);   values.push(token_meta); }
           if (account_id !== undefined) { fields.push(`account_id=$${idx++}`); values.push(account_id || null); }
           if (permissoes)   { fields.push(`permissoes=$${idx++}`);   values.push(JSON.stringify(permissoes)); }
+          if (template_venda !== undefined) { fields.push(`template_venda=$${idx++}`); values.push(template_venda || null); }
 
           if (fields.length > 0) {
               values.push(id);

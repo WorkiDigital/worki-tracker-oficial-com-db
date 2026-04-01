@@ -128,6 +128,24 @@ async function setup() {
     `);
     console.log('✅ Coluna ctw_aci_id migrada para TEXT.');
 
+    // Template de venda configurável por cliente
+    await client.query(`
+      ALTER TABLE public.clientes
+      ADD COLUMN IF NOT EXISTS template_venda TEXT;
+    `);
+    console.log('✅ Coluna "template_venda" injetada na tabela "clientes".');
+
+    // Campos extras de venda na tabela leads_tracking
+    await client.query(`
+      ALTER TABLE public.leads_tracking
+      ADD COLUMN IF NOT EXISTS produto VARCHAR(255),
+      ADD COLUMN IF NOT EXISTS endereco TEXT,
+      ADD COLUMN IF NOT EXISTS cor VARCHAR(100),
+      ADD COLUMN IF NOT EXISTS forma_pagamento VARCHAR(100),
+      ADD COLUMN IF NOT EXISTS cpf VARCHAR(20);
+    `);
+    console.log('✅ Campos de venda (produto, endereco, cor, forma_pagamento, cpf) injetados em "leads_tracking".');
+
     client.release();
     console.log('🚀 Finalizado! Estrutura do Banco de Dados pronta para uso.');
     process.exit(0);

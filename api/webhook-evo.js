@@ -1,6 +1,15 @@
 import { getPool } from './_db.js';
 import crypto from 'crypto';
 
+function parseTemplate(template) {
+  const map = {};
+  for (const line of template.split('\n')) {
+    const m = line.match(/^(.+?):\s*\{(\w+)\}/);
+    if (m) map[m[2].trim()] = m[1].trim();
+  }
+  return map;
+}
+
 function saveLog(instance, cliente_id, level, tag, message, data) {
   try {
     getPool().query(
@@ -88,7 +97,7 @@ export default async function handler(req, res) {
 
   // 3. Busca token e pixel do cliente
   const clientRes = await pool.query(
-    'SELECT token_meta, pixel_padrao FROM clientes WHERE id = $1',
+    'SELECT token_meta, pixel_padrao, template_venda FROM clientes WHERE id = $1',
     [cliente_id]
   );
   const cliente = clientRes.rows[0] || {};
@@ -176,15 +185,21 @@ export default async function handler(req, res) {
 
     log('purchase', 'Mensagem do atendente recebida', { telefone, preview: msg.substring(0, 80) });
 
-    const get = (labels) => {
-      for (const label of labels) {
-        const m = msg.match(new RegExp(`${label}[:\\s]+([^\\n]+)`, 'i'));
-        if (m) return m[1].trim();
-      }
-      return null;
+    // Monta mapa campo → label a partir do template do cliente
+    const templateRaw = cliente.template_venda || null;
+    const fieldMap = templateRaw
+      ? parseTemplate(templateRaw)
+      : { valor: 'Valor', nome: 'Nome', cidade: 'Cidade', estado: 'Estado', produto: 'Produto', endereco: 'Endereço' };
+
+    const extract = (field) => {
+      const label = fieldMap[field];
+      if (!label) return null;
+      const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const m = msg.match(new RegExp(`${escaped}[:\\s]+([^\\n]+)`, 'i'));
+      return m ? m[1].trim() : null;
     };
 
-    const valorRaw = get(['valor', 'venda', 'total']) || '0';
+    const valorRaw = extract('valor') || '0';
     const valor    = parseFloat(valorRaw.replace(/[^0-9,.]/g, '').replace(',', '.')) || 0;
 
     if (valor <= 0) {
@@ -192,11 +207,18 @@ export default async function handler(req, res) {
       return res.status(200).json({ ignored: true, reason: 'atendente message without valor — ignored' });
     }
 
-    const cidade = get(['cidade']);
-    const estado = get(['estado', 'uf']);
-    const nome   = get(['nome', 'cliente']);
+    const nome    = extract('nome');
+    const cidadeRaw = extract('cidade');
+    // suporte a "Cidade: Fortaleza - CE" (cidade e estado no mesmo campo)
+    const cidadeF = cidadeRaw?.includes(' - ') ? cidadeRaw.split(' - ')[0].trim() : cidadeRaw;
+    const estado  = extract('estado') || (cidadeRaw?.includes(' - ') ? cidadeRaw.split(' - ')[1].trim() : null);
+    const produto = extract('produto');
+    const endereco = extract('endereco');
+    const cor     = extract('cor');
+    const forma_pagamento = extract('pagamento') || extract('forma_pagamento');
+    const cpf     = extract('cpf');
 
-    log('purchase', 'Dados de venda extraídos', { valor, cidade, estado, nome });
+    log('purchase', 'Dados de venda extraídos', { valor, nome, cidadeF, estado, produto });
 
     const leadQuery = await pool.query(
       'SELECT * FROM leads_tracking WHERE telefone = $1 AND cliente_id = $2 ORDER BY id DESC LIMIT 1',
@@ -213,11 +235,18 @@ export default async function handler(req, res) {
     const updateResult = await pool.query(`
       UPDATE leads_tracking
       SET status = 'Vendido', valor_venda = $1,
-          cidade = COALESCE($2, cidade),
-          estado = COALESCE($3, estado),
-          nome   = COALESCE($4, nome)
-      WHERE id = $5 RETURNING *
-    `, [valor, cidade || null, estado || null, nome || null, leadQuery.rows[0].id]);
+          cidade          = COALESCE($2, cidade),
+          estado          = COALESCE($3, estado),
+          nome            = COALESCE($4, nome),
+          produto         = COALESCE($5, produto),
+          endereco        = COALESCE($6, endereco),
+          cor             = COALESCE($7, cor),
+          forma_pagamento = COALESCE($8, forma_pagamento),
+          cpf             = COALESCE($9, cpf)
+      WHERE id = $10 RETURNING *
+    `, [valor, cidadeF || null, estado || null, nome || null,
+        produto || null, endereco || null, cor || null,
+        forma_pagamento || null, cpf || null, leadQuery.rows[0].id]);
 
     const leadAtualizado = updateResult.rows[0];
     log('purchase', 'Lead atualizado para Vendido', { id: leadAtualizado.id, valor_venda: leadAtualizado.valor_venda });

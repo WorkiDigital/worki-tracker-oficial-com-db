@@ -668,6 +668,11 @@
         <div class="input-group"><label>Pixel Meta</label><input type="text" id="editCliPixel"></div>
         <div class="input-group"><label>Token Meta</label><input type="text" id="editCliToken"></div>
         <div class="input-group"><label>ID da Conta de Anúncios <span style="color:var(--muted);font-weight:400;font-size:11px;">(ex: act_123456789)</span></label><input type="text" id="editCliAccountId" placeholder="act_XXXXXXXXX"></div>
+        <div class="input-group">
+            <label>Template de Venda <span style="color:var(--muted);font-weight:400;font-size:11px;">(formato da mensagem do atendente)</span></label>
+            <textarea id="editCliTemplate" rows="8" placeholder="Ex:&#10;Nome completo: {nome}&#10;Produto: {produto}&#10;Valor da Compra: {valor}&#10;Endereço: {endereco}&#10;Cidade: {cidade}" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);font-family:monospace;font-size:12px;resize:vertical;margin-top:6px;box-sizing:border-box;"></textarea>
+            <p style="font-size:11px;color:var(--muted);margin-top:4px;">Use: <code>{valor}</code> <code>{nome}</code> <code>{produto}</code> <code>{endereco}</code> <code>{cidade}</code> <code>{cor}</code> <code>{pagamento}</code> <code>{cpf}</code></p>
+        </div>
         <div class="input-group"><label>E-mail (Login)</label><input type="email" id="editCliEmail"></div>
         <div class="input-group"><label>Nova Senha <span style="color:var(--muted);font-weight:400;font-size:11px;">(deixe em branco para não alterar)</span></label><input type="text" id="editCliSenha" placeholder="Nova senha (opcional)"></div>
         <hr style="border:none;border-top:1px solid var(--border);margin:16px 0 12px;">
@@ -3664,6 +3669,7 @@ function abrirEditCliente(id) {
     $('editCliPixel').value     = c.pixel_padrao || '';
     $('editCliToken').value     = c.token_meta || '';
     $('editCliAccountId').value = c.account_id || '';
+    $('editCliTemplate').value  = c.template_venda || '';
     $('editCliEmail').value     = c.email_contato || '';
     $('editCliSenha').value     = '';
     $('editCliSubtitle').textContent = c.nome || '';
@@ -3688,7 +3694,8 @@ async function salvarEdicaoCliente() {
         email_contato: $('editCliEmail').value.trim() || undefined,
         pixel_padrao:  $('editCliPixel').value.trim() || undefined,
         token_meta:    $('editCliToken').value.trim() || undefined,
-        account_id:    $('editCliAccountId').value.trim() || undefined,
+        account_id:     $('editCliAccountId').value.trim() || undefined,
+        template_venda: $('editCliTemplate').value.trim() || undefined,
         permissoes: {
             leads:      $('permLeads').checked,
             anuncios:   $('permAnuncios').checked,
