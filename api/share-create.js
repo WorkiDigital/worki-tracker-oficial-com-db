@@ -12,8 +12,6 @@ export default async function handler(req, res) {
   const user = await verifyAuth(req, res);
   if (!user) return;
 
-  let body = '';
-  await new Promise(r => { req.on('data', d => body += d); req.on('end', r); });
   const {
     account_id,
     account_name,
@@ -23,7 +21,7 @@ export default async function handler(req, res) {
     visible_columns,
     status_filter,
     expires_at,
-  } = JSON.parse(body || '{}');
+  } = req.body || {};
 
   if (!account_id) return res.status(400).json({ error: 'account_id required' });
   if (!(await verifyAccountAccess(user, account_id))) return res.status(403).json({ error: 'Acesso negado a esta conta de anúncios.' });
