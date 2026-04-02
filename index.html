@@ -3870,7 +3870,7 @@ async function carregarListaWa() {
                 </div>
                 <div style="display:flex;gap:6px;flex-wrap:wrap;">
                     ${up
-                        ? `<button class="btn btn-ghost btn-sm" onclick="waDesvincular('${esc(inst.displayName)}')" style="font-size:11px;padding:4px 10px;color:var(--red);border-color:rgba(239,68,68,0.3);"><i data-lucide="link-2-off" style="width:11px;"></i> Desvincular</button>`
+                        ? `<button class="btn btn-ghost btn-sm" onclick="waDesvincular('${esc(inst.fullName)}')" style="font-size:11px;padding:4px 10px;color:var(--red);border-color:rgba(239,68,68,0.3);"><i data-lucide="link-2-off" style="width:11px;"></i> Desvincular</button>`
                         : `<button class="btn btn-green btn-sm" onclick="verConexao('${esc(inst.displayName)}')" style="font-size:11px;padding:4px 10px;"><i data-lucide="qr-code" style="width:11px;"></i> Conectar QR</button>`
                     }
                     <button class="btn btn-ghost btn-sm" onclick="deletarConexao('${esc(inst.displayName)}')" title="Excluir" style="padding:4px 8px;"><i data-lucide="trash-2" style="width:11px;color:var(--red);"></i></button>
@@ -3945,6 +3945,17 @@ async function deletarConexao(name) {
         toast("Conexão excluída da Evolution.", "success");
         setTimeout(carregarListaWa, 800);
     } catch(e) { toast('Erro ao excluir: ' + e.message, 'error'); }
+}
+
+async function waDesvincular(name) {
+    if (!confirm(`Desvincular a instância "${name}" deste cliente?\n\nA instância continuará existindo na Evolution, mas não receberá mais leads.`)) return;
+    try {
+        const r = await authFetch('/api/evo-manager', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({action:'unlink', instanceName: name}) });
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error || 'Erro ao desvincular');
+        toast('Instância desvinculada com sucesso!', 'success');
+        setTimeout(carregarListaWa, 600);
+    } catch(e) { toast('Erro ao desvincular: ' + e.message, 'error'); }
 }
 
 async function checkWaStatus(fetchQrIfNotOpen = false) {

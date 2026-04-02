@@ -217,12 +217,26 @@ export default async function handler(req, res) {
       const r = await fetch(`${EVO_URL}/instance/delete/${finalInstanceName}`, { method: 'DELETE', headers });
       const data = await r.json();
       if (!r.ok) return res.status(400).json({ error: data.message || 'Erro ao excluir instância na Evolution' });
+
+      // Remove também da tabela de mapeamento (se existir)
+      try {
+        const pool = getPool();
+        await pool.query('DELETE FROM instancias_mapeamento WHERE instance_name = $1', [finalInstanceName]);
+        // Tenta também com o nome original (instâncias vinculadas usam nome sem prefixo)
+        await pool.query('DELETE FROM instancias_mapeamento WHERE instance_name = $1', [instanceName]);
+      } catch(dbErr) { console.warn('[evo-manager] Erro ao limpar mapeamento:', dbErr.message); }
+
       return res.status(200).json(data);
     }
 
     if (action === 'unlink') {
-      await pool.query('DELETE FROM instancias_mapeamento WHERE instance_name = $1', [instanceName]);
-      return res.status(200).json({ ok: true });
+      if (!instanceName) return res.status(400).json({ error: 'instanceName obrigatório' });
+      const pool = getPool();
+      const result = await pool.query('DELETE FROM instancias_mapeamento WHERE instance_name = $1 RETURNING id', [instanceName]);
+      if (result.rowCount === 0) {
+        return res.status(404).json({ error: 'Instância não encontrada na tabela de mapeamento.' });
+      }
+      return res.status(200).json({ ok: true, message: 'Instância desvinculada com sucesso.' });
     }
 
     return res.status(400).json({ error: 'Action inválida.' });
