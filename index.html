@@ -1741,7 +1741,7 @@ function renderTabela() {
             <td><div class="platform-icon ${platCls}">${esc(lead.plataforma||'instagram')}</div></td>
             <td title="${esc(lead.event_time)}" style="white-space:nowrap;">${data}</td>
             <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;">${esc(lead.utm_content||'—')}</td>
-            <td>${temCapi ? `<button class="btn btn-green btn-sm" onclick="abrirModal(${idx})"><i data-lucide="zap" style="width:11px;"></i> Venda</button>` : '<span style="color:var(--muted);font-size:12px;">—</span>'}</td>
+            <td style="white-space:nowrap;"><div style="display:flex;gap:4px;align-items:center;justify-content:center;">${temCapi ? `<button class="btn btn-green btn-sm" onclick="abrirModal(${idx})"><i data-lucide="zap" style="width:11px;"></i> Venda</button>` : ''}<button class="btn btn-ghost btn-sm" onclick="excluirLead(${lead.id}, '${esc(lead.nome || 'N/A')}')" title="Excluir lead" style="color:var(--red);border-color:rgba(239,68,68,0.2);padding:4px 6px;"><i data-lucide="trash-2" style="width:12px;"></i></button></div></td>
         </tr>`;
     }).join('');
 
@@ -1750,6 +1750,19 @@ function renderTabela() {
     // Paginação
     const totalPags = Math.ceil(total / POR_PAGINA);
     renderPaginacao(totalPags, total, inicio);
+}
+
+async function excluirLead(id, nome) {
+    if (!confirm(`Excluir permanentemente o lead "${nome}"?`)) return;
+    try {
+        const r = await authFetch('/api/leads', { method: 'DELETE', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id }) });
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error || 'Erro ao excluir');
+        // Remove do array local para evitar reload completo
+        rawData = rawData.filter(l => l.id !== id);
+        aplicarFiltros();
+        toast('Lead excluído.', 'success');
+    } catch(e) { toast(e.message, 'error'); }
 }
 
 function renderPaginacao(totalPags, total, inicio) {
