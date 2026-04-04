@@ -1,16 +1,19 @@
 // Wrapper around fetch with automatic retry on Meta API rate limits (429)
 // and transient errors (5xx). Uses exponential backoff.
+import { logMetaCall } from './_logger.js';
 
 const MAX_RETRIES = 3;
 
 export async function fetchMeta(url, opts = {}) {
   let lastError;
+  const t0 = Date.now();
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
       const r = await fetch(url, opts);
 
       // Success or client error (4xx except 429) — return immediately
       if (r.ok || (r.status >= 400 && r.status < 500 && r.status !== 429)) {
+        logMetaCall(url, { durationMs: Date.now() - t0, status: r.status, retries: attempt });
         return r;
       }
 
@@ -22,6 +25,7 @@ export async function fetchMeta(url, opts = {}) {
           await new Promise(resolve => setTimeout(resolve, waitMs));
           continue;
         }
+        logMetaCall(url, { durationMs: Date.now() - t0, status: r.status, retries: attempt, error: lastError.message });
         return r; // return last response after all retries
       }
 
@@ -34,6 +38,7 @@ export async function fetchMeta(url, opts = {}) {
         await new Promise(resolve => setTimeout(resolve, waitMs));
         continue;
       }
+      logMetaCall(url, { durationMs: Date.now() - t0, status: 0, retries: attempt, error: e.message });
       throw e;
     }
   }

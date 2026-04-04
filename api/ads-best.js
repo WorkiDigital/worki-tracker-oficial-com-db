@@ -3,12 +3,14 @@ import { verifyAccountAccess } from './_validate.js';
 import { cacheGet, cacheSet, cacheKey } from './_cache.js';
 import { fetchMeta } from './_meta-client.js';
 import { cors } from './_cors.js';
+import { rateLimit } from './_rate-limit.js';
 
 export default async function handler(req, res) {
   if (cors(req, res, ['GET'])) return;
 
   const user = await verifyAuth(req, res);
   if (!user) return;
+  if (await rateLimit(req, res, user)) return;
 
   const { accountId, datePreset = 'last_30d', dateFrom, dateTo } = req.query;
   const token = await getTokenForUser(user);
