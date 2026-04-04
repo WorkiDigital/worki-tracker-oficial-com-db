@@ -7,6 +7,7 @@
 import { verifyAuth, getTokenForUser } from './_auth.js';
 import { verifyAccountAccess } from './_validate.js';
 import { cacheGet, cacheSet, cacheKey } from './_cache.js';
+import { fetchMeta } from './_meta-client.js';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -57,21 +58,33 @@ export default async function handler(req, res) {
   ].join('');
 
   try {
-    let r    = await fetch(buildUrl(datePreset));
-    let json = await r.json();
-    if (json.error) return res.status(400).json({ error: json.error.message });
+    // Paginação completa
+    let allRows = [];
+    let fetchUrl = buildUrl(datePreset);
+    while (fetchUrl) {
+      const r = await fetchMeta(fetchUrl);
+      const json = await r.json();
+      if (json.error) return res.status(400).json({ error: json.error.message });
+      allRows.push(...(json.data || []));
+      fetchUrl = json.paging?.next || null;
+    }
 
     let usedPeriod = datePreset;
-    if (!json.data || json.data.length === 0) {
-      r    = await fetch(buildUrl('maximum'));
-      json = await r.json();
-      if (json.error) return res.status(400).json({ error: json.error.message });
+    if (allRows.length === 0) {
+      let fallbackUrl = buildUrl('maximum');
+      while (fallbackUrl) {
+        const r = await fetchMeta(fallbackUrl);
+        const json = await r.json();
+        if (json.error) return res.status(400).json({ error: json.error.message });
+        allRows.push(...(json.data || []));
+        fallbackUrl = json.paging?.next || null;
+      }
       usedPeriod = 'maximum';
     }
 
     // Agregar por platform_position (soma publisher_platforms diferentes)
     const agg = {};
-    for (const row of (json.data || [])) {
+    for (const row of allRows) {
       const pos = row.platform_position;
       if (!pos) continue;
       if (!agg[pos]) {

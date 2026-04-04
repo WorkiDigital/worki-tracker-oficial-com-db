@@ -1,6 +1,7 @@
 import { verifyAuth, getTokenForUser } from './_auth.js';
 import { getClientAccountId } from './_validate.js';
 import { cacheGet, cacheSet, userCacheKey } from './_cache.js';
+import { fetchMeta } from './_meta-client.js';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -25,7 +26,7 @@ export default async function handler(req, res) {
     let url = `https://graph.facebook.com/v20.0/me/adaccounts?fields=id,name,account_id,account_status&limit=200&access_token=${token}`;
 
     while (url) {
-      const r = await fetch(url);
+      const r = await fetchMeta(url);
       const data = await r.json();
       if (data.error) return res.status(400).json({ error: data.error.message });
       todas.push(...(data.data || []));
