@@ -2,12 +2,10 @@ import { verifyAuth } from './_auth.js';
 import { getPool } from './_db.js';
 import { randomUUID } from 'crypto';
 import { verifyAccountAccess } from './_validate.js';
+import { cors } from './_cors.js';
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
-  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (cors(req, res, ['POST'])) return;
 
   const user = await verifyAuth(req, res);
   if (!user) return;

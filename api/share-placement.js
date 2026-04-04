@@ -5,12 +5,10 @@
  * Agrega os resultados por platform_position.
  */
 import { getPool } from './_db.js';
+import { cors } from './_cors.js';
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (cors(req, res, ['GET'], { public: true })) return;
 
   const VALID_PRESETS = ['today','yesterday','last_7d','last_14d','last_30d','this_month','last_month','maximum'];
   const { token, datePreset = 'last_30d', campaignIds = '' } = req.query;

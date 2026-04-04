@@ -2,12 +2,10 @@ import { verifyAuth, getTokenForUser } from './_auth.js';
 import { getClientAccountId } from './_validate.js';
 import { cacheGet, cacheSet, userCacheKey } from './_cache.js';
 import { fetchMeta } from './_meta-client.js';
+import { cors } from './_cors.js';
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
-  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (cors(req, res, ['GET'])) return;
 
   const user = await verifyAuth(req, res);
   if (!user) return;

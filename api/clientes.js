@@ -1,12 +1,10 @@
 import { getPool } from './_db.js';
 import { verifyAuth } from './_auth.js';
 import bcrypt from 'bcryptjs';
+import { cors } from './_cors.js';
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (cors(req, res, ['GET', 'POST', 'PATCH', 'DELETE'])) return;
 
   // Bloqueio de Segurança Externa
   const user = await verifyAuth(req, res);
