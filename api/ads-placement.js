@@ -6,6 +6,7 @@
  */
 import { verifyAuth, getTokenForUser } from './_auth.js';
 import { verifyAccountAccess } from './_validate.js';
+import { cacheGet, cacheSet, cacheKey } from './_cache.js';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -28,6 +29,11 @@ export default async function handler(req, res) {
   if (!(await verifyAccountAccess(user, accountId))) return res.status(403).json({ error: 'Acesso negado a esta conta de anúncios.' });
 
   const fields = 'spend,impressions,clicks,inline_link_clicks,actions';
+
+  // ── Cache hit? ────────────────────────────────────────────────
+  const ck = cacheKey('placement', accountId, datePreset, campaignIds);
+  const cached = await cacheGet(ck);
+  if (cached) return res.status(200).json(cached);
 
   let filtering = '';
   if (campaignIds) {
@@ -89,7 +95,9 @@ export default async function handler(req, res) {
 
     const data = Object.values(agg).sort((a, b) => b.spend - a.spend);
 
-    return res.status(200).json({ data, period: usedPeriod });
+    const result = { data, period: usedPeriod };
+    await cacheSet(ck, result, 90000); // 90s TTL
+    return res.status(200).json(result);
   } catch (e) {
     return res.status(500).json({ error: e.message });
   }

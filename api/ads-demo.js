@@ -14,6 +14,7 @@
  */
 import { verifyAuth, getTokenForUser } from './_auth.js';
 import { verifyAccountAccess } from './_validate.js';
+import { cacheGet, cacheSet, cacheKey } from './_cache.js';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -43,6 +44,11 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'breakdown inválido' });
 
   const fields = 'spend,impressions,clicks,actions';
+
+  // ── Cache hit? ────────────────────────────────────────────────
+  const ck = cacheKey('demo', accountId, breakdown, datePreset, dateFrom, dateTo, campaignIds);
+  const cached = await cacheGet(ck);
+  if (cached) return res.status(200).json(cached);
 
   // Filtro por campanhas (quando usuário aplica filtros)
   let filtering = '';
@@ -88,10 +94,12 @@ export default async function handler(req, res) {
       usedPeriod = 'maximum';
     }
 
-    return res.status(200).json({
+    const result = {
       data: json.data || [],
       period: usedPeriod,   // frontend usa isso para mostrar aviso quando for fallback
-    });
+    };
+    await cacheSet(ck, result, 90000); // 90s TTL
+    return res.status(200).json(result);
   } catch (e) {
     return res.status(500).json({ error: e.message });
   }

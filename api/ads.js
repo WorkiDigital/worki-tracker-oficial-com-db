@@ -1,5 +1,6 @@
 import { verifyAuth, getTokenForUser } from './_auth.js';
 import { verifyAccountAccess } from './_validate.js';
+import { cacheGet, cacheSet, cacheKey } from './_cache.js';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -24,13 +25,26 @@ export default async function handler(req, res) {
     ? `insights.time_range({"since":"${dateFrom}","until":"${dateTo}"})`
     : `insights.date_preset(${datePreset})`;
   const fields = `name,status,objective,${insightsParam}{${insightFields}}`;
-  const url = `https://graph.facebook.com/v20.0/${accountId}/campaigns?fields=${encodeURIComponent(fields)}&limit=200&access_token=${token}`;
+
+  // ── Cache hit? ────────────────────────────────────────────────
+  const ck = cacheKey('ads', accountId, datePreset, dateFrom, dateTo);
+  const cached = await cacheGet(ck);
+  if (cached) return res.status(200).json(cached);
 
   try {
-    const r = await fetch(url);
-    const data = await r.json();
-    if (data.error) return res.status(400).json({ error: data.error.message });
-    return res.status(200).json(data);
+    // ── Paginação completa ──────────────────────────────────────
+    const allCampaigns = [];
+    let url = `https://graph.facebook.com/v20.0/${accountId}/campaigns?fields=${encodeURIComponent(fields)}&limit=200&access_token=${token}`;
+    while (url) {
+      const r = await fetch(url);
+      const data = await r.json();
+      if (data.error) return res.status(400).json({ error: data.error.message });
+      allCampaigns.push(...(data.data || []));
+      url = data.paging?.next || null;
+    }
+    const result = { data: allCampaigns };
+    await cacheSet(ck, result, 60000); // 60s TTL
+    return res.status(200).json(result);
   } catch (e) {
     return res.status(500).json({ error: e.message });
   }

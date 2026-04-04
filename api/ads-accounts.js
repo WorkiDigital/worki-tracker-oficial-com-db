@@ -1,5 +1,6 @@
 import { verifyAuth, getTokenForUser } from './_auth.js';
 import { getClientAccountId } from './_validate.js';
+import { cacheGet, cacheSet, userCacheKey } from './_cache.js';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -12,6 +13,11 @@ export default async function handler(req, res) {
 
   const token = await getTokenForUser(user);
   if (!token) return res.status(403).json({ error: 'Token Meta não configurado para sua conta. Solicite ao administrador da plataforma.' });
+
+  // ── Cache hit? (contas mudam raramente — TTL 120s) ───────────
+  const ck = userCacheKey(user, 'accounts');
+  const cached = await cacheGet(ck);
+  if (cached) return res.status(200).json(cached);
 
   try {
     // Busca todas as páginas (Meta pagina por padrão em 25)
@@ -34,6 +40,7 @@ export default async function handler(req, res) {
       : todas;
 
     lista.sort((a, b) => a.name.localeCompare(b.name));
+    await cacheSet(ck, lista, 120000); // 120s TTL
     return res.status(200).json(lista);
   } catch (e) {
     return res.status(500).json({ error: e.message });
