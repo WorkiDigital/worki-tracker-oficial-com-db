@@ -9,6 +9,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     <link rel="stylesheet" href="css/share.css">
+    <script src="js/utils.js"></script>
 </head>
 <body>
 
@@ -159,8 +160,6 @@
 
 <script>
 // ── Helpers ───────────────────────────────────────────────────────────────
-const $ = id => document.getElementById(id);
-const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 
 function fmt(n, decimals=0) {
     const num = parseFloat(n) || 0;
@@ -379,11 +378,6 @@ function showError(msg) {
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────
-function getAct(ins, keys) {
-    if (!ins?.actions) return 0;
-    const ks = new Set(Array.isArray(keys) ? keys : [keys]);
-    return ins.actions.filter(a => ks.has(a.action_type)).reduce((s,a) => s + parseFloat(a.value||0), 0);
-}
 function campaignMetrics(campaigns) {
     let spend=0, imps=0, reach=0, leads=0, msgs=0, lpv=0, seguidores=0, clicks=0;
     let cpmSum=0, cpmCount=0, cpcSum=0, cpcCount=0, ctrSum=0, ctrCount=0, freqSum=0, freqCount=0;
