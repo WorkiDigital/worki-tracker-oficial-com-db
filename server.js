@@ -92,3 +92,16 @@ server.listen(PORT, () => {
     console.log(`✅ Dev server running at http://localhost:${PORT}`);
     console.log(`   API routes: /api/leads, /api/config, /api/ads, /api/ads-accounts`);
 });
+
+// ── Graceful shutdown (evita "npm error signal SIGTERM" no EasyPanel) ──
+function shutdown(signal) {
+    console.log(`\n⏹ ${signal} received — shutting down gracefully…`);
+    server.close(() => {
+        console.log('✅ HTTP server closed');
+        process.exit(0);
+    });
+    // Force exit after 5s if connections don't close
+    setTimeout(() => { process.exit(0); }, 5000).unref();
+}
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT',  () => shutdown('SIGINT'));

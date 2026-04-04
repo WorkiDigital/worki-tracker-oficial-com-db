@@ -12,12 +12,13 @@ if (process.env.REDIS_URL) {
     redis = new Redis(process.env.REDIS_URL, {
       maxRetriesPerRequest: 2,
       connectTimeout: 5000,
-      lazyConnect: false,
+      lazyConnect: true,
       retryStrategy(times) {
         if (times > 5) return null;
         return Math.min(times * 500, 3000);
       },
     });
+    redis.connect().catch(() => {});
     redis.on('connect', () => { redisReady = true; console.log('✅ Redis connected'); });
     redis.on('error', (err) => { redisReady = false; console.error('⚠ Redis error:', err.message); });
     redis.on('close', () => { redisReady = false; });
