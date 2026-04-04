@@ -9,7 +9,6 @@ function fmt(n, decimals=0) {
 function fmtBRL(n) {
     return 'R$ '+(parseFloat(n)||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
 }
-function fmtPct(n) { return (parseFloat(n)||0).toFixed(2)+'%'; }
 
 function toast(msg, type='info') {
     const el = document.createElement('div');
@@ -197,18 +196,6 @@ function skeletonDemo() {
         </div>`).join('');
 }
 
-function skeletonBest() {
-    return Array(4).fill(0).map(() => `
-        <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
-            <div style="width:100%;aspect-ratio:1/1;background:var(--border);animation:pulse 1.5s infinite;"></div>
-            <div style="padding:12px;display:flex;flex-direction:column;gap:8px;">
-                <div style="height:10px;width:60%;background:var(--border);border-radius:4px;animation:pulse 1.5s infinite;"></div>
-                <div style="height:10px;width:90%;background:var(--border);border-radius:4px;animation:pulse 1.5s infinite;"></div>
-                <div style="height:10px;width:75%;background:var(--border);border-radius:4px;animation:pulse 1.5s infinite;"></div>
-            </div>
-        </div>`).join('');
-}
-
 function showError(msg) {
     $('loadingState').style.display = 'none';
     $('dashContent').style.display = 'none';
@@ -268,19 +255,6 @@ function aplicarFiltroStatus() {
 function getInsights(camp) {
     return camp.insights?.data?.[0] || null;
 }
-function sumCampaigns(key) {
-    return _campaigns.reduce((acc, c) => {
-        const ins = getInsights(c);
-        return acc + (parseFloat(ins?.[key]) || 0);
-    }, 0);
-}
-function sumActions(camp, actionType) {
-    const ins = getInsights(camp);
-    const actions = ins?.actions || [];
-    const found = actions.find(a => a.action_type === actionType);
-    return parseFloat(found?.value) || 0;
-}
-
 function renderSummaryMetrics() {
     const m = campaignMetrics(filteredCampaigns());
     const activeCamp = _campaigns.filter(c => c.status === 'ACTIVE').length;
