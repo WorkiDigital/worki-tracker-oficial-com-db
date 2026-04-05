@@ -34,7 +34,7 @@ export default async function handler(req, res) {
   const metaToken = process.env.META_ADS_TOKEN;
   if (!metaToken) return res.status(500).json({ error: 'META_ADS_TOKEN not configured' });
 
-  const insightFields = 'spend,impressions,clicks,outbound_clicks,ctr,reach,cpm,cpc,frequency,inline_link_clicks,actions,cost_per_action_type';
+  const insightFields = 'spend,impressions,clicks,outbound_clicks,ctr,reach,cpm,cpc,frequency,inline_link_clicks,actions,action_values,cost_per_action_type,purchase_roas';
   const fields = `name,status,objective,insights.date_preset(${datePreset}){${insightFields}}`;
   const url = `https://graph.facebook.com/v20.0/${row.account_id}/campaigns?fields=${encodeURIComponent(fields)}&limit=200&access_token=${metaToken}`;
 

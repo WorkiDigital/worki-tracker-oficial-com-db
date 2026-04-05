@@ -86,6 +86,11 @@
                 <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="seguidores"       class="share-metric-chk"         style="accent-color:var(--blue);width:14px;height:14px;"> Seguidores</label>
                 <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="cps"              class="share-metric-chk"         style="accent-color:var(--blue);width:14px;height:14px;"> Custo/seguidor</label>
                 <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="active_campaigns" class="share-metric-chk" checked style="accent-color:var(--blue);width:14px;height:14px;"> Campanhas Ativas</label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="purchases"        class="share-metric-chk"         style="accent-color:var(--blue);width:14px;height:14px;"> Compras</label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="purchase_value"   class="share-metric-chk"         style="accent-color:var(--blue);width:14px;height:14px;"> Valor em Compras</label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="roas"             class="share-metric-chk"         style="accent-color:var(--blue);width:14px;height:14px;"> ROAS</label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="init_checkout"    class="share-metric-chk"         style="accent-color:var(--blue);width:14px;height:14px;"> Inícios de Checkout</label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="cpp"              class="share-metric-chk"         style="accent-color:var(--blue);width:14px;height:14px;"> Custo/compra</label>
             </div>
         </div>
 
@@ -110,6 +115,11 @@
                 <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="cpr"        class="share-col-chk" checked style="accent-color:var(--blue);width:14px;height:14px;"> CPR</label>
                 <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="seguidores" class="share-col-chk"         style="accent-color:var(--blue);width:14px;height:14px;"> Seguidores</label>
                 <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="cps"        class="share-col-chk"         style="accent-color:var(--blue);width:14px;height:14px;"> Custo/seguidor</label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="purchases"      class="share-col-chk"         style="accent-color:var(--blue);width:14px;height:14px;"> Compras</label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="purchase_value" class="share-col-chk"         style="accent-color:var(--blue);width:14px;height:14px;"> Valor em Compras</label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="roas"           class="share-col-chk"         style="accent-color:var(--blue);width:14px;height:14px;"> ROAS</label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="init_checkout"  class="share-col-chk"         style="accent-color:var(--blue);width:14px;height:14px;"> Inícios de Checkout</label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="cpp"            class="share-col-chk"         style="accent-color:var(--blue);width:14px;height:14px;"> Custo/compra</label>
             </div>
         </div>
 
@@ -528,6 +538,11 @@
                     <div class="ads-metric" data-card="cpr"><div class="ads-metric-val" id="ads-cpr">—</div><div class="ads-metric-lbl">CPR (custo/conversa)</div></div>
                     <div class="ads-metric" data-card="seguidores"><div class="ads-metric-val" id="ads-seguidores">—</div><div class="ads-metric-lbl">Seguidores (curtidas)</div></div>
                     <div class="ads-metric" data-card="cps"><div class="ads-metric-val" id="ads-cps">—</div><div class="ads-metric-lbl">Custo/seguidor</div></div>
+                    <div class="ads-metric" data-card="purchases"><div class="ads-metric-val" id="ads-purchases">—</div><div class="ads-metric-lbl">Compras</div></div>
+                    <div class="ads-metric" data-card="purchase_value"><div class="ads-metric-val" id="ads-purchase-value">—</div><div class="ads-metric-lbl">Valor em Compras</div></div>
+                    <div class="ads-metric" data-card="roas"><div class="ads-metric-val" id="ads-roas">—</div><div class="ads-metric-lbl">ROAS</div></div>
+                    <div class="ads-metric" data-card="init_checkout"><div class="ads-metric-val" id="ads-init-checkout">—</div><div class="ads-metric-lbl">Inícios de Checkout</div></div>
+                    <div class="ads-metric" data-card="cpp"><div class="ads-metric-val" id="ads-cpp">—</div><div class="ads-metric-lbl">Custo/compra</div></div>
                 </div>
 
                 <!-- Funil de Conversão -->
@@ -1757,6 +1772,11 @@ const CARDS_DEF = [
     { key:'cpr',       label:'CPR',                 on:true  },
     { key:'seguidores',label:'Seguidores',          on:false },
     { key:'cps',       label:'Custo/seguidor',      on:false },
+    { key:'purchases',     label:'Compras',              on:false },
+    { key:'purchase_value',label:'Valor em Compras',     on:false },
+    { key:'roas',          label:'ROAS',                 on:false },
+    { key:'init_checkout', label:'Inícios de Checkout',  on:false },
+    { key:'cpp',           label:'Custo/compra',         on:false },
 ];
 const COLS_DEF = [
     { key:'spend',      label:'Gasto Total',          on:true  },
@@ -1775,6 +1795,11 @@ const COLS_DEF = [
     { key:'cpr',        label:'CPR',                  on:true  },
     { key:'seguidores', label:'Seguidores',           on:false },
     { key:'cps',        label:'Custo/seguidor',       on:false },
+    { key:'purchases',      label:'Compras',              on:false },
+    { key:'purchase_value', label:'Valor em Compras',     on:false },
+    { key:'roas',           label:'ROAS',                 on:false },
+    { key:'init_checkout',  label:'Inícios de Checkout',  on:false },
+    { key:'cpp',            label:'Custo/compra',         on:false },
 ];
 
 const CFG_KEY = 'wt_metrics_cfg';
@@ -1952,6 +1977,10 @@ function calcMetricasAds(camps) {
     let freqSum=0, freqCount=0; // Frequência ponderada por impressões
     let lpv=0;                  // landing_page_view
     let seguidores=0;           // like (curtidas de página)
+    let purchases=0;            // purchase (compras)
+    let purchaseValue=0;        // action_values purchase (valor em compras)
+    let initCheckout=0;         // initiate_checkout
+    let roasSum=0, roasCount=0; // ROAS ponderado por gasto
 
     camps.forEach(c => {
         const ins = getIns(c); if (!ins) return;
@@ -1992,6 +2021,19 @@ function calcMetricasAds(camps) {
 
         // Seguidores / curtidas de página originados do anúncio
         seguidores += getAct(ins, ['like']);
+
+        // Compras (purchase) via Pixel/CAPI
+        purchases += getAct(ins, ['purchase','offsite_conversion.fb_pixel_purchase']);
+
+        // Valor em compras (action_values)
+        purchaseValue += getActVal(ins, ['purchase','offsite_conversion.fb_pixel_purchase']);
+
+        // Inícios de checkout
+        initCheckout += getAct(ins, ['initiate_checkout','offsite_conversion.fb_pixel_initiate_checkout']);
+
+        // ROAS ponderado por gasto
+        const roasVal = getRoas(ins);
+        if (roasVal && sp) { roasSum += roasVal * sp; roasCount += sp; }
     });
 
     const fmt = (n, fallback='—') => n ? brl(n) : fallback;
@@ -2012,8 +2054,13 @@ function calcMetricasAds(camps) {
     $('ads-cpr').textContent      = msgs       ? brl(spend/msgs) : '—';
     $('ads-seguidores').textContent = seguidores ? fmtN(seguidores) : '—';
     $('ads-cps').textContent      = seguidores  ? brl(spend/seguidores) : '—';
+    $('ads-purchases').textContent     = purchases    ? fmtN(purchases) : '—';
+    $('ads-purchase-value').textContent = purchaseValue ? brl(purchaseValue) : '—';
+    $('ads-roas').textContent          = roasCount     ? (roasSum/roasCount).toFixed(2)+'x' : '—';
+    $('ads-init-checkout').textContent = initCheckout  ? fmtN(initCheckout) : '—';
+    $('ads-cpp').textContent           = purchases     ? brl(spend/purchases) : '—';
 
-    _funilData = { spend, imps, reach, clicks: linkClicks, lpv, leads, msgs };
+    _funilData = { spend, imps, reach, clicks: linkClicks, lpv, leads, msgs, purchases };
     renderFunil();
 }
 
@@ -2025,6 +2072,7 @@ const FUNIL_DEF = [
     { key:'lpv',    label:'Visitas destino', cost:'por visita',    color:'#ec4899', on:false },
     { key:'leads',  label:'Leads',           cost:'por lead',      color:'#10b981', on:true  },
     { key:'msgs',   label:'Conversas WA',    cost:'por conversa',  color:'#f59e0b', on:true  },
+    { key:'purchases', label:'Compras',      cost:'por compra',    color:'#ec4899', on:false },
 ];
 let funilMetricas = FUNIL_DEF.map(m => ({...m}));
 let _funilData = {};
@@ -2288,6 +2336,10 @@ function renderTabelaCampanhas(camps) {
         const msgs       = getAct(ins,['onsite_conversion.messaging_conversation_started_7d']);
         const lpv        = getAct(ins,['landing_page_view']);
         const seguidores = getAct(ins,['like']);
+        const purchases  = getAct(ins,['purchase','offsite_conversion.fb_pixel_purchase']);
+        const purchaseVal= getActVal(ins,['purchase','offsite_conversion.fb_pixel_purchase']);
+        const initCk     = getAct(ins,['initiate_checkout','offsite_conversion.fb_pixel_initiate_checkout']);
+        const roas       = getRoas(ins);
 
         const getVal = key => {
             switch(key) {
@@ -2307,6 +2359,11 @@ function renderTabelaCampanhas(camps) {
                 case 'cpr':        return msgs ? brl(spend/msgs) : '—';
                 case 'seguidores': return fmtN(seguidores);
                 case 'cps':        return seguidores ? brl(spend/seguidores) : '—';
+                case 'purchases':      return purchases ? fmtN(purchases) : '—';
+                case 'purchase_value': return purchaseVal ? brl(purchaseVal) : '—';
+                case 'roas':           return roas ? roas.toFixed(2)+'x' : '—';
+                case 'init_checkout':  return initCk ? fmtN(initCk) : '—';
+                case 'cpp':            return purchases ? brl(spend/purchases) : '—';
                 default:           return '—';
             }
         };
@@ -2477,6 +2534,10 @@ async function toggleExpand(level, parentId, btn, e) {
         const msgs  = getAct(ins,['onsite_conversion.messaging_conversation_started_7d']);
         const lpv   = getAct(ins,['landing_page_view']);
         const seg   = getAct(ins,['like']);
+        const purchases  = getAct(ins,['purchase','offsite_conversion.fb_pixel_purchase']);
+        const purchaseVal= getActVal(ins,['purchase','offsite_conversion.fb_pixel_purchase']);
+        const initCk     = getAct(ins,['initiate_checkout','offsite_conversion.fb_pixel_initiate_checkout']);
+        const roas       = getRoas(ins);
         const getVal = k => {
             switch(k) {
                 case 'spend':      return spend ? brl(spend) : '—';
@@ -2495,6 +2556,11 @@ async function toggleExpand(level, parentId, btn, e) {
                 case 'cpr':        return msgs ? brl(spend/msgs) : '—';
                 case 'seguidores': return fmtN(seg);
                 case 'cps':        return seg ? brl(spend/seg) : '—';
+                case 'purchases':      return purchases ? fmtN(purchases) : '—';
+                case 'purchase_value': return purchaseVal ? brl(purchaseVal) : '—';
+                case 'roas':           return roas ? roas.toFixed(2)+'x' : '—';
+                case 'init_checkout':  return initCk ? fmtN(initCk) : '—';
+                case 'cpp':            return purchases ? brl(spend/purchases) : '—';
                 default:           return '—';
             }
         };

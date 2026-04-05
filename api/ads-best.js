@@ -23,7 +23,7 @@ export default async function handler(req, res) {
   const cached = await cacheGet(ck);
   if (cached) return res.status(200).json(cached);
 
-  const insightFields = 'spend,impressions,clicks,outbound_clicks,ctr,reach,cpm,cpc,frequency,inline_link_clicks,actions,cost_per_action_type';
+  const insightFields = 'spend,impressions,clicks,outbound_clicks,ctr,reach,cpm,cpc,frequency,inline_link_clicks,actions,action_values,cost_per_action_type,purchase_roas';
   const insightsParam = (dateFrom && dateTo)
     ? `insights.time_range({"since":"${dateFrom}","until":"${dateTo}"})`
     : `insights.date_preset(${datePreset})`;

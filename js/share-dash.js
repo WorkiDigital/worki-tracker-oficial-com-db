@@ -206,6 +206,7 @@ function showError(msg) {
 // ── Helpers ───────────────────────────────────────────────────────────────
 function campaignMetrics(campaigns) {
     let spend=0, imps=0, reach=0, leads=0, msgs=0, lpv=0, seguidores=0, clicks=0;
+    let purchases=0, purchaseValue=0, initCheckout=0, roasSum=0, roasCount=0;
     let cpmSum=0, cpmCount=0, cpcSum=0, cpcCount=0, ctrSum=0, ctrCount=0, freqSum=0, freqCount=0;
     campaigns.forEach(c => {
         const ins = getInsights(c); if (!ins) return;
@@ -217,6 +218,11 @@ function campaignMetrics(campaigns) {
         msgs       += getAct(ins, ['onsite_conversion.messaging_conversation_started_7d']);
         lpv        += getAct(ins, ['landing_page_view']);
         seguidores += getAct(ins, ['like']);
+        purchases     += getAct(ins, ['purchase','offsite_conversion.fb_pixel_purchase']);
+        purchaseValue += getActVal(ins, ['purchase','offsite_conversion.fb_pixel_purchase']);
+        initCheckout  += getAct(ins, ['initiate_checkout','offsite_conversion.fb_pixel_initiate_checkout']);
+        const roasVal = getRoas(ins);
+        if (roasVal && sp) { roasSum += roasVal * sp; roasCount += sp; }
         const cpmV = parseFloat(ins.cpm||0);      if (cpmV && imp) { cpmSum += cpmV*imp;  cpmCount += imp; }
         const cpcV = parseFloat(ins.cpc||0); const clk = parseInt(ins.clicks||0);
         if (cpcV && clk) { cpcSum += cpcV*clk; cpcCount += clk; }
@@ -225,6 +231,8 @@ function campaignMetrics(campaigns) {
     });
     return {
         spend, imps, reach, clicks, leads, msgs, lpv, seguidores,
+        purchases, purchaseValue, initCheckout,
+        roas: roasCount ? roasSum/roasCount : 0,
         cpm:  cpmCount  ? cpmSum/cpmCount   : 0,
         cpc:  cpcCount  ? cpcSum/cpcCount   : 0,
         freq: freqCount ? freqSum/freqCount : 0,
@@ -276,6 +284,11 @@ function renderSummaryMetrics() {
         { key:'cpr',              label:'CPR',                  value: m.msgs    ? fmtBRL(m.spend/m.msgs) : '—',  color:'#facc15' },
         { key:'seguidores',       label:'Seguidores',           value: m.seguidores ? fmt(m.seguidores)   : '—',  color:'#c084fc' },
         { key:'cps',              label:'Custo/seguidor',       value: m.seguidores ? fmtBRL(m.spend/m.seguidores): '—', color:'#f87171' },
+        { key:'purchases',        label:'Compras',              value: m.purchases ? fmt(m.purchases) : '—',       color:'#ec4899' },
+        { key:'purchase_value',   label:'Valor em Compras',     value: m.purchaseValue ? fmtBRL(m.purchaseValue) : '—', color:'#f472b6' },
+        { key:'roas',             label:'ROAS',                 value: m.roas ? m.roas.toFixed(2)+'x' : '—',       color:'#10b981' },
+        { key:'init_checkout',    label:'Inícios de Checkout',  value: m.initCheckout ? fmt(m.initCheckout) : '—', color:'#f59e0b' },
+        { key:'cpp',              label:'Custo/compra',         value: m.purchases ? fmtBRL(m.spend/m.purchases) : '—', color:'#ef4444' },
         { key:'active_campaigns', label:'Campanhas Ativas',     value: activeCamp,                                color:'#2dd4bf' },
     ].filter(c => allowed.includes(c.key));
 
@@ -287,7 +300,7 @@ function renderSummaryMetrics() {
     `).join('');
 
     // Atualiza funil com métricas atuais
-    _funilData = { spend: m.spend, imps: m.imps, reach: m.reach, clicks: m.clicks, lpv: m.lpv, leads: m.leads, msgs: m.msgs };
+    _funilData = { spend: m.spend, imps: m.imps, reach: m.reach, clicks: m.clicks, lpv: m.lpv, leads: m.leads, msgs: m.msgs, purchases: m.purchases };
     renderFunil();
 }
 
@@ -320,6 +333,11 @@ const ALL_COL_DEFS = [
     { key:'cpr',        th:'CPR' },
     { key:'seguidores', th:'Seguidores' },
     { key:'cps',        th:'Custo/seg.' },
+    { key:'purchases',      th:'Compras' },
+    { key:'purchase_value', th:'Valor Compras' },
+    { key:'roas',           th:'ROAS' },
+    { key:'init_checkout',  th:'Inícios Checkout' },
+    { key:'cpp',            th:'Custo/compra' },
 ];
 
 function renderTable() {
@@ -346,6 +364,10 @@ function renderTable() {
         const lpv    = getAct(ins, ['landing_page_view']);
         const seg    = getAct(ins, ['like']);
         const clicks = getAct(ins, ['link_click']);
+        const purchases  = getAct(ins, ['purchase','offsite_conversion.fb_pixel_purchase']);
+        const purchaseVal= getActVal(ins, ['purchase','offsite_conversion.fb_pixel_purchase']);
+        const initCk     = getAct(ins, ['initiate_checkout','offsite_conversion.fb_pixel_initiate_checkout']);
+        const roas       = getRoas(ins);
         const cells = COL_DEFS.map(col => {
             switch(col.key) {
                 case 'status':     return `<td>${statusBadge(c.status)}</td>`;
@@ -365,6 +387,11 @@ function renderTable() {
                 case 'cpr':        return `<td>${msgs  ? fmtBRL(spend/msgs) : '—'}</td>`;
                 case 'seguidores': return `<td>${seg   ? fmt(seg)           : '—'}</td>`;
                 case 'cps':        return `<td>${seg   ? fmtBRL(spend/seg)  : '—'}</td>`;
+                case 'purchases':      return `<td>${purchases ? fmt(purchases) : '—'}</td>`;
+                case 'purchase_value': return `<td>${purchaseVal ? fmtBRL(purchaseVal) : '—'}</td>`;
+                case 'roas':           return `<td>${roas ? roas.toFixed(2)+'x' : '—'}</td>`;
+                case 'init_checkout':  return `<td>${initCk ? fmt(initCk) : '—'}</td>`;
+                case 'cpp':            return `<td>${purchases ? fmtBRL(spend/purchases) : '—'}</td>`;
                 default:           return '<td>—</td>';
             }
         }).join('');
