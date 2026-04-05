@@ -879,11 +879,11 @@
 
                 <!-- CREATE VIEW -->
                 <div id="waCreate" style="display:none;padding:10px 0;">
-                    <div style="background:var(--tag);border-radius:10px;padding:16px;text-align:left;">
+                    <div style="background:var(--tag);border-radius:10px;padding:16px;text-align:left;max-width:420px;">
                         <label style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;">Nome da Instância</label>
                         <input type="text" id="waInstanceName" class="form-control" placeholder="Ex: Loja Principal" style="width:100%;margin-bottom:12px;">
                         <div style="display:flex;gap:8px;">
-                            <button class="btn btn-green btn-sm" id="btnGerarQr" onclick="waCreateInstance()" style="flex:1;">Gerar QR Code</button>
+                            <button class="btn btn-green btn-sm" id="btnGerarQr" onclick="waCreateInstance()">Gerar QR Code</button>
                             <button class="btn btn-ghost btn-sm" onclick="carregarListaWa()">Cancelar</button>
                         </div>
                     </div>
