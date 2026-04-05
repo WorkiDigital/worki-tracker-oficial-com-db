@@ -919,37 +919,48 @@
         <!-- ABA: LOGS -->
         <div id="aba-logs" class="aba-oculta">
             <div class="card" style="padding:24px;">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:10px;">
                     <div>
                         <h3 style="margin:0;font-size:18px;">Logs do Sistema</h3>
                         <p style="color:var(--muted);font-size:12px;margin:4px 0 0;">Histórico completo da jornada de rastreamento</p>
                     </div>
-                    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-                        <input id="log-filter-instance" type="text" placeholder="Instância..." onkeyup="if(event.key==='Enter')carregarLogs()" style="background:var(--card);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px;width:160px;">
-                        <input id="log-filter-date-from" type="date" onchange="carregarLogs()" style="background:var(--card);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px;">
-                        <input id="log-filter-date-to" type="date" onchange="carregarLogs()" style="background:var(--card);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px;">
-                        <select id="log-filter-level" onchange="carregarLogs()" style="background:var(--card);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px;">
-                            <option value="">Todos os níveis</option>
-                            <option value="info">Info</option>
-                            <option value="warn">Aviso</option>
-                        </select>
-                        <select id="log-filter-tag" onchange="carregarLogs()" style="background:var(--card);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px;">
-                            <option value="">Todas as etapas</option>
-                            <option value="recv">Recebimento</option>
-                            <option value="auth">Autenticação</option>
-                            <option value="filter">Filtro</option>
-                            <option value="lead">Lead</option>
-                            <option value="meta-api">Meta API</option>
-                            <option value="db">Banco de Dados</option>
-                            <option value="capi-lead">CAPI Lead</option>
-                            <option value="purchase">Compra</option>
-                            <option value="capi-purchase">CAPI Purchase</option>
-                        </select>
-                        <button class="btn btn-ghost btn-sm" onclick="carregarLogs()">
-                            <i data-lucide="refresh-cw" style="width:13px;"></i> Atualizar
+                    <div style="display:flex;gap:6px;align-items:center;">
+                        <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--muted);cursor:pointer;" title="Atualizar a cada 15s">
+                            <input type="checkbox" id="log-auto-refresh" onchange="toggleLogAutoRefresh()" style="accent-color:#3b82f6;">
+                            Auto
+                        </label>
+                        <button class="btn btn-ghost btn-sm" onclick="carregarLogs()" style="padding:5px 10px;">
+                            <i data-lucide="refresh-cw" style="width:13px;"></i>
                         </button>
                     </div>
                 </div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">
+                    <input id="log-filter-search" type="text" placeholder="Buscar mensagem..." onkeyup="if(event.key==='Enter')carregarLogs()" style="background:var(--card);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px;width:180px;">
+                    <input id="log-filter-instance" type="text" placeholder="Instância..." onkeyup="if(event.key==='Enter')carregarLogs()" style="background:var(--card);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px;width:140px;">
+                    <input id="log-filter-date-from" type="date" onchange="carregarLogs()" style="background:var(--card);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px;">
+                    <input id="log-filter-date-to" type="date" onchange="carregarLogs()" style="background:var(--card);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px;">
+                    <select id="log-filter-level" onchange="carregarLogs()" style="background:var(--card);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px;">
+                        <option value="">Todos os níveis</option>
+                        <option value="info">Info</option>
+                        <option value="warn">Aviso</option>
+                    </select>
+                    <select id="log-filter-tag" onchange="carregarLogs()" style="background:var(--card);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px;">
+                        <option value="">Todas as etapas</option>
+                        <option value="recv">Recebimento</option>
+                        <option value="auth">Autenticação</option>
+                        <option value="filter">Filtro</option>
+                        <option value="lead">Lead</option>
+                        <option value="meta-api">Meta API</option>
+                        <option value="db">Banco de Dados</option>
+                        <option value="capi-lead">CAPI Lead</option>
+                        <option value="purchase">Compra</option>
+                        <option value="capi-purchase">CAPI Purchase</option>
+                    </select>
+                    <button class="btn btn-ghost btn-sm" onclick="limparFiltrosLog()" style="padding:5px 10px;font-size:11px;color:var(--muted);">
+                        <i data-lucide="x" style="width:11px;"></i> Limpar
+                    </button>
+                </div>
+                <div id="log-stats" style="display:flex;gap:16px;margin-bottom:12px;font-size:12px;color:var(--muted);"></div>
                 <div style="overflow-x:auto;">
                     <table style="width:100%;border-collapse:collapse;font-size:12px;">
                         <thead>
@@ -967,6 +978,7 @@
                         </tbody>
                     </table>
                 </div>
+                <div id="log-pagination" style="display:flex;justify-content:center;align-items:center;gap:12px;margin-top:14px;"></div>
             </div>
         </div>
 

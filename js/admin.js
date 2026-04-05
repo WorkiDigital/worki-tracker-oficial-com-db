@@ -533,36 +533,85 @@ function abrirLogJson(dataStr) {
     } catch(_) {}
 }
 
-async function carregarLogs() {
+let _logPage = 1;
+const _logPerPage = 50;
+let _logAutoRefreshId = null;
+
+function toggleLogAutoRefresh() {
+    if ($('log-auto-refresh').checked) {
+        _logAutoRefreshId = setInterval(() => carregarLogs(true), 15000);
+    } else {
+        clearInterval(_logAutoRefreshId);
+        _logAutoRefreshId = null;
+    }
+}
+
+function limparFiltrosLog() {
+    $('log-filter-search').value = '';
+    $('log-filter-instance').value = '';
+    $('log-filter-date-from').value = '';
+    $('log-filter-date-to').value = '';
+    $('log-filter-level').value = '';
+    $('log-filter-tag').value = '';
+    _logPage = 1;
+    carregarLogs();
+}
+
+function logMudarPagina(dir) {
+    _logPage += dir;
+    if (_logPage < 1) _logPage = 1;
+    carregarLogs();
+}
+
+async function carregarLogs(silent) {
     const level    = document.getElementById('log-filter-level')?.value    || '';
     const tag      = document.getElementById('log-filter-tag')?.value      || '';
     const instance = document.getElementById('log-filter-instance')?.value || '';
+    const search   = document.getElementById('log-filter-search')?.value   || '';
     const dateFrom = document.getElementById('log-filter-date-from')?.value || '';
     const dateTo   = document.getElementById('log-filter-date-to')?.value   || '';
     const tbody = $('logs-tbody');
     if (!tbody) return;
-    tbody.innerHTML = '<tr><td colspan="6" style="padding:30px;text-align:center;color:var(--muted);">Carregando...</td></tr>';
+    if (!silent) tbody.innerHTML = '<tr><td colspan="6" style="padding:30px;text-align:center;color:var(--muted);">Carregando...</td></tr>';
 
-    let url = '/api/logs?limit=300';
+    const offset = (_logPage - 1) * _logPerPage;
+    let url = `/api/logs?limit=${_logPerPage}&offset=${offset}`;
     if (level)    url += `&level=${encodeURIComponent(level)}`;
     if (tag)      url += `&tag=${encodeURIComponent(tag)}`;
     if (instance) url += `&instance=${encodeURIComponent(instance)}`;
+    if (search)   url += `&search=${encodeURIComponent(search)}`;
     if (dateFrom) url += `&date_from=${encodeURIComponent(dateFrom)}`;
     if (dateTo)   url += `&date_to=${encodeURIComponent(dateTo)}`;
 
     try {
         const r    = await authFetch(url);
-        const logs = await r.json();
+        const data = await r.json();
+        const logs  = data.rows || data;
+        const total = data.total ?? logs.length;
+
+        // Stats
+        const statsEl = $('log-stats');
+        if (statsEl) {
+            const infoCount = logs.filter(l => l.level === 'info').length;
+            const warnCount = logs.filter(l => l.level === 'warn').length;
+            statsEl.innerHTML = `
+                <span>Total: <strong style="color:var(--text);">${total}</strong></span>
+                <span>Página: <strong style="color:var(--text);">${_logPage}</strong> de <strong style="color:var(--text);">${Math.max(1, Math.ceil(total / _logPerPage))}</strong></span>
+                <span style="color:#10b981;">✓ ${infoCount} info</span>
+                <span style="color:#f59e0b;">⚠ ${warnCount} aviso</span>
+            `;
+        }
 
         if (!Array.isArray(logs) || logs.length === 0) {
             tbody.innerHTML = '<tr><td colspan="6" style="padding:40px;text-align:center;color:var(--muted);">Nenhum log encontrado.</td></tr>';
+            renderLogPagination(total);
             return;
         }
 
         tbody.innerHTML = logs.map(l => {
             const tc   = LOG_TAG_COLORS[l.tag] || { bg:'rgba(156,163,175,.12)', color:'#9ca3af' };
             const isWarn = l.level === 'warn';
-            const dt   = l.created_at ? new Date(l.created_at).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit' }) : '-';
+            const dt   = l.created_at ? new Date(l.created_at).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit' }) : '-';
             const dataStr = l.data ? JSON.stringify(l.data) : '';
             const dataShort = dataStr.length > 60 ? dataStr.substring(0, 60) + '…' : dataStr;
             const dataCell = dataStr
@@ -583,8 +632,24 @@ async function carregarLogs() {
                 ${dataCell}
             </tr>`;
         }).join('');
+        renderLogPagination(total);
         lucide.createIcons({ nodes: [tbody] });
     } catch(e) {
         tbody.innerHTML = `<tr><td colspan="6" style="padding:30px;text-align:center;color:#ef4444;">Erro ao carregar logs: ${esc(e.message)}</td></tr>`;
     }
+}
+
+function renderLogPagination(total) {
+    const el = $('log-pagination');
+    if (!el) return;
+    const totalPages = Math.max(1, Math.ceil(total / _logPerPage));
+    el.innerHTML = `
+        <button class="btn btn-ghost btn-sm" onclick="logMudarPagina(-1)" ${_logPage <= 1 ? 'disabled' : ''} style="padding:5px 12px;font-size:12px;">
+            ← Anterior
+        </button>
+        <span style="font-size:12px;color:var(--muted);">${_logPage} / ${totalPages}</span>
+        <button class="btn btn-ghost btn-sm" onclick="logMudarPagina(1)" ${_logPage >= totalPages ? 'disabled' : ''} style="padding:5px 12px;font-size:12px;">
+            Próxima →
+        </button>
+    `;
 }
