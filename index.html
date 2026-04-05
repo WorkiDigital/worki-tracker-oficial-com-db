@@ -2023,13 +2023,13 @@ function calcMetricasAds(camps) {
         seguidores += getAct(ins, ['like']);
 
         // Compras (purchase) via Pixel/CAPI
-        purchases += getAct(ins, ['purchase','offsite_conversion.fb_pixel_purchase']);
+        purchases += getAct(ins, ['purchase','offsite_conversion.fb_pixel_purchase','omni_purchase']);
 
         // Valor em compras (action_values)
-        purchaseValue += getActVal(ins, ['purchase','offsite_conversion.fb_pixel_purchase']);
+        purchaseValue += getActVal(ins, ['purchase','offsite_conversion.fb_pixel_purchase','omni_purchase']);
 
         // Inícios de checkout
-        initCheckout += getAct(ins, ['initiate_checkout','offsite_conversion.fb_pixel_initiate_checkout']);
+        initCheckout += getAct(ins, ['initiate_checkout','offsite_conversion.fb_pixel_initiate_checkout','omni_initiate_checkout']);
 
         // ROAS ponderado por gasto
         const roasVal = getRoas(ins);
@@ -2336,9 +2336,9 @@ function renderTabelaCampanhas(camps) {
         const msgs       = getAct(ins,['onsite_conversion.messaging_conversation_started_7d']);
         const lpv        = getAct(ins,['landing_page_view']);
         const seguidores = getAct(ins,['like']);
-        const purchases  = getAct(ins,['purchase','offsite_conversion.fb_pixel_purchase']);
-        const purchaseVal= getActVal(ins,['purchase','offsite_conversion.fb_pixel_purchase']);
-        const initCk     = getAct(ins,['initiate_checkout','offsite_conversion.fb_pixel_initiate_checkout']);
+        const purchases  = getAct(ins,['purchase','offsite_conversion.fb_pixel_purchase','omni_purchase']);
+        const purchaseVal= getActVal(ins,['purchase','offsite_conversion.fb_pixel_purchase','omni_purchase']);
+        const initCk     = getAct(ins,['initiate_checkout','offsite_conversion.fb_pixel_initiate_checkout','omni_initiate_checkout']);
         const roas       = getRoas(ins);
 
         const getVal = key => {
@@ -2534,9 +2534,9 @@ async function toggleExpand(level, parentId, btn, e) {
         const msgs  = getAct(ins,['onsite_conversion.messaging_conversation_started_7d']);
         const lpv   = getAct(ins,['landing_page_view']);
         const seg   = getAct(ins,['like']);
-        const purchases  = getAct(ins,['purchase','offsite_conversion.fb_pixel_purchase']);
-        const purchaseVal= getActVal(ins,['purchase','offsite_conversion.fb_pixel_purchase']);
-        const initCk     = getAct(ins,['initiate_checkout','offsite_conversion.fb_pixel_initiate_checkout']);
+        const purchases  = getAct(ins,['purchase','offsite_conversion.fb_pixel_purchase','omni_purchase']);
+        const purchaseVal= getActVal(ins,['purchase','offsite_conversion.fb_pixel_purchase','omni_purchase']);
+        const initCk     = getAct(ins,['initiate_checkout','offsite_conversion.fb_pixel_initiate_checkout','omni_initiate_checkout']);
         const roas       = getRoas(ins);
         const getVal = k => {
             switch(k) {

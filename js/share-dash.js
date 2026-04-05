@@ -218,9 +218,9 @@ function campaignMetrics(campaigns) {
         msgs       += getAct(ins, ['onsite_conversion.messaging_conversation_started_7d']);
         lpv        += getAct(ins, ['landing_page_view']);
         seguidores += getAct(ins, ['like']);
-        purchases     += getAct(ins, ['purchase','offsite_conversion.fb_pixel_purchase']);
-        purchaseValue += getActVal(ins, ['purchase','offsite_conversion.fb_pixel_purchase']);
-        initCheckout  += getAct(ins, ['initiate_checkout','offsite_conversion.fb_pixel_initiate_checkout']);
+        purchases     += getAct(ins, ['purchase','offsite_conversion.fb_pixel_purchase','omni_purchase']);
+        purchaseValue += getActVal(ins, ['purchase','offsite_conversion.fb_pixel_purchase','omni_purchase']);
+        initCheckout  += getAct(ins, ['initiate_checkout','offsite_conversion.fb_pixel_initiate_checkout','omni_initiate_checkout']);
         const roasVal = getRoas(ins);
         if (roasVal && sp) { roasSum += roasVal * sp; roasCount += sp; }
         const cpmV = parseFloat(ins.cpm||0);      if (cpmV && imp) { cpmSum += cpmV*imp;  cpmCount += imp; }
@@ -364,9 +364,9 @@ function renderTable() {
         const lpv    = getAct(ins, ['landing_page_view']);
         const seg    = getAct(ins, ['like']);
         const clicks = getAct(ins, ['link_click']);
-        const purchases  = getAct(ins, ['purchase','offsite_conversion.fb_pixel_purchase']);
-        const purchaseVal= getActVal(ins, ['purchase','offsite_conversion.fb_pixel_purchase']);
-        const initCk     = getAct(ins, ['initiate_checkout','offsite_conversion.fb_pixel_initiate_checkout']);
+        const purchases  = getAct(ins, ['purchase','offsite_conversion.fb_pixel_purchase','omni_purchase']);
+        const purchaseVal= getActVal(ins, ['purchase','offsite_conversion.fb_pixel_purchase','omni_purchase']);
+        const initCk     = getAct(ins, ['initiate_checkout','offsite_conversion.fb_pixel_initiate_checkout','omni_initiate_checkout']);
         const roas       = getRoas(ins);
         const cells = COL_DEFS.map(col => {
             switch(col.key) {
@@ -489,7 +489,7 @@ function getAdMetric(ad, key) {
     const ins = ad.insights?.data?.[0];
     if (!ins) return 0;
     if (key==='results') {
-        const RESULT_TYPES = ['lead','offsite_conversion.fb_pixel_purchase','onsite_conversion.messaging_first_reply','onsite_conversion.lead_grouped','offsite_conversion.fb_pixel_lead','purchase'];
+        const RESULT_TYPES = ['lead','offsite_conversion.fb_pixel_purchase','omni_purchase','onsite_conversion.messaging_first_reply','onsite_conversion.lead_grouped','offsite_conversion.fb_pixel_lead','purchase'];
         return (ins.actions||[]).filter(a=>RESULT_TYPES.includes(a.action_type)).reduce((s,a)=>s+(parseFloat(a.value)||0),0);
     }
     if (key==='clicks') return parseFloat(ins.outbound_clicks?.[0]?.value||ins.clicks) || 0;
