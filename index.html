@@ -1220,8 +1220,10 @@ async function init() {
             const logoArea = $('sidebar-logo');
             if (cfg.projectLogo.trim().startsWith('<svg')) {
                 logoArea.innerHTML = cfg.projectLogo;
+                const svg = logoArea.querySelector('svg');
+                if (svg) { svg.setAttribute('width', '40'); svg.setAttribute('height', '40'); }
             } else {
-                logoArea.innerHTML = `<img src="${cfg.projectLogo}" style="width:32px;height:32px;object-fit:contain;border-radius:8px;">`;
+                logoArea.innerHTML = `<img src="${cfg.projectLogo}" style="width:40px;height:40px;object-fit:contain;border-radius:8px;">`;
             }
         }
 

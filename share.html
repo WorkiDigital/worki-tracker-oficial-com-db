@@ -178,9 +178,9 @@
                 if (brandLogo.trim().startsWith('<svg')) {
                     container.innerHTML = brandLogo;
                     const svg = container.querySelector('svg');
-                    if (svg) { svg.setAttribute('width', '32'); svg.setAttribute('height', '32'); }
+                    if (svg) { svg.setAttribute('width', '48'); svg.setAttribute('height', '48'); }
                 } else {
-                    container.innerHTML = `<img src="${brandLogo}" style="width:32px;height:32px;object-fit:contain;border-radius:6px;">`;
+                    container.innerHTML = `<img src="${brandLogo}" style="width:48px;height:48px;object-fit:contain;border-radius:8px;">`;
                 }
             }
         } catch(e) { console.error('WL error', e); }
