@@ -215,7 +215,14 @@ export default async function handler(req, res) {
     if (action === 'delete') {
       const r = await fetch(`${EVO_URL}/instance/delete/${finalInstanceName}`, { method: 'DELETE', headers });
       const data = await r.json();
-      if (!r.ok) return res.status(400).json({ error: data.message || 'Erro ao excluir instância na Evolution' });
+      
+      // Se não for OK e não for erro de "não encontrado", retorna erro.
+      // Caso seja "não encontrado", prosseguimos para limpar do nosso banco local.
+      const isNotFound = !r.ok && (data.message?.toLowerCase().includes('not found') || r.status === 404);
+
+      if (!r.ok && !isNotFound) {
+          return res.status(400).json({ error: data.message || 'Erro ao excluir instância na Evolution' });
+      }
 
       // Remove também da tabela de mapeamento (se existir)
       try {
