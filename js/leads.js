@@ -16,6 +16,7 @@ async function recarregarLeads(silencioso = false) {
         const data = await authFetch('/api/leads').then(r=>r.json());
         if (!Array.isArray(data)) throw new Error(data.error || 'Erro ao buscar leads');
         rawData = data;
+        popularFiltroInstancias();
         aplicarFiltros();
 
         const agora = new Date().toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'});
@@ -66,9 +67,14 @@ function aplicarFiltros() {
     const busca   = ($('inputBusca').value||'').toLowerCase().trim();
     const periodo = $('periodoSelect').value;
     const range   = calcRange(periodo);
+    const instanciaFiltro = ($('selectInstancia')?.value || '');
 
     dadosFiltrados = rawData.filter(l => {
         if (clienteAdminSelecionado && l.cliente_id !== clienteAdminSelecionado) return false;
+        
+        // Filtro por instância
+        if (instanciaFiltro && l.instancia !== instanciaFiltro) return false;
+
         if (busca) {
             const n = (l.nome||'').toLowerCase();
             const t = (l.telefone||'').toLowerCase();
@@ -91,6 +97,32 @@ function aplicarFiltros() {
     pagAtual = 1;
     renderTabela();
     renderRelatorios();
+}
+
+// ── Filtro de Instâncias ──────────────────────────────────────
+function popularFiltroInstancias() {
+    const sel = $('selectInstancia');
+    if (!sel) return;
+
+    const valorAtual = sel.value;
+    
+    // Filtra os leads pelo cliente selecionado antes de extrair instâncias únicas
+    const leadsVisiveis = clienteAdminSelecionado 
+        ? rawData.filter(l => l.cliente_id === clienteAdminSelecionado)
+        : rawData;
+
+    const instancias = [...new Set(leadsVisiveis.map(l => l.instancia).filter(Boolean))].sort();
+    
+    let html = '<option value="">Todas instâncias</option>';
+    instancias.forEach(inst => {
+        html += `<option value="${esc(inst)}">${esc(inst)}</option>`;
+    });
+    sel.innerHTML = html;
+    
+    // Tenta manter a seleção anterior se ela ainda existir
+    if (instancias.includes(valorAtual)) {
+        sel.value = valorAtual;
+    }
 }
 
 // Debounce na busca

@@ -386,6 +386,13 @@
                     <select id="selectClienteAdmin" class="bare" onchange="trocarClienteAdmin(this.value)">
                     </select>
                 </div>
+                <!-- Instance filter -->
+                <div id="instanceFilterContainer" class="ctrl-box">
+                    <i data-lucide="smartphone" style="width:14px;color:var(--muted);flex-shrink:0;"></i>
+                    <select id="selectInstancia" class="bare" onchange="aplicarFiltros()">
+                        <option value="">Todas instâncias</option>
+                    </select>
+                </div>
                 <!-- Search -->
                 <div class="ctrl-box">
                     <i data-lucide="search" style="width:14px;color:var(--muted);flex-shrink:0;"></i>
@@ -1167,6 +1174,7 @@ async function popularSeletorAdmin() {
 
 function trocarClienteAdmin(id) {
     clienteAdminSelecionado = id ? parseInt(id) : null;
+    if (typeof popularFiltroInstancias === 'function') popularFiltroInstancias();
     aplicarFiltros();
 }
 
