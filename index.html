@@ -851,31 +851,103 @@
         <div id="aba-ajustes" class="aba-oculta">
             <div class="content">
                 <!-- White-label Section (Admin Only) -->
-                <div id="whiteLabelCard" class="card" style="padding:24px;display:none;">
-                    <div style="font-size:15px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:8px;">
-                        <i data-lucide="palette" style="width:16px;color:var(--blue);"></i>
-                        Personalização da Marca (White-label)
-                    </div>
-                    <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">
-                        Personalize o nome e o logotipo exibidos no painel do sistema.
-                    </p>
-                    
-                    <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:20px;margin-bottom:16px;">
-                        <div>
-                            <label style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;">Nome do Sistema</label>
-                            <input type="text" id="cfgProjetoNome" class="form-control" placeholder="Ex: Adlytics" style="width:100%;">
+                <div id="whiteLabelCard" style="display:none;">
+
+                    <!-- Header com gradiente -->
+                    <div class="card" style="padding:0;overflow:hidden;margin-bottom:20px;">
+                        <div style="background:linear-gradient(135deg,#3b82f6 0%,#8b5cf6 50%,#ec4899 100%);padding:28px 28px 24px;position:relative;">
+                            <div style="position:absolute;top:0;left:0;right:0;bottom:0;background:url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22><defs><pattern id=%22p%22 width=%2220%22 height=%2220%22 patternUnits=%22userSpaceOnUse%22><circle cx=%2210%22 cy=%2210%22 r=%221%22 fill=%22white%22 opacity=%220.08%22/></pattern></defs><rect fill=%22url(%23p)%22 width=%22100%22 height=%22100%22/></svg>');"></div>
+                            <div style="position:relative;z-index:1;">
+                                <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+                                    <div style="width:36px;height:36px;background:rgba(255,255,255,0.2);backdrop-filter:blur(8px);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                                        <i data-lucide="palette" style="width:18px;height:18px;color:#fff;"></i>
+                                    </div>
+                                    <div>
+                                        <h3 style="margin:0;font-size:17px;font-weight:800;color:#fff;">Personalização da Marca</h3>
+                                        <p style="margin:2px 0 0;font-size:12px;color:rgba(255,255,255,0.7);">White-label • Deixe o painel com a cara da sua agência</p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <div>
-                            <label style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;">Logo (URL ou código SVG)</label>
-                            <textarea id="cfgProjetoLogo" class="form-control" placeholder="URL da imagem ou código <svg>..." style="width:100%;height:38px;padding-top:8px;resize:none;"></textarea>
-                        </div>
                     </div>
-                    
-                    <div style="display:flex;gap:10px;align-items:center;">
-                        <button class="btn btn-primary" onclick="salvarWhiteLabel()">
-                            <i data-lucide="save" style="width:13px;"></i> Salvar Marca
-                        </button>
-                        <span id="cfgWhiteLabelSalvo" style="font-size:12px;color:var(--blue);display:none;">✓ Marca Atualizada</span>
+
+                    <!-- Layout: Preview + Formulário -->
+                    <div style="display:grid;grid-template-columns:280px 1fr;gap:20px;align-items:start;">
+
+                        <!-- Preview ao Vivo -->
+                        <div class="card" style="padding:0;overflow:hidden;">
+                            <div style="padding:12px 16px;border-bottom:1px solid var(--border);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);display:flex;align-items:center;gap:6px;">
+                                <i data-lucide="eye" style="width:12px;"></i> Preview ao Vivo
+                            </div>
+                            <div style="padding:20px;background:var(--bg);">
+                                <!-- Mini sidebar preview -->
+                                <div id="wlPreview" style="background:var(--card);border-radius:12px;border:1px solid var(--border);padding:16px;transition:all .3s ease;">
+                                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border);">
+                                        <div id="wlPreviewLogo" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                                            <svg width="36" height="36" viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="8" fill="#3b82f6"/><rect x="6" y="18" width="4" height="8" rx="1.5" fill="white" opacity="0.6"/><rect x="12" y="13" width="4" height="13" rx="1.5" fill="white" opacity="0.8"/><rect x="18" y="8" width="4" height="18" rx="1.5" fill="white"/></svg>
+                                        </div>
+                                        <div>
+                                            <div id="wlPreviewName" style="font-size:14px;font-weight:800;letter-spacing:-0.3px;line-height:1;">Adlytics</div>
+                                            <div style="font-size:10px;color:var(--muted);margin-top:2px;">Dashboard</div>
+                                        </div>
+                                    </div>
+                                    <!-- Menu items preview -->
+                                    <div style="display:flex;flex-direction:column;gap:4px;">
+                                        <div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:rgba(59,130,246,0.1);border-radius:8px;">
+                                            <div style="width:14px;height:14px;border-radius:3px;background:var(--blue);opacity:0.7;"></div>
+                                            <span style="font-size:11px;font-weight:600;color:var(--blue);">Leads Reais</span>
+                                        </div>
+                                        <div style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;">
+                                            <div style="width:14px;height:14px;border-radius:3px;background:var(--muted);opacity:0.3;"></div>
+                                            <span style="font-size:11px;color:var(--muted);">Relatórios</span>
+                                        </div>
+                                        <div style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;">
+                                            <div style="width:14px;height:14px;border-radius:3px;background:var(--muted);opacity:0.3;"></div>
+                                            <span style="font-size:11px;color:var(--muted);">Meta Ads</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <p style="text-align:center;font-size:10px;color:var(--muted);margin:10px 0 0;">As mudanças aparecem aqui em tempo real</p>
+                            </div>
+                        </div>
+
+                        <!-- Formulário -->
+                        <div class="card" style="padding:24px;">
+                            <div style="margin-bottom:22px;">
+                                <label style="display:block;font-size:13px;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:6px;">
+                                    <i data-lucide="type" style="width:14px;color:var(--blue);"></i>
+                                    Nome do Sistema
+                                </label>
+                                <input type="text" id="cfgProjetoNome" class="form-control" placeholder="Ex: Adlytics, MeuCRM, Agência Digital..."
+                                       oninput="atualizarPreviewWhiteLabel()"
+                                       style="width:100%;padding:10px 14px;font-size:14px;border-radius:10px;border:1px solid var(--border);background:var(--bg);color:var(--text);transition:border-color .2s;">
+                                <p style="font-size:11px;color:var(--muted);margin:6px 0 0;">Aparece no topo do sidebar e na barra de título.</p>
+                            </div>
+
+                            <div style="margin-bottom:22px;">
+                                <label style="display:block;font-size:13px;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:6px;">
+                                    <i data-lucide="image" style="width:14px;color:var(--blue);"></i>
+                                    Logotipo
+                                </label>
+                                <textarea id="cfgProjetoLogo" class="form-control" placeholder="Cole a URL de uma imagem ou o código SVG completo..."
+                                          oninput="atualizarPreviewWhiteLabel()"
+                                          style="width:100%;height:80px;padding:10px 14px;font-size:13px;border-radius:10px;border:1px solid var(--border);background:var(--bg);color:var(--text);resize:vertical;font-family:monospace;transition:border-color .2s;"></textarea>
+                                <p style="font-size:11px;color:var(--muted);margin:6px 0 0;">
+                                    Aceita URL de imagem (PNG, JPG) ou código <code style="background:var(--tag);padding:1px 4px;border-radius:3px;font-size:10px;">&lt;svg&gt;</code> inline. Tamanho recomendado: 32×32px.
+                                </p>
+                            </div>
+
+                            <div style="display:flex;gap:12px;align-items:center;padding-top:6px;border-top:1px solid var(--border);">
+                                <button class="btn btn-primary" onclick="salvarWhiteLabel()" style="padding:10px 22px;font-size:13px;border-radius:10px;gap:6px;">
+                                    <i data-lucide="save" style="width:14px;"></i> Salvar Marca
+                                </button>
+                                <button class="btn btn-ghost" onclick="resetPreviewWhiteLabel()" style="padding:10px 16px;font-size:12px;border-radius:10px;">
+                                    <i data-lucide="rotate-ccw" style="width:12px;"></i> Resetar
+                                </button>
+                                <span id="cfgWhiteLabelSalvo" style="font-size:12px;color:#10b981;font-weight:600;display:none;animation:fadeIn .3s;">✓ Marca Atualizada!</span>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
             </div>
@@ -2972,6 +3044,36 @@ async function salvarWhiteLabel() {
     } catch(e) {
         toast(e.message, 'error');
     }
+}
+
+function atualizarPreviewWhiteLabel() {
+    const nome = $('cfgProjetoNome')?.value?.trim() || 'Adlytics';
+    const logo = $('cfgProjetoLogo')?.value?.trim() || '';
+
+    // Atualiza nome no preview
+    const previewName = $('wlPreviewName');
+    if (previewName) previewName.textContent = nome;
+
+    // Atualiza logo no preview
+    const previewLogo = $('wlPreviewLogo');
+    if (previewLogo && logo) {
+        if (logo.trim().startsWith('<svg')) {
+            previewLogo.innerHTML = logo;
+            const svg = previewLogo.querySelector('svg');
+            if (svg) { svg.style.width = '36px'; svg.style.height = '36px'; }
+        } else {
+            previewLogo.innerHTML = `<img src="${logo}" style="width:36px;height:36px;object-fit:contain;border-radius:8px;">`;
+        }
+    } else if (previewLogo && !logo) {
+        previewLogo.innerHTML = `<svg width="36" height="36" viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="8" fill="#3b82f6"/><rect x="6" y="18" width="4" height="8" rx="1.5" fill="white" opacity="0.6"/><rect x="12" y="13" width="4" height="13" rx="1.5" fill="white" opacity="0.8"/><rect x="18" y="8" width="4" height="18" rx="1.5" fill="white"/></svg>`;
+    }
+}
+
+function resetPreviewWhiteLabel() {
+    $('cfgProjetoNome').value = 'Adlytics';
+    $('cfgProjetoLogo').value = '';
+    atualizarPreviewWhiteLabel();
+    toast('Preview resetado para os valores padrão', 'info');
 }
 
 // ── Sidebar mobile ─────────────────────────────────────────────
