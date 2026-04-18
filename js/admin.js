@@ -49,8 +49,9 @@ async function salvarNovoCliente() {
 function copiarCredenciais() {
     const email = $('credEmail').textContent;
     const senha = $('credSenha').textContent;
+    const brand = window.BRAND_NAME || 'Adlytics';
     const url = window.location.origin + '/login.html';
-    navigator.clipboard.writeText(`Portal Adlytics\nURL: ${url}\nE-mail: ${email}\nSenha: ${senha}`)
+    navigator.clipboard.writeText(`Portal ${brand}\nURL: ${url}\nE-mail: ${email}\nSenha: ${senha}`)
         .then(() => toast('Credenciais copiadas!', 'success'))
         .catch(() => toast('Não foi possível copiar automaticamente', 'error'));
 }

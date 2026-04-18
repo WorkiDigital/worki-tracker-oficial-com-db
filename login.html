@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - WhatsApp Tracking</title>
+    <title id="page-title">Login</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <link rel="stylesheet" href="css/login.css">
@@ -12,14 +12,14 @@
 
 <div class="auth-wrap">
     <div class="auth-logo">
-        <div class="auth-logo-icon">
+        <div class="auth-logo-icon" id="brand-logo-container">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
             </svg>
         </div>
         <div>
-            <div class="auth-logo-text">WhatsApp Tracking</div>
-            <div class="auth-logo-sub">Dashboard de Leads</div>
+            <div class="auth-logo-text" id="brand-name-text">WhatsApp Tracking</div>
+            <div class="auth-logo-sub">Acesse seu dashboard</div>
         </div>
     </div>
 
@@ -90,6 +90,30 @@ async function init() {
     if (TOKEN) {
         window.location.href = '/';
     }
+    carregarWhiteLabel();
+}
+
+async function carregarWhiteLabel() {
+    try {
+        const r = await fetch('/api/config');
+        const cfg = await r.json();
+        const brandName = cfg.projectName || 'Adlytics';
+        const brandLogo = cfg.projectLogo;
+
+        document.title = brandName + ' - Login';
+        document.getElementById('brand-name-text').textContent = brandName;
+
+        if (brandLogo) {
+            const container = document.getElementById('brand-logo-container');
+            if (brandLogo.trim().startsWith('<svg')) {
+                container.innerHTML = brandLogo;
+                const svg = container.querySelector('svg');
+                if (svg) { svg.setAttribute('width', '24'); svg.setAttribute('height', '24'); }
+            } else {
+                container.innerHTML = `<img src="${brandLogo}" style="width:24px;height:24px;object-fit:contain;border-radius:4px;">`;
+            }
+        }
+    } catch(e) { console.error('WL error', e); }
 }
 
 // ── Troca de aba ────────────────────────────────────────────────

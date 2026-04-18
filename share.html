@@ -1,9 +1,9 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Adlytics</title>
+    <title id="page-title">Relatório</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -16,17 +16,19 @@
 <!-- Header -->
 <div class="header">
     <div class="header-left">
-        <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect width="32" height="32" rx="8" fill="#3b82f6"/>
-            <rect x="6" y="18" width="4" height="8" rx="1.5" fill="white" opacity="0.6"/>
-            <rect x="12" y="13" width="4" height="13" rx="1.5" fill="white" opacity="0.8"/>
-            <rect x="18" y="8" width="4" height="18" rx="1.5" fill="white"/>
-            <polyline points="21,6 25,6 25,10" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-            <line x1="18" y1="9" x2="25" y2="6" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
-        </svg>
+        <div id="project-logo-container">
+            <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect width="32" height="32" rx="8" fill="#3b82f6"/>
+                <rect x="6" y="18" width="4" height="8" rx="1.5" fill="white" opacity="0.6"/>
+                <rect x="12" y="13" width="4" height="13" rx="1.5" fill="white" opacity="0.8"/>
+                <rect x="18" y="8" width="4" height="18" rx="1.5" fill="white"/>
+                <polyline points="21,6 25,6 25,10" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                <line x1="18" y1="9" x2="25" y2="6" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+        </div>
         <div>
             <div class="header-title" id="accountName" style="font-size:16px;font-weight:800;letter-spacing:-0.3px;">Carregando...</div>
-            <div style="font-size:11px;color:var(--muted);margin-top:1px;">via <span style="color:var(--blue);font-weight:600;">adlytics</span></div>
+            <div style="font-size:11px;color:var(--muted);margin-top:1px;">via <span id="brand-name-text" style="color:var(--blue);font-weight:600;">adlytics</span></div>
         </div>
     </div>
     <div class="header-right">
@@ -159,5 +161,30 @@
 </div>
 
 <script src="js/share-dash.js"></script>
+<script>
+    // White-Label Logic for Share Page
+    (async () => {
+        try {
+            const r = await fetch('/api/config');
+            const cfg = await r.json();
+            const brandName = cfg.projectName || 'Adlytics';
+            const brandLogo = cfg.projectLogo;
+
+            document.title = (document.getElementById('accountName').textContent || brandName) + ' - Relatório';
+            document.getElementById('brand-name-text').textContent = brandName.toLowerCase();
+
+            if (brandLogo) {
+                const container = document.getElementById('project-logo-container');
+                if (brandLogo.trim().startsWith('<svg')) {
+                    container.innerHTML = brandLogo;
+                    const svg = container.querySelector('svg');
+                    if (svg) { svg.setAttribute('width', '32'); svg.setAttribute('height', '32'); }
+                } else {
+                    container.innerHTML = `<img src="${brandLogo}" style="width:32px;height:32px;object-fit:contain;border-radius:6px;">`;
+                }
+            }
+        } catch(e) { console.error('WL error', e); }
+    })();
+</script>
 </body>
 </html>
