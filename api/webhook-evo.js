@@ -185,7 +185,7 @@ export default async function handler(req, res) {
     // 7. CAPI Lead
     await sendCapiLead(lead, pixel, token, log, warn);
 
-    return res.status(200).json({ success: true, message: 'Lead salvo com sucesso', lead });
+    return res.status(200).json({ success: true, message: 'Lead salvo com sucesso', lead_id: lead.id });
   }
 
   // 4b. fromMe = true → COMPRA
@@ -264,7 +264,7 @@ export default async function handler(req, res) {
 
     await sendCapiPurchase(leadAtualizado, pixel, token, log, warn);
 
-    return res.status(200).json({ success: true, message: 'Compra registrada e CAPI enviada', lead: leadAtualizado });
+    return res.status(200).json({ success: true, message: 'Compra registrada e CAPI enviada', lead_id: leadAtualizado.id });
   }
 }
 

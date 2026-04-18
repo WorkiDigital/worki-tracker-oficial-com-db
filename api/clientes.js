@@ -21,8 +21,8 @@ export default async function handler(req, res) {
 
   if (req.method === 'GET') {
       try {
-          // Lista todos os clientes para montar o painel Admin
-          const result = await pool.query('SELECT * FROM clientes ORDER BY id DESC');
+          // Lista todos os clientes para montar o painel Admin (EXCLUI token_meta por segurança)
+          const result = await pool.query('SELECT id, nome, email_contato, pixel_padrao, account_id, permissoes, template_venda, criado_em FROM clientes ORDER BY id DESC');
           return res.status(200).json(result.rows);
       } catch (err) {
           console.error(err);

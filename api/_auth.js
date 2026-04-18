@@ -17,7 +17,8 @@ export async function verifyAuth(req, res) {
   }
 
   try {
-    const secret = process.env.JWT_SECRET || 'SECRET_LOCAL_DEV';
+    const secret = process.env.JWT_SECRET;
+    if (!secret) return null;
     const decoded = jwt.verify(token, secret);
     return decoded; // { id, email, iat, exp, is_admin, cliente_id }
   } catch (error) {

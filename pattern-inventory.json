@@ -1,0 +1,28 @@
+{
+  "scan_metadata": {
+    "total_files_scanned": 1,
+    "framework": "HTML/Vanilla"
+  },
+  "patterns": {
+    "colors": {
+      "total_instances": 277,
+      "unique_patterns": 127,
+      "redundancy_factor": "2.18"
+    },
+    "spacing": {
+      "total_padding_instances": 167,
+      "unique_paddings": 69,
+      "total_margin_instances": 18,
+      "unique_margins": 12
+    },
+    "typography": {
+      "total_fontsize_instances": 232,
+      "unique_fontsizes": 14,
+      "unique_fontweights": 8
+    },
+    "buttons": {
+      "total_btn_classes": 56,
+      "unique_btn_variations": 17
+    }
+  }
+}
