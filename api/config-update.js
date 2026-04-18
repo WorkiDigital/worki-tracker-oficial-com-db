@@ -2,6 +2,16 @@ import { getPool } from './_db.js';
 import { verifyAuth } from './_auth.js';
 import { cors } from './_cors.js';
 
+const ENSURE_TABLE = `
+  CREATE TABLE IF NOT EXISTS public.configuracoes_sistema (
+    id SERIAL PRIMARY KEY,
+    chave VARCHAR(100) UNIQUE NOT NULL,
+    valor TEXT NOT NULL,
+    criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  );
+`;
+
 export default async function handler(req, res) {
   if (cors(req, res, ['PATCH'])) return;
 
@@ -14,6 +24,9 @@ export default async function handler(req, res) {
   const pool = getPool();
 
   try {
+    // Auto-cria tabela se não existir
+    await pool.query(ENSURE_TABLE);
+
     if (projeto_nome !== undefined) {
       await pool.query(`
         INSERT INTO configuracoes_sistema (chave, valor, atualizado_em)
