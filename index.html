@@ -9,557 +9,8 @@
     <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
-    <style>
-        :root {
-            --bg: #060810; --sidebar: rgba(11,14,20,0.82); --card: rgba(11,14,20,0.72);
-            --card-solid: #0b0e14;
-            --text: #f1f5f9; --muted: #8a8f9b;
-            --blue: #3b82f6; --green: #10b981; --red: #ef4444;
-            --purple: #a78bfa; --amber: #f59e0b;
-            --border: rgba(255,255,255,0.06); --hover: rgba(255,255,255,0.04); --tag: rgba(255,255,255,0.06);
-            --glow-blue: rgba(59,130,246,0.15); --glow-green: rgba(16,185,129,0.12);
-            --shadow-card: 0 1px 3px rgba(0,0,0,0.3), 0 4px 16px rgba(0,0,0,0.2);
-            --shadow-card-hover: 0 4px 24px rgba(59,130,246,0.08), 0 1px 6px rgba(0,0,0,0.3);
-            --scheme: dark;
-        }
-        html.light {
-            --bg: #f4f6f9; --sidebar: rgba(255,255,255,0.85); --card: rgba(255,255,255,0.78);
-            --card-solid: #ffffff;
-            --text: #0f172a; --muted: #64748b;
-            --blue: #2563eb; --green: #059669;
-            --purple: #7c3aed; --amber: #d97706;
-            --border: rgba(0,0,0,0.06); --hover: rgba(0,0,0,0.03); --tag: rgba(0,0,0,0.04);
-            --glow-blue: rgba(37,99,235,0.08); --glow-green: rgba(5,150,105,0.06);
-            --shadow-card: 0 1px 3px rgba(0,0,0,0.05), 0 4px 16px rgba(0,0,0,0.04);
-            --shadow-card-hover: 0 4px 24px rgba(37,99,235,0.06), 0 1px 6px rgba(0,0,0,0.06);
-            --scheme: light;
-        }
-
-        * { margin:0; padding:0; box-sizing:border-box; font-family:'Inter',sans-serif; }
-        body { background:var(--bg); color:var(--text); display:flex; height:100vh; overflow:hidden; transition:background .3s,color .3s; }
-
-        /* ── Custom Scrollbar ────────────────────── */
-        ::-webkit-scrollbar { width:6px; height:6px; }
-        ::-webkit-scrollbar-track { background:transparent; }
-        ::-webkit-scrollbar-thumb { background:rgba(138,143,155,0.25); border-radius:10px; }
-        ::-webkit-scrollbar-thumb:hover { background:rgba(138,143,155,0.4); }
-        html.light ::-webkit-scrollbar-thumb { background:rgba(100,116,139,0.2); }
-        html.light ::-webkit-scrollbar-thumb:hover { background:rgba(100,116,139,0.35); }
-
-        @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:none} }
-        @keyframes spin   { to{transform:rotate(360deg)} }
-        @keyframes pulse  { 0%,100%{opacity:.4} 50%{opacity:.8} }
-        @keyframes subtleGlow { 0%,100%{box-shadow:0 0 0 0 var(--glow-blue)} 50%{box-shadow:0 0 20px 2px var(--glow-blue)} }
-
-        /* ── Toast ─────────────────────────────── */
-        #toast-area { position:fixed; bottom:24px; right:24px; z-index:9000; display:flex; flex-direction:column; gap:10px; pointer-events:none; }
-        .toast { pointer-events:all; background:rgba(31,41,55,0.92); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); color:#fff; padding:12px 18px; border-radius:12px; font-size:13px; font-weight:500; border-left:4px solid var(--blue); box-shadow:0 8px 32px rgba(0,0,0,.5); display:flex; align-items:center; gap:10px; animation:fadeUp .3s ease; max-width:340px; }
-        .toast.success { border-color:var(--green); }
-        .toast.error   { border-color:var(--red); }
-        html.light .toast { background:rgba(255,255,255,0.92); color:#111; box-shadow:0 8px 32px rgba(0,0,0,.1); }
-
-        /* ── Skeleton ───────────────────────────── */
-        .skeleton { border-radius:6px; animation:pulse 1.5s infinite; }
-        .sk-line { height:14px; background:var(--border); border-radius:4px; }
-        .sk-row td { padding:16px; }
-
-        /* ── Sidebar ────────────────────────────── */
-        .sidebar { width:240px; background:var(--sidebar); backdrop-filter:blur(20px) saturate(1.4); -webkit-backdrop-filter:blur(20px) saturate(1.4); border-right:1px solid var(--border); display:flex; flex-direction:column; padding:24px 16px; z-index:10; transition:width .25s,background .3s,backdrop-filter .3s; overflow:hidden; flex-shrink:0; }
-        .sidebar.collapsed { width:64px; padding:24px 8px; }
-        .logo { display:flex; align-items:center; gap:12px; margin-bottom:40px; padding-left:8px; }
-        .sidebar.collapsed .logo { padding-left:0; justify-content:center; }
-        .logo-icon { background:linear-gradient(135deg,var(--blue),var(--purple)); padding:8px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0; box-shadow:0 2px 12px var(--glow-blue); }
-        .logo-text { font-weight:700; font-size:14px; line-height:1.2; white-space:nowrap; transition:opacity .2s,width .25s; letter-spacing:-0.02em; }
-        .sidebar.collapsed .logo-text { opacity:0; width:0; overflow:hidden; }
-        .nav-item { display:flex; align-items:center; gap:12px; padding:11px 12px; border-radius:10px; color:var(--muted); font-size:13.5px; margin-bottom:3px; transition:all .2s ease; cursor:pointer; white-space:nowrap; border:1px solid transparent; text-decoration:none; position:relative; }
-        .sidebar.collapsed .nav-item { justify-content:center; padding:12px 8px; }
-        .nav-item span { transition:opacity .2s; }
-        .sidebar.collapsed .nav-item span { opacity:0; width:0; display:none; }
-        .sidebar.collapsed .sidebar-text { display:none; }
-        .nav-item:hover { background:var(--hover); color:var(--text); transform:translateX(2px); }
-        .nav-item.active { background:var(--glow-blue); color:var(--blue); border-color:rgba(59,130,246,.15); box-shadow:inset 3px 0 0 var(--blue); }
-        .sidebar-bottom { margin-top:auto; padding-top:16px; border-top:1px solid var(--border); }
-        .btn-icon { background:none; border:none; color:var(--muted); cursor:pointer; padding:8px; border-radius:8px; display:flex; align-items:center; justify-content:center; transition:all .2s ease; width:100%; }
-        .btn-icon:hover { background:var(--hover); color:var(--text); transform:scale(1.05); }
-
-        /* ── Layout ─────────────────────────────── */
-        .main { flex:1; display:flex; flex-direction:column; overflow:hidden; }
-        .topbar { display:flex; align-items:center; justify-content:space-between; padding:20px 32px; border-bottom:1px solid var(--border); flex-wrap:wrap; gap:14px; background:var(--sidebar); backdrop-filter:blur(16px) saturate(1.3); -webkit-backdrop-filter:blur(16px) saturate(1.3); flex-shrink:0; }
-        .title-area h1 { font-size:20px; font-weight:700; display:flex; align-items:center; gap:10px; letter-spacing:-0.03em; }
-        .title-area p  { color:var(--muted); font-size:12px; margin-top:3px; }
-        .topbar-right { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
-
-        /* ── Controls ───────────────────────────── */
-        .ctrl-box { display:flex; align-items:center; background:var(--card); padding:7px 13px; border-radius:8px; border:1px solid var(--border); gap:8px; transition:border-color .2s; }
-        .ctrl-box:focus-within { border-color:var(--blue); }
-        .ctrl-box input, .ctrl-box select { background:transparent; border:none; color:var(--text); font-size:13px; outline:none; font-family:'Inter'; color-scheme:var(--scheme); }
-        .ctrl-box input::placeholder { color:var(--muted); }
-        .ctrl-box input[type=text] { width:200px; }
-        select.bare { background:transparent; border:none; color:var(--text); font-size:13px; outline:none; font-family:'Inter'; color-scheme:var(--scheme); cursor:pointer; }
-        select.bare option { background:var(--card); }
-        .btn { display:flex; align-items:center; gap:6px; padding:7px 14px; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; border:none; transition:all .2s ease; }
-        .btn-primary { background:linear-gradient(135deg,var(--blue),hsl(230,80%,58%)); color:#fff; box-shadow:0 2px 8px var(--glow-blue); }
-        .btn-primary:hover { filter:brightness(1.12); transform:translateY(-1px); box-shadow:0 4px 16px var(--glow-blue); }
-        .btn-primary:active { transform:translateY(0); }
-        .btn-primary:disabled { background:var(--tag); color:var(--muted); cursor:not-allowed; filter:none; transform:none; box-shadow:none; }
-        .btn-ghost { background:none; border:1px solid var(--border); color:var(--muted); }
-        .btn-ghost:hover { border-color:var(--blue); color:var(--text); background:var(--glow-blue); }
-        .btn-green { background:linear-gradient(135deg,var(--green),hsl(160,70%,40%)); color:#fff; box-shadow:0 2px 8px var(--glow-green); }
-        .btn-green:hover { filter:brightness(1.1); transform:translateY(-1px); box-shadow:0 4px 16px var(--glow-green); }
-        .btn-green:active { transform:translateY(0); }
-        .btn-sm { padding:5px 10px; font-size:11px; }
-
-        /* ── Refresh badge ───────────────────────── */
-        .refresh-badge { font-size:11px; color:var(--muted); display:flex; align-items:center; gap:5px; white-space:nowrap; }
-        .refresh-dot { width:6px; height:6px; border-radius:50%; background:var(--green); flex-shrink:0; }
-        .refresh-dot.loading { background:var(--blue); animation:pulse 1s infinite; }
-
-        /* ── Content area ────────────────────────── */
-        .content { flex:1; overflow-y:auto; padding:28px 32px; scroll-behavior:smooth; }
-
-        /* ── Card / Table ────────────────────────── */
-        .card { background:var(--card); backdrop-filter:blur(12px) saturate(1.2); -webkit-backdrop-filter:blur(12px) saturate(1.2); border-radius:14px; border:1px solid var(--border); padding:0; overflow:hidden; animation:fadeUp .4s ease; box-shadow:var(--shadow-card); transition:box-shadow .3s ease,border-color .3s ease; }
-        .card:hover { box-shadow:var(--shadow-card-hover); border-color:rgba(59,130,246,0.08); }
-        .card-header { display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-bottom:1px solid var(--border); flex-wrap:wrap; gap:10px; }
-        .card-title { font-size:14px; font-weight:700; display:flex; align-items:center; gap:8px; letter-spacing:-0.01em; }
-        .count-badge { background:var(--tag); color:var(--muted); font-size:11px; font-weight:600; padding:3px 8px; border-radius:20px; }
-
-        table { width:100%; border-collapse:collapse; }
-        thead th { color:var(--muted); font-size:10px; text-transform:uppercase; font-weight:600; letter-spacing:.5px; padding:12px 16px; border-bottom:1px solid var(--border); white-space:nowrap; user-select:none; text-align:center; }
-        thead th.sortable { cursor:pointer; }
-        thead th.sortable:hover { color:var(--text); }
-        thead th .sort-icon { display:inline-block; margin-left:4px; opacity:.4; font-size:10px; }
-        thead th.sort-asc  .sort-icon, thead th.sort-desc .sort-icon { opacity:1; color:var(--blue); }
-        tbody tr { border-bottom:1px solid var(--border); transition:background .2s ease; }
-        tbody tr:last-child { border-bottom:none; }
-        tbody tr:hover { background:var(--hover); }
-        tbody td { padding:14px 16px; font-size:13px; color:var(--muted); text-align:center; transition:color .15s; }
-        tbody tr:hover td { color:var(--text); }
-        html.light tbody td { color:#475569; }
-
-        .tag { display:inline-flex; align-items:center; gap:4px; background:var(--tag); color:var(--text); padding:4px 10px; border-radius:20px; font-size:11px; font-weight:600; white-space:nowrap; }
-        html.light .tag { color:#374151; }
-        .platform-icon { display:flex; align-items:center; gap:6px; font-weight:600; font-size:13px; }
-        .platform-icon.facebook  { color:#1877f2; }
-        .platform-icon.instagram { color:#e1306c; }
-        .platform-icon.whatsapp  { color:#25D366; }
-
-        /* ── Pagination ──────────────────────────── */
-        .pagination { display:flex; align-items:center; justify-content:space-between; padding:14px 20px; border-top:1px solid var(--border); }
-        .page-info { font-size:12px; color:var(--muted); }
-        .page-btns { display:flex; gap:4px; }
-        .page-btn { background:var(--tag); border:none; color:var(--text); width:30px; height:30px; border-radius:8px; cursor:pointer; font-size:12px; font-weight:600; transition:all .2s ease; display:flex; align-items:center; justify-content:center; }
-        .page-btn:hover { background:var(--blue); color:#fff; transform:scale(1.08); }
-        .page-btn.active { background:var(--blue); color:#fff; box-shadow:0 2px 10px var(--glow-blue); }
-        .page-btn:disabled { opacity:.35; cursor:not-allowed; transform:none; }
-
-        /* ── Metrics grid ────────────────────────── */
-        .metrics-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:16px; margin-bottom:24px; }
-        .metric-card { background:var(--card); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); padding:22px 18px; border-radius:14px; border:1px solid var(--border); text-align:center; animation:fadeUp .4s ease; box-shadow:var(--shadow-card); transition:all .25s ease; }
-        .metric-card:hover { transform:translateY(-2px); box-shadow:var(--shadow-card-hover); border-color:rgba(59,130,246,0.1); }
-        .metric-card:nth-child(2){animation-delay:.05s} .metric-card:nth-child(3){animation-delay:.1s}
-        .metric-card:nth-child(4){animation-delay:.15s} .metric-card:nth-child(5){animation-delay:.2s}
-        .metric-value { font-size:28px; font-weight:800; margin-bottom:6px; letter-spacing:-0.03em; background:linear-gradient(135deg,var(--text),var(--muted)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
-        .metric-label { color:var(--muted); font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.04em; }
-
-        /* ── Charts ─────────────────────────────── */
-        .charts-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
-        .chart-card { background:var(--card); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); padding:20px; border-radius:14px; border:1px solid var(--border); display:flex; flex-direction:column; align-items:center; animation:fadeUp .5s ease; box-shadow:var(--shadow-card); transition:all .25s ease; }
-        .chart-card:hover { box-shadow:var(--shadow-card-hover); }
-        .chart-card h3 { font-size:13px; font-weight:700; margin-bottom:20px; display:flex; align-items:center; gap:8px; width:100%; justify-content:center; }
-        .canvas-wrap { width:180px; height:180px; margin-bottom:20px; }
-        .canvas-wrap.bar { width:100%; height:130px; }
-        .legend { width:100%; display:flex; flex-direction:column; gap:10px; }
-        .legend-row { display:flex; align-items:center; justify-content:space-between; font-size:12px; }
-        .legend-left { display:flex; align-items:center; gap:7px; color:var(--muted); overflow:hidden; max-width:140px; white-space:nowrap; text-overflow:ellipsis; }
-        .legend-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
-        .legend-right { display:flex; gap:10px; }
-        .legend-val  { font-weight:700; color:var(--text); }
-        .legend-pct  { color:var(--muted); font-size:11px; min-width:30px; text-align:right; }
-
-        /* ── Account search dropdown ─────────────── */
-        .acct-wrap { position:relative; }
-        .acct-btn { display:flex; align-items:center; background:var(--card); border:1px solid var(--border); border-radius:8px; padding:9px 14px; gap:10px; cursor:pointer; min-width:260px; transition:border-color .2s; user-select:none; }
-        .acct-btn:hover { border-color:var(--blue); }
-        .acct-btn.open { border-color:var(--blue); }
-        .acct-btn-label { flex:1; font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-        .acct-btn-label.placeholder { color:var(--muted); }
-        .acct-saved-badge { font-size:10px; background:rgba(59,130,246,.15); color:var(--blue); border-radius:4px; padding:1px 5px; white-space:nowrap; flex-shrink:0; }
-        .acct-chevron { flex-shrink:0; color:var(--muted); transition:transform .2s; }
-        .acct-btn.open .acct-chevron { transform:rotate(180deg); }
-        .acct-dropdown { position:absolute; top:calc(100% + 6px); left:0; min-width:100%; width:340px; background:var(--card); border:1px solid var(--border); border-radius:10px; box-shadow:0 8px 32px rgba(0,0,0,.4); z-index:500; display:none; animation:fadeUp .15s ease; overflow:hidden; }
-        .acct-dropdown.open { display:block; }
-        .acct-search-box { display:flex; align-items:center; gap:8px; padding:10px 14px; border-bottom:1px solid var(--border); }
-        .acct-search-box input { background:transparent; border:none; color:var(--text); font-size:13px; outline:none; font-family:'Inter'; width:100%; }
-        .acct-search-box input::placeholder { color:var(--muted); }
-        .acct-list { max-height:260px; overflow-y:auto; padding:4px; }
-        .acct-count { padding:6px 14px 4px; font-size:11px; color:var(--muted); border-bottom:1px solid var(--border); margin-bottom:4px; }
-        .acct-opt { padding:8px 12px; cursor:pointer; border-radius:7px; transition:background .12s; }
-        .acct-opt:hover { background:var(--hover); }
-        .acct-opt.selected { background:rgba(59,130,246,.08); }
-        .acct-opt-name { font-size:13px; font-weight:500; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:2px; }
-        .acct-opt.selected .acct-opt-name { color:var(--blue); }
-        .acct-opt-sub { display:flex; align-items:center; gap:6px; font-size:11px; color:var(--muted); }
-        .acct-status-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
-        .acct-empty { padding:16px; text-align:center; color:var(--muted); font-size:13px; }
-
-        /* ── Config dropdown — estilo claro (referência) ── */
-        #cfgContasBtn { background:#ffffff; border:1px solid #e5e7eb; color:#111827; border-radius:10px; padding:10px 16px; }
-        #cfgContasBtn:hover { border-color:#2563eb; }
-        #cfgContasBtn.open { border-color:#2563eb; box-shadow:0 0 0 3px rgba(37,99,235,.1); }
-        #cfgContasBtn .acct-btn-label { color:#111827; font-size:14px; font-weight:500; }
-        #cfgContasBtn .acct-chevron { color:#6b7280; }
-        #cfgContasDropdown { background:#ffffff; border:1px solid #e5e7eb; border-radius:12px; box-shadow:0 4px 24px rgba(0,0,0,.10); width:100%; }
-        #cfgContasDropdown .acct-search-box { background:#ffffff; border-bottom:1px solid #f3f4f6; padding:10px 16px; }
-        #cfgContasDropdown .acct-search-box input { color:#111827; font-size:13px; }
-        #cfgContasDropdown .acct-search-box input::placeholder { color:#9ca3af; }
-        #cfgContasDropdown .acct-search-box i { color:#9ca3af; }
-        #cfgContasDropdown .acct-count { color:#9ca3af; font-size:11px; border-bottom:1px solid #f3f4f6; padding:6px 16px 6px; }
-        #cfgContasDropdown { position:static; top:auto; left:auto; width:100%; margin-top:6px; box-shadow:0 2px 12px rgba(0,0,0,.12); }
-        #cfgContasList label { padding:9px 16px; border-bottom:1px solid #f3f4f6; border-radius:0; }
-        #cfgContasList label:last-child { border-bottom:none; }
-        #cfgContasList label:hover { background:#f9fafb !important; }
-        #cfgContasList label span { color:#111827; font-size:13px; font-weight:400; }
-        #cfgContasList input[type=checkbox] { accent-color:#2563eb; width:15px; height:15px; border-radius:4px; }
-
-        /* ── Metrics config panel ────────────────── */
-        .metrics-cfg-bar { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
-        .metrics-cfg-bar span { font-size:12px; color:var(--muted); font-weight:600; }
-        .metrics-cfg-panel { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:16px 20px; margin-bottom:16px; display:none; animation:fadeUp .2s ease; }
-        .metrics-cfg-panel.open { display:block; }
-        .metrics-cfg-sections { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
-        .metrics-cfg-section h4 { font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; margin-bottom:10px; }
-        .metrics-cfg-grid { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
-        .metrics-cfg-item { display:flex; align-items:center; gap:7px; font-size:12px; cursor:pointer; padding:4px 6px; border-radius:6px; transition:.15s; }
-        .metrics-cfg-item:hover { background:var(--hover); }
-        .metrics-cfg-item input[type=checkbox] { accent-color:var(--blue); width:13px; height:13px; cursor:pointer; flex-shrink:0; }
-        .metrics-cfg-item--off { opacity:.45; }
-        .col-order-badge { display:inline-flex; align-items:center; justify-content:center; width:16px; height:16px; min-width:16px; background:var(--blue); color:#fff; border-radius:50%; font-size:9px; font-weight:700; flex-shrink:0; }
-        .col-order-badge--empty { background:transparent; border:1px dashed var(--border); }
-
-        /* ── Ads ─────────────────────────────────── */
-        .ads-bar { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:20px; }
-        .ads-metrics { display:grid; grid-template-columns:repeat(6,1fr); gap:10px; margin-bottom:20px; }
-        .cfg-bar { display:flex; align-items:center; justify-content:flex-end; margin-bottom:8px; }
-        .ads-metric { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:12px 8px; text-align:center; }
-        .ads-metric-val { font-size:20px; font-weight:700; margin-bottom:4px; }
-        .ads-metric-lbl { font-size:12px; color:var(--muted); font-weight:600; }
-        .ads-filters { display:flex; align-items:flex-end; gap:10px; flex-wrap:wrap; padding:12px 16px; background:rgba(255,255,255,.02); border:1px solid var(--border); border-radius:10px; margin-bottom:16px; }
-        html.light .ads-filters { background:rgba(0,0,0,.02); }
-        .filter-group { display:flex; flex-direction:column; gap:4px; }
-        .filter-group label { font-size:10px; color:var(--muted); font-weight:700; text-transform:uppercase; letter-spacing:.5px; }
-        .ads-loading-wrap { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:60px; gap:14px; color:var(--muted); }
-        .spinner { animation:spin 1s linear infinite; }
-        .ads-error { background:rgba(239,68,68,.1); border:1px solid rgba(239,68,68,.3); color:#ef4444; padding:14px 18px; border-radius:10px; font-size:13px; margin-bottom:16px; display:none; }
-        .status-badge { padding:3px 9px; border-radius:20px; font-size:11px; font-weight:600; display:inline-block; }
-        .expand-btn { background:none; border:none; cursor:pointer; color:var(--muted); padding:2px 5px; border-radius:4px; font-size:10px; margin-right:4px; transition:.15s; vertical-align:middle; line-height:1; }
-        .expand-btn:hover:not(:disabled) { color:var(--blue); background:rgba(59,130,246,.1); }
-        .expand-btn:disabled { opacity:.4; cursor:default; }
-        .row-depth-1 > td { background:rgba(59,130,246,.07); font-size:12px; }
-        .row-depth-2 > td { background:rgba(16,185,129,.07); font-size:11px; }
-        .row-name-link { cursor:pointer; color:inherit; text-decoration:none; }
-        .row-name-link:hover { color:var(--blue); text-decoration:underline; }
-        .foco-bar { display:none; align-items:center; gap:8px; padding:8px 12px; background:rgba(59,130,246,.08); border:1px solid rgba(59,130,246,.2); border-radius:8px; margin-bottom:10px; font-size:12px; }
-        .foco-bar.show { display:flex; }
-        .foco-back { background:none; border:none; color:var(--blue); cursor:pointer; font-size:12px; font-weight:600; padding:2px 6px; border-radius:4px; transition:.15s; }
-        .foco-back:hover { background:rgba(59,130,246,.15); }
-        .foco-sep { color:var(--muted); }
-        .foco-item { color:var(--text); font-weight:600; }
-
-        /* ── Modal ───────────────────────────────── */
-        .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.65); backdrop-filter:blur(4px); z-index:1000; display:flex; align-items:center; justify-content:center; opacity:0; visibility:hidden; transition:.25s; }
-        .modal-overlay.open { opacity:1; visibility:visible; }
-        .modal { background:#1a1e27; width:400px; border-radius:16px; padding:24px; border:1px solid #2d3748; box-shadow:0 25px 50px -12px rgba(0,0,0,.6); transform:translateY(16px); transition:.25s; }
-        html.light .modal { background:#fff; border-color:var(--border); }
-        .modal-overlay.open .modal { transform:none; }
-        .modal-head { display:flex; align-items:center; gap:14px; margin-bottom:22px; position:relative; }
-        .modal-icon { background:var(--green); width:44px; height:44px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-        .modal-head h3 { font-size:17px; font-weight:700; }
-        .modal-head p  { font-size:12px; color:var(--muted); margin-top:2px; }
-        .modal-close { position:absolute; top:0; right:0; background:none; border:none; color:var(--muted); cursor:pointer; padding:4px; }
-        .modal-close:hover { color:var(--text); }
-        .input-group { margin-bottom:14px; }
-        .input-group label { display:block; font-size:12px; font-weight:600; margin-bottom:7px; }
-        .input-group input { width:100%; background:var(--tag); border:1px solid var(--border); padding:11px 13px; border-radius:8px; color:var(--text); font-size:14px; outline:none; transition:.2s; }
-        .input-group input:focus { border-color:var(--green); }
-        .btn-confirm { width:100%; background:var(--green); color:#fff; border:none; padding:13px; border-radius:8px; font-size:14px; font-weight:700; cursor:pointer; margin-top:6px; transition:.2s; }
-        .btn-confirm:hover { filter:brightness(1.1); }
-        .btn-confirm:disabled { background:var(--tag); color:var(--muted); cursor:not-allowed; filter:none; }
-
-        /* ── Demográficos ────────────────────────── */
-        .demo-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
-        .demo-grid--5 { grid-template-columns:repeat(5,1fr) !important; }
-        .demo-grid--5 .demo-card { padding:14px 10px; }
-        .demo-grid--5 .demo-canvas-wrap { width:110px; height:110px; }
-        @media(max-width:1100px) { .demo-grid--5 { grid-template-columns:repeat(3,1fr) !important; } }
-        @media(max-width:960px)  { .demo-grid--5 { grid-template-columns:repeat(2,1fr) !important; } }
-        /* Sidebar aberta → cards levemente menores, 5 colunas se mantêm */
-        .sidebar:not(.collapsed) + .main .demo-grid--5 .demo-card        { padding:10px 8px; min-width:0; overflow:hidden; }
-        .sidebar:not(.collapsed) + .main .demo-grid--5 .demo-canvas-wrap { width:85px; height:85px; }
-        .sidebar:not(.collapsed) + .main .demo-grid--5 .demo-legend-val  { font-size:10px; }
-        .sidebar:not(.collapsed) + .main .demo-grid--5 .demo-legend-row  { font-size:10px; }
-        .demo-card { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:18px; display:flex; flex-direction:column; align-items:center; }
-        .demo-card-title { font-size:12px; font-weight:700; color:var(--text); margin-bottom:14px; display:flex; align-items:center; gap:7px; width:100%; }
-        .demo-canvas-wrap { width:150px; height:150px; margin-bottom:14px; }
-        .demo-legend { width:100%; display:flex; flex-direction:column; gap:7px; }
-        .demo-legend-row { display:flex; align-items:center; justify-content:space-between; font-size:11px; }
-        .demo-legend-left { display:flex; align-items:flex-start; gap:6px; color:var(--muted); flex:1; min-width:0; }
-        .demo-legend-left span { min-width:0; overflow-wrap:break-word; word-break:break-word; }
-        .demo-legend-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
-        .demo-legend-val { color:var(--text); font-weight:700; white-space:nowrap; font-size:11px; }
-        .demo-pill { background:var(--tag); border:1px solid var(--border); color:var(--muted); padding:4px 11px; border-radius:20px; font-size:11px; font-weight:600; cursor:pointer; transition:.2s; }
-        .demo-pill:hover { border-color:var(--blue); color:var(--text); }
-        .demo-pill.active { background:rgba(59,130,246,.15); border-color:rgba(59,130,246,.4); color:var(--blue); }
-        html.light .demo-card { background:#fff; }
-        html.light .demo-card-title { color:#111; }
-        html.light .demo-legend-val { color:#111; }
-        @media(max-width:960px) { .demo-grid { grid-template-columns:repeat(2,1fr); } }
-
-        /* ── Funil de Conversão ──────────────────── */
-        .funil-card { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:18px 24px; margin-bottom:20px; animation:fadeInUp .5s; }
-        html.light .funil-card { background:#fff; }
-        .funil-title { font-size:13px; font-weight:700; color:var(--muted); display:flex; align-items:center; gap:7px; }
-        .funil-spend-badge { display:inline-block; background:var(--blue); color:#fff; font-size:13px; font-weight:700; padding:8px 20px; border-radius:30px; margin:0 auto 12px; }
-        .funil-tri-wrap { display:flex; flex-direction:column; align-items:center; gap:2px; width:100%; max-width:520px; margin:0 auto; }
-        .funil-trap { border-radius:10px; padding:12px 16px; margin:0 auto; transition:width .5s ease; position:relative; box-sizing:border-box; }
-        .funil-trap-top { display:flex; align-items:center; gap:8px; }
-        .funil-trap-label { font-size:13px; font-weight:700; color:#fff; flex:1; }
-        .funil-trap-num { font-size:20px; font-weight:800; color:#fff; }
-        .funil-trap-x { background:rgba(255,255,255,.25); border:none; color:#fff; border-radius:50%; width:22px; height:22px; cursor:pointer; font-size:15px; line-height:1; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:.2s; }
-        .funil-trap-x:hover { background:rgba(255,255,255,.45); }
-        .funil-trap-cost { font-size:11px; color:rgba(255,255,255,.8); margin-top:5px; text-align:center; }
-        .funil-tri-rate { font-size:12px; color:var(--muted); font-weight:600; text-align:center; padding:3px 0; }
-        .funil-add-btn { display:flex; align-items:center; gap:6px; background:var(--tag); border:1px dashed var(--border); color:var(--muted); padding:8px 18px; border-radius:30px; font-size:12px; font-weight:600; cursor:pointer; margin:10px auto 0; transition:.2s; }
-        .funil-add-btn:hover { border-color:var(--blue); color:var(--blue); }
-        .funil-dropdown { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:6px; margin:8px auto 0; width:fit-content; display:none; box-shadow:0 8px 24px rgba(0,0,0,.3); }
-        html.light .funil-dropdown { background:#fff; box-shadow:0 4px 16px rgba(0,0,0,.12); }
-        .funil-dd-item { display:flex; align-items:center; gap:8px; padding:8px 14px; border-radius:8px; cursor:pointer; font-size:13px; color:var(--text); white-space:nowrap; transition:.15s; }
-        .funil-dd-item:hover { background:var(--row-hover); }
-        html.light .funil-dd-item { color:#111; }
-        .funil-dd-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
-
-        /* ── Melhores Anúncios ───────────────────── */
-        .best-ads-section { margin-top:28px; }
-        .best-ads-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; flex-wrap:wrap; gap:10px; }
-        .best-ads-title { font-size:15px; font-weight:700; display:flex; align-items:center; gap:8px; }
-        .best-ads-sort { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
-        .sort-pill { background:var(--tag); border:1px solid var(--border); color:var(--muted); padding:5px 12px; border-radius:20px; font-size:11px; font-weight:600; cursor:pointer; transition:.2s; }
-        .sort-pill:hover { border-color:var(--blue); color:var(--text); }
-        .sort-pill.active { background:rgba(59,130,246,.15); border-color:var(--blue); color:var(--blue); }
-        .best-ads-filters { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px; align-items:center; }
-        .best-ads-grid { display:grid; grid-template-columns:repeat(6,1fr); gap:12px; }
-        @media(max-width:1100px) { .best-ads-grid { grid-template-columns:repeat(4,1fr); } }
-        .ad-card { background:var(--card); border:1px solid var(--border); border-radius:12px; overflow:hidden; animation:fadeUp .3s ease; position:relative; }
-        .ad-card-thumb { width:100%; aspect-ratio:1/1; object-fit:cover; display:block; cursor:pointer; background:var(--tag); }
-        .ad-card-thumb-placeholder { width:100%; aspect-ratio:1/1; background:var(--tag); display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:28px; cursor:pointer; }
-        .ad-card-rank { position:absolute; top:10px; left:10px; background:#f59e0b; color:#000; font-size:11px; font-weight:800; padding:3px 8px; border-radius:12px; z-index:2; }
-        .ad-card-play { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:42px; height:42px; background:rgba(0,0,0,.55); border-radius:50%; display:flex; align-items:center; justify-content:center; pointer-events:none; z-index:2; }
-        .ad-card-body { padding:12px; }
-        .ad-card-metric-badge { display:inline-flex; align-items:center; gap:5px; background:rgba(59,130,246,.12); color:var(--blue); padding:3px 9px; border-radius:12px; font-size:11px; font-weight:700; margin-bottom:8px; }
-        .ad-card-name { font-size:12px; font-weight:600; color:var(--text); margin-bottom:4px; line-height:1.35; display:-webkit-box; -webkit-line-clamp:2; line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
-        .ad-card-path { font-size:10px; color:var(--muted); margin-bottom:10px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-        .ad-card-metrics { display:grid; grid-template-columns:1fr 1fr; gap:5px; }
-        .ad-card-metric-lbl { color:var(--muted); font-size:10px; }
-        .ad-card-metric-val { font-weight:700; color:var(--text); font-size:11px; }
-        .best-ads-load-more { display:flex; justify-content:center; margin-top:20px; }
-        @media(max-width:768px) { .best-ads-grid { grid-template-columns:repeat(2,1fr); } }
-        @media(max-width:480px) { .best-ads-grid { grid-template-columns:1fr; } }
-        /* ── Ad Media Modal ─────────────────────── */
-        .ad-media-overlay { position:fixed; inset:0; background:rgba(0,0,0,.88); backdrop-filter:blur(6px); z-index:1100; display:flex; align-items:center; justify-content:center; opacity:0; visibility:hidden; transition:.2s; }
-        .ad-media-overlay.open { opacity:1; visibility:visible; }
-        .ad-media-box { position:relative; width:min(92vw,500px); max-height:92vh; display:flex; flex-direction:column; align-items:center; gap:10px; }
-        .ad-media-close { position:absolute; top:-38px; right:0; background:rgba(255,255,255,.12); border:none; color:#fff; width:32px; height:32px; border-radius:50%; font-size:18px; cursor:pointer; display:flex; align-items:center; justify-content:center; z-index:2; }
-        .ad-media-close:hover { background:rgba(255,255,255,.22); }
-        .ad-media-img { max-width:100%; max-height:85vh; border-radius:10px; object-fit:contain; display:block; }
-        .ad-media-video { max-width:100%; max-height:85vh; border-radius:10px; background:#000; display:block; }
-        .ad-media-preview-wrap { width:100%; border-radius:10px; overflow:hidden; }
-        .ad-media-preview-wrap iframe { display:block; border:none; width:100% !important; min-height:min(85vh,700px); }
-        .ad-media-name { color:rgba(255,255,255,.75); font-size:12px; text-align:center; max-width:500px; }
-        .ad-media-loading { color:#fff; font-size:13px; display:flex; align-items:center; gap:8px; }
-        .ad-media-ext-btn { margin-top:4px; font-size:11px; color:rgba(255,255,255,.5); background:none; border:1px solid rgba(255,255,255,.2); border-radius:6px; padding:4px 10px; cursor:pointer; }
-        .ad-media-ext-btn:hover { color:#fff; border-color:rgba(255,255,255,.5); }
-        .ad-media-preview-wrap { border-radius:10px; overflow:hidden; display:flex; align-items:center; justify-content:center; }
-        .ad-media-preview-wrap iframe { display:block; border:none; }
-
-        /* ── Aba oculta ──────────────────────────── */
-        .aba-oculta { display:none !important; }
-
-        /* ── Light overrides ─────────────────────── */
-        html.light .tag { background:var(--tag); color:#374151; }
-        html.light thead th { color:#64748b; }
-        html.light .metric-value, html.light .ads-metric-val { color:#0f172a; background:linear-gradient(135deg,#0f172a,#334155); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
-        html.light .chart-card h3 { color:#0f172a; }
-        html.light .sidebar { box-shadow:1px 0 16px rgba(0,0,0,0.04); }
-        html.light .topbar { box-shadow:0 1px 8px rgba(0,0,0,0.03); }
-        html.light .card { box-shadow:0 1px 4px rgba(0,0,0,0.04), 0 4px 20px rgba(0,0,0,0.03); }
-        html.light .card:hover { box-shadow:0 4px 24px rgba(37,99,235,0.05), 0 1px 6px rgba(0,0,0,0.04); }
-        html.light .btn-primary { box-shadow:0 2px 10px rgba(37,99,235,0.2); }
-        html.light .nav-item.active { box-shadow:inset 3px 0 0 var(--blue); background:rgba(37,99,235,0.06); }
-
-        /* ── Sidebar overlay (mobile) ────────────── */
-        .sidebar-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:15; backdrop-filter:blur(2px); }
-        .sidebar-overlay.open { display:block; }
-        #btnMobileMenu { display:none; }
-
-        /* ── Responsive 960px ────────────────────── */
-        @media(max-width:960px) {
-            .metrics-grid { grid-template-columns:repeat(2,1fr); }
-            .charts-grid  { grid-template-columns:repeat(2,1fr); }
-            .ads-metrics  { grid-template-columns:repeat(2,1fr); }
-            .content { padding:20px 16px; }
-            .topbar { padding:16px; }
-            .demo-grid { grid-template-columns:repeat(2,1fr); }
-        }
-
-        /* ── Mobile 768px ────────────────────────── */
-        @media(max-width:768px) {
-            /* Body */
-            body { height:auto; min-height:100dvh; overflow-x:hidden; }
-            .main { height:100dvh; overflow:hidden; }
-
-            /* Sidebar: slide-out overlay */
-            .sidebar {
-                position:fixed; top:0; left:0; height:100dvh;
-                width:260px !important; padding:24px 16px;
-                transform:translateX(-100%); transition:transform .25s ease;
-                z-index:20; box-shadow:8px 0 32px rgba(0,0,0,.4);
-            }
-            .sidebar.mobile-open { transform:translateX(0); }
-            .sidebar.collapsed { width:260px !important; padding:24px 16px; }
-            .sidebar.collapsed .logo-text { opacity:1; width:auto; overflow:visible; }
-            .sidebar.collapsed .nav-item { justify-content:flex-start; padding:11px 12px; }
-            .sidebar.collapsed .nav-item span { opacity:1; width:auto; display:inline; }
-            #btnToggle { display:none !important; }
-            #btnMobileMenu { display:flex !important; }
-
-            /* Topbar */
-            .topbar { padding:12px 16px; gap:8px; }
-            .title-area h1 { font-size:16px; }
-            .title-area p  { display:none; }
-            .topbar-right  { gap:6px; }
-
-            /* Content */
-            .content { padding:16px; }
-
-            /* Metrics */
-            .metrics-grid { grid-template-columns:1fr 1fr; gap:10px; }
-            .metric-value { font-size:22px; }
-            .ads-metrics  { grid-template-columns:1fr 1fr; gap:10px; }
-            .ads-metric-val { font-size:17px; }
-
-            /* Charts */
-            .charts-grid { grid-template-columns:1fr; }
-
-            /* Config panel */
-            .metrics-cfg-sections { grid-template-columns:1fr; gap:14px; }
-
-            /* Account input */
-            .acct-btn { min-width:unset; }
-            .acct-wrap { flex:1; }
-            .acct-dropdown { width:100%; }
-
-            /* Modal */
-            .modal { width:92vw; max-width:420px; }
-
-            /* Ads */
-            .ads-bar { gap:8px; }
-            .ads-filters { gap:8px; }
-
-            /* Leads controls: wrap full width */
-            #leadsControls { width:100%; }
-            .ctrl-box input[type=text] { width:140px; }
-        }
-
-        /* ── Mobile pequeno 480px ─────────────────── */
-        @media(max-width:480px) {
-            .metrics-grid { grid-template-columns:1fr 1fr; gap:8px; }
-            .metric-card { padding:16px 12px; }
-            .metric-value { font-size:20px; }
-            .ads-metrics  { grid-template-columns:1fr 1fr; gap:8px; }
-            .ads-metric   { padding:14px 10px; }
-            .ads-metric-val { font-size:16px; }
-            .refresh-badge { display:none; }
-            .ctrl-box input[type=text] { width:110px; }
-            .demo-grid { grid-template-columns:1fr; }
-            .topbar { padding:10px 12px; }
-            .content { padding:12px; }
-        }
-        /* ── Kanban Premium ─────────────────────── */
-        .kanban-board { display:flex; gap:14px; padding:8px 4px 24px; overflow-x:auto; align-items:flex-start; min-height:520px; scroll-snap-type:x mandatory; }
-        .kanban-board::-webkit-scrollbar { height:6px; }
-        .kanban-board::-webkit-scrollbar-thumb { background:rgba(138,143,155,0.2); border-radius:10px; }
-
-        .kanban-col { flex:1; min-width:270px; max-width:320px; background:var(--card); backdrop-filter:blur(12px); border-radius:14px; border:1px solid var(--border); display:flex; flex-direction:column; scroll-snap-align:start; transition:all .3s; overflow:hidden; }
-
-        .kanban-col-header { padding:0; position:relative; }
-        .kanban-col-accent { height:3px; border-radius:3px 3px 0 0; }
-        .kanban-col[data-status="lead"] .kanban-col-accent { background:linear-gradient(90deg,#3b82f6,#60a5fa); }
-        .kanban-col[data-status="contato"] .kanban-col-accent { background:linear-gradient(90deg,#a78bfa,#c4b5fd); }
-        .kanban-col[data-status="pendente"] .kanban-col-accent { background:linear-gradient(90deg,#f59e0b,#fbbf24); }
-        .kanban-col[data-status="vendido"] .kanban-col-accent { background:linear-gradient(90deg,#10b981,#34d399); }
-
-        .kanban-col-info { padding:14px 16px 12px; display:flex; align-items:center; justify-content:space-between; }
-        .kanban-col-title { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.6px; display:flex; align-items:center; gap:8px; color:var(--text); }
-        .kanban-col[data-status="lead"] .kanban-col-dot { background:#3b82f6; }
-        .kanban-col[data-status="contato"] .kanban-col-dot { background:#a78bfa; }
-        .kanban-col[data-status="pendente"] .kanban-col-dot { background:#f59e0b; }
-        .kanban-col[data-status="vendido"] .kanban-col-dot { background:#10b981; }
-        .kanban-col-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
-        .kanban-col-stats { display:flex; align-items:center; gap:8px; }
-        .kanban-col-count { font-size:11px; background:var(--tag); color:var(--muted); padding:2px 9px; border-radius:12px; font-weight:700; }
-        .kanban-col-value { font-size:10px; color:var(--green); font-weight:700; background:rgba(16,185,129,0.08); padding:2px 8px; border-radius:12px; }
-
-        .kanban-cards { padding:8px 10px 14px; display:flex; flex-direction:column; gap:8px; overflow-y:auto; max-height:calc(100vh - 320px); min-height:80px; }
-
-        /* ── Lead Card Premium ────────────────────── */
-        .lead-card { background:var(--card-solid); border:1px solid var(--border); border-radius:12px; padding:0; overflow:hidden; cursor:pointer; transition:all .22s ease; animation:fadeUp .35s ease; position:relative; }
-        .lead-card:hover { transform:translateY(-3px); box-shadow:0 8px 24px rgba(0,0,0,.18); border-color:rgba(59,130,246,.25); }
-        .lead-card::before { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; border-radius:3px 0 0 3px; }
-        .kanban-col[data-status="lead"] .lead-card::before { background:#3b82f6; }
-        .kanban-col[data-status="contato"] .lead-card::before { background:#a78bfa; }
-        .kanban-col[data-status="pendente"] .lead-card::before { background:#f59e0b; }
-        .kanban-col[data-status="vendido"] .lead-card::before { background:#10b981; }
-
-        .lead-card-body { padding:12px 12px 10px 16px; }
-        .lead-card-top { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
-        .lead-card-avatar { width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:800; color:#fff; flex-shrink:0; text-transform:uppercase; letter-spacing:0.5px; }
-        .lead-card-info { flex:1; min-width:0; }
-        .lead-card-name { font-size:13px; font-weight:700; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:1.3; }
-        .lead-card-time { font-size:10px; color:var(--muted); margin-top:1px; }
-
-        .lead-card-row { display:flex; align-items:center; justify-content:space-between; gap:6px; }
-        .lead-card-phone { font-size:11px; color:var(--muted); display:flex; align-items:center; gap:5px; }
-        .lead-card-phone i { color:var(--muted); }
-        .lead-card-actions { display:flex; gap:4px; }
-        .lead-card-action { width:28px; height:28px; border:none; border-radius:8px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .2s; background:var(--tag); color:var(--muted); }
-        .lead-card-action:hover { transform:scale(1.1); }
-        .lead-card-action.whatsapp { color:#25D366; }
-        .lead-card-action.whatsapp:hover { background:rgba(37,211,102,.12); }
-
-        .lead-card-footer { padding:8px 12px 8px 16px; border-top:1px solid var(--border); display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
-        .lead-card-badge { font-size:9px; padding:2px 7px; border-radius:20px; font-weight:700; display:inline-flex; align-items:center; gap:4px; }
-        .lead-card-badge.plat-whatsapp { background:rgba(37,211,102,.1); color:#25D366; }
-        .lead-card-badge.plat-instagram { background:rgba(225,48,108,.08); color:#e1306c; }
-        .lead-card-badge.plat-facebook { background:rgba(24,119,242,.08); color:#1877f2; }
-        .lead-card-badge.inst { background:var(--tag); color:var(--muted); }
-        .lead-card-badge.utm { background:rgba(167,139,250,.08); color:var(--purple); max-width:120px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-
-        .kanban-empty { color:var(--muted); font-size:12px; text-align:center; padding:28px 16px; border:2px dashed var(--border); border-radius:10px; margin:4px 0; }
-
-        /* View Toggle Switch */
-        .view-toggle { display:flex; background:var(--tag); padding:3px; border-radius:10px; gap:2px; }
-        .view-toggle-btn { border:none; background:none; padding:5px 12px; border-radius:8px; color:var(--muted); cursor:pointer; display:flex; align-items:center; gap:6px; font-size:12px; font-weight:600; transition:all .2s; }
-        .view-toggle-btn:hover { color:var(--text); }
-        .view-toggle-btn.active { background:var(--card-solid); color:var(--blue); box-shadow:0 2px 8px rgba(0,0,0,.12); }
-
-        .hidden { display:none !important; }
-
-        /* Kanban responsive */
-        @media(max-width:768px) {
-            .kanban-col { min-width:260px; max-width:260px; }
-            .kanban-cards { max-height:calc(100vh - 280px); }
-        }
-    </style>
+    <link rel="stylesheet" href="css/dashboard.css">
+    <script src="js/utils.js"></script>
 </head>
 <body>
 
@@ -635,6 +86,11 @@
                 <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="seguidores"       class="share-metric-chk"         style="accent-color:var(--blue);width:14px;height:14px;"> Seguidores</label>
                 <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="cps"              class="share-metric-chk"         style="accent-color:var(--blue);width:14px;height:14px;"> Custo/seguidor</label>
                 <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="active_campaigns" class="share-metric-chk" checked style="accent-color:var(--blue);width:14px;height:14px;"> Campanhas Ativas</label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="purchases"        class="share-metric-chk"         style="accent-color:var(--blue);width:14px;height:14px;"> Compras</label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="purchase_value"   class="share-metric-chk"         style="accent-color:var(--blue);width:14px;height:14px;"> Valor em Compras</label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="roas"             class="share-metric-chk"         style="accent-color:var(--blue);width:14px;height:14px;"> ROAS</label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="init_checkout"    class="share-metric-chk"         style="accent-color:var(--blue);width:14px;height:14px;"> Inícios de Checkout</label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="cpp"              class="share-metric-chk"         style="accent-color:var(--blue);width:14px;height:14px;"> Custo/compra</label>
             </div>
         </div>
 
@@ -659,6 +115,11 @@
                 <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="cpr"        class="share-col-chk" checked style="accent-color:var(--blue);width:14px;height:14px;"> CPR</label>
                 <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="seguidores" class="share-col-chk"         style="accent-color:var(--blue);width:14px;height:14px;"> Seguidores</label>
                 <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="cps"        class="share-col-chk"         style="accent-color:var(--blue);width:14px;height:14px;"> Custo/seguidor</label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="purchases"      class="share-col-chk"         style="accent-color:var(--blue);width:14px;height:14px;"> Compras</label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="purchase_value" class="share-col-chk"         style="accent-color:var(--blue);width:14px;height:14px;"> Valor em Compras</label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="roas"           class="share-col-chk"         style="accent-color:var(--blue);width:14px;height:14px;"> ROAS</label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="init_checkout"  class="share-col-chk"         style="accent-color:var(--blue);width:14px;height:14px;"> Inícios de Checkout</label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="cpp"            class="share-col-chk"         style="accent-color:var(--blue);width:14px;height:14px;"> Custo/compra</label>
             </div>
         </div>
 
@@ -928,16 +389,7 @@
                 <!-- Search -->
                 <div class="ctrl-box">
                     <i data-lucide="search" style="width:14px;color:var(--muted);flex-shrink:0;"></i>
-                    <input type="text" id="inputBusca" placeholder="Pesquisar leads...">
-                </div>
-                <!-- Status Filter -->
-                <div class="ctrl-box">
-                    <i data-lucide="filter" style="width:14px;color:var(--muted);flex-shrink:0;"></i>
-                    <select id="filtroStatusLeads" class="bare" onchange="aplicarFiltros()">
-                        <option value="">Todos os Status</option>
-                        <option value="lead">Lead / Novo</option>
-                        <option value="vendido">Vendido</option>
-                    </select>
+                    <input type="text" id="inputBusca" placeholder="Buscar nome ou telefone...">
                 </div>
                 <!-- Period -->
                 <div class="ctrl-box">
@@ -977,24 +429,13 @@
                         Leads Reais
                         <span class="count-badge" id="leadsCount">—</span>
                     </div>
-                    <div style="display:flex;gap:12px;align-items:center;">
-                        <!-- Toggle Visualização -->
-                        <div class="view-toggle">
-                            <button class="view-toggle-btn active" id="btnViewLista" onclick="trocarVisaoLeads('lista')">
-                                <i data-lucide="list" style="width:14px;"></i> Lista
-                            </button>
-                            <button class="view-toggle-btn" id="btnViewKanban" onclick="trocarVisaoLeads('kanban')">
-                                <i data-lucide="layout-kanban" style="width:14px;"></i> Kanban
-                            </button>
-                        </div>
+                    <div style="display:flex;gap:8px;align-items:center;">
                         <button class="btn btn-ghost btn-sm" onclick="recarregarLeads()">
                             <i data-lucide="refresh-cw" style="width:12px;" id="reloadIcon"></i> Atualizar
                         </button>
                     </div>
                 </div>
-
-                <!-- Visão Tabela -->
-                <div id="wrapper-tabela" style="overflow-x:auto;">
+                <div style="overflow-x:auto;">
                     <table>
                         <thead>
                             <tr>
@@ -1011,15 +452,8 @@
                         </thead>
                         <tbody id="tabela-corpo"></tbody>
                     </table>
-                    <div class="pagination" id="paginacao"></div>
                 </div>
-
-                <!-- Visão Kanban -->
-                <div id="wrapper-kanban" class="hidden">
-                    <div class="kanban-board" id="quadro-kanban">
-                        <!-- Colunas serão geradas via JS -->
-                    </div>
-                </div>
+                <div class="pagination" id="paginacao"></div>
             </div>
         </div>
 
@@ -1104,6 +538,11 @@
                     <div class="ads-metric" data-card="cpr"><div class="ads-metric-val" id="ads-cpr">—</div><div class="ads-metric-lbl">CPR (custo/conversa)</div></div>
                     <div class="ads-metric" data-card="seguidores"><div class="ads-metric-val" id="ads-seguidores">—</div><div class="ads-metric-lbl">Seguidores (curtidas)</div></div>
                     <div class="ads-metric" data-card="cps"><div class="ads-metric-val" id="ads-cps">—</div><div class="ads-metric-lbl">Custo/seguidor</div></div>
+                    <div class="ads-metric" data-card="purchases"><div class="ads-metric-val" id="ads-purchases">—</div><div class="ads-metric-lbl">Compras</div></div>
+                    <div class="ads-metric" data-card="purchase_value"><div class="ads-metric-val" id="ads-purchase-value">—</div><div class="ads-metric-lbl">Valor em Compras</div></div>
+                    <div class="ads-metric" data-card="roas"><div class="ads-metric-val" id="ads-roas">—</div><div class="ads-metric-lbl">ROAS</div></div>
+                    <div class="ads-metric" data-card="init_checkout"><div class="ads-metric-val" id="ads-init-checkout">—</div><div class="ads-metric-lbl">Inícios de Checkout</div></div>
+                    <div class="ads-metric" data-card="cpp"><div class="ads-metric-val" id="ads-cpp">—</div><div class="ads-metric-lbl">Custo/compra</div></div>
                 </div>
 
                 <!-- Funil de Conversão -->
@@ -1455,11 +894,11 @@
 
                 <!-- CREATE VIEW -->
                 <div id="waCreate" style="display:none;padding:10px 0;">
-                    <div style="background:var(--tag);border-radius:10px;padding:16px;text-align:left;">
+                    <div style="background:var(--tag);border-radius:10px;padding:16px;text-align:left;max-width:420px;">
                         <label style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;">Nome da Instância</label>
                         <input type="text" id="waInstanceName" class="form-control" placeholder="Ex: Loja Principal" style="width:100%;margin-bottom:12px;">
                         <div style="display:flex;gap:8px;">
-                            <button class="btn btn-green btn-sm" id="btnGerarQr" onclick="waCreateInstance()" style="flex:1;">Gerar QR Code</button>
+                            <button class="btn btn-green btn-sm" id="btnGerarQr" onclick="waCreateInstance()">Gerar QR Code</button>
                             <button class="btn btn-ghost btn-sm" onclick="carregarListaWa()">Cancelar</button>
                         </div>
                     </div>
@@ -1495,37 +934,48 @@
         <!-- ABA: LOGS -->
         <div id="aba-logs" class="aba-oculta">
             <div class="card" style="padding:24px;">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:10px;">
                     <div>
                         <h3 style="margin:0;font-size:18px;">Logs do Sistema</h3>
                         <p style="color:var(--muted);font-size:12px;margin:4px 0 0;">Histórico completo da jornada de rastreamento</p>
                     </div>
-                    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-                        <input id="log-filter-instance" type="text" placeholder="Instância..." onkeyup="if(event.key==='Enter')carregarLogs()" style="background:var(--card);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px;width:160px;">
-                        <input id="log-filter-date-from" type="date" onchange="carregarLogs()" style="background:var(--card);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px;">
-                        <input id="log-filter-date-to" type="date" onchange="carregarLogs()" style="background:var(--card);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px;">
-                        <select id="log-filter-level" onchange="carregarLogs()" style="background:var(--card);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px;">
-                            <option value="">Todos os níveis</option>
-                            <option value="info">Info</option>
-                            <option value="warn">Aviso</option>
-                        </select>
-                        <select id="log-filter-tag" onchange="carregarLogs()" style="background:var(--card);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px;">
-                            <option value="">Todas as etapas</option>
-                            <option value="recv">Recebimento</option>
-                            <option value="auth">Autenticação</option>
-                            <option value="filter">Filtro</option>
-                            <option value="lead">Lead</option>
-                            <option value="meta-api">Meta API</option>
-                            <option value="db">Banco de Dados</option>
-                            <option value="capi-lead">CAPI Lead</option>
-                            <option value="purchase">Compra</option>
-                            <option value="capi-purchase">CAPI Purchase</option>
-                        </select>
-                        <button class="btn btn-ghost btn-sm" onclick="carregarLogs()">
-                            <i data-lucide="refresh-cw" style="width:13px;"></i> Atualizar
+                    <div style="display:flex;gap:6px;align-items:center;">
+                        <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--muted);cursor:pointer;" title="Atualizar a cada 15s">
+                            <input type="checkbox" id="log-auto-refresh" onchange="toggleLogAutoRefresh()" style="accent-color:#3b82f6;">
+                            Auto
+                        </label>
+                        <button class="btn btn-ghost btn-sm" onclick="carregarLogs()" style="padding:5px 10px;">
+                            <i data-lucide="refresh-cw" style="width:13px;"></i>
                         </button>
                     </div>
                 </div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">
+                    <input id="log-filter-search" type="text" placeholder="Buscar mensagem..." onkeyup="if(event.key==='Enter')carregarLogs()" style="background:var(--card);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px;width:180px;">
+                    <input id="log-filter-instance" type="text" placeholder="Instância..." onkeyup="if(event.key==='Enter')carregarLogs()" style="background:var(--card);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px;width:140px;">
+                    <input id="log-filter-date-from" type="date" onchange="carregarLogs()" style="background:var(--card);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px;">
+                    <input id="log-filter-date-to" type="date" onchange="carregarLogs()" style="background:var(--card);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px;">
+                    <select id="log-filter-level" onchange="carregarLogs()" style="background:var(--card);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px;">
+                        <option value="">Todos os níveis</option>
+                        <option value="info">Info</option>
+                        <option value="warn">Aviso</option>
+                    </select>
+                    <select id="log-filter-tag" onchange="carregarLogs()" style="background:var(--card);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px;">
+                        <option value="">Todas as etapas</option>
+                        <option value="recv">Recebimento</option>
+                        <option value="auth">Autenticação</option>
+                        <option value="filter">Filtro</option>
+                        <option value="lead">Lead</option>
+                        <option value="meta-api">Meta API</option>
+                        <option value="db">Banco de Dados</option>
+                        <option value="capi-lead">CAPI Lead</option>
+                        <option value="purchase">Compra</option>
+                        <option value="capi-purchase">CAPI Purchase</option>
+                    </select>
+                    <button class="btn btn-ghost btn-sm" onclick="limparFiltrosLog()" style="padding:5px 10px;font-size:11px;color:var(--muted);">
+                        <i data-lucide="x" style="width:11px;"></i> Limpar
+                    </button>
+                </div>
+                <div id="log-stats" style="display:flex;gap:16px;margin-bottom:12px;font-size:12px;color:var(--muted);"></div>
                 <div style="overflow-x:auto;">
                     <table style="width:100%;border-collapse:collapse;font-size:12px;">
                         <thead>
@@ -1543,6 +993,7 @@
                         </tbody>
                     </table>
                 </div>
+                <div id="log-pagination" style="display:flex;justify-content:center;align-items:center;gap:12px;margin-top:14px;"></div>
             </div>
         </div>
 
@@ -1606,11 +1057,6 @@ async function authFetch(url, opts = {}) {
     }
     return r;
 }
-
-// ── Utils ──────────────────────────────────────────────────────
-const $  = id => document.getElementById(id);
-const esc = s => !s ? '' : String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-function ls(k,v) { try { if(v===undefined) return localStorage.getItem(k); localStorage.setItem(k,v); } catch(_){} }
 
 function toast(msg, type='info') {
     const el = document.createElement('div');
@@ -1722,504 +1168,6 @@ async function popularSeletorAdmin() {
 function trocarClienteAdmin(id) {
     clienteAdminSelecionado = id ? parseInt(id) : null;
     aplicarFiltros();
-}
-
-// ── Leads ──────────────────────────────────────────────────────
-async function recarregarLeads(silencioso = false) {
-    const dot   = $('refreshDot');
-    const label = $('refreshLabel');
-    dot.className   = 'refresh-dot loading';
-    label.textContent = silencioso ? 'atualizando...' : 'carregando...';
-
-    const icon = $('reloadIcon');
-    if (icon) icon.style.animation = 'spin 1s linear infinite';
-
-    if (!silencioso) renderSkeleton();
-
-    try {
-        const data = await authFetch('/api/leads').then(r=>r.json());
-        if (!Array.isArray(data)) throw new Error(data.error || 'Erro ao buscar leads');
-        rawData = data;
-        aplicarFiltros();
-
-        const agora = new Date().toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'});
-        dot.className   = 'refresh-dot';
-        label.textContent = `atualizado ${agora}`;
-    } catch(e) {
-        dot.className   = 'refresh-dot';
-        dot.style.background = 'var(--red)';
-        label.textContent = 'erro ao carregar';
-        if (!silencioso) toast(e.message, 'error');
-    } finally {
-        if (icon) icon.style.animation = '';
-        lucide.createIcons({ nodes: [icon?.parentElement].filter(Boolean) });
-    }
-}
-
-function renderSkeleton() {
-    const tbody = $('tabela-corpo');
-    tbody.innerHTML = Array.from({length:8}, () => `
-        <tr class="sk-row">
-            ${Array.from({length:8}, () => `<td><div class="sk-line skeleton" style="width:${60+Math.random()*40}%"></div></td>`).join('')}
-        </tr>`).join('');
-    $('leadsCount').textContent = '—';
-    $('paginacao').innerHTML = '';
-}
-
-// ── Filtros ────────────────────────────────────────────────────
-function onPeriodoChange() {
-    const v = $('periodoSelect').value;
-    $('areaPersonalizada').style.display = v === 'personalizado' ? 'flex' : 'none';
-    if (v !== 'personalizado') aplicarFiltros();
-}
-
-function calcRange(periodo) {
-    const hoje = new Date(); hoje.setHours(0,0,0,0);
-    const amanha = new Date(hoje); amanha.setDate(amanha.getDate()+1);
-    if (periodo === 'hoje')   return [hoje, amanha];
-    if (periodo === 'ontem')  { const d=new Date(hoje); d.setDate(d.getDate()-1); return [d, hoje]; }
-    if (periodo === '7dias')  { const d=new Date(hoje); d.setDate(d.getDate()-7); return [d, amanha]; }
-    if (periodo === 'personalizado') {
-        const a = $('dataInicio').value, b = $('dataFim').value;
-        if (a && b) { const f=new Date(b); f.setDate(f.getDate()+1); return [new Date(a), f]; }
-    }
-    return null;
-}
-
-function aplicarFiltros() {
-    const busca   = ($('inputBusca').value||'').toLowerCase().trim();
-    const statusFiltro = ($('filtroStatusLeads').value||'').toLowerCase();
-    const periodo = $('periodoSelect').value;
-    const range   = calcRange(periodo);
-
-    dadosFiltrados = rawData.filter(l => {
-        if (clienteAdminSelecionado && l.cliente_id !== clienteAdminSelecionado) return false;
-        
-        // Filtro por Status
-        if (statusFiltro && (l.status||'').toLowerCase() !== statusFiltro) return false;
-
-        // Busca textual expandida
-        if (busca) {
-            const n = (l.nome||'').toLowerCase();
-            const t = (l.telefone||'').toLowerCase();
-            const i = (l.instancia||'').toLowerCase();
-            const u = (l.utm_content||'').toLowerCase();
-            if (!n.includes(busca) && !t.includes(busca) && !i.includes(busca) && !u.includes(busca)) return false;
-        }
-
-        if (range) {
-            const d = new Date(l.event_time || l.created_at || 0);
-            if (d < range[0] || d >= range[1]) return false;
-        }
-        return true;
-    });
-
-    // Ordenação
-    dadosFiltrados.sort((a,b) => {
-        let va = a[sortCol]||'', vb = b[sortCol]||'';
-        if (sortCol === 'event_time') { va = new Date(va); vb = new Date(vb); }
-        return va < vb ? -sortDir : va > vb ? sortDir : 0;
-    });
-
-    pagAtual = 1;
-    if (viewLeadsMode === 'kanban') renderKanban();
-    else renderTabela();
-    
-    renderRelatorios();
-}
-
-let viewLeadsMode = 'lista';
-
-function trocarVisaoLeads(modo) {
-    viewLeadsMode = modo;
-    const btnLista = document.getElementById('btnViewLista');
-    const btnKanban = document.getElementById('btnViewKanban');
-    const wrapTabela = document.getElementById('wrapper-tabela');
-    const wrapKanban = document.getElementById('wrapper-kanban');
-
-    if (btnLista) btnLista.classList.toggle('active', modo === 'lista');
-    if (btnKanban) btnKanban.classList.toggle('active', modo === 'kanban');
-    if (wrapTabela) wrapTabela.classList.toggle('hidden', modo !== 'lista');
-    if (wrapKanban) wrapKanban.classList.toggle('hidden', modo !== 'kanban');
-    
-    if (modo === 'kanban') renderKanban();
-    else renderTabela();
-    
-    lucide.createIcons({ nodes: [document.getElementById('aba-leads')] });
-}
-
-function renderKanban() {
-    const AVATAR_COLORS = ['#3b82f6','#a78bfa','#f59e0b','#10b981','#ef4444','#ec4899','#06b6d4','#8b5cf6'];
-    const colunas = [
-        { id: 'lead',     label: 'Novo Lead',    icon: 'user-plus' },
-        { id: 'contato',  label: 'Em Contato',   icon: 'message-circle' },
-        { id: 'pendente', label: 'Negociação',   icon: 'handshake' },
-        { id: 'vendido',  label: 'Vendido',      icon: 'trophy' }
-    ];
-
-    const total = dadosFiltrados.length;
-    const leadsCountEl = document.getElementById('leadsCount');
-    if (leadsCountEl) leadsCountEl.textContent = total;
-    
-    const btnExport = document.getElementById('btnExport');
-    if (btnExport) btnExport.style.display = 'flex';
-
-    const quadro = document.getElementById('quadro-kanban');
-    if (!quadro) return;
-
-    function getInitials(name) {
-        if (!name) return '?';
-        const parts = name.trim().split(/\s+/);
-        if (parts.length >= 2) return (parts[0][0] + parts[parts.length-1][0]).toUpperCase();
-        return parts[0].substring(0,2).toUpperCase();
-    }
-
-    function getAvatarColor(name) {
-        let hash = 0;
-        for (let i = 0; i < (name||'').length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
-        return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
-    }
-
-    function getPlatClass(plat) {
-        const p = (plat||'').toLowerCase();
-        if (p.includes('whats')) return 'plat-whatsapp';
-        if (p.includes('face')) return 'plat-facebook';
-        return 'plat-instagram';
-    }
-
-    function getPlatLabel(plat) {
-        const p = (plat||'').toLowerCase();
-        if (p.includes('whats')) return 'WhatsApp';
-        if (p.includes('face')) return 'Facebook';
-        return 'Instagram';
-    }
-
-    function formatWhatsLink(phone) {
-        if (!phone) return '#';
-        const clean = phone.replace(/\D/g,'');
-        return `https://wa.me/${clean.startsWith('55') ? clean : '55' + clean}`;
-    }
-
-    quadro.innerHTML = colunas.map(col => {
-        const leadsNaCol = dadosFiltrados.filter(l => {
-            const st = (l.status||'lead').toLowerCase();
-            return st === col.id || (col.id === 'lead' && (st === 'novo' || st === 'lead'));
-        });
-
-        const valorTotal = leadsNaCol.reduce((s, l) => s + parseFloat(l.valor_venda || 0), 0);
-        const showValue = col.id === 'vendido' && valorTotal > 0;
-
-        return `
-            <div class="kanban-col" data-status="${col.id}">
-                <div class="kanban-col-header">
-                    <div class="kanban-col-accent"></div>
-                    <div class="kanban-col-info">
-                        <div class="kanban-col-title">
-                            <span class="kanban-col-dot"></span>
-                            ${col.label}
-                        </div>
-                        <div class="kanban-col-stats">
-                            <span class="kanban-col-count">${leadsNaCol.length}</span>
-                            ${showValue ? `<span class="kanban-col-value">R$ ${valorTotal.toLocaleString('pt-BR',{minimumFractionDigits:2})}</span>` : ''}
-                        </div>
-                    </div>
-                </div>
-                <div class="kanban-cards" id="cards-${col.id}">
-                    ${leadsNaCol.map(l => {
-                        const initials = getInitials(l.nome);
-                        const avatarBg = getAvatarColor(l.nome);
-                        const platClass = getPlatClass(l.plataforma);
-                        const platLabel = getPlatLabel(l.plataforma);
-                        const waLink = formatWhatsLink(l.telefone);
-                        const tempo = tempoRelativo(l.event_time || l.created_at);
-
-                        return `
-                        <div class="lead-card" onclick="abrirModalPorId(${l.id})">
-                            <div class="lead-card-body">
-                                <div class="lead-card-top">
-                                    <div class="lead-card-avatar" style="background:${avatarBg}">${initials}</div>
-                                    <div class="lead-card-info">
-                                        <div class="lead-card-name">${esc(l.nome) || 'Sem Nome'}</div>
-                                        <div class="lead-card-time">${tempo}</div>
-                                    </div>
-                                </div>
-                                <div class="lead-card-row">
-                                    <div class="lead-card-phone">
-                                        <i data-lucide="phone" style="width:10px;"></i>
-                                        ${esc(l.telefone) || '\u2014'}
-                                    </div>
-                                    <div class="lead-card-actions">
-                                        <a href="${waLink}" target="_blank" class="lead-card-action whatsapp" onclick="event.stopPropagation()" title="Abrir WhatsApp">
-                                            <i data-lucide="message-circle" style="width:13px;"></i>
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="lead-card-footer">
-                                <span class="lead-card-badge ${platClass}">${platLabel}</span>
-                                ${l.instancia ? `<span class="lead-card-badge inst">${esc(l.instancia)}</span>` : ''}
-                                ${l.utm_content && l.utm_content !== 'Direto' ? `<span class="lead-card-badge utm" title="${esc(l.utm_content)}">${esc(l.utm_content)}</span>` : ''}
-                            </div>
-                        </div>`;
-                    }).join('')}
-                    ${leadsNaCol.length === 0 ? '<div class="kanban-empty"><i data-lucide="inbox" style="width:20px;margin-bottom:6px;display:block;margin:0 auto 6px;"></i>Nenhum lead nesta etapa</div>' : ''}
-                </div>
-            </div>
-        `;
-    }).join('');
-
-    lucide.createIcons({ nodes: [quadro] });
-}
-
-function abrirModalPorId(id) {
-    const idx = dadosFiltrados.findIndex(l => l.id === id);
-    if (idx !== -1) abrirModal(idx);
-}
-
-
-// Debounce na busca
-$('inputBusca').addEventListener('input', () => {
-    clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(aplicarFiltros, 280);
-});
-
-// ── Sorting ────────────────────────────────────────────────────
-function sortBy(col) {
-    if (sortCol === col) sortDir *= -1;
-    else { sortCol = col; sortDir = -1; }
-
-    ['nome','status','event_time'].forEach(c => {
-        const el = $('sort-'+c);
-        if (!el) return;
-        el.textContent = c === sortCol ? (sortDir === 1 ? '↑' : '↓') : '↕';
-        el.parentElement.classList.toggle('sort-asc',  c === sortCol && sortDir === 1);
-        el.parentElement.classList.toggle('sort-desc', c === sortCol && sortDir === -1);
-    });
-    aplicarFiltros();
-}
-
-// ── Render tabela com paginação ────────────────────────────────
-function renderTabela() {
-    const total  = dadosFiltrados.length;
-    const inicio = (pagAtual-1) * POR_PAGINA;
-    const pagina = dadosFiltrados.slice(inicio, inicio + POR_PAGINA);
-
-    $('leadsCount').textContent = total;
-    $('btnExport').style.display = 'flex';
-
-    const tbody = $('tabela-corpo');
-    if (!pagina.length) {
-        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--muted);">Nenhum lead encontrado.</td></tr>`;
-        $('paginacao').innerHTML = '';
-        return;
-    }
-
-    tbody.innerHTML = pagina.map((lead, i) => {
-        const idx      = inicio + i;
-        const plat     = (lead.plataforma||'instagram').toLowerCase();
-        const platCls  = plat.includes('face') ? 'facebook' : plat.includes('whats') ? 'whatsapp' : 'instagram';
-        const status   = (lead.status||'Lead').toLowerCase();
-        const purchase = status === 'vendido';
-        const stColor  = purchase ? '#10b981' : '';
-        const stBorder = purchase ? '1px solid rgba(16,185,129,.3)' : 'transparent';
-        const msg      = (lead.mensagem_recebida||'Sem mensagem').substring(0,35);
-        const temCapi  = !!lead.pixel; // token vem da agência via env, só precisa do pixel
-        const data     = tempoRelativo(lead.event_time||lead.created_at);
-
-        return `<tr>
-            <td style="color:var(--text);font-weight:600;">${esc(lead.nome)||'N/A'}</td>
-            <td>${esc(lead.telefone)||'N/A'}</td>
-            <td><span class="tag" style="color:${stColor};border:${stBorder};">${esc(status)}</span></td>
-            <td title="${esc(lead.mensagem_recebida)}" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;">${esc(msg)}${lead.mensagem_recebida?.length>35?'…':''}</td>
-            <td style="font-size:12px;color:var(--muted);">${esc(lead.instancia||'—')}</td>
-            <td><div class="platform-icon ${platCls}">${esc(lead.plataforma||'instagram')}</div></td>
-            <td title="${esc(lead.event_time)}" style="white-space:nowrap;">${data}</td>
-            <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;">${esc(lead.utm_content||'—')}</td>
-            <td>${temCapi ? `<button class="btn btn-green btn-sm" onclick="abrirModal(${idx})"><i data-lucide="zap" style="width:11px;"></i> Venda</button>` : '<span style="color:var(--muted);font-size:12px;">—</span>'}</td>
-        </tr>`;
-    }).join('');
-
-    lucide.createIcons({ nodes: [tbody] });
-
-    // Paginação
-    const totalPags = Math.ceil(total / POR_PAGINA);
-    renderPaginacao(totalPags, total, inicio);
-}
-
-function renderPaginacao(totalPags, total, inicio) {
-    if (totalPags <= 1) { $('paginacao').innerHTML = ''; return; }
-    const fim = Math.min(inicio + POR_PAGINA, total);
-    let html = `<span class="page-info">Mostrando ${inicio+1}–${fim} de ${total}</span><div class="page-btns">`;
-    html += `<button class="page-btn" onclick="irPagina(${pagAtual-1})" ${pagAtual===1?'disabled':''}>‹</button>`;
-
-    // Janela de páginas
-    const vizinhos = 2;
-    for (let p=1; p<=totalPags; p++) {
-        if (p===1 || p===totalPags || (p>=pagAtual-vizinhos && p<=pagAtual+vizinhos)) {
-            html += `<button class="page-btn${p===pagAtual?' active':''}" onclick="irPagina(${p})">${p}</button>`;
-        } else if (p===pagAtual-vizinhos-1 || p===pagAtual+vizinhos+1) {
-            html += `<button class="page-btn" disabled style="cursor:default">…</button>`;
-        }
-    }
-    html += `<button class="page-btn" onclick="irPagina(${pagAtual+1})" ${pagAtual===totalPags?'disabled':''}>›</button></div>`;
-    $('paginacao').innerHTML = html;
-}
-
-function irPagina(p) {
-    if (p < 1 || p > Math.ceil(dadosFiltrados.length/POR_PAGINA)) return;
-    pagAtual = p;
-    renderTabela();
-    document.querySelector('.main').scrollTop = 0;
-}
-
-// ── Export CSV ─────────────────────────────────────────────────
-function exportarCSV() {
-    const cols = ['id','nome','telefone','status','plataforma','event_time','utm_campaign','utm_content','ctw_aci_id','mensagem_recebida','valor_venda'];
-    const header = cols.join(';');
-    const rows = dadosFiltrados.map(l => cols.map(c => `"${String(l[c]||'').replace(/"/g,'""')}"`).join(';'));
-    const csv = [header, ...rows].join('\n');
-    const blob = new Blob(['\uFEFF'+csv], { type:'text/csv;charset=utf-8' });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a');
-    a.href = url; a.download = `leads_${new Date().toISOString().slice(0,10)}.csv`;
-    a.click(); URL.revokeObjectURL(url);
-    toast(`${dadosFiltrados.length} leads exportados`, 'success');
-}
-
-// ── Relatórios ─────────────────────────────────────────────────
-function renderRelatorios() {
-    const total  = dadosFiltrados.length;
-    const vendas = dadosFiltrados.filter(l => (l.status||'').toLowerCase() === 'vendido');
-    const receita = vendas.reduce((s,l) => s + parseFloat(l.valor_venda||0), 0);
-    const conv   = total ? ((vendas.length/total)*100).toFixed(1) : 0;
-
-    $('val-total').textContent   = total;
-    $('val-vendas').textContent  = vendas.length;
-    $('val-conv').textContent    = conv + '%';
-    $('val-receita').textContent = brl(receita);
-
-    const mapA  = agrupar(dadosFiltrados, 'utm_content');
-    const mapP  = agrupar(dadosFiltrados, 'plataforma');
-    const mapAV = agrupar(vendas, 'utm_content');
-    const mapPV = agrupar(vendas, 'plataforma');
-
-    criarGrafico('c1','l1',mapA,'doughnut');
-    criarGrafico('c2','l2',mapP,'doughnut');
-    criarGrafico('c3','l3',mapAV,'bar');
-    criarGrafico('c4','l4',mapPV,'doughnut');
-}
-
-function agrupar(arr, campo) {
-    return arr.reduce((acc,l) => { const k=l[campo]||'Direto'; acc[k]=(acc[k]||0)+1; return acc; }, {});
-}
-
-function criarGrafico(canvasId, legendId, mapa, tipo) {
-    if (graficos[canvasId]) graficos[canvasId].destroy();
-    const labels = Object.keys(mapa).slice(0,8);
-    const values = labels.map(k=>mapa[k]);
-    const total  = values.reduce((a,b)=>a+b,0);
-    const ctx    = $(canvasId); if (!ctx) return;
-
-    const isDark = !document.documentElement.classList.contains('light');
-    const gridC  = isDark ? '#1f2937' : '#e5e7eb';
-    const tickC  = isDark ? '#8a8f98' : '#6b7280';
-
-    const cfg = tipo === 'bar' ? {
-        type:'bar',
-        data:{ labels, datasets:[{ data:values, backgroundColor:CORES, borderRadius:6, borderSkipped:false }] },
-        options:{ responsive:true, maintainAspectRatio:false,
-            plugins:{ legend:{display:false}, datalabels:{display:false} },
-            scales:{ x:{ticks:{color:tickC,font:{size:9}},grid:{display:false}}, y:{ticks:{color:tickC},grid:{color:gridC}} } }
-    } : {
-        type:'doughnut',
-        data:{ labels, datasets:[{ data:values, backgroundColor:CORES, borderWidth:0, hoverOffset:6 }] },
-        options:{ responsive:true, maintainAspectRatio:false, cutout:'72%',
-            plugins:{ legend:{display:false}, datalabels:{display:false} } }
-    };
-
-    graficos[canvasId] = new Chart(ctx, cfg);
-    const legendEl = $(legendId);
-    if (legendEl) {
-        legendEl.innerHTML = labels.slice(0,5).map((l,i) => {
-            const pct = total ? Math.round((values[i]/total)*100) : 0;
-            return `<div class="legend-row">
-                <div class="legend-left"><div class="legend-dot" style="background:${CORES[i%CORES.length]};"></div>${esc(l)}</div>
-                <div class="legend-right"><span class="legend-val">${values[i]}</span><span class="legend-pct">${pct}%</span></div>
-            </div>`;
-        }).join('');
-    }
-}
-
-// ── Modal CAPI ─────────────────────────────────────────────────
-function abrirModal(idx) {
-    chumboAtivo = dadosFiltrados[idx];
-    $('modalLeadNome').textContent  = `Lead: ${chumboAtivo.nome || 'Desconhecido'}`;
-    $('capiProduto').value  = chumboAtivo.produto || chumboAtivo.utm_content || '';
-    $('capiValor').value    = '';
-    $('capiNome').value     = chumboAtivo.nome     || '';
-    $('capiEmail').value    = chumboAtivo.email    || '';
-    $('capiCpf').value      = chumboAtivo.cpf      || '';
-    $('capiEndereco').value = chumboAtivo.endereco || '';
-    $('capiCidade').value   = chumboAtivo.cidade
-        ? (chumboAtivo.estado ? `${chumboAtivo.cidade} - ${chumboAtivo.estado}` : chumboAtivo.cidade)
-        : '';
-    $('capiModal').classList.add('open');
-    lucide.createIcons({ nodes: [$('capiModal')] });
-}
-function fecharModal() { $('capiModal').classList.remove('open'); chumboAtivo = null; }
-$('capiModal').addEventListener('click', e => { if(e.target === $('capiModal')) fecharModal(); });
-
-async function sha256(msg) {
-    if (!msg) return '';
-    const buf  = new TextEncoder().encode(msg.trim().toLowerCase());
-    const hash = await crypto.subtle.digest('SHA-256', buf);
-    return Array.from(new Uint8Array(hash)).map(b=>b.toString(16).padStart(2,'0')).join('');
-}
-
-async function confirmarVenda() {
-    if (!chumboAtivo) return;
-    const valor = parseFloat($('capiValor').value);
-    if (!valor || valor <= 0) { toast('Informe o valor da venda', 'error'); return; }
-
-    const btn = $('btnConfirmarCapi');
-    const originalLabel = btn.textContent;
-    btn.textContent = 'Enviando CAPI...'; btn.disabled = true;
-
-    try {
-        const cidadeRaw = $('capiCidade').value.trim();
-        const cidadeF   = cidadeRaw.includes(' - ') ? cidadeRaw.split(' - ')[0].trim() : cidadeRaw;
-        const estado    = cidadeRaw.includes(' - ') ? cidadeRaw.split(' - ')[1].trim() : '';
-
-        const r = await authFetch('/api/leads-update', {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                id:          chumboAtivo.id,
-                status:      'Vendido',
-                valor_venda: valor,
-                produto:     $('capiProduto').value.trim()  || undefined,
-                nome:        $('capiNome').value.trim()     || undefined,
-                email:       $('capiEmail').value.trim()    || undefined,
-                cpf:         $('capiCpf').value.trim()      || undefined,
-                cidade:      cidadeF                         || undefined,
-                estado:      estado                          || undefined,
-                endereco:    $('capiEndereco').value.trim()  || undefined,
-            })
-        });
-        const result = await r.json();
-        if (!r.ok || result.error) throw new Error(result.error || 'Erro ao registrar venda');
-
-        // Atualizar localmente sem recarregar
-        const idx = rawData.findIndex(l => l.id === chumboAtivo.id);
-        if (idx !== -1) { rawData[idx].status = 'Vendido'; rawData[idx].valor_venda = valor; }
-        aplicarFiltros();
-        toast('Venda registrada e CAPI enviado para a Meta!', 'success');
-        fecharModal();
-    } catch(e) {
-        toast('Erro: ' + e.message, 'error');
-    } finally {
-        btn.textContent = originalLabel; btn.disabled = false;
-    }
 }
 
 // ── Anúncios — Account picker ──────────────────────────────────
@@ -2824,6 +1772,11 @@ const CARDS_DEF = [
     { key:'cpr',       label:'CPR',                 on:true  },
     { key:'seguidores',label:'Seguidores',          on:false },
     { key:'cps',       label:'Custo/seguidor',      on:false },
+    { key:'purchases',     label:'Compras',              on:false },
+    { key:'purchase_value',label:'Valor em Compras',     on:false },
+    { key:'roas',          label:'ROAS',                 on:false },
+    { key:'init_checkout', label:'Inícios de Checkout',  on:false },
+    { key:'cpp',           label:'Custo/compra',         on:false },
 ];
 const COLS_DEF = [
     { key:'spend',      label:'Gasto Total',          on:true  },
@@ -2842,6 +1795,11 @@ const COLS_DEF = [
     { key:'cpr',        label:'CPR',                  on:true  },
     { key:'seguidores', label:'Seguidores',           on:false },
     { key:'cps',        label:'Custo/seguidor',       on:false },
+    { key:'purchases',      label:'Compras',              on:false },
+    { key:'purchase_value', label:'Valor em Compras',     on:false },
+    { key:'roas',           label:'ROAS',                 on:false },
+    { key:'init_checkout',  label:'Inícios de Checkout',  on:false },
+    { key:'cpp',            label:'Custo/compra',         on:false },
 ];
 
 const CFG_KEY = 'wt_metrics_cfg';
@@ -3003,16 +1961,6 @@ function getIns(c) {
     return Array.isArray(i.data) ? (i.data[0] || null) : (i.data || i || null);
 }
 
-// Soma actions por tipos — correspondência EXATA apenas
-// Substring match causava falsos positivos: 'lead' pegava 'offsite_content_view_add_meta_leads' etc.
-function getAct(ins, keys) {
-    if (!ins?.actions) return 0;
-    const ks = new Set(Array.isArray(keys) ? keys : [keys]);
-    return ins.actions
-        .filter(a => ks.has(a.action_type))
-        .reduce((s, a) => s + parseFloat(a.value||0), 0);
-}
-
 // outbound_clicks = cliques em links reais (exclui cliques no perfil, foto, etc.)
 function getOutboundClicks(ins) {
     if (!ins?.outbound_clicks) return 0;
@@ -3029,6 +1977,10 @@ function calcMetricasAds(camps) {
     let freqSum=0, freqCount=0; // Frequência ponderada por impressões
     let lpv=0;                  // landing_page_view
     let seguidores=0;           // like (curtidas de página)
+    let purchases=0;            // purchase (compras)
+    let purchaseValue=0;        // action_values purchase (valor em compras)
+    let initCheckout=0;         // initiate_checkout
+    let roasSum=0, roasCount=0; // ROAS ponderado por gasto
 
     camps.forEach(c => {
         const ins = getIns(c); if (!ins) return;
@@ -3069,6 +2021,19 @@ function calcMetricasAds(camps) {
 
         // Seguidores / curtidas de página originados do anúncio
         seguidores += getAct(ins, ['like']);
+
+        // Compras (purchase) via Pixel/CAPI
+        purchases += getAct(ins, ['purchase','offsite_conversion.fb_pixel_purchase','omni_purchase']);
+
+        // Valor em compras (action_values)
+        purchaseValue += getActVal(ins, ['purchase','offsite_conversion.fb_pixel_purchase','omni_purchase']);
+
+        // Inícios de checkout
+        initCheckout += getAct(ins, ['initiate_checkout','offsite_conversion.fb_pixel_initiate_checkout','omni_initiate_checkout']);
+
+        // ROAS ponderado por gasto
+        const roasVal = getRoas(ins);
+        if (roasVal && sp) { roasSum += roasVal * sp; roasCount += sp; }
     });
 
     const fmt = (n, fallback='—') => n ? brl(n) : fallback;
@@ -3089,8 +2054,13 @@ function calcMetricasAds(camps) {
     $('ads-cpr').textContent      = msgs       ? brl(spend/msgs) : '—';
     $('ads-seguidores').textContent = seguidores ? fmtN(seguidores) : '—';
     $('ads-cps').textContent      = seguidores  ? brl(spend/seguidores) : '—';
+    $('ads-purchases').textContent     = purchases    ? fmtN(purchases) : '—';
+    $('ads-purchase-value').textContent = purchaseValue ? brl(purchaseValue) : '—';
+    $('ads-roas').textContent          = roasCount     ? (roasSum/roasCount).toFixed(2)+'x' : '—';
+    $('ads-init-checkout').textContent = initCheckout  ? fmtN(initCheckout) : '—';
+    $('ads-cpp').textContent           = purchases     ? brl(spend/purchases) : '—';
 
-    _funilData = { spend, imps, reach, clicks: linkClicks, lpv, leads, msgs };
+    _funilData = { spend, imps, reach, clicks: linkClicks, lpv, leads, msgs, purchases };
     renderFunil();
 }
 
@@ -3102,6 +2072,7 @@ const FUNIL_DEF = [
     { key:'lpv',    label:'Visitas destino', cost:'por visita',    color:'#ec4899', on:false },
     { key:'leads',  label:'Leads',           cost:'por lead',      color:'#10b981', on:true  },
     { key:'msgs',   label:'Conversas WA',    cost:'por conversa',  color:'#f59e0b', on:true  },
+    { key:'purchases', label:'Compras',      cost:'por compra',    color:'#ec4899', on:false },
 ];
 let funilMetricas = FUNIL_DEF.map(m => ({...m}));
 let _funilData = {};
@@ -3365,6 +2336,10 @@ function renderTabelaCampanhas(camps) {
         const msgs       = getAct(ins,['onsite_conversion.messaging_conversation_started_7d']);
         const lpv        = getAct(ins,['landing_page_view']);
         const seguidores = getAct(ins,['like']);
+        const purchases  = getAct(ins,['purchase','offsite_conversion.fb_pixel_purchase','omni_purchase']);
+        const purchaseVal= getActVal(ins,['purchase','offsite_conversion.fb_pixel_purchase','omni_purchase']);
+        const initCk     = getAct(ins,['initiate_checkout','offsite_conversion.fb_pixel_initiate_checkout','omni_initiate_checkout']);
+        const roas       = getRoas(ins);
 
         const getVal = key => {
             switch(key) {
@@ -3384,6 +2359,11 @@ function renderTabelaCampanhas(camps) {
                 case 'cpr':        return msgs ? brl(spend/msgs) : '—';
                 case 'seguidores': return fmtN(seguidores);
                 case 'cps':        return seguidores ? brl(spend/seguidores) : '—';
+                case 'purchases':      return purchases ? fmtN(purchases) : '—';
+                case 'purchase_value': return purchaseVal ? brl(purchaseVal) : '—';
+                case 'roas':           return roas ? roas.toFixed(2)+'x' : '—';
+                case 'init_checkout':  return initCk ? fmtN(initCk) : '—';
+                case 'cpp':            return purchases ? brl(spend/purchases) : '—';
                 default:           return '—';
             }
         };
@@ -3554,6 +2534,10 @@ async function toggleExpand(level, parentId, btn, e) {
         const msgs  = getAct(ins,['onsite_conversion.messaging_conversation_started_7d']);
         const lpv   = getAct(ins,['landing_page_view']);
         const seg   = getAct(ins,['like']);
+        const purchases  = getAct(ins,['purchase','offsite_conversion.fb_pixel_purchase','omni_purchase']);
+        const purchaseVal= getActVal(ins,['purchase','offsite_conversion.fb_pixel_purchase','omni_purchase']);
+        const initCk     = getAct(ins,['initiate_checkout','offsite_conversion.fb_pixel_initiate_checkout','omni_initiate_checkout']);
+        const roas       = getRoas(ins);
         const getVal = k => {
             switch(k) {
                 case 'spend':      return spend ? brl(spend) : '—';
@@ -3572,6 +2556,11 @@ async function toggleExpand(level, parentId, btn, e) {
                 case 'cpr':        return msgs ? brl(spend/msgs) : '—';
                 case 'seguidores': return fmtN(seg);
                 case 'cps':        return seg ? brl(spend/seg) : '—';
+                case 'purchases':      return purchases ? fmtN(purchases) : '—';
+                case 'purchase_value': return purchaseVal ? brl(purchaseVal) : '—';
+                case 'roas':           return roas ? roas.toFixed(2)+'x' : '—';
+                case 'init_checkout':  return initCk ? fmtN(initCk) : '—';
+                case 'cpp':            return purchases ? brl(spend/purchases) : '—';
                 default:           return '—';
             }
         };
@@ -3896,190 +2885,6 @@ function mudarAba(aba) {
     $('sidebarOverlay').classList.remove('open');
 }
 
-// ── Admin: Clientes/Agências (SaaS) ────────────────────────────
-function abrirModalAddCliente() {
-    $('novoCliNome').value = '';
-    $('novoCliPixel').value = '';
-    $('novoCliEmail').value = '';
-    $('novoCliSenha').value = '';
-    $('modalAddCliente').classList.add('open');
-}
-
-async function salvarNovoCliente() {
-    const nome = $('novoCliNome').value.trim();
-    const pixel_padrao = $('novoCliPixel').value.trim();
-    const email_contato = $('novoCliEmail').value.trim();
-    const senha_acesso = $('novoCliSenha').value;
-
-    if (!nome) { toast('Nome da empresa é obrigatório!', 'error'); return; }
-    if (!pixel_padrao) { toast('Pixel Padrão é obrigatório — cada cliente tem seu próprio pixel!', 'error'); return; }
-    if (!email_contato) { toast('E-mail de acesso é obrigatório!', 'error'); return; }
-    if (!senha_acesso || senha_acesso.length < 6) { toast('Senha deve ter no mínimo 6 caracteres!', 'error'); return; }
-
-    const btn = $('btnSalvarCliente');
-    const originalText = btn.textContent;
-    btn.textContent = 'Salvando...'; btn.disabled = true;
-
-    try {
-        const r = await authFetch('/api/clientes', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ nome, email_contato, pixel_padrao, senha_acesso })
-        });
-        const data = await r.json();
-        if (!r.ok || data.error) throw new Error(data.error || 'Erro ao criar cliente');
-
-        $('modalAddCliente').classList.remove('open');
-        // Limpar campos
-        ['novoCliNome','novoCliPixel','novoCliEmail','novoCliSenha'].forEach(id => { const el = $(id); if(el) el.value = ''; });
-        // Mostrar modal de credenciais
-        $('credEmail').textContent = email_contato;
-        $('credSenha').textContent = senha_acesso;
-        $('modalCredenciais').classList.add('open');
-        carregarClientesAdmin();
-    } catch(e) {
-        toast(e.message, 'error');
-    } finally {
-        btn.textContent = originalText; btn.disabled = false;
-    }
-}
-
-function copiarCredenciais() {
-    const email = $('credEmail').textContent;
-    const senha = $('credSenha').textContent;
-    const url = window.location.origin + '/login.html';
-    navigator.clipboard.writeText(`Portal Adlytics\nURL: ${url}\nE-mail: ${email}\nSenha: ${senha}`)
-        .then(() => toast('Credenciais copiadas!', 'success'))
-        .catch(() => toast('Não foi possível copiar automaticamente', 'error'));
-}
-
-async function carregarClientesAdmin() {
-    const tbody = $('tabela-clientes-admin');
-    if (!tbody) return;
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--muted);">Carregando...</td></tr>';
-
-    try {
-        const r = await authFetch('/api/clientes');
-        const clientes = await r.json();
-        if (!r.ok || clientes.error) throw new Error(clientes?.error || 'Erro de API');
-
-        if (!Array.isArray(clientes) || clientes.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--muted);">Nenhum cliente cadastrado.</td></tr>';
-            return;
-        }
-
-        const PERM_LABELS = { leads:'Leads', anuncios:'Meta Ads', relatorios:'Relatórios', whatsapp:'WhatsApp', config:'Integrações', clientes:'Compartilhar' };
-
-        // Armazena dados completos em memória — token_meta nunca entra no HTML
-        window._clientesMap = {};
-        clientes.forEach(c => { window._clientesMap[c.id] = c; });
-
-        tbody.innerHTML = clientes.map(c => {
-            const p = c.permissoes || { leads:true, anuncios:true, relatorios:true, whatsapp:true, config:true, clientes:true };
-            const badges = Object.entries(PERM_LABELS).map(([k, label]) =>
-                `<span style="display:inline-block;font-size:10px;padding:2px 6px;border-radius:4px;margin:1px;background:${p[k] ? 'rgba(59,130,246,0.15)' : 'rgba(239,68,68,0.1)'};color:${p[k] ? 'var(--blue)' : 'var(--red)'};">${label}</span>`
-            ).join('');
-            return `
-            <tr>
-                <td style="color:var(--muted);font-size:13px;">#${c.id}</td>
-                <td style="font-weight:600;color:var(--text);">${esc(c.nome)}</td>
-                <td style="font-size:13px;color:var(--muted);">${c.email_contato ? esc(c.email_contato) : '—'}</td>
-                <td style="font-family:monospace;font-size:12px;color:var(--muted);">${c.pixel_padrao ? esc(c.pixel_padrao) : '—'}</td>
-                <td style="max-width:200px;">${badges}</td>
-                <td style="font-size:12px;color:var(--muted);">${new Date(c.criado_em).toLocaleDateString('pt-BR')}</td>
-                <td style="display:flex;gap:6px;align-items:center;">
-                    <button class="btn btn-ghost btn-sm" onclick="abrirEditCliente(${c.id})"><i data-lucide="edit-3" style="width:14px;"></i> Editar</button>
-                    <button class="btn btn-ghost btn-sm" onclick="excluirCliente(${c.id}, '${esc(c.nome)}')" style="color:var(--red);border-color:rgba(239,68,68,0.2);"><i data-lucide="trash-2" style="width:14px;"></i></button>
-                </td>
-            </tr>`;
-        }).join('');
-
-        lucide.createIcons({ nodes: [tbody] });
-
-    } catch(e) {
-        tbody.innerHTML = `<tr><td colspan="7" style="color:var(--red);text-align:center;padding:20px;">Erro: ${esc(e.message)}</td></tr>`;
-        toast('Falha ao carregar clientes: ' + e.message, 'error');
-    }
-}
-
-function switchEditTab(tab) {
-    ['dados','meta','venda'].forEach(t => {
-        $('editPanel-' + t).style.display = t === tab ? '' : 'none';
-        const btn = $('editTab-' + t);
-        btn.style.background = t === tab ? 'var(--blue)' : 'transparent';
-        btn.style.color      = t === tab ? '#fff' : 'var(--text-muted)';
-    });
-}
-
-function abrirEditCliente(id) {
-    switchEditTab('dados');
-    const c = (window._clientesMap || {})[id] || { id };
-    $('editCliId').value        = c.id;
-    $('editCliNome').value      = c.nome || '';
-    $('editCliPixel').value     = c.pixel_padrao || '';
-    $('editCliToken').value     = c.token_meta || '';
-    $('editCliAccountId').value = c.account_id || '';
-    $('editCliTemplate').value  = c.template_venda || '';
-    $('editCliEmail').value     = c.email_contato || '';
-    $('editCliSenha').value     = '';
-    $('editCliSubtitle').textContent = c.nome || '';
-    const p = c.permissoes || {};
-    $('permLeads').checked      = p.leads      !== false;
-    $('permAnuncios').checked   = p.anuncios   !== false;
-    $('permRelatorios').checked = p.relatorios !== false;
-    $('permWhatsapp').checked   = p.whatsapp   !== false;
-    $('permConfig').checked     = p.config     !== false;
-    $('permClientes').checked   = p.clientes   !== false;
-    $('modalEditCliente').classList.add('open');
-    lucide.createIcons({ nodes: [$('modalEditCliente')] });
-}
-
-async function salvarEdicaoCliente() {
-    const id = parseInt($('editCliId').value);
-    if (!id) return;
-
-    const body = {
-        id,
-        nome:          $('editCliNome').value.trim()  || undefined,
-        email_contato: $('editCliEmail').value.trim() || undefined,
-        pixel_padrao:  $('editCliPixel').value.trim() || undefined,
-        token_meta:    $('editCliToken').value.trim() || undefined,
-        account_id:     $('editCliAccountId').value.trim() || undefined,
-        template_venda: $('editCliTemplate').value.trim() || undefined,
-        permissoes: {
-            leads:      $('permLeads').checked,
-            anuncios:   $('permAnuncios').checked,
-            relatorios: $('permRelatorios').checked,
-            whatsapp:   $('permWhatsapp').checked,
-            config:     $('permConfig').checked,
-            clientes:   $('permClientes').checked,
-        }
-    };
-    const senha = $('editCliSenha').value;
-    if (senha) body.senha_acesso = senha;
-
-    const btn = $('btnSalvarEditCliente');
-    const orig = btn.textContent;
-    btn.textContent = 'Salvando...'; btn.disabled = true;
-
-    try {
-        const r = await authFetch('/api/clientes', {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body)
-        });
-        const data = await r.json();
-        if (!r.ok || data.error) throw new Error(data.error || 'Erro ao salvar');
-        toast('Cliente atualizado!', 'success');
-        $('modalEditCliente').classList.remove('open');
-        carregarClientesAdmin();
-    } catch(e) {
-        toast(e.message, 'error');
-    } finally {
-        btn.textContent = orig; btn.disabled = false;
-    }
-}
-
 // ── Sidebar mobile ─────────────────────────────────────────────
 function toggleMobileSidebar() {
     const sb  = $('sidebar');
@@ -4108,425 +2913,11 @@ function toggleTheme() {
     Object.values(graficos).forEach(g => g?.update?.());
 }
 
-let waPollTimer;
-let currentWaInstance = null;
-
-function setWaView(view) {
-    if (waPollTimer) clearInterval(waPollTimer);
-    ['waList','waCreate','waQrView','waConnectedView'].forEach(id => {
-        const el = $(id); if (el) el.style.display = 'none';
-    });
-    const target = $(view); if (target) target.style.display = view === 'waList' || view === 'waCreate' ? 'block' : 'block'; // block/flex
-    $('btnNovaConexao').style.display = view === 'waList' ? 'flex' : 'none';
-}
-
-async function carregarListaWa() {
-    setWaView('waList');
-    // Mostrar botão "Conectar Existente" só para admin
-    const _waUser = JSON.parse(localStorage.getItem('adlytics_user') || '{}');
-    const btnExist = $('btnConectarExistente');
-    if (btnExist) btnExist.style.display = _waUser.is_admin ? 'flex' : 'none';
-
-    const listEl = $('waList');
-    listEl.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted);">Carregando conexões...</div>';
-    
-    try {
-        const r = await authFetch('/api/evo-manager?action=list');
-        const data = await r.json();
-        
-        if (!r.ok || data.error) throw new Error(data.error || 'Erro ao listar');
-        
-        if (!data || data.length === 0) {
-            listEl.innerHTML = '<div style="text-align:center;padding:40px;background:var(--tag);border-radius:10px;color:var(--muted);">Nenhuma conexão configurada.<br><button class="btn btn-primary" style="margin-top:15px;" onclick="mostrarWaCriar()">Criar Conexão</button></div>';
-            return;
-        }
-
-        const _waUser2 = JSON.parse(localStorage.getItem('adlytics_user') || '{}');
-        const isAdminView = !!_waUser2.is_admin;
-
-        // Card compacto para cada instância
-        const renderWaCard = inst => {
-            const up      = inst.state === 'open';
-            const mid     = inst.state === 'connecting';
-            const badgeBg = up ? 'rgba(16,185,129,0.15)' : mid ? 'rgba(245,158,11,0.15)' : 'rgba(239,68,68,0.12)';
-            const badgeColor = up ? '#10b981' : mid ? '#f59e0b' : '#ef4444';
-            const statusLabel = up ? '● Conectado' : mid ? '● Conectando...' : '● Desconectado';
-            return `
-            <div style="background:var(--card);border:1px solid ${up ? 'rgba(16,185,129,0.3)' : 'var(--border)'};border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:10px;min-width:0;">
-                <div style="display:flex;align-items:center;gap:10px;">
-                    <div style="width:36px;height:36px;border-radius:9px;background:${up ? 'rgba(37,211,102,0.12)' : 'rgba(156,163,175,0.08)'};display:flex;align-items:center;justify-content:center;flex-shrink:0;border:1px solid ${up ? 'rgba(37,211,102,0.2)' : 'var(--border)'};">
-                        <i data-lucide="smartphone" style="color:${up ? '#25D366' : 'var(--muted)'};width:17px;"></i>
-                    </div>
-                    <div style="min-width:0;flex:1;">
-                        <div style="font-size:13px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${esc(inst.displayName)}">${esc(inst.displayName)}</div>
-                        <span style="display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;background:${badgeBg};color:${badgeColor};margin-top:3px;">${statusLabel}</span>
-                    </div>
-                </div>
-                <div style="display:flex;gap:6px;flex-wrap:wrap;">
-                    ${up
-                        ? `<button class="btn btn-ghost btn-sm" onclick="waDesvincular('${esc(inst.fullName)}')" style="font-size:11px;padding:4px 10px;color:var(--red);border-color:rgba(239,68,68,0.3);"><i data-lucide="link-2-off" style="width:11px;"></i> Desvincular</button>`
-                        : `<button class="btn btn-green btn-sm" onclick="verConexao('${esc(inst.displayName)}')" style="font-size:11px;padding:4px 10px;"><i data-lucide="qr-code" style="width:11px;"></i> Conectar QR</button>`
-                    }
-                    <button class="btn btn-ghost btn-sm" onclick="deletarConexao('${esc(inst.displayName)}')" title="Excluir" style="padding:4px 8px;"><i data-lucide="trash-2" style="width:11px;color:var(--red);"></i></button>
-                </div>
-                <div style="padding-top:8px;border-top:1px solid var(--border);display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-                    <code style="font-family:monospace;font-size:10px;background:var(--tag);padding:2px 6px;border-radius:4px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;">${esc(inst.fullName)}</code>
-                    ${up ? `<span style="font-size:10px;color:#10b981;white-space:nowrap;">✓ Ativo</span>` : ''}
-                </div>
-            </div>`;
-        };
-
-        let html = '';
-        if (isAdminView) {
-            // Agrupa por cliente
-            const groups = {};
-            for (const inst of data) {
-                const key = inst.cliente_id ? String(inst.cliente_id) : 'admin';
-                if (!groups[key]) groups[key] = { nome: inst.cliente_nome || (key === 'admin' ? 'Administrador' : `Cliente #${key}`), instances: [] };
-                groups[key].instances.push(inst);
-            }
-            // Admin primeiro, depois clientes ordenados por nome
-            const keys = Object.keys(groups).sort((a, b) => {
-                if (a === 'admin') return -1;
-                if (b === 'admin') return 1;
-                return groups[a].nome.localeCompare(groups[b].nome);
-            });
-            for (const key of keys) {
-                const g = groups[key];
-                const totalUp = g.instances.filter(i => i.state === 'open').length;
-                html += `
-                <div style="margin-bottom:18px;">
-                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-                        <span style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;">${esc(g.nome)}</span>
-                        <span style="font-size:11px;color:var(--muted);background:var(--tag);padding:1px 8px;border-radius:20px;">${g.instances.length} instância${g.instances.length !== 1 ? 's' : ''}</span>
-                        ${totalUp > 0 ? `<span style="font-size:11px;color:#10b981;">${totalUp} conectada${totalUp !== 1 ? 's' : ''}</span>` : ''}
-                    </div>
-                    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;">
-                        ${g.instances.map(renderWaCard).join('')}
-                    </div>
-                </div>`;
-            }
-        } else {
-            // Cliente: grid simples sem agrupamento
-            html = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;">${data.map(renderWaCard).join('')}</div>`;
-        }
-
-        listEl.innerHTML = html;
-        lucide.createIcons({ nodes: [listEl] });
-
-    } catch(e) {
-        listEl.innerHTML = `<div style="text-align:center;padding:20px;color:var(--red);">Erro: ${esc(e.message)}</div>`;
-    }
-}
-
-function mostrarWaCriar() {
-    setWaView('waCreate');
-    $('waInstanceName').value = '';
-    $('waInstanceName').focus();
-}
-
-async function verConexao(name) {
-    currentWaInstance = name;
-    checkWaStatus(true);
-}
-
-async function deletarConexao(name) {
-    if (!confirm(`Excluir permanentemente a conexão "${name}"? Isso remove da Evolution também.`)) return;
-    try {
-        const r = await authFetch('/api/evo-manager', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({action:'delete', instanceName: name}) });
-        const data = await r.json();
-        if (!r.ok) throw new Error(data.error || 'Erro ao excluir');
-        toast("Conexão excluída da Evolution.", "success");
-        setTimeout(carregarListaWa, 800);
-    } catch(e) { toast('Erro ao excluir: ' + e.message, 'error'); }
-}
-
-async function waDesvincular(name) {
-    if (!confirm(`Desvincular a instância "${name}" deste cliente?\n\nA instância continuará existindo na Evolution, mas não receberá mais leads.`)) return;
-    try {
-        const r = await authFetch('/api/evo-manager', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({action:'unlink', instanceName: name}) });
-        const data = await r.json();
-        if (!r.ok) throw new Error(data.error || 'Erro ao desvincular');
-        toast('Instância desvinculada com sucesso!', 'success');
-        setTimeout(carregarListaWa, 600);
-    } catch(e) { toast('Erro ao desvincular: ' + e.message, 'error'); }
-}
-
-async function checkWaStatus(fetchQrIfNotOpen = false) {
-    if (!currentWaInstance) return;
-    try {
-        const r = await authFetch(`/api/evo-manager?action=status&instanceName=${encodeURIComponent(currentWaInstance)}`);
-        const data = await r.json();
-        const state = data?.instance?.state || data?.state;
-        const isConnected = state === 'open';
-        
-        if (isConnected) {
-            if (waPollTimer) { clearInterval(waPollTimer); waPollTimer = null; }
-            toast(`✅ WhatsApp conectado: ${currentWaInstance}`, 'success');
-            setTimeout(carregarListaWa, 1200);
-        } else {
-            setWaView('waQrView');
-            $('waQrTitle').textContent = `Conectar: ${currentWaInstance}`;
-            if (fetchQrIfNotOpen) {
-                $('waQrImage').style.display = 'none';
-                $('waWaitQr').style.display = 'block';
-                const rQR = await authFetch(`/api/evo-manager?action=connect&instanceName=${encodeURIComponent(currentWaInstance)}`);
-                const qd = await rQR.json();
-                if (qd.base64) {
-                    $('waQrImage').src = qd.base64;
-                    $('waQrImage').style.display = 'block';
-                    $('waWaitQr').style.display = 'none';
-                    if (!waPollTimer) waPollTimer = setInterval(() => checkWaStatus(false), 4000);
-                } else if (qd?.instance?.state === 'open') {
-                    checkWaStatus(false);
-                }
-            } else {
-                if (!waPollTimer) waPollTimer = setInterval(() => checkWaStatus(false), 4000);
-            }
-        }
-    } catch(e) {
-        if (waPollTimer) clearInterval(waPollTimer);
-    }
-}
-
-async function waCreateInstance() {
-    const name = $('waInstanceName').value.trim();
-    if (!name) { toast('Dê um nome para a conexão', 'error'); return; }
-
-    const btn = $('btnGerarQr');
-    const old = btn.innerHTML;
-    btn.innerHTML = 'Gerando...'; btn.disabled = true;
-
-    try {
-        const r = await authFetch('/api/evo-manager', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({action:'create', instanceName: name}) });
-        const data = await r.json();
-
-        if (!r.ok || data.error) throw new Error(data.error || 'Falha ao conectar na Evolution');
-
-        currentWaInstance = name;
-        setWaView('waQrView');
-        $('waQrTitle').textContent = `Conectar: ${name}`;
-
-        if (data.base64) {
-            $('waQrImage').src = data.base64;
-            $('waQrImage').style.display = 'block';
-            $('waWaitQr').style.display = 'none';
-            toast("QR Code gerado! Aponte o celular.", "success");
-            
-            if (waPollTimer) clearInterval(waPollTimer);
-            waPollTimer = setInterval(() => checkWaStatus(false), 4000);
-        } else if (data.instance?.state === 'open' || data.state === 'open') {
-            checkWaStatus();
-        } else {
-            throw new Error("Não foi possível gerar a imagem Base64 do WhatsApp.");
-        }
-    } catch(e) {
-        toast(e.message, 'error');
-        setWaView('waCreate');
-    } finally {
-        btn.innerHTML = old; btn.disabled = false;
-    }
-}
-
-async function waLogout(name) {
-    if(!confirm(`Atenção: Deslogar permanentemente o aparelho conectado em "${name}"?`)) return;
-    try {
-        await authFetch('/api/evo-manager', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({action:'logout', instanceName: name}) });
-        toast("Sessão encerrada remotamente.", "success");
-        setTimeout(carregarListaWa, 1500);
-    } catch(e) {
-        toast("Erro ao tentar deslogar.", "error");
-    }
-}
-
-async function waDesvincular(name) {
-    if(!confirm(`Desvincular "${name}" do projeto?\n\nA instância continuará ativa no WhatsApp, apenas deixará de ser monitorada aqui.`)) return;
-    try {
-        await authFetch('/api/evo-manager', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({action:'unlink', instanceName: name}) });
-        toast("Instância desvinculada do projeto.", "success");
-        carregarListaWa();
-    } catch(e) {
-        toast("Erro ao desvincular: " + esc(e.message), "error");
-    }
-}
-
-let _instanciaSelecionada = null;
-
-async function abrirModalVincular() {
-    _instanciaSelecionada = null;
-    $('instanciaSelecionadaInfo').textContent = '';
-    $('selectClienteVincular').innerHTML = '<option value="">Selecione o cliente...</option>';
-    $('listaInstanciasEvo').innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);">Carregando instâncias...</div>';
-    $('modalVincularInstancia').classList.add('open');
-
-    // Busca todas as instâncias da Evolution
-    try {
-        const [rInst, rCli] = await Promise.all([
-            authFetch('/api/evo-manager?action=list-all'),
-            authFetch('/api/clientes')
-        ]);
-        const instancias = await rInst.json();
-        const clientes = await rCli.json();
-
-        // Popula select de clientes
-        $('selectClienteVincular').innerHTML = '<option value="">Selecione o cliente...</option>' +
-            (clientes || []).map(c => `<option value="${c.id}">${esc(c.nome)}</option>`).join('');
-
-        // Renderiza lista de instâncias
-        if (!instancias.length) {
-            $('listaInstanciasEvo').innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);">Nenhuma instância encontrada na Evolution.</div>';
-            return;
-        }
-        $('listaInstanciasEvo').innerHTML = instancias.map(inst => {
-            const up = inst.state === 'open';
-            const badgeColor = up ? '#10b981' : '#ef4444';
-            const badgeLabel = up ? '● Conectado' : '● Desconectado';
-            return `<div class="inst-item" onclick="selecionarInstancia('${esc(inst.fullName)}')"
-                style="cursor:pointer;padding:10px 14px;border-radius:8px;border:1px solid var(--border);background:var(--card);display:flex;align-items:center;justify-content:space-between;transition:border .15s;"
-                id="instItem_${esc(inst.fullName)}">
-                <span style="font-weight:600;font-size:14px;">${esc(inst.fullName)}</span>
-                <span style="font-size:11px;font-weight:600;color:${badgeColor};">${badgeLabel}</span>
-            </div>`;
-        }).join('');
-        lucide.createIcons({ nodes: [$('listaInstanciasEvo')] });
-    } catch(e) {
-        $('listaInstanciasEvo').innerHTML = `<div style="color:var(--red);padding:20px;">${esc(e.message)}</div>`;
-    }
-}
-
-function selecionarInstancia(name) {
-    _instanciaSelecionada = name;
-    // Highlight selecionado
-    document.querySelectorAll('.inst-item').forEach(el => el.style.borderColor = 'var(--border)');
-    const el = $('instItem_' + name);
-    if (el) el.style.borderColor = '#25D366';
-    $('instanciaSelecionadaInfo').textContent = `Instância selecionada: ${name}`;
-}
-
-async function confirmarVincularInstancia() {
-    if (!_instanciaSelecionada) { toast('Selecione uma instância', 'error'); return; }
-    const cliente_id = $('selectClienteVincular').value;
-    if (!cliente_id) { toast('Selecione o cliente', 'error'); return; }
-
-    const btn = $('btnConfirmarVincular');
-    btn.textContent = 'Vinculando...'; btn.disabled = true;
-    try {
-        const r = await authFetch('/api/evo-manager', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'link', instanceName: _instanciaSelecionada, cliente_id: parseInt(cliente_id) })
-        });
-        const data = await r.json();
-        if (!r.ok) throw new Error(data.error || 'Erro ao vincular');
-        toast('Instância vinculada com sucesso!', 'success');
-        $('modalVincularInstancia').classList.remove('open');
-        setTimeout(carregarListaWa, 600);
-    } catch(e) {
-        toast(e.message, 'error');
-    } finally {
-        btn.textContent = 'Vincular Instância'; btn.disabled = false;
-    }
-}
-
-async function excluirCliente(id, nome) {
-    if (!confirm(`Excluir permanentemente o cliente "${nome}"?\n\nIsso apaga o usuário de acesso e TODOS os leads vinculados.`)) return;
-    try {
-        const r = await authFetch('/api/clientes', { method: 'DELETE', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id }) });
-        const data = await r.json();
-        if (!r.ok) throw new Error(data.error || 'Erro ao excluir');
-        toast('Cliente excluído.', 'success');
-        carregarClientesAdmin();
-    } catch(e) { toast(e.message, 'error'); }
-}
-
 // ── Start ──────────────────────────────────────────────────────
 lucide.createIcons();
 document.addEventListener('DOMContentLoaded', () => { init(); initFunilPills(); });
-// ── Logs do Sistema ───────────────────────────────────────────────────────────
-const LOG_TAG_COLORS = {
-    'recv':         { bg:'rgba(59,130,246,.15)',  color:'#60a5fa' },
-    'auth':         { bg:'rgba(139,92,246,.15)',  color:'#a78bfa' },
-    'filter':       { bg:'rgba(156,163,175,.12)', color:'#9ca3af' },
-    'lead':         { bg:'rgba(16,185,129,.15)',  color:'#34d399' },
-    'meta-api':     { bg:'rgba(14,165,233,.15)',  color:'#38bdf8' },
-    'db':           { bg:'rgba(245,158,11,.12)',  color:'#fbbf24' },
-    'capi-lead':    { bg:'rgba(16,185,129,.15)',  color:'#34d399' },
-    'purchase':     { bg:'rgba(236,72,153,.15)',  color:'#f472b6' },
-    'capi-purchase':{ bg:'rgba(236,72,153,.15)',  color:'#f472b6' },
-};
-
-function abrirLogJson(dataStr) {
-    try {
-        const formatted = JSON.stringify(JSON.parse(dataStr), null, 2);
-        const modal = document.createElement('div');
-        modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
-        modal.innerHTML = `<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;max-width:700px;width:100%;max-height:80vh;display:flex;flex-direction:column;">
-            <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--border);">
-                <span style="font-weight:600;font-size:14px;">Dados do Log</span>
-                <button onclick="this.closest('[style*=fixed]').remove()" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:20px;">×</button>
-            </div>
-            <pre style="overflow:auto;padding:20px;margin:0;font-size:12px;color:var(--text);white-space:pre-wrap;word-break:break-all;">${esc(formatted)}</pre>
-        </div>`;
-        modal.onclick = e => { if (e.target === modal) modal.remove(); };
-        document.body.appendChild(modal);
-    } catch(_) {}
-}
-
-async function carregarLogs() {
-    const level    = document.getElementById('log-filter-level')?.value    || '';
-    const tag      = document.getElementById('log-filter-tag')?.value      || '';
-    const instance = document.getElementById('log-filter-instance')?.value || '';
-    const dateFrom = document.getElementById('log-filter-date-from')?.value || '';
-    const dateTo   = document.getElementById('log-filter-date-to')?.value   || '';
-    const tbody = $('logs-tbody');
-    if (!tbody) return;
-    tbody.innerHTML = '<tr><td colspan="6" style="padding:30px;text-align:center;color:var(--muted);">Carregando...</td></tr>';
-
-    let url = '/api/logs?limit=300';
-    if (level)    url += `&level=${encodeURIComponent(level)}`;
-    if (tag)      url += `&tag=${encodeURIComponent(tag)}`;
-    if (instance) url += `&instance=${encodeURIComponent(instance)}`;
-    if (dateFrom) url += `&date_from=${encodeURIComponent(dateFrom)}`;
-    if (dateTo)   url += `&date_to=${encodeURIComponent(dateTo)}`;
-
-    try {
-        const r    = await authFetch(url);
-        const logs = await r.json();
-
-        if (!Array.isArray(logs) || logs.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" style="padding:40px;text-align:center;color:var(--muted);">Nenhum log encontrado.</td></tr>';
-            return;
-        }
-
-        tbody.innerHTML = logs.map(l => {
-            const tc   = LOG_TAG_COLORS[l.tag] || { bg:'rgba(156,163,175,.12)', color:'#9ca3af' };
-            const isWarn = l.level === 'warn';
-            const dt   = l.created_at ? new Date(l.created_at).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit' }) : '-';
-            const dataStr = l.data ? JSON.stringify(l.data) : '';
-            const dataShort = dataStr.length > 60 ? dataStr.substring(0, 60) + '…' : dataStr;
-            const dataCell = dataStr
-                ? `<td style="padding:8px 10px;font-size:11px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-                    <span onclick="abrirLogJson(${JSON.stringify(dataStr).replace(/"/g,'&quot;')})" style="cursor:pointer;color:#60a5fa;text-decoration:underline dotted;" title="Clique para ver completo">${esc(dataShort)}</span>
-                  </td>`
-                : `<td style="padding:8px 10px;color:var(--muted);font-size:11px;">—</td>`;
-            return `<tr style="border-bottom:1px solid var(--border);${isWarn ? 'background:rgba(245,158,11,.04)' : ''}">
-                <td style="padding:8px 10px;color:var(--muted);white-space:nowrap;">${dt}</td>
-                <td style="padding:8px 10px;"><span style="font-size:11px;color:var(--text);">${esc(l.instance||'-')}</span></td>
-                <td style="padding:8px 10px;">
-                    <span style="padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;background:${tc.bg};color:${tc.color};">${esc(l.tag)}</span>
-                </td>
-                <td style="padding:8px 10px;">
-                    <span style="font-size:11px;font-weight:600;color:${isWarn ? '#f59e0b' : '#10b981'};">${isWarn ? '⚠ aviso' : '✓ info'}</span>
-                </td>
-                <td style="padding:8px 10px;color:var(--text);">${esc(l.message)}</td>
-                ${dataCell}
-            </tr>`;
-        }).join('');
-        lucide.createIcons({ nodes: [tbody] });
-    } catch(e) {
-        tbody.innerHTML = `<tr><td colspan="6" style="padding:30px;text-align:center;color:#ef4444;">Erro ao carregar logs: ${esc(e.message)}</td></tr>`;
-    }
-}
 </script>
+<script src="js/leads.js"></script>
+<script src="js/admin.js"></script>
 </body>
 </html>

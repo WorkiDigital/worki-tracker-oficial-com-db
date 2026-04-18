@@ -1,21 +1,14 @@
 import { verifyAuth } from './_auth.js';
 import { getPool } from './_db.js';
+import { cors } from './_cors.js';
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'PATCH, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
-  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (cors(req, res, ['PATCH'])) return;
 
   const user = await verifyAuth(req, res);
   if (!user) return;
 
-  let body = '';
-  await new Promise(r => { req.on('data', d => body += d); req.on('end', r); });
-
-  let parsed;
-  try { parsed = JSON.parse(body || '{}'); } catch { return res.status(400).json({ error: 'Body JSON inválido' }); }
-  const { token, client_name, visible_sections, visible_metrics, visible_columns, status_filter, expires_at } = parsed;
+  const { token, client_name, visible_sections, visible_metrics, visible_columns, status_filter, expires_at } = req.body || {};
 
   if (!token) return res.status(400).json({ error: 'token required' });
 

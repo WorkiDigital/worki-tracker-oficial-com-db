@@ -1,15 +1,14 @@
 import { verifyAuth } from './_auth.js';
 import { getPool } from './_db.js';
+import { cors } from './_cors.js';
+import { rateLimit } from './_rate-limit.js';
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
-
-  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (cors(req, res, ['POST', 'GET'])) return;
 
   const user = await verifyAuth(req, res);
   if (!user) return;
+  if (await rateLimit(req, res, user)) return;
 
   const EVO_URL = process.env.EVOLUTION_API_URL;
   const EVO_KEY = process.env.EVOLUTION_GLOBAL_KEY;

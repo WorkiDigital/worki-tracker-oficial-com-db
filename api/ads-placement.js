@@ -6,15 +6,17 @@
  */
 import { verifyAuth, getTokenForUser } from './_auth.js';
 import { verifyAccountAccess } from './_validate.js';
+import { cacheGet, cacheSet, cacheKey } from './_cache.js';
+import { fetchMeta } from './_meta-client.js';
+import { cors } from './_cors.js';
+import { rateLimit } from './_rate-limit.js';
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
-  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (cors(req, res, ['GET'])) return;
 
   const user = await verifyAuth(req, res);
   if (!user) return;
+  if (await rateLimit(req, res, user)) return;
 
   const {
     accountId,
@@ -28,6 +30,11 @@ export default async function handler(req, res) {
   if (!(await verifyAccountAccess(user, accountId))) return res.status(403).json({ error: 'Acesso negado a esta conta de anúncios.' });
 
   const fields = 'spend,impressions,clicks,inline_link_clicks,actions';
+
+  // ── Cache hit? ────────────────────────────────────────────────
+  const ck = cacheKey('placement', accountId, datePreset, campaignIds);
+  const cached = await cacheGet(ck);
+  if (cached) return res.status(200).json(cached);
 
   let filtering = '';
   if (campaignIds) {
@@ -51,21 +58,33 @@ export default async function handler(req, res) {
   ].join('');
 
   try {
-    let r    = await fetch(buildUrl(datePreset));
-    let json = await r.json();
-    if (json.error) return res.status(400).json({ error: json.error.message });
+    // Paginação completa
+    let allRows = [];
+    let fetchUrl = buildUrl(datePreset);
+    while (fetchUrl) {
+      const r = await fetchMeta(fetchUrl);
+      const json = await r.json();
+      if (json.error) return res.status(400).json({ error: json.error.message });
+      allRows.push(...(json.data || []));
+      fetchUrl = json.paging?.next || null;
+    }
 
     let usedPeriod = datePreset;
-    if (!json.data || json.data.length === 0) {
-      r    = await fetch(buildUrl('maximum'));
-      json = await r.json();
-      if (json.error) return res.status(400).json({ error: json.error.message });
+    if (allRows.length === 0) {
+      let fallbackUrl = buildUrl('maximum');
+      while (fallbackUrl) {
+        const r = await fetchMeta(fallbackUrl);
+        const json = await r.json();
+        if (json.error) return res.status(400).json({ error: json.error.message });
+        allRows.push(...(json.data || []));
+        fallbackUrl = json.paging?.next || null;
+      }
       usedPeriod = 'maximum';
     }
 
     // Agregar por platform_position (soma publisher_platforms diferentes)
     const agg = {};
-    for (const row of (json.data || [])) {
+    for (const row of allRows) {
       const pos = row.platform_position;
       if (!pos) continue;
       if (!agg[pos]) {
@@ -89,7 +108,9 @@ export default async function handler(req, res) {
 
     const data = Object.values(agg).sort((a, b) => b.spend - a.spend);
 
-    return res.status(200).json({ data, period: usedPeriod });
+    const result = { data, period: usedPeriod };
+    await cacheSet(ck, result, 90000); // 90s TTL
+    return res.status(200).json(result);
   } catch (e) {
     return res.status(500).json({ error: e.message });
   }

@@ -14,15 +14,17 @@
  */
 import { verifyAuth, getTokenForUser } from './_auth.js';
 import { verifyAccountAccess } from './_validate.js';
+import { cacheGet, cacheSet, cacheKey } from './_cache.js';
+import { fetchMeta } from './_meta-client.js';
+import { cors } from './_cors.js';
+import { rateLimit } from './_rate-limit.js';
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
-  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (cors(req, res, ['GET'])) return;
 
   const user = await verifyAuth(req, res);
   if (!user) return;
+  if (await rateLimit(req, res, user)) return;
 
   const {
     accountId,
@@ -43,6 +45,11 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'breakdown inválido' });
 
   const fields = 'spend,impressions,clicks,actions';
+
+  // ── Cache hit? ────────────────────────────────────────────────
+  const ck = cacheKey('demo', accountId, breakdown, datePreset, dateFrom, dateTo, campaignIds);
+  const cached = await cacheGet(ck);
+  if (cached) return res.status(200).json(cached);
 
   // Filtro por campanhas (quando usuário aplica filtros)
   let filtering = '';
@@ -71,27 +78,40 @@ export default async function handler(req, res) {
   };
 
   try {
-    // Tentativa 1: período selecionado
-    let r    = await fetch(buildUrl(datePreset, dateFrom, dateTo));
-    let json = await r.json();
-    if (json.error) return res.status(400).json({ error: json.error.message });
+    // Tentativa 1: período selecionado — com paginação completa
+    let allData = [];
+    let url = buildUrl(datePreset, dateFrom, dateTo);
+    while (url) {
+      const r = await fetchMeta(url);
+      const json = await r.json();
+      if (json.error) return res.status(400).json({ error: json.error.message });
+      allData.push(...(json.data || []));
+      url = json.paging?.next || null;
+    }
 
     // Fallback para "maximum" se não houver dados no período (apenas para presets, não para custom)
     let usedPeriod = datePreset;
-    if (!json.data || json.data.length === 0) {
+    if (allData.length === 0) {
       if (dateFrom && dateTo) {
         return res.status(200).json({ data: [], usedPeriod: 'custom' });
       }
-      r    = await fetch(buildUrl('maximum'));
-      json = await r.json();
-      if (json.error) return res.status(400).json({ error: json.error.message });
+      let fallbackUrl = buildUrl('maximum');
+      while (fallbackUrl) {
+        const r = await fetchMeta(fallbackUrl);
+        const json = await r.json();
+        if (json.error) return res.status(400).json({ error: json.error.message });
+        allData.push(...(json.data || []));
+        fallbackUrl = json.paging?.next || null;
+      }
       usedPeriod = 'maximum';
     }
 
-    return res.status(200).json({
-      data: json.data || [],
+    const result = {
+      data: allData,
       period: usedPeriod,   // frontend usa isso para mostrar aviso quando for fallback
-    });
+    };
+    await cacheSet(ck, result, 90000); // 90s TTL
+    return res.status(200).json(result);
   } catch (e) {
     return res.status(500).json({ error: e.message });
   }

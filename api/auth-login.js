@@ -19,13 +19,10 @@ function _recordFail(ip) {
 }
 function _clearFail(ip) { _attempts.delete(ip); }
 
-export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  if (req.method === 'OPTIONS') return res.status(200).end();
+import { cors } from './_cors.js';
 
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Método não permitido' });
+export default async function handler(req, res) {
+  if (cors(req, res, ['POST'], { public: true })) return;
 
   const ip = ((req.headers['x-forwarded-for'] || '') + '').split(',')[0].trim()
              || req.socket?.remoteAddress || 'unknown';

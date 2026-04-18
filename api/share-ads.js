@@ -1,14 +1,12 @@
 import { getPool } from './_db.js';
+import { cors } from './_cors.js';
 
 const DEFAULT_SECTIONS = { campanhas: true, demograficos: true, melhores_criativos: true };
 const DEFAULT_METRICS  = ['spend','imps','reach','cpm','ctr','leads','cpl','msgs','cpr','active_campaigns'];
 const DEFAULT_COLUMNS  = ['status','spend','imps','reach','cpm','clicks','ctr','leads','cpl','msgs','cpr'];
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (cors(req, res, ['GET'], { public: true })) return;
 
   const VALID_PRESETS = ['today','yesterday','last_7d','last_14d','last_30d','this_month','last_month','maximum'];
   const { token, datePreset = 'today' } = req.query;
@@ -36,7 +34,7 @@ export default async function handler(req, res) {
   const metaToken = process.env.META_ADS_TOKEN;
   if (!metaToken) return res.status(500).json({ error: 'META_ADS_TOKEN not configured' });
 
-  const insightFields = 'spend,impressions,clicks,outbound_clicks,ctr,reach,cpm,cpc,frequency,inline_link_clicks,actions,cost_per_action_type';
+  const insightFields = 'spend,impressions,clicks,outbound_clicks,ctr,reach,cpm,cpc,frequency,inline_link_clicks,actions,action_values,cost_per_action_type,purchase_roas';
   const fields = `name,status,objective,insights.date_preset(${datePreset}){${insightFields}}`;
   const url = `https://graph.facebook.com/v20.0/${row.account_id}/campaigns?fields=${encodeURIComponent(fields)}&limit=200&access_token=${metaToken}`;
 

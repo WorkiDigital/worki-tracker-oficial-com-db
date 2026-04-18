@@ -1,14 +1,16 @@
 import { verifyAuth, getTokenForUser } from './_auth.js';
 import { verifyAccountAccess } from './_validate.js';
+import { cacheGet, cacheSet, cacheKey } from './_cache.js';
+import { fetchMeta } from './_meta-client.js';
+import { cors } from './_cors.js';
+import { rateLimit } from './_rate-limit.js';
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
-  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (cors(req, res, ['GET'])) return;
 
   const user = await verifyAuth(req, res);
   if (!user) return;
+  if (await rateLimit(req, res, user)) return;
 
   const { accountId, datePreset = 'last_30d', dateFrom, dateTo } = req.query;
   const token = await getTokenForUser(user);
@@ -16,7 +18,12 @@ export default async function handler(req, res) {
   if (!accountId) return res.status(400).json({ error: 'accountId is required' });
   if (!(await verifyAccountAccess(user, accountId))) return res.status(403).json({ error: 'Acesso negado a esta conta de anúncios.' });
 
-  const insightFields = 'spend,impressions,clicks,outbound_clicks,ctr,reach,cpm,cpc,frequency,inline_link_clicks,actions,cost_per_action_type';
+  // ── Cache hit? ────────────────────────────────────────────────
+  const ck = cacheKey('best', accountId, datePreset, dateFrom, dateTo);
+  const cached = await cacheGet(ck);
+  if (cached) return res.status(200).json(cached);
+
+  const insightFields = 'spend,impressions,clicks,outbound_clicks,ctr,reach,cpm,cpc,frequency,inline_link_clicks,actions,action_values,cost_per_action_type,purchase_roas';
   const insightsParam = (dateFrom && dateTo)
     ? `insights.time_range({"since":"${dateFrom}","until":"${dateTo}"})`
     : `insights.date_preset(${datePreset})`;
@@ -34,7 +41,7 @@ export default async function handler(req, res) {
     const todos = [];
     let next = url;
     while (next) {
-      const r    = await fetch(next);
+      const r    = await fetchMeta(next);
       const data = await r.json();
       if (data.error) return res.status(400).json({ error: data.error.message });
       todos.push(...(data.data || []));
@@ -47,7 +54,7 @@ export default async function handler(req, res) {
       await Promise.all(videoAds.slice(i, i + 10).map(async ad => {
         try {
           const vUrl = `https://graph.facebook.com/v20.0/${ad.creative.video_id}?fields=source,thumbnails{uri,height,width}&access_token=${token}`;
-          const vr = await fetch(vUrl);
+          const vr = await fetchMeta(vUrl);
           const vd = await vr.json();
           if (vd.error) return;
           const thumbs = vd.thumbnails?.data || [];
@@ -58,7 +65,9 @@ export default async function handler(req, res) {
       }));
     }
 
-    return res.status(200).json({ data: todos });
+    const result = { data: todos };
+    await cacheSet(ck, result, 90000); // 90s TTL
+    return res.status(200).json(result);
   } catch (e) {
     return res.status(500).json({ error: e.message });
   }

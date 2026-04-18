@@ -1,15 +1,15 @@
 import { getPool } from './_db.js';
 import { verifyAuth } from './_auth.js';
 import crypto from 'crypto';
+import { cors } from './_cors.js';
+import { rateLimit } from './_rate-limit.js';
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'PATCH, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
-  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (cors(req, res, ['PATCH'])) return;
 
   const user = await verifyAuth(req, res);
   if (!user) return;
+  if (await rateLimit(req, res, user)) return;
 
   const { id, status, valor_venda, produto, nome, email, cpf, cidade, estado, endereco } = req.body;
   if (!id) return res.status(400).json({ error: 'id obrigatório' });

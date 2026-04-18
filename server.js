@@ -60,6 +60,40 @@ const server = http.createServer(async (req, res) => {
         return;
     }
 
+    // Detailed health check — DB + Redis + uptime
+    if (pathname === '/health/detailed') {
+        const details = { status: 'ok', uptime: Math.round(process.uptime()), memory: Math.round(process.memoryUsage().rss / 1024 / 1024) + 'MB', checks: {} };
+        try {
+            const { getPool } = await import('./api/_db.js');
+            const pool = getPool();
+            const t0 = Date.now();
+            await pool.query('SELECT 1');
+            details.checks.database = { status: 'ok', latencyMs: Date.now() - t0 };
+        } catch (e) {
+            details.status = 'degraded';
+            details.checks.database = { status: 'error', error: e.message };
+        }
+        try {
+            if (process.env.REDIS_URL) {
+                const Redis = (await import('ioredis')).default;
+                const r = new Redis(process.env.REDIS_URL, { connectTimeout: 3000, lazyConnect: true });
+                const t0 = Date.now();
+                await r.connect();
+                await r.ping();
+                details.checks.redis = { status: 'ok', latencyMs: Date.now() - t0 };
+                r.disconnect();
+            } else {
+                details.checks.redis = { status: 'not_configured' };
+            }
+        } catch (e) {
+            details.checks.redis = { status: 'error', error: e.message };
+        }
+        const code = details.status === 'ok' ? 200 : 503;
+        res.writeHead(code, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(details));
+        return;
+    }
+
     // API routes
     if (pathname.startsWith('/api/')) {
         const route = pathname.slice(5).replace(/\/$/, '') || 'index';
@@ -92,3 +126,16 @@ server.listen(PORT, () => {
     console.log(`✅ Dev server running at http://localhost:${PORT}`);
     console.log(`   API routes: /api/leads, /api/config, /api/ads, /api/ads-accounts`);
 });
+
+// ── Graceful shutdown (evita "npm error signal SIGTERM" no EasyPanel) ──
+function shutdown(signal) {
+    console.log(`\n⏹ ${signal} received — shutting down gracefully…`);
+    server.close(() => {
+        console.log('✅ HTTP server closed');
+        process.exit(0);
+    });
+    // Force exit after 5s if connections don't close
+    setTimeout(() => { process.exit(0); }, 5000).unref();
+}
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT',  () => shutdown('SIGINT'));
