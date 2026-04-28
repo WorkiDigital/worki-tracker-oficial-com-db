@@ -5,8 +5,8 @@
     --scheme:dark;
 }
 html.light {
-    --bg:#f0f2f5; --card:#ffffff; --text:#111827; --muted:#6b7280;
-    --blue:#2563eb; --green:#059669;
+    --bg:#f8fafc; --card:#ffffff; --text:#111827; --muted:#6b7280;
+    --blue:#3b82f6; --green:#4ade80;
     --border:#e5e7eb; --hover:#f9fafb; --tag:#f3f4f6;
     --scheme:light;
 }

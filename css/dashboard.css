@@ -11,15 +11,15 @@
     --scheme: dark;
 }
 html.light {
-    --bg: #f4f6f9; --sidebar: rgba(255,255,255,0.85); --card: rgba(255,255,255,0.78);
+    --bg: #f8fafc; --sidebar: rgba(255,255,255,0.9); --card: rgba(255,255,255,0.85);
     --card-solid: #ffffff;
     --text: #0f172a; --muted: #64748b;
-    --blue: #2563eb; --green: #059669;
+    --blue: #3b82f6; --green: #4ade80;
     --purple: #7c3aed; --amber: #d97706;
     --border: rgba(0,0,0,0.06); --hover: rgba(0,0,0,0.03); --tag: rgba(0,0,0,0.04);
-    --glow-blue: rgba(37,99,235,0.08); --glow-green: rgba(5,150,105,0.06);
+    --glow-blue: rgba(59,130,246,0.1); --glow-green: rgba(74,222,128,0.08);
     --shadow-card: 0 1px 3px rgba(0,0,0,0.05), 0 4px 16px rgba(0,0,0,0.04);
-    --shadow-card-hover: 0 4px 24px rgba(37,99,235,0.06), 0 1px 6px rgba(0,0,0,0.06);
+    --shadow-card-hover: 0 4px 24px rgba(59,130,246,0.08), 0 1px 6px rgba(0,0,0,0.06);
     --scheme: light;
 }
 
