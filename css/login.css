@@ -1,6 +1,6 @@
 :root {
-    --bg: #06080d; --card: #0b0e14; --text: #ffffff; --muted: #8a8f98;
-    --blue: #3b82f6; --green: #10b981; --red: #ef4444;
+    --bg: #060810; --card: #0b0e14; --text: #ffffff; --muted: #8a8f98;
+    --blue: #3b82f6; --green: #4ade80; --red: #ef4444;
     --border: #1f2937; --hover: #1a1f26;
 }
 * { margin:0; padding:0; box-sizing:border-box; font-family:'Inter',sans-serif; }
