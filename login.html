@@ -82,6 +82,18 @@
     </div>
 </div>
 
+<!-- Splash Screen -->
+<div id="splash" class="splash-overlay">
+    <div class="splash-content">
+        <div class="splash-logo" id="splashLogo"></div>
+        <div class="splash-brand" id="splashBrand">Adlytics <span class="splash-pro">Pro</span></div>
+        <div class="splash-tagline">Preparando seu painel...</div>
+        <div class="splash-bar-wrap">
+            <div class="splash-bar"></div>
+        </div>
+    </div>
+</div>
+
 <script>
 let TOKEN = localStorage.getItem('adlytics_token');
 
@@ -165,8 +177,8 @@ async function fazerLogin() {
         localStorage.setItem('adlytics_token', data.token);
         localStorage.setItem('adlytics_user', JSON.stringify(data.user));
 
-        btn.innerHTML = '✓ Redirecionando...';
-        window.location.href = '/';
+        btn.innerHTML = '✓ Entrando...';
+        mostrarSplash();
     } catch (e) {
         mostrarAlerta('Erro ao conectar com o servidor.', 'error');
         btn.disabled = false;
@@ -223,6 +235,23 @@ async function fazerCadastro() {
         btn.disabled = false;
         btn.innerHTML = 'Criar conta';
     }
+}
+
+// ── Splash de boas-vindas ───────────────────────────────────────
+function mostrarSplash() {
+    const srcLogo = document.getElementById('brand-logo-container');
+    const srcName = document.getElementById('brand-name-text');
+    const splashLogo  = document.getElementById('splashLogo');
+    const splashBrand = document.getElementById('splashBrand');
+
+    if (srcLogo) splashLogo.innerHTML = srcLogo.innerHTML;
+    if (srcName) {
+        const name = srcName.textContent.trim();
+        splashBrand.innerHTML = name + ' <span class="splash-pro">Pro</span>';
+    }
+
+    document.getElementById('splash').classList.add('show');
+    setTimeout(() => { window.location.href = '/'; }, 2500);
 }
 
 // ── Enter para submeter ─────────────────────────────────────────
