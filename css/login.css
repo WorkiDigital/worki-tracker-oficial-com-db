@@ -1,7 +1,7 @@
 :root {
-    --bg: #060810; --card: #0b0e14; --text: #ffffff; --muted: #8a8f98;
-    --blue: #3b82f6; --green: #4ade80; --red: #ef4444;
-    --border: #1f2937; --hover: #1a1f26;
+    --bg: #0a0f1a; --card: #0d1321; --text: #e2e8f0; --muted: #64748b;
+    --blue: #2563eb; --green: #4ade80; --red: #ef4444;
+    --border: #1a2332; --hover: #131b2e;
 }
 * { margin:0; padding:0; box-sizing:border-box; font-family:'Inter',sans-serif; }
 body {
@@ -133,7 +133,7 @@ body {
     animation:splashFadeUp .5s .35s ease both;
 }
 .splash-pro {
-    background:linear-gradient(135deg,#60a5fa,#06b6d4);
+    background:linear-gradient(135deg,#2563eb,#4ade80);
     -webkit-background-clip:text; -webkit-text-fill-color:transparent;
     background-clip:text;
 }
@@ -151,7 +151,7 @@ body {
 }
 .splash-bar {
     height:100%; width:0%;
-    background:linear-gradient(90deg,#3b82f6,#06b6d4);
+    background:linear-gradient(90deg,#2563eb,#4ade80);
     border-radius:999px;
     animation:splashProgress 1.9s .85s cubic-bezier(.4,0,.2,1) both;
 }
@@ -160,8 +160,8 @@ body {
     to   { transform:scale(1);  opacity:1; }
 }
 @keyframes splashGlow {
-    from { box-shadow:0 0 20px rgba(59,130,246,.35); }
-    to   { box-shadow:0 0 50px rgba(59,130,246,.7), 0 0 90px rgba(6,182,212,.25); }
+    from { box-shadow:0 0 20px rgba(37,99,235,.35); }
+    to   { box-shadow:0 0 50px rgba(37,99,235,.7), 0 0 90px rgba(74,222,128,.25); }
 }
 @keyframes splashFadeUp {
     from { opacity:0; transform:translateY(12px); }
