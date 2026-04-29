@@ -106,8 +106,6 @@ export default async function handler(req, res) {
   const remoteJid = data.key.remoteJidAlt || data.key.remoteJid || '';
   const telefone  = remoteJid.split('@')[0];
 
-  log('recv', 'Mensagem recebida', { instance, fromMe, telefone, pushName: data.pushName });
-
   const pool = getPool();
   let cliente_id = null;
 
@@ -149,6 +147,8 @@ export default async function handler(req, res) {
     if (!ctwaClid) {
       return res.status(200).json({ ignored: true, reason: 'no ctwaClid' });
     }
+
+    log('recv', 'Mensagem recebida de lead (CTWA)', { instance, telefone, pushName: data.pushName });
 
     const sourceId              = adReply.sourceId || null;
     const event_source_url      = adReply.sourceUrl || '';
@@ -230,6 +230,8 @@ export default async function handler(req, res) {
       );
       return res.status(200).json({ ignored: true, reason: 'not a sale message' });
     }
+
+    log('sale', 'Venda detectada via template', { instance, telefone, valor });
 
     const nome    = extract('nome');
     const cidadeRaw = extract('cidade');

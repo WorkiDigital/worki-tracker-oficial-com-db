@@ -16,8 +16,8 @@ export default async function handler(req, res) {
 
   try {
     const result = await pool.query(
-      `DELETE FROM public.webhook_logs WHERE created_at < NOW() - INTERVAL '$1 days'`,
-      [parseInt(days)]
+      `DELETE FROM public.webhook_logs WHERE created_at < NOW() - ($1 || ' days')::interval`,
+      [String(days)]
     );
 
     console.log(`[PRUNE] Limpeza de logs concluída. Registros removidos: ${result.rowCount}`);
