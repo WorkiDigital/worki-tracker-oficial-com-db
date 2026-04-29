@@ -32,6 +32,19 @@ Novos indicadores no topo da aba de Leads:
 - **Leads Esquecidos:** Leads sem interação há mais de 48h.
 - **Vendas Rápidas:** Porcentagem de conversões em menos de 24h.
 
+### 5. Gestão de Logs e Espaço
+O sistema possui uma rotina de manutenção para evitar consumo excessivo de banco de dados:
+- **Limpeza Automática:** Logs com mais de 30 dias são removidos silenciosamente ao acessar a aba de logs.
+- **Limpeza Manual:** Endpoint `/api/logs-prune` permite remover logs antigos (padrão 15 dias) via UI.
+- **Logging Seletivo:** O webhook apenas registra logs de eventos críticos (novos leads e vendas), ignorando conversas comuns para economizar espaço.
+
+## 📊 Mapeamento de Dados (Leads)
+O rastro completo do lead inclui:
+- **Identidade:** Nome, Telefone, Email, CPF.
+- **Rastreamento:** UTMs (Campaign, Medium, Content), Ad ID, Page ID, Pixel.
+- **Conversão:** Produto, Valor, Forma de Pagamento, Localização.
+- **Performance:** SLA de resposta, Lead Score e Ciclo de Venda.
+
 ## 🛠️ Comandos Úteis
 
 ### Banco de Dados
@@ -42,9 +55,11 @@ Novos indicadores no topo da aba de Leads:
 - `GET /api/metrics-temporal`: Retorna as métricas de performance.
 - `GET /api/alerts-check`: Verifica leads negligenciados.
 - `GET /api/metrics-funnel`: Retorna dados para o gráfico de funil.
+- `POST /api/logs-prune?days=15`: Executa a limpeza manual de logs.
 
 ## 📁 Estrutura de Arquivos Críticos
-- `api/webhook-evo.js`: Core da inteligência e recebimento de mensagens.
-- `api/_metrics_helper.js`: Cálculos de intervalos de tempo.
-- `js/leads.js`: Lógica de renderização da tabela e dos cards no frontend.
-- `index.html`: UI principal com os novos componentes de métricas.
+- `api/webhook-evo.js`: Core da inteligência e recebimento de mensagens (Logging seletivo).
+- `api/logs-prune.js`: Handler de limpeza de banco de dados.
+- `api/logs.js`: Endpoint de listagem com auto-pruning de 30 dias.
+- `js/admin.js`: Gestão de logs e clientes no frontend.
+- `index.html`: UI principal com os novos componentes de métricas e botões de gestão.
