@@ -136,7 +136,7 @@ async function setup() {
     `);
     console.log('✅ Coluna "template_venda" injetada na tabela "clientes".');
 
-    // Campos extras de venda na tabela leads_tracking
+    // Campos de venda (produto, endereco, cor, forma_pagamento, cpf, email) injetados em "leads_tracking".
     await client.query(`
       ALTER TABLE public.leads_tracking
       ADD COLUMN IF NOT EXISTS produto VARCHAR(255),
@@ -146,7 +146,19 @@ async function setup() {
       ADD COLUMN IF NOT EXISTS cpf VARCHAR(20),
       ADD COLUMN IF NOT EXISTS email VARCHAR(255);
     `);
-    console.log('✅ Campos de venda (produto, endereco, cor, forma_pagamento, cpf, email) injetados em "leads_tracking".');
+
+    // NOVOS CAMPOS TEMPORAIS E SCORE (FASE 1)
+    await client.query(`
+      ALTER TABLE public.leads_tracking
+      ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      ADD COLUMN IF NOT EXISTS first_response_at TIMESTAMP,
+      ADD COLUMN IF NOT EXISTS qualified_at TIMESTAMP,
+      ADD COLUMN IF NOT EXISTS proposal_sent_at TIMESTAMP,
+      ADD COLUMN IF NOT EXISTS sale_closed_at TIMESTAMP,
+      ADD COLUMN IF NOT EXISTS last_interaction_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      ADD COLUMN IF NOT EXISTS lead_score INTEGER DEFAULT 0;
+    `);
+    console.log('✅ Novos campos temporais e de score (Fase 1) injetados em "leads_tracking".');
 
     // Configurações Globais do Sistema (White-label)
     await client.query(`

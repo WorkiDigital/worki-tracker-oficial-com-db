@@ -22,6 +22,9 @@ async function recarregarLeads(silencioso = false) {
         const agora = new Date().toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'});
         dot.className   = 'refresh-dot';
         label.textContent = `atualizado ${agora}`;
+        
+        // FASE 3: Carrega métricas temporais
+        carregarMetricasTemporais();
     } catch(e) {
         dot.className   = 'refresh-dot';
         dot.style.background = 'var(--red)';
@@ -30,6 +33,22 @@ async function recarregarLeads(silencioso = false) {
     } finally {
         if (icon) icon.style.animation = '';
         lucide.createIcons({ nodes: [icon?.parentElement].filter(Boolean) });
+    }
+}
+
+async function carregarMetricasTemporais() {
+    try {
+        const data = await authFetch('/api/metrics-temporal').then(r => r.json());
+        if (data.error) return;
+
+        if ($('avgCycleDays')) $('avgCycleDays').textContent = data.avgCycleDays;
+        if ($('avgResponseTime')) $('avgResponseTime').textContent = data.avgResponseMin;
+        if ($('leadsAtRisk')) $('leadsAtRisk').textContent = data.leadsAtRisk;
+        if ($('fastSales')) $('fastSales').textContent = data.fastSales;
+        if ($('fastSalesPercentLabel')) $('fastSalesPercentLabel').textContent = `${data.fastSalesPercent}% das vendas em 24h`;
+        
+    } catch (e) {
+        console.error('Erro ao carregar métricas temporais:', e);
     }
 }
 
@@ -135,8 +154,8 @@ $('inputBusca').addEventListener('input', () => {
 function sortBy(col) {
     if (sortCol === col) sortDir *= -1;
     else { sortCol = col; sortDir = -1; }
-
-    ['nome','status','event_time'].forEach(c => {
+ 
+    ['nome','status','event_time','lead_score'].forEach(c => {
         const el = $('sort-'+c);
         if (!el) return;
         el.textContent = c === sortCol ? (sortDir === 1 ? '↑' : '↓') : '↕';
@@ -144,6 +163,23 @@ function sortBy(col) {
         el.parentElement.classList.toggle('sort-desc', c === sortCol && sortDir === -1);
     });
     aplicarFiltros();
+}
+
+function tempoRelativo(data) {
+    if (!data) return '-';
+    const agora = new Date();
+    const d = new Date(data);
+    const diffMs = agora - d;
+    const diffMin = Math.floor(diffMs / (1000 * 60));
+    
+    if (diffMin < 1) return 'agora';
+    if (diffMin < 60) return `${diffMin}m`;
+    
+    const diffHoras = Math.floor(diffMin / 60);
+    if (diffHoras < 24) return `${diffHoras}h`;
+    
+    const diffDias = Math.floor(diffHoras / 24);
+    return `${diffDias}d`;
 }
 
 // ── Render tabela com paginação ────────────────────────────────
@@ -167,22 +203,31 @@ function renderTabela() {
         const plat     = (lead.plataforma||'instagram').toLowerCase();
         const platCls  = plat.includes('face') ? 'facebook' : plat.includes('whats') ? 'whatsapp' : 'instagram';
         const status   = (lead.status||'Lead').toLowerCase();
-        const purchase = status === 'vendido';
+        const purchase = status === 'venda_fechada' || status === 'vendido';
         const stColor  = purchase ? '#10b981' : '';
         const stBorder = purchase ? '1px solid rgba(16,185,129,.3)' : 'transparent';
         const msg      = (lead.mensagem_recebida||'Sem mensagem').substring(0,35);
-        const temCapi  = !!lead.pixel; // token vem da agência via env, só precisa do pixel
+        const temCapi  = !!lead.pixel; 
         const data     = tempoRelativo(lead.event_time||lead.created_at);
+        
+        // FASE 2: Lead Score
+        const score = lead.lead_score || 0;
+        const scoreCls = score >= 70 ? 'hot' : score >= 40 ? 'warm' : 'cold';
+        const scoreColor = score >= 70 ? '#ef4444' : score >= 40 ? '#f59e0b' : '#6b7280';
+
+        // Tempo no Funil
+        const tempoFunil = tempoRelativo(lead.created_at || lead.event_time);
 
         return `<tr>
             <td style="color:var(--text);font-weight:600;">${esc(lead.nome)||'N/A'}</td>
             <td>${esc(lead.telefone)||'N/A'}</td>
             <td><span class="tag" style="color:${stColor};border:${stBorder};">${esc(status)}</span></td>
-            <td title="${esc(lead.mensagem_recebida)}" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;">${esc(msg)}${lead.mensagem_recebida?.length>35?'…':''}</td>
+            <td><span style="font-weight:700;color:${scoreColor};">${score}</span></td>
+            <td title="${esc(lead.mensagem_recebida)}" style="max-width:180px;overflow:hidden;text-overflow:ellipsis;">${esc(msg)}${lead.mensagem_recebida?.length>35?'…':''}</td>
             <td style="font-size:12px;color:var(--muted);">${esc(lead.instancia||'—')}</td>
             <td><div class="platform-icon ${platCls}">${esc(lead.plataforma||'instagram')}</div></td>
             <td title="${esc(lead.event_time)}" style="white-space:nowrap;">${data}</td>
-            <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;">${esc(lead.utm_content||'—')}</td>
+            <td style="font-size:11px;font-weight:600;">${tempoFunil}</td>
             <td>${temCapi ? `<button class="btn btn-green btn-sm" onclick="abrirModal(${idx})"><i data-lucide="zap" style="width:11px;"></i> Venda</button>` : '<span style="color:var(--muted);font-size:12px;">—</span>'}</td>
         </tr>`;
     }).join('');

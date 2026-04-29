@@ -1,5 +1,6 @@
 import { getPool } from './_db.js';
 import crypto from 'crypto';
+import { diffInHours } from './_metrics_helper.js';
 
 function normalizarNome(str) {
   if (!str) return '';
@@ -17,6 +18,41 @@ function parseTemplate(template) {
     if (m) map[m[2].trim()] = m[1].trim();
   }
   return map;
+}
+
+/**
+ * Fase 2: Parser Inteligente Aprimorado
+ */
+function getMessageFlags(message) {
+  const patterns = {
+    orcamento: /quanto|preço|valor|parcela|custo/i,
+    alta_intencao: /vou (comprar|fechar)|estou decidid[oa]|quero fechar|como pago/i,
+    urgente: /urgente|hoje|agora|rápido|imediato/i,
+    comparando: /comparando|outros|concorrente|em outro lugar/i
+  };
+  
+  return {
+    tem_orcamento: patterns.orcamento.test(message),
+    alta_intencao: patterns.alta_intencao.test(message),
+    urgente: patterns.urgente.test(message),
+    comparando: patterns.comparando.test(message)
+  };
+}
+
+function calculateLeadScore(flags, lastInteraction) {
+  let score = 0;
+  if (flags.tem_orcamento) score += 20;
+  if (flags.alta_intencao) score += 40;
+  if (flags.urgente) score += 30;
+  if (flags.comparando) score -= 10;
+
+  if (lastInteraction) {
+    const horasSemResposta = diffInHours(lastInteraction, new Date());
+    if (horasSemResposta < 1) score += 10;
+    else if (horasSemResposta > 24) score -= 20;
+  }
+  
+  return Math.max(0, Math.min(100, score));
 }
 
 function saveLog(instance, cliente_id, level, tag, message, data) {
@@ -48,25 +84,21 @@ export default async function handler(req, res) {
 
   const body     = req.body;
   const instance = body.instance || '';
-  let   cid      = null; // será preenchido após identificar o cliente
+  let   cid      = null; 
 
   const log  = (tag, msg, data) => { console.log(`[evo:${tag}]`, msg, data !== undefined ? JSON.stringify(data) : ''); saveLog(instance, cid, 'info', tag, msg, data); };
   const warn = (tag, msg, data) => { console.warn(`[evo:${tag}]`, msg, data !== undefined ? JSON.stringify(data) : ''); saveLog(instance, cid, 'warn', tag, msg, data); };
 
-  // 1. Filtros iniciais
   if (body.event !== 'messages.upsert') {
-    log('filter', 'Ignorado — evento não é messages.upsert', { event: body.event });
     return res.status(200).json({ ignored: true, reason: 'event not messages.upsert' });
   }
 
   const data = body.data;
   if (!data?.key?.remoteJid?.endsWith('@s.whatsapp.net')) {
-    log('filter', 'Ignorado — não é chat individual', { remoteJid: data?.key?.remoteJid });
     return res.status(200).json({ ignored: true, reason: 'not individual chat' });
   }
 
   if (!data.message) {
-    log('filter', 'Ignorado — sem message no payload');
     return res.status(200).json({ ignored: true, reason: 'no message' });
   }
 
@@ -76,14 +108,12 @@ export default async function handler(req, res) {
 
   log('recv', 'Mensagem recebida', { instance, fromMe, telefone, pushName: data.pushName });
 
-  // 2. Identifica cliente_id
   const pool = getPool();
   let cliente_id = null;
 
   const prefixMatch = String(instance).match(/^cliente_(\d+)_/);
   if (prefixMatch) {
     cliente_id = parseInt(prefixMatch[1]);
-    log('auth', 'Cliente identificado via prefixo', { instance, cliente_id });
   }
 
   if (!cliente_id) {
@@ -93,18 +123,16 @@ export default async function handler(req, res) {
     );
     if (map.rows.length > 0) {
       cliente_id = map.rows[0].cliente_id;
-      log('auth', 'Cliente identificado via instancias_mapeamento', { instance, cliente_id });
     }
   }
 
   if (!cliente_id) {
     warn('auth', 'Instância não reconhecida', { instance });
-    return res.status(400).json({ error: 'Instância não reconhecida. Vincule-a a um cliente no painel.' });
+    return res.status(400).json({ error: 'Instância não reconhecida.' });
   }
 
-  cid = cliente_id; // atualiza contexto dos logs
+  cid = cliente_id; 
 
-  // 3. Busca token e pixel do cliente
   const clientRes = await pool.query(
     'SELECT token_meta, pixel_padrao, template_venda FROM clientes WHERE id = $1',
     [cliente_id]
@@ -113,17 +141,13 @@ export default async function handler(req, res) {
   const token   = cliente.token_meta || process.env.META_ADS_TOKEN || null;
   const pixel   = cliente.pixel_padrao || null;
 
-  log('auth', 'Pixel/Token do cliente', { cliente_id, pixel: pixel || 'AUSENTE', token: token ? 'OK' : 'AUSENTE' });
-
-  // 4. fromMe = false → LEAD
   if (!fromMe) {
     const ctx      = data.contextInfo || {};
     const adReply  = ctx.externalAdReply || {};
     const ctwaClid = adReply.ctwaClid || null;
 
     if (!ctwaClid) {
-      log('lead', 'Ignorado — sem ctwaClid (não veio de anúncio)', { telefone });
-      return res.status(200).json({ ignored: true, reason: 'no ctwaClid — not from ad' });
+      return res.status(200).json({ ignored: true, reason: 'no ctwaClid' });
     }
 
     const sourceId              = adReply.sourceId || null;
@@ -133,68 +157,55 @@ export default async function handler(req, res) {
     const nome                  = normalizarNome(data.pushName);
     const mensagem_recebida     = data.message?.conversation || data.message?.extendedTextMessage?.text || '';
 
-    log('lead', 'Lead de anúncio identificado', { telefone, nome, plataforma, sourceId, ctwaClid: ctwaClid.substring(0, 20) + '...' });
-
-    // 5. Meta Graph API → UTMs e page_id
     let utm_campaign = null, utm_medium = null, utm_content = null, page_id = null;
 
     if (sourceId && token) {
-      log('meta-api', 'Buscando dados do anúncio', { sourceId });
       try {
         const metaUrl = `https://graph.facebook.com/v20.0/${sourceId}?fields=name,adset{name},campaign{name},tracking_specs&access_token=${token}`;
         const metaRes = await fetch(metaUrl);
         const meta    = await metaRes.json();
-
         utm_campaign = meta.campaign?.name || null;
         utm_medium   = meta.adset?.name   || null;
         utm_content  = meta.name          || null;
-
         const specs = Array.isArray(meta.tracking_specs) ? meta.tracking_specs : [];
         for (const spec of specs) {
           if (spec.page?.length > 0) { page_id = String(spec.page[0]); break; }
         }
-
-        log('meta-api', 'UTMs e page_id extraídos', { utm_campaign, utm_medium, utm_content, page_id });
       } catch (e) {
         warn('meta-api', 'Erro ao buscar dados do anúncio', { error: e.message });
       }
-    } else {
-      warn('meta-api', 'Pulou busca Meta API', { sourceId: sourceId || 'AUSENTE', token: token ? 'OK' : 'AUSENTE' });
     }
 
-    // 6. Salva lead no banco
-    log('db', 'Salvando lead no banco', { telefone, nome, plataforma });
+    // FASE 2: Parser e Scoring
+    const flags = getMessageFlags(mensagem_recebida);
+    const initialScore = calculateLeadScore(flags, null);
+
     const insertResult = await pool.query(`
       INSERT INTO leads_tracking (
         cliente_id, nome, telefone, mensagem_recebida, ctw_aci_id, source_id,
         event_source_url, anuncio_thumbnail_url, instancia, status, event_time,
-        utm_campaign, utm_medium, utm_content, page_id, plataforma, pixel
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'Lead',to_timestamp($10),$11,$12,$13,$14,$15,$16)
+        utm_campaign, utm_medium, utm_content, page_id, plataforma, pixel,
+        lead_score, created_at, last_interaction_at
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'novo',to_timestamp($10),$11,$12,$13,$14,$15,$16,$17,NOW(),NOW())
       RETURNING *
     `, [
       cliente_id, nome, telefone, mensagem_recebida,
       ctwaClid, sourceId || '',
       event_source_url, anuncio_thumbnail_url,
       instance, Math.floor(Date.now() / 1000),
-      utm_campaign, utm_medium, utm_content, page_id, plataforma, pixel
+      utm_campaign, utm_medium, utm_content, page_id, plataforma, pixel,
+      initialScore
     ]);
 
     const lead = insertResult.rows[0];
-    log('db', 'Lead salvo com sucesso', { id: lead.id, status: lead.status });
-
-    // 7. CAPI Lead
     await sendCapiLead(lead, pixel, token, log, warn);
 
-    return res.status(200).json({ success: true, message: 'Lead salvo com sucesso', lead_id: lead.id });
+    return res.status(200).json({ success: true, message: 'Lead salvo', lead_id: lead.id });
   }
 
-  // 4b. fromMe = true → COMPRA
   if (fromMe) {
     const msg = data.message?.conversation || data.message?.extendedTextMessage?.text || data.message?.imageMessage?.caption || data.message?.documentMessage?.caption || '';
 
-    log('purchase', 'Mensagem do atendente recebida', { telefone, preview: msg.substring(0, 80) });
-
-    // Monta mapa campo → label a partir do template do cliente
     const templateRaw = cliente.template_venda || null;
     const fieldMap = templateRaw
       ? parseTemplate(templateRaw)
@@ -212,13 +223,16 @@ export default async function handler(req, res) {
     const valor    = parseFloat(valorRaw.replace(/[^0-9,.]/g, '').replace(',', '.')) || 0;
 
     if (valor <= 0) {
-      log('purchase', 'Ignorado — sem valor na mensagem', { telefone, msg: msg.substring(0, 80) });
-      return res.status(200).json({ ignored: true, reason: 'atendente message without valor — ignored' });
+      // Se não for uma venda, apenas atualiza a última interação do lead
+      await pool.query(
+          'UPDATE leads_tracking SET last_interaction_at = NOW(), first_response_at = COALESCE(first_response_at, NOW()) WHERE telefone = $1 AND cliente_id = $2',
+          [telefone, cliente_id]
+      );
+      return res.status(200).json({ ignored: true, reason: 'not a sale message' });
     }
 
     const nome    = extract('nome');
     const cidadeRaw = extract('cidade');
-    // suporte a "Cidade: Fortaleza - CE" (cidade e estado no mesmo campo)
     const cidadeF = cidadeRaw?.includes(' - ') ? cidadeRaw.split(' - ')[0].trim() : cidadeRaw;
     const estado  = extract('estado') || (cidadeRaw?.includes(' - ') ? cidadeRaw.split(' - ')[1].trim() : null);
     const produto = extract('produto');
@@ -228,23 +242,18 @@ export default async function handler(req, res) {
     const cpf     = extract('cpf');
     const email   = extract('email');
 
-    log('purchase', 'Dados de venda extraídos', { valor, nome, cidadeF, estado, produto });
-
     const leadQuery = await pool.query(
       'SELECT * FROM leads_tracking WHERE telefone = $1 AND cliente_id = $2 ORDER BY id DESC LIMIT 1',
       [telefone, cliente_id]
     );
 
     if (leadQuery.rows.length === 0) {
-      warn('purchase', 'Nenhum lead encontrado para registrar venda', { telefone, cliente_id });
-      return res.status(404).json({ error: 'Nenhum lead encontrado com esse telefone.' });
+      return res.status(404).json({ error: 'Lead não encontrado.' });
     }
-
-    log('purchase', 'Lead encontrado para atualizar', { id: leadQuery.rows[0].id, status_atual: leadQuery.rows[0].status });
 
     const updateResult = await pool.query(`
       UPDATE leads_tracking
-      SET status = 'Vendido', valor_venda = $1,
+      SET status = 'venda_fechada', valor_venda = $1,
           cidade          = COALESCE($2, cidade),
           estado          = COALESCE($3, estado),
           nome            = COALESCE($4, nome),
@@ -253,18 +262,19 @@ export default async function handler(req, res) {
           cor             = COALESCE($7, cor),
           forma_pagamento = COALESCE($8, forma_pagamento),
           cpf             = COALESCE($9, cpf),
-          email           = COALESCE($10, email)
+          email           = COALESCE($10, email),
+          sale_closed_at  = NOW(),
+          last_interaction_at = NOW(),
+          lead_score      = 100
       WHERE id = $11 RETURNING *
     `, [valor, cidadeF || null, estado || null, nome || null,
         produto || null, endereco || null, cor || null,
         forma_pagamento || null, cpf || null, email || null, leadQuery.rows[0].id]);
 
     const leadAtualizado = updateResult.rows[0];
-    log('purchase', 'Lead atualizado para Vendido', { id: leadAtualizado.id, valor_venda: leadAtualizado.valor_venda });
-
     await sendCapiPurchase(leadAtualizado, pixel, token, log, warn);
 
-    return res.status(200).json({ success: true, message: 'Compra registrada e CAPI enviada', lead_id: leadAtualizado.id });
+    return res.status(200).json({ success: true, message: 'Venda registrada', lead_id: leadAtualizado.id });
   }
 }
 
@@ -276,11 +286,7 @@ const hash = str =>
     : crypto.createHash('sha256').update((str || '').toLowerCase().trim()).digest('hex');
 
 async function sendCapiLead(lead, pixel, token, log, warn) {
-  if (!pixel || !token || !lead.ctw_aci_id) {
-    warn('capi-lead', 'CAPI Lead não disparada', { pixel: pixel || 'AUSENTE', token: token ? 'OK' : 'AUSENTE', ctw_aci_id: lead.ctw_aci_id || 'AUSENTE' });
-    return;
-  }
-
+  if (!pixel || !token || !lead.ctw_aci_id) return;
   const ph = (lead.telefone || '').replace(/\D/g, '');
   const userData = { ctwa_clid: lead.ctw_aci_id };
   if (ph)           userData.ph      = hash(ph);
@@ -296,26 +302,17 @@ async function sendCapiLead(lead, pixel, token, log, warn) {
     }]
   };
 
-  log('capi-lead', 'Disparando CAPI Lead', { pixel, lead_id: lead.id, page_id: lead.page_id });
   try {
-    const r    = await fetch(`https://graph.facebook.com/v25.0/${pixel}/events?access_token=${token}`, {
+    const r = await fetch(`https://graph.facebook.com/v25.0/${pixel}/events?access_token=${token}`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
     });
     const resp = await r.json();
-    if (resp.events_received) {
-      log('capi-lead', '✅ CAPI Lead aceita pela Meta', { events_received: resp.events_received, fbtrace_id: resp.fbtrace_id });
-    } else {
-      warn('capi-lead', '❌ CAPI Lead rejeitada pela Meta', resp.error || resp);
-    }
-  } catch (e) { warn('capi-lead', 'Erro de rede ao disparar CAPI Lead', { error: e.message }); }
+    if (resp.events_received) log('capi-lead', '✅ CAPI Lead aceita');
+  } catch (e) { warn('capi-lead', 'Erro CAPI', { error: e.message }); }
 }
 
 async function sendCapiPurchase(lead, pixel, token, log, warn) {
-  if (!pixel || !token) {
-    warn('capi-purchase', 'CAPI Purchase não disparada', { pixel: pixel || 'AUSENTE', token: token ? 'OK' : 'AUSENTE' });
-    return;
-  }
-
+  if (!pixel || !token) return;
   const ph = (lead.telefone || '').replace(/\D/g, '');
   const nomeParts = (lead.nome || '').trim().split(/\s+/);
   const userData = { ctwa_clid: lead.ctw_aci_id || undefined };
@@ -343,16 +340,11 @@ async function sendCapiPurchase(lead, pixel, token, log, warn) {
     }]
   };
 
-  log('capi-purchase', 'Disparando CAPI Purchase', { pixel, lead_id: lead.id, valor: lead.valor_venda });
   try {
-    const r    = await fetch(`https://graph.facebook.com/v25.0/${pixel}/events?access_token=${token}`, {
+    const r = await fetch(`https://graph.facebook.com/v25.0/${pixel}/events?access_token=${token}`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
     });
     const resp = await r.json();
-    if (resp.events_received) {
-      log('capi-purchase', '✅ CAPI Purchase aceita pela Meta', { events_received: resp.events_received, fbtrace_id: resp.fbtrace_id });
-    } else {
-      warn('capi-purchase', '❌ CAPI Purchase rejeitada pela Meta', resp.error || resp);
-    }
-  } catch (e) { warn('capi-purchase', 'Erro de rede ao disparar CAPI Purchase', { error: e.message }); }
+    if (resp.events_received) log('capi-purchase', '✅ CAPI Purchase aceita');
+  } catch (e) { warn('capi-purchase', 'Erro CAPI', { error: e.message }); }
 }
