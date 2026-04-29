@@ -434,6 +434,30 @@
 
         <!-- ABA: LEADS -->
         <div id="aba-leads">
+            <!-- NOVAS MÉTRICAS TEMPORAIS (FASE 3) -->
+            <div class="metrics-row" id="metricsTemporalRow" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:16px;margin-bottom:20px;margin-top:10px;">
+                <div class="metric-card" style="background:var(--card);padding:20px;border-radius:12px;border:1px solid var(--border);text-align:center;box-shadow:var(--shadow-sm);">
+                    <h3 style="font-size:12px;color:var(--muted);text-transform:uppercase;margin-bottom:8px;font-weight:600;">⏱️ Ciclo Médio</h3>
+                    <div class="big-number" id="avgCycleDays" style="font-size:24px;font-weight:700;color:var(--text);">-</div>
+                    <p style="font-size:11px;color:var(--muted);">dias até venda</p>
+                </div>
+                <div class="metric-card" style="background:var(--card);padding:20px;border-radius:12px;border:1px solid var(--border);text-align:center;box-shadow:var(--shadow-sm);">
+                    <h3 style="font-size:12px;color:var(--muted);text-transform:uppercase;margin-bottom:8px;font-weight:600;">⚡ Resposta Média</h3>
+                    <div class="big-number" id="avgResponseTime" style="font-size:24px;font-weight:700;color:var(--text);">-</div>
+                    <p style="font-size:11px;color:var(--muted);">minutos</p>
+                </div>
+                <div class="metric-card" style="background:var(--card);padding:20px;border-radius:12px;border:1px solid var(--border);text-align:center;border-left:4px solid #ef4444;box-shadow:var(--shadow-sm);">
+                    <h3 style="font-size:12px;color:var(--muted);text-transform:uppercase;margin-bottom:8px;font-weight:600;">⚠️ Leads Esquecidos</h3>
+                    <div class="big-number" id="leadsAtRisk" style="font-size:24px;font-weight:700;color:#ef4444;">-</div>
+                    <p style="font-size:11px;color:var(--muted);">sem contato há +48h</p>
+                </div>
+                <div class="metric-card" style="background:var(--card);padding:20px;border-radius:12px;border:1px solid var(--border);text-align:center;box-shadow:var(--shadow-sm);">
+                    <h3 style="font-size:12px;color:var(--muted);text-transform:uppercase;margin-bottom:8px;font-weight:600;">🏃 Vendas Rápidas</h3>
+                    <div class="big-number" id="fastSales" style="font-size:24px;font-weight:700;color:#10b981;">-</div>
+                    <p style="font-size:11px;color:var(--muted);" id="fastSalesPercentLabel">fechadas em 24h</p>
+                </div>
+            </div>
+
             <div class="card">
                 <div class="card-header">
                     <div class="card-title">
