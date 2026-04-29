@@ -654,3 +654,17 @@ function renderLogPagination(total) {
         </button>
     `;
 }
+async function pruneLogs() {
+    if (!confirm('Deseja realmente remover permanentemente todos os logs com mais de 15 dias?\nIsso ajudará a liberar espaço no banco de dados.')) return;
+    
+    try {
+        const r = await authFetch('/api/logs-prune', { method: 'POST' });
+        const data = await r.json();
+        if (!r.ok || data.error) throw new Error(data.error || 'Erro ao limpar logs');
+        
+        toast(data.message || 'Limpeza concluída!', 'success');
+        carregarLogs();
+    } catch (e) {
+        toast('Erro ao limpar: ' + e.message, 'error');
+    }
+}

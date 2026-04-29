@@ -1078,7 +1078,7 @@
         <div id="aba-logs" class="aba-oculta">
             <div class="card" style="padding:24px;">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:10px;">
-                    <div>
+                                <div>
                         <h3 style="margin:0;font-size:18px;">Logs do Sistema</h3>
                         <p style="color:var(--muted);font-size:12px;margin:4px 0 0;">Histórico completo da jornada de rastreamento</p>
                     </div>
@@ -1087,6 +1087,9 @@
                             <input type="checkbox" id="log-auto-refresh" onchange="toggleLogAutoRefresh()" style="accent-color:#3b82f6;">
                             Auto
                         </label>
+                        <button class="btn btn-ghost btn-sm" onclick="pruneLogs()" style="padding:5px 10px;color:var(--red);" title="Limpar logs antigos (mais de 15 dias)">
+                            <i data-lucide="trash-2" style="width:13px;"></i>
+                        </button>
                         <button class="btn btn-ghost btn-sm" onclick="carregarLogs()" style="padding:5px 10px;">
                             <i data-lucide="refresh-cw" style="width:13px;"></i>
                         </button>
