@@ -18,12 +18,12 @@ async function ensureAccountIdColumn() {
  * Normaliza accountId: remove prefixo 'act_' para comparação uniforme.
  * Meta retorna ids como "act_123456" mas usuários às vezes passam só "123456".
  */
-const normalize = id => String(id || '').replace(/^act_/, '').trim();
+export const normalizeAccountId = id => String(id || '').replace(/^act_/, '').trim();
 
 /**
  * Verifica se o usuário tem acesso ao accountId informado.
  * - Admin: acesso irrestrito.
- * - Cliente sem account_id configurado: permite (retrocompatibilidade).
+ * - Cliente sem account_id configurado: bloqueia por padrÃ£o.
  * - Cliente com account_id configurado: deve coincidir exatamente.
  * Retorna true/false.
  */
@@ -42,9 +42,11 @@ export async function verifyAccountAccess(user, accountId) {
     );
     const row = r.rows[0];
     if (!row) return false;
-    // Sem account_id configurado: permite (admin ainda não vinculou)
-    if (!row.account_id) return true;
-    return normalize(row.account_id) === normalize(accountId);
+    // Sem account_id configurado: bloqueia, salvo flag legada explÃ­cita.
+    if (!row.account_id) {
+      return process.env.ALLOW_UNSCOPED_CLIENT_ACCOUNTS === 'true';
+    }
+    return normalizeAccountId(row.account_id) === normalizeAccountId(accountId);
   } catch {
     return false;
   }
@@ -69,5 +71,44 @@ export async function getClientAccountId(user) {
     return r.rows[0]?.account_id || null;
   } catch {
     return null;
+  }
+}
+
+export async function verifyAdAccountAccess(user, token, adId) {
+  if (!adId || !/^\d+$/.test(String(adId))) return false;
+  try {
+    const r = await fetch(`https://graph.facebook.com/v20.0/${adId}?fields=account_id&access_token=${token}`);
+    const data = await r.json();
+    if (data.error || !data.account_id) return false;
+    return verifyAccountAccess(user, data.account_id);
+  } catch {
+    return false;
+  }
+}
+
+export async function verifySharedAdAccount(metaToken, adId, accountId) {
+  if (!adId || !accountId || !/^\d+$/.test(String(adId))) return false;
+  try {
+    const r = await fetch(`https://graph.facebook.com/v20.0/${adId}?fields=account_id&access_token=${metaToken}`);
+    const data = await r.json();
+    if (data.error || !data.account_id) return false;
+    return normalizeAccountId(data.account_id) === normalizeAccountId(accountId);
+  } catch {
+    return false;
+  }
+}
+
+export async function verifySharedAdVideo(metaToken, adId, videoId, accountId) {
+  if (!videoId || !/^\d+$/.test(String(videoId))) return false;
+  if (!adId) return false;
+  try {
+    const r = await fetch(`https://graph.facebook.com/v20.0/${adId}?fields=account_id,creative{video_id}&access_token=${metaToken}`);
+    const data = await r.json();
+    if (data.error || !data.account_id) return false;
+    if (normalizeAccountId(data.account_id) !== normalizeAccountId(accountId)) return false;
+    const creativeVideoId = data.creative?.video_id ? String(data.creative.video_id) : null;
+    return creativeVideoId === String(videoId);
+  } catch {
+    return false;
   }
 }

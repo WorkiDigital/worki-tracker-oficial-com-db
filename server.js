@@ -8,6 +8,9 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 3000;
+const MAX_BODY_BYTES = parseInt(process.env.MAX_BODY_BYTES || `${2 * 1024 * 1024}`, 10);
+const PUBLIC_ROOT_FILES = new Set(['/index.html', '/login.html', '/share.html']);
+const PUBLIC_DIRS = ['/css/', '/js/'];
 
 async function callApiHandler(modulePath, req, res) {
     try {
@@ -15,7 +18,7 @@ async function callApiHandler(modulePath, req, res) {
         await mod.default(req, res);
     } catch (e) {
         res.writeHead(500, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: e.message }));
+        res.end(JSON.stringify({ error: process.env.NODE_ENV === 'production' ? 'Erro interno.' : e.message }));
     }
 }
 
@@ -27,14 +30,26 @@ function wrapReq(req) {
     return req;
 }
 
-function parseBody(req) {
+function parseBody(req, res) {
     return new Promise((resolve) => {
         let data = '';
-        req.on('data', chunk => data += chunk);
-        req.on('end', () => {
-            try { req.body = data ? JSON.parse(data) : {}; } catch { req.body = {}; }
-            resolve();
+        let tooLarge = false;
+        req.on('data', chunk => {
+            data += chunk;
+            if (!tooLarge && Buffer.byteLength(data) > MAX_BODY_BYTES) {
+                tooLarge = true;
+                res.writeHead(413, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ error: 'Payload muito grande.' }));
+                req.destroy();
+                resolve(true);
+            }
         });
+        req.on('end', () => {
+            if (tooLarge) return;
+            try { req.body = data ? JSON.parse(data) : {}; } catch { req.body = {}; }
+            resolve(false);
+        });
+        req.on('error', () => resolve(tooLarge));
     });
 }
 
@@ -62,6 +77,17 @@ const server = http.createServer(async (req, res) => {
 
     // Detailed health check — DB + Redis + uptime
     if (pathname === '/health/detailed') {
+        const token = req.headers.authorization?.replace(/^Bearer\s+/i, '').trim();
+        const requiredToken = process.env.HEALTHCHECK_TOKEN;
+        const isAllowed = process.env.NODE_ENV !== 'production'
+            || process.env.EXPOSE_DETAILED_HEALTH === 'true'
+            || (requiredToken && token === requiredToken);
+        if (!isAllowed) {
+            res.writeHead(404, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'Not found' }));
+            return;
+        }
+
         const details = { status: 'ok', uptime: Math.round(process.uptime()), memory: Math.round(process.memoryUsage().rss / 1024 / 1024) + 'MB', checks: {} };
         try {
             const { getPool } = await import('./api/_db.js');
@@ -100,20 +126,55 @@ const server = http.createServer(async (req, res) => {
         const handlerPath = path.join(__dirname, 'api', route + '.js');
         if (fs.existsSync(handlerPath)) {
             const wrappedReq = wrapReq(req);
-            await parseBody(wrappedReq);
+            if (await parseBody(wrappedReq, res)) return;
             return callApiHandler(pathToFileURL(handlerPath).href, wrappedReq, wrapRes(res));
         }
         res.writeHead(404); res.end('Not found');
         return;
     }
 
-    // Static files
-    let filePath = pathname === '/' ? '/index.html' : pathname;
-    filePath = path.join(__dirname, filePath);
+    // Static files: only the public app shell and assets are exposed.
+    let publicPath;
+    try {
+        publicPath = pathname === '/' ? '/index.html' : decodeURIComponent(pathname);
+    } catch {
+        res.writeHead(400); res.end('Bad request');
+        return;
+    }
+    publicPath = publicPath.replace(/\\/g, '/');
+    const isRootFile = PUBLIC_ROOT_FILES.has(publicPath);
+    const isPublicAsset = PUBLIC_DIRS.some(dir => publicPath.startsWith(dir))
+        && !publicPath.split('/').some(part => part.startsWith('.'));
+
+    if (!isRootFile && !isPublicAsset) {
+        res.writeHead(404); res.end('Not found');
+        return;
+    }
+
+    const filePath = path.resolve(__dirname, `.${publicPath}`);
+    if (!filePath.startsWith(__dirname + path.sep) && filePath !== path.join(__dirname, 'index.html')) {
+        res.writeHead(404); res.end('Not found');
+        return;
+    }
+
     if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
         const ext = path.extname(filePath);
-        const types = { '.html':'text/html', '.js':'application/javascript', '.css':'text/css', '.json':'application/json' };
-        res.writeHead(200, { 'Content-Type': types[ext] || 'text/plain' });
+        const types = {
+            '.html':'text/html; charset=utf-8',
+            '.js':'application/javascript; charset=utf-8',
+            '.css':'text/css; charset=utf-8',
+            '.json':'application/json; charset=utf-8',
+            '.svg':'image/svg+xml',
+            '.png':'image/png',
+            '.jpg':'image/jpeg',
+            '.jpeg':'image/jpeg',
+            '.webp':'image/webp',
+            '.ico':'image/x-icon',
+        };
+        res.writeHead(200, {
+            'Content-Type': types[ext] || 'application/octet-stream',
+            'X-Content-Type-Options': 'nosniff',
+        });
         fs.createReadStream(filePath).pipe(res);
     } else {
         res.writeHead(404); res.end('Not found');

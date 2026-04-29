@@ -22,6 +22,9 @@ export default async function handler(req, res) {
         return res.status(200).json(result.rows);
     } catch (dbError) {
         console.warn('DB Error, returning Mock Data:', dbError.message);
+        if (process.env.NODE_ENV === 'production') {
+            throw dbError;
+        }
         // --- DADOS DE TESTE (MOCK) ---
         return res.status(200).json([
             { id: 1, nome: 'João Silva', telefone: '11999999999', status: 'lead', instancia: 'WhatsApp Empresa', plataforma: 'whatsapp', event_time: new Date().toISOString(), utm_content: 'Anuncio_01' },

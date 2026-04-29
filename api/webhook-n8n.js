@@ -7,6 +7,9 @@ export default async function handler(req, res) {
 
   // Valida segredo do webhook (se configurado em WEBHOOK_SECRET)
   const webhookSecret = process.env.WEBHOOK_SECRET;
+  if (!webhookSecret && process.env.NODE_ENV === 'production') {
+    return res.status(503).json({ error: 'WEBHOOK_SECRET não configurado.' });
+  }
   if (webhookSecret && req.headers['x-webhook-secret'] !== webhookSecret) {
     return res.status(401).json({ error: 'Webhook secret inválido.' });
   }
@@ -130,11 +133,11 @@ export default async function handler(req, res) {
 async function sendCapiLead(lead, pool) {
   let { pixel, ctw_aci_id, page_id, telefone, cliente_id } = lead;
 
-  const clientRes = await pool.query('SELECT pixel_padrao FROM clientes WHERE id = $1', [cliente_id]);
+  const clientRes = await pool.query('SELECT pixel_padrao, token_meta FROM clientes WHERE id = $1', [cliente_id]);
   if (clientRes.rows.length > 0) {
     pixel = pixel || clientRes.rows[0].pixel_padrao;
   }
-  const token = process.env.META_ADS_TOKEN || null;
+  const token = clientRes.rows[0]?.token_meta || process.env.META_ADS_TOKEN || null;
 
   if (!pixel || !token || !ctw_aci_id) return;
 
@@ -175,18 +178,18 @@ async function sendCapiLead(lead, pool) {
 async function sendCapiPurchase(lead, pool) {
   let { pixel, ctw_aci_id, telefone, cidade, estado, page_id, cliente_id, valor_venda } = lead;
 
-  const clientRes = await pool.query('SELECT pixel_padrao FROM clientes WHERE id = $1', [cliente_id]);
+  const clientRes = await pool.query('SELECT pixel_padrao, token_meta FROM clientes WHERE id = $1', [cliente_id]);
   if (clientRes.rows.length > 0) {
     pixel = pixel || clientRes.rows[0].pixel_padrao;
   }
-  const token = process.env.META_ADS_TOKEN || null;
+  const token = clientRes.rows[0]?.token_meta || process.env.META_ADS_TOKEN || null;
 
   if (!pixel || !token) return;
 
   const hash = str => /^[a-f0-9]{64}$/.test(str) ? str : crypto.createHash('sha256').update((str || '').toLowerCase().trim()).digest('hex');
   const ph = (telefone || '').replace(/\D/g, '');
 
-  const nomeParts = (nome || '').trim().split(/\s+/);
+  const nomeParts = (lead.nome || '').trim().split(/\s+/);
   const userData = {
     ctwa_clid: ctw_aci_id || undefined,
   };

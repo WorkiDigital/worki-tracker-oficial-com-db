@@ -1,5 +1,5 @@
 import { verifyAuth, getTokenForUser } from './_auth.js';
-import { verifyAccountAccess } from './_validate.js';
+import { normalizeAccountId, verifyAccountAccess } from './_validate.js';
 import { cacheGet, cacheSet, cacheKey } from './_cache.js';
 import { fetchMeta } from './_meta-client.js';
 import { cors } from './_cors.js';
@@ -12,16 +12,18 @@ export default async function handler(req, res) {
   if (!user) return;
   if (await rateLimit(req, res, user)) return;
 
-  const { level, parentId, datePreset = 'last_30d' } = req.query;
+  const { level, parentId, accountId, datePreset = 'last_30d' } = req.query;
   const token = await getTokenForUser(user);
 
   if (!token)    return res.status(403).json({ error: 'Token Meta não configurado para sua conta. Solicite ao administrador da plataforma.' });
   if (!parentId) return res.status(400).json({ error: 'parentId is required' });
+  if (!accountId) return res.status(400).json({ error: 'accountId is required' });
+  if (!(await verifyAccountAccess(user, accountId))) return res.status(403).json({ error: 'Acesso negado a esta conta de anúncios.' });
   if (!['adsets', 'ads'].includes(level))
     return res.status(400).json({ error: 'level must be adsets or ads' });
 
   // ── Cache hit? ────────────────────────────────────────────────
-  const ck = cacheKey('children', level, parentId, datePreset);
+  const ck = cacheKey('children', accountId, level, parentId, datePreset);
   const cached = await cacheGet(ck);
   if (cached) return res.status(200).json(cached);
 
@@ -29,6 +31,12 @@ export default async function handler(req, res) {
   const fields = `name,status,insights.date_preset(${datePreset}){${insightFields}}`;
 
   try {
+    const parentCheck = await fetchMeta(`https://graph.facebook.com/v20.0/${parentId}?fields=account_id&access_token=${token}`);
+    const parentData = await parentCheck.json();
+    if (parentData.error || normalizeAccountId(parentData.account_id) !== normalizeAccountId(accountId)) {
+      return res.status(403).json({ error: 'Parent não pertence à conta informada.' });
+    }
+
     // ── Paginação completa ──────────────────────────────────────
     const allItems = [];
     let url = `https://graph.facebook.com/v20.0/${parentId}/${level}?fields=${encodeURIComponent(fields)}&limit=200&access_token=${token}`;

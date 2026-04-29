@@ -172,7 +172,7 @@
     <div class="modal">
         <div class="modal-head">
             <div class="modal-icon"><i data-lucide="building" style="color:#fff;width:22px;height:22px;"></i></div>
-            <div><h3>Novo Cliente SaaS</h3><p>O token Meta é compartilhado da agência via .env</p></div>
+            <div><h3>Novo Cliente SaaS</h3><p>Configure pixel, acesso e conta de anúncios do cliente</p></div>
             <button class="modal-close" onclick="$('modalAddCliente').classList.remove('open')"><i data-lucide="x" style="width:16px;"></i></button>
         </div>
         <div class="input-group"><label>Nome da Empresa/Loja <span style="color:var(--red)">*</span></label><input type="text" id="novoCliNome" placeholder="Ex: Loja do João"></div>
@@ -2645,8 +2645,9 @@ async function toggleExpand(level, parentId, btn, e) {
     // Busca lazy — usa cache se já buscou antes
     if (!expandCache[key]) {
         const dp = $('adsDatePreset').value;
+        const accountId = $('adsAccountSelect').value;
         const data = await authFetch(
-            `/api/ads-children?level=${level}&parentId=${encodeURIComponent(parentId)}&datePreset=${encodeURIComponent(dp)}`
+            `/api/ads-children?level=${level}&parentId=${encodeURIComponent(parentId)}&datePreset=${encodeURIComponent(dp)}&accountId=${encodeURIComponent(accountId)}`
         ).then(r => r.json()).catch(() => ({ error: 'Erro de rede' }));
         if (data.error) {
             toast(data.error, 'error');
@@ -2808,7 +2809,7 @@ async function carregarBestThumbsHD(ads) {
                 return;
             }
             try {
-                const r = await authFetch(`/api/video-source?videoId=${encodeURIComponent(videoId)}`);
+                const r = await authFetch(`/api/video-source?videoId=${encodeURIComponent(videoId)}&adId=${encodeURIComponent(ad.id)}`);
                 const data = await r.json();
                 if (data.error) return;
                 _bestHdCache[videoId] = { source: data.source || null, thumbnail: data.thumbnail || null };

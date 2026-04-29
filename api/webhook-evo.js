@@ -36,6 +36,9 @@ export default async function handler(req, res) {
 
   // Valida segredo do webhook (se configurado em WEBHOOK_SECRET)
   const webhookSecret = process.env.WEBHOOK_SECRET;
+  if (!webhookSecret && process.env.NODE_ENV === 'production') {
+    return res.status(503).json({ error: 'WEBHOOK_SECRET não configurado.' });
+  }
   if (webhookSecret) {
     const receivedSecret = req.query.secret || req.headers['x-webhook-secret'] || req.headers['x-api-key'] || req.headers['apikey'];
     if (receivedSecret !== webhookSecret) {

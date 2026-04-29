@@ -5,7 +5,7 @@ import { cors } from './_cors.js';
 export default async function handler(req, res) {
   if (cors(req, res, ['POST'], { public: true })) return;
 
-  const { email, password } = req.body || {};
+  const { email, password, registration_secret } = req.body || {};
   if (!email || !password || password.length < 6) {
     return res.status(400).json({ error: 'Email inválido ou senha menor que 6 caracteres.' });
   }
@@ -21,6 +21,21 @@ export default async function handler(req, res) {
     // Verifica se é o primeiro usuário do sistema (que será o Admin mestre)
     const countRes = await pool.query('SELECT COUNT(*) as qtd FROM usuarios');
     const isAdmin = countRes.rows[0].qtd === '0';
+    const isProduction = process.env.NODE_ENV === 'production';
+    const allowPublicRegistration = process.env.ALLOW_PUBLIC_REGISTRATION === 'true';
+    const allowPublicBootstrap = process.env.ALLOW_PUBLIC_BOOTSTRAP === 'true';
+    const requiredSecret = process.env.REGISTRATION_SECRET;
+    const receivedSecret = req.headers['x-registration-secret'] || registration_secret;
+
+    if (isProduction && !isAdmin && !allowPublicRegistration) {
+      return res.status(403).json({ error: 'Cadastro público desativado.' });
+    }
+
+    if (isProduction && isAdmin && !allowPublicBootstrap) {
+      if (!requiredSecret || receivedSecret !== requiredSecret) {
+        return res.status(403).json({ error: 'Bootstrap de admin exige REGISTRATION_SECRET.' });
+      }
+    }
 
     const salt = await bcrypt.genSalt(10);
     const hash = await bcrypt.hash(password, salt);

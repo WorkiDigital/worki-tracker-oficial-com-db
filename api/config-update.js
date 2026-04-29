@@ -12,6 +12,17 @@ const ENSURE_TABLE = `
   );
 `;
 
+function isSafeLogo(value) {
+  const logo = String(value || '').trim();
+  if (!logo) return true;
+  if (logo.length > 100000) return false;
+  if (logo.startsWith('<svg')) {
+    return !/(<script\b|<foreignObject\b|\son[a-z]+\s*=|javascript:)/i.test(logo);
+  }
+  if (/^https?:\/\/[^\s"'<>]+$/i.test(logo)) return true;
+  return /^data:image\/(png|jpe?g|webp|gif);base64,[a-z0-9+/=]+$/i.test(logo);
+}
+
 export default async function handler(req, res) {
   if (cors(req, res, ['PATCH'])) return;
 
@@ -21,6 +32,12 @@ export default async function handler(req, res) {
   }
 
   const { projeto_nome, projeto_logo } = req.body;
+  if (projeto_nome !== undefined && String(projeto_nome).length > 80) {
+    return res.status(400).json({ error: 'Nome do projeto muito longo.' });
+  }
+  if (projeto_logo !== undefined && !isSafeLogo(projeto_logo)) {
+    return res.status(400).json({ error: 'Logo inválido ou inseguro.' });
+  }
   const pool = getPool();
 
   try {

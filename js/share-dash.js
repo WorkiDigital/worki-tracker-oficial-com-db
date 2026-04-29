@@ -602,7 +602,7 @@ async function carregarThumbsHD(visible) {
                 return;
             }
             try {
-                const resp = await fetch(`/api/share-video?token=${TOKEN}&videoId=${videoId}`);
+                const resp = await fetch(`/api/share-video?token=${TOKEN}&videoId=${encodeURIComponent(videoId)}&adId=${encodeURIComponent(ad.id)}`);
                 if (!resp.ok) return;
                 const data = await resp.json();
                 if (data.error) return;
@@ -683,7 +683,7 @@ async function abrirMedia(idx) {
 
     if (!cached) {
         try {
-            const resp = await fetch(`/api/share-video?token=${TOKEN}&videoId=${videoId}`);
+            const resp = await fetch(`/api/share-video?token=${TOKEN}&videoId=${encodeURIComponent(videoId)}&adId=${encodeURIComponent(ad.id)}`);
             const data = await resp.json();
             if (!data.error) {
                 _videoDataMap[videoId] = { source: data.source || null, thumbnail: data.thumbnail || null, permalink_url: data.permalink_url || null };

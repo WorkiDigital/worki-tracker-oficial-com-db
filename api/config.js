@@ -11,6 +11,16 @@ const ENSURE_TABLE = `
   );
 `;
 
+function isSafeLogo(value) {
+  const logo = String(value || '').trim();
+  if (!logo || logo.length > 100000) return false;
+  if (logo.startsWith('<svg')) {
+    return !/(<script\b|<foreignObject\b|\son[a-z]+\s*=|javascript:)/i.test(logo);
+  }
+  if (/^https?:\/\/[^\s"'<>]+$/i.test(logo)) return true;
+  return /^data:image\/(png|jpe?g|webp|gif);base64,[a-z0-9+/=]+$/i.test(logo);
+}
+
 export default async function handler(req, res) {
   if (cors(req, res, ['GET'], { public: true })) return;
 
@@ -27,7 +37,7 @@ export default async function handler(req, res) {
     result.rows.forEach(row => { configs[row.chave] = row.valor; });
     
     if (configs.projeto_nome) projectName = configs.projeto_nome;
-    if (configs.projeto_logo) projectLogo = configs.projeto_logo;
+    if (configs.projeto_logo && isSafeLogo(configs.projeto_logo)) projectLogo = configs.projeto_logo;
   } catch (err) {
     console.error('Config API Load Error:', err.message);
   }

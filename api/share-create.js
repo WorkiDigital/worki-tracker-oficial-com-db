@@ -1,8 +1,10 @@
-import { verifyAuth } from './_auth.js';
+import { getTokenForUser, verifyAuth } from './_auth.js';
 import { getPool } from './_db.js';
 import { randomUUID } from 'crypto';
 import { verifyAccountAccess } from './_validate.js';
 import { cors } from './_cors.js';
+
+const DEFAULT_SHARE_TTL_DAYS = parseInt(process.env.SHARE_TOKEN_DEFAULT_TTL_DAYS || '30', 10);
 
 export default async function handler(req, res) {
   if (cors(req, res, ['POST'])) return;
@@ -25,7 +27,8 @@ export default async function handler(req, res) {
   if (!(await verifyAccountAccess(user, account_id))) return res.status(403).json({ error: 'Acesso negado a esta conta de anúncios.' });
 
   // Use token associado ao cliente logado (já disponível via JWT auth)
-  let metaToken = process.env.META_ADS_TOKEN; 
+  let metaToken = await getTokenForUser(user);
+  if (!metaToken) return res.status(403).json({ error: 'Token Meta não configurado.' });
 
   try {
     const check = await fetch(`https://graph.facebook.com/v20.0/${account_id}?fields=id&access_token=${metaToken}`);
@@ -37,7 +40,10 @@ export default async function handler(req, res) {
 
   const pool = getPool();
   const token = randomUUID();
-  const expiresAt = expires_at ? new Date(expires_at).toISOString() : null;
+  const defaultExpiresAt = new Date(Date.now() + DEFAULT_SHARE_TTL_DAYS * 24 * 60 * 60 * 1000);
+  const expiresAt = expires_at
+    ? new Date(expires_at).toISOString()
+    : (process.env.ALLOW_PERMANENT_SHARE_LINKS === 'true' ? null : defaultExpiresAt.toISOString());
 
   try {
     await pool.query(

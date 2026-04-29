@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken';
+import { getPool } from './_db.js';
 
 // Alerta crítico em produção se JWT_SECRET não estiver configurado
 if (!process.env.JWT_SECRET) {
@@ -34,5 +35,17 @@ export async function verifyAuth(req, res) {
  */
 export async function getTokenForUser(user) {
     if (!user) return null;
-    return process.env.META_ADS_TOKEN || null;
+    if (user.is_admin || !user.cliente_id) {
+        return process.env.META_ADS_TOKEN || null;
+    }
+
+    try {
+        const r = await getPool().query(
+            'SELECT token_meta FROM clientes WHERE id = $1',
+            [user.cliente_id]
+        );
+        return r.rows[0]?.token_meta || process.env.META_ADS_TOKEN || null;
+    } catch {
+        return process.env.META_ADS_TOKEN || null;
+    }
 }

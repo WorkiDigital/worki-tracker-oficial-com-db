@@ -120,7 +120,7 @@ export default async function handler(req, res) {
         // Configura webhook N8N na instância existente
         if (process.env.N8N_WEBHOOK_URL) {
             let webhookUrl = process.env.N8N_WEBHOOK_URL;
-            if (process.env.WEBHOOK_SECRET) {
+            if (process.env.WEBHOOK_SECRET && process.env.WEBHOOK_SECRET_IN_URL === 'true') {
                 const sep = webhookUrl.includes('?') ? '&' : '?';
                 webhookUrl += `${sep}secret=${process.env.WEBHOOK_SECRET}`;
             }
@@ -171,7 +171,7 @@ export default async function handler(req, res) {
       // Auto-configura webhook do N8N na instância criada
       if (process.env.N8N_WEBHOOK_URL) {
         let webhookUrl = process.env.N8N_WEBHOOK_URL;
-        if (process.env.WEBHOOK_SECRET) {
+        if (process.env.WEBHOOK_SECRET && process.env.WEBHOOK_SECRET_IN_URL === 'true') {
             const sep = webhookUrl.includes('?') ? '&' : '?';
             webhookUrl += `${sep}secret=${process.env.WEBHOOK_SECRET}`;
         }
@@ -227,9 +227,15 @@ export default async function handler(req, res) {
       // Remove também da tabela de mapeamento (se existir)
       try {
         const pool = getPool();
-        await pool.query('DELETE FROM instancias_mapeamento WHERE instance_name = $1', [finalInstanceName]);
+        await pool.query(user.is_admin
+          ? 'DELETE FROM instancias_mapeamento WHERE instance_name = $1'
+          : 'DELETE FROM instancias_mapeamento WHERE instance_name = $1 AND cliente_id = $2',
+          user.is_admin ? [finalInstanceName] : [finalInstanceName, user.cliente_id]);
         // Tenta também com o nome original (instâncias vinculadas usam nome sem prefixo)
-        await pool.query('DELETE FROM instancias_mapeamento WHERE instance_name = $1', [instanceName]);
+        await pool.query(user.is_admin
+          ? 'DELETE FROM instancias_mapeamento WHERE instance_name = $1'
+          : 'DELETE FROM instancias_mapeamento WHERE instance_name = $1 AND cliente_id = $2',
+          user.is_admin ? [instanceName] : [instanceName, user.cliente_id]);
       } catch(dbErr) { console.warn('[evo-manager] Erro ao limpar mapeamento:', dbErr.message); }
 
       return res.status(200).json(data);
@@ -238,7 +244,10 @@ export default async function handler(req, res) {
     if (action === 'unlink') {
       if (!instanceName) return res.status(400).json({ error: 'instanceName obrigatório' });
       const pool = getPool();
-      const result = await pool.query('DELETE FROM instancias_mapeamento WHERE instance_name = $1 RETURNING id', [instanceName]);
+      const result = await pool.query(user.is_admin
+        ? 'DELETE FROM instancias_mapeamento WHERE instance_name = $1 RETURNING id'
+        : 'DELETE FROM instancias_mapeamento WHERE instance_name = $1 AND cliente_id = $2 RETURNING id',
+        user.is_admin ? [instanceName] : [instanceName, user.cliente_id]);
       if (result.rowCount === 0) {
         return res.status(404).json({ error: 'Instância não encontrada na tabela de mapeamento.' });
       }
