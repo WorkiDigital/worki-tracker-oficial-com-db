@@ -27,6 +27,11 @@ export default async function handler(req, res) {
   const pool = getPool();
   await ensureTable(pool);
 
+  // LIMPEZA AUTOMÁTICA (FASE 4): Remove logs com mais de 30 dias de forma silenciosa
+  // Rodamos isso em background para não atrasar a resposta da API
+  pool.query(`DELETE FROM public.webhook_logs WHERE created_at < NOW() - INTERVAL '30 days'`)
+    .catch(err => console.error('[AUTO-PRUNE] Erro:', err));
+
   const { limit = 50, offset = 0, instance, level, tag, search, date_from, date_to } = req.query;
 
   let where = 'WHERE 1=1';
