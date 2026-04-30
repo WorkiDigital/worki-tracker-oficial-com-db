@@ -38,11 +38,19 @@ async function recarregarLeads(silencioso = false) {
 
 async function carregarMetricasTemporais() {
     try {
-        const url = clienteAdminSelecionado 
-            ? `/api/metrics-temporal?cliente_id=${clienteAdminSelecionado}` 
-            : '/api/metrics-temporal';
+        const periodo = $('periodoSelect')?.value;
+        const range = periodo ? calcRange(periodo) : null;
+        
+        let url = '/api/metrics-temporal?';
+        const params = new URLSearchParams();
+        
+        if (clienteAdminSelecionado) params.append('cliente_id', clienteAdminSelecionado);
+        if (range) {
+            params.append('start', range[0].toISOString());
+            params.append('end', range[1].toISOString());
+        }
 
-        const data = await authFetch(url).then(r => r.json());
+        const data = await authFetch(url + params.toString()).then(r => r.json());
         if (data.error) return;
 
         if ($('avgCycleDays')) $('avgCycleDays').textContent = data.avgCycleDays;

@@ -12,8 +12,23 @@ export default async function handler(req, res) {
   const cliente_id = user.is_admin ? req.query.cliente_id : user.cliente_id;
 
   try {
-    const whereClause = cliente_id ? 'AND cliente_id = $1' : '';
-    const params = cliente_id ? [cliente_id] : [];
+    let whereClause = "";
+    const params = [];
+    let paramCount = 1;
+
+    if (cliente_id) {
+      whereClause += ` AND cliente_id = $${paramCount}`;
+      params.push(cliente_id);
+      paramCount++;
+    }
+
+    if (req.query.start && req.query.end) {
+      whereClause += ` AND created_at >= $${paramCount} AND created_at < $${paramCount+1}`;
+      params.push(req.query.start, req.query.end);
+      paramCount += 2;
+    } else {
+      whereClause += ` AND created_at > NOW() - INTERVAL '30 days'`;
+    }
 
     // Query para métricas temporais
     const result = await pool.query(`
@@ -34,8 +49,7 @@ export default async function handler(req, res) {
         COUNT(*) FILTER (WHERE sale_closed_at IS NOT NULL) as total_sales
         
       FROM leads_tracking
-      WHERE created_at > NOW() - INTERVAL '30 days'
-      ${whereClause}
+      WHERE 1=1 ${whereClause}
     `, params);
 
     const metrics = result.rows[0];
