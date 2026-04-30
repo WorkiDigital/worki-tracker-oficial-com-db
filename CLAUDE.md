@@ -31,6 +31,7 @@ Novos indicadores no topo da aba de Leads:
 - **Resposta Média:** Tempo em minutos para o primeiro contato humano.
 - **Leads Esquecidos:** Leads sem interação há mais de 48h.
 - **Vendas Rápidas:** Porcentagem de conversões em menos de 24h.
+- **Filtro Inteligente (Multi-Tenant):** Os cards de métricas são sincronizados com o filtro global de clientes (`js/leads.js` -> `/api/metrics-temporal?cliente_id`), garantindo recálculo e visualização isolada em tempo real.
 
 ### 5. Gestão de Logs e Espaço
 O sistema possui uma rotina de manutenção para evitar consumo excessivo de banco de dados:
