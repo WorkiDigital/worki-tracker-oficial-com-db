@@ -315,6 +315,120 @@ function renderRelatorios() {
     criarGrafico('c2','l2',mapP,'doughnut');
     criarGrafico('c3','l3',mapAV,'bar');
     criarGrafico('c4','l4',mapPV,'doughnut');
+    
+    // NOVO: Gráfico de Linha do Tempo
+    renderTimelineChart();
+}
+
+function renderTimelineChart() {
+    const ctx = $('cTimeline');
+    if (!ctx) return;
+
+    // Agrupa dados por dia (últimos 30 dias por padrão ou conforme filtro)
+    const timelineData = agruparPorDia(dadosFiltrados);
+    const labels = timelineData.map(d => d.data);
+    const leadsValues = timelineData.map(d => d.leads);
+    const vendasValues = timelineData.map(d => d.vendas);
+
+    if (graficos['cTimeline']) graficos['cTimeline'].destroy();
+
+    const isDark = !document.documentElement.classList.contains('light');
+    const gridC  = isDark ? '#1f2937' : '#e5e7eb';
+    const tickC  = isDark ? '#8a8f98' : '#6b7280';
+
+    graficos['cTimeline'] = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels,
+            datasets: [
+                {
+                    label: 'Leads',
+                    data: leadsValues,
+                    borderColor: '#0ea5e9',
+                    backgroundColor: 'rgba(14, 165, 233, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                },
+                {
+                    label: 'Vendas',
+                    data: vendasValues,
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top',
+                    labels: { color: tickC, font: { size: 12, weight: '600' }, boxWidth: 12, usePointStyle: true }
+                },
+                datalabels: { display: false }
+            },
+            scales: {
+                x: {
+                    grid: { display: false },
+                    ticks: { color: tickC, font: { size: 10 } }
+                },
+                y: {
+                    beginAtZero: true,
+                    grid: { color: gridC },
+                    ticks: { color: tickC, font: { size: 10 }, stepSize: 1 }
+                }
+            }
+        }
+    });
+}
+
+function agruparPorDia(leads) {
+    const dias = {};
+    const hoje = new Date();
+    
+    // Determina o range de dias baseado no filtro atual ou últimos 15 dias
+    const periodo = $('periodoSelect')?.value;
+    let numDias = 15;
+    if (periodo === '7dias') numDias = 7;
+    if (periodo === '30dias') numDias = 30; // Se houver essa opção futuramente
+
+    // Inicializa o mapa com os últimos N dias para garantir que dias vazios apareçam
+    for (let i = numDias - 1; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(hoje.getDate() - i);
+        const key = d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+        dias[key] = { leads: 0, vendas: 0 };
+    }
+
+    // Preenche com os dados reais
+    leads.forEach(l => {
+        const dt = new Date(l.event_time || l.created_at);
+        if (isNaN(dt.getTime())) return;
+        const key = dt.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+        
+        // Só adiciona se o dia estiver no nosso range (ou se for filtro "todos")
+        if (dias[key] !== undefined || periodo === 'todos' || periodo === 'personalizado') {
+            if (dias[key] === undefined) dias[key] = { leads: 0, vendas: 0 };
+            dias[key].leads++;
+            if ((l.status || '').toLowerCase() === 'vendido') {
+                dias[key].vendas++;
+            }
+        }
+    });
+
+    // Converte para array ordenado
+    return Object.entries(dias).map(([data, counts]) => ({ data, ...counts }));
 }
 
 function agrupar(arr, campo) {

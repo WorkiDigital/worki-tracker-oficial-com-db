@@ -30,6 +30,9 @@ export default async function handler(req, res) {
       whereClause += ` AND created_at > NOW() - INTERVAL '30 days'`;
     }
 
+    // Trava de segurança: Sempre ignorar dados anteriores ao início oficial do projeto (30/04/2026)
+    whereClause += ` AND created_at >= '2026-04-30'`;
+
     // Query para métricas temporais
     const result = await pool.query(`
       SELECT 
@@ -37,7 +40,7 @@ export default async function handler(req, res) {
         AVG(EXTRACT(EPOCH FROM (sale_closed_at - created_at))/86400) FILTER (WHERE sale_closed_at IS NOT NULL) as avg_cycle_days,
         
         -- Tempo médio de primeira resposta (em minutos)
-        AVG(EXTRACT(EPOCH FROM (first_response_at - created_at))/60) FILTER (WHERE first_response_at IS NOT NULL AND created_at >= '2026-04-30') as avg_response_min,
+        AVG(EXTRACT(EPOCH FROM (first_response_at - created_at))/60) FILTER (WHERE first_response_at IS NOT NULL) as avg_response_min,
         
         -- Contagem de leads em risco (sem interação há mais de 48h e não finalizados)
         COUNT(*) FILTER (WHERE last_interaction_at < NOW() - INTERVAL '48 hours' AND status NOT IN ('venda_fechada', 'perdido')) as leads_at_risk,
