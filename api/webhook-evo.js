@@ -30,7 +30,7 @@ function getMessageFlags(message) {
     urgente: /urgente|hoje|agora|rápido|imediato/i,
     comparando: /comparando|outros|concorrente|em outro lugar/i
   };
-  
+
   return {
     tem_orcamento: patterns.orcamento.test(message),
     alta_intencao: patterns.alta_intencao.test(message),
@@ -51,7 +51,7 @@ function calculateLeadScore(flags, lastInteraction) {
     if (horasSemResposta < 1) score += 10;
     else if (horasSemResposta > 24) score -= 20;
   }
-  
+
   return Math.max(0, Math.min(100, score));
 }
 
@@ -61,8 +61,8 @@ function saveLog(instance, cliente_id, level, tag, message, data) {
       `INSERT INTO webhook_logs (instance, cliente_id, level, tag, message, data)
        VALUES ($1,$2,$3,$4,$5,$6::jsonb)`,
       [instance || null, cliente_id || null, level, tag, message, data ? JSON.stringify(data) : null]
-    ).catch(() => {});
-  } catch (_) {}
+    ).catch(() => { });
+  } catch (_) { }
 }
 
 import { cors } from './_cors.js';
@@ -82,11 +82,11 @@ export default async function handler(req, res) {
     }
   }
 
-  const body     = req.body;
+  const body = req.body;
   const instance = body.instance || '';
-  let   cid      = null; 
+  let cid = null;
 
-  const log  = (tag, msg, data) => { console.log(`[evo:${tag}]`, msg, data !== undefined ? JSON.stringify(data) : ''); saveLog(instance, cid, 'info', tag, msg, data); };
+  const log = (tag, msg, data) => { console.log(`[evo:${tag}]`, msg, data !== undefined ? JSON.stringify(data) : ''); saveLog(instance, cid, 'info', tag, msg, data); };
   const warn = (tag, msg, data) => { console.warn(`[evo:${tag}]`, msg, data !== undefined ? JSON.stringify(data) : ''); saveLog(instance, cid, 'warn', tag, msg, data); };
 
   if (body.event !== 'messages.upsert') {
@@ -102,9 +102,9 @@ export default async function handler(req, res) {
     return res.status(200).json({ ignored: true, reason: 'no message' });
   }
 
-  const fromMe   = data.key.fromMe === true;
+  const fromMe = data.key.fromMe === true;
   const remoteJid = data.key.remoteJidAlt || data.key.remoteJid || '';
-  const telefone  = remoteJid.split('@')[0];
+  const telefone = remoteJid.split('@')[0];
 
   const pool = getPool();
   let cliente_id = null;
@@ -129,19 +129,19 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Instância não reconhecida.' });
   }
 
-  cid = cliente_id; 
+  cid = cliente_id;
 
   const clientRes = await pool.query(
     'SELECT token_meta, pixel_padrao, template_venda FROM clientes WHERE id = $1',
     [cliente_id]
   );
   const cliente = clientRes.rows[0] || {};
-  const token   = cliente.token_meta || process.env.META_ADS_TOKEN || null;
-  const pixel   = cliente.pixel_padrao || null;
+  const token = cliente.token_meta || process.env.META_ADS_TOKEN || null;
+  const pixel = cliente.pixel_padrao || null;
 
   if (!fromMe) {
-    const ctx      = data.contextInfo || {};
-    const adReply  = ctx.externalAdReply || {};
+    const ctx = data.contextInfo || {};
+    const adReply = ctx.externalAdReply || {};
     const ctwaClid = adReply.ctwaClid || null;
 
     if (!ctwaClid) {
@@ -150,12 +150,12 @@ export default async function handler(req, res) {
 
     log('recv', 'Mensagem recebida de lead (CTWA)', { instance, telefone, pushName: data.pushName });
 
-    const sourceId              = adReply.sourceId || null;
-    const event_source_url      = adReply.sourceUrl || '';
+    const sourceId = adReply.sourceId || null;
+    const event_source_url = adReply.sourceUrl || '';
     const anuncio_thumbnail_url = adReply.thumbnailUrl || '';
-    const plataforma            = ctx.entryPointConversionApp || (adReply.mediaType === 2 ? 'instagram' : 'facebook');
-    const nome                  = normalizarNome(data.pushName);
-    const mensagem_recebida     = data.message?.conversation || data.message?.extendedTextMessage?.text || '';
+    const plataforma = ctx.entryPointConversionApp || (adReply.mediaType === 2 ? 'instagram' : 'facebook');
+    const nome = normalizarNome(data.pushName);
+    const mensagem_recebida = data.message?.conversation || data.message?.extendedTextMessage?.text || '';
 
     let utm_campaign = null, utm_medium = null, utm_content = null, page_id = null;
 
@@ -163,10 +163,10 @@ export default async function handler(req, res) {
       try {
         const metaUrl = `https://graph.facebook.com/v20.0/${sourceId}?fields=name,adset{name},campaign{name},tracking_specs&access_token=${token}`;
         const metaRes = await fetch(metaUrl);
-        const meta    = await metaRes.json();
+        const meta = await metaRes.json();
         utm_campaign = meta.campaign?.name || null;
-        utm_medium   = meta.adset?.name   || null;
-        utm_content  = meta.name          || null;
+        utm_medium = meta.adset?.name || null;
+        utm_content = meta.name || null;
         const specs = Array.isArray(meta.tracking_specs) ? meta.tracking_specs : [];
         for (const spec of specs) {
           if (spec.page?.length > 0) { page_id = String(spec.page[0]); break; }
@@ -220,29 +220,29 @@ export default async function handler(req, res) {
     };
 
     const valorRaw = extract('valor') || '0';
-    const valor    = parseFloat(valorRaw.replace(/[^0-9,.]/g, '').replace(',', '.')) || 0;
+    const valor = parseFloat(valorRaw.replace(/[^0-9,.]/g, '').replace(',', '.')) || 0;
 
     if (valor <= 0) {
       // Se não for uma venda, apenas atualiza a última interação do lead
       await pool.query(
-          'UPDATE leads_tracking SET last_interaction_at = NOW(), first_response_at = COALESCE(first_response_at, NOW()) WHERE telefone = $1 AND cliente_id = $2',
-          [telefone, cliente_id]
+        'UPDATE leads_tracking SET last_interaction_at = NOW(), first_response_at = COALESCE(first_response_at, NOW()) WHERE telefone = $1 AND cliente_id = $2',
+        [telefone, cliente_id]
       );
       return res.status(200).json({ ignored: true, reason: 'not a sale message' });
     }
 
     log('sale', 'Venda detectada via template', { instance, telefone, valor });
 
-    const nome    = extract('nome');
+    const nome = extract('nome');
     const cidadeRaw = extract('cidade');
     const cidadeF = cidadeRaw?.includes(' - ') ? cidadeRaw.split(' - ')[0].trim() : cidadeRaw;
-    const estado  = extract('estado') || (cidadeRaw?.includes(' - ') ? cidadeRaw.split(' - ')[1].trim() : null);
+    const estado = extract('estado') || (cidadeRaw?.includes(' - ') ? cidadeRaw.split(' - ')[1].trim() : null);
     const produto = extract('produto');
     const endereco = extract('endereco');
-    const cor     = extract('cor');
+    const cor = extract('cor');
     const forma_pagamento = extract('pagamento') || extract('forma_pagamento');
-    const cpf     = extract('cpf');
-    const email   = extract('email');
+    const cpf = extract('cpf');
+    const email = extract('email');
 
     const leadQuery = await pool.query(
       'SELECT * FROM leads_tracking WHERE telefone = $1 AND cliente_id = $2 ORDER BY id DESC LIMIT 1',
@@ -267,11 +267,12 @@ export default async function handler(req, res) {
           email           = COALESCE($10, email),
           sale_closed_at  = NOW(),
           last_interaction_at = NOW(),
+          first_response_at = COALESCE(first_response_at, NOW()),
           lead_score      = 100
       WHERE id = $11 RETURNING *
     `, [valor, cidadeF || null, estado || null, nome || null,
-        produto || null, endereco || null, cor || null,
-        forma_pagamento || null, cpf || null, email || null, leadQuery.rows[0].id]);
+      produto || null, endereco || null, cor || null,
+      forma_pagamento || null, cpf || null, email || null, leadQuery.rows[0].id]);
 
     const leadAtualizado = updateResult.rows[0];
     await sendCapiPurchase(leadAtualizado, pixel, token, log, warn);
@@ -291,16 +292,16 @@ async function sendCapiLead(lead, pixel, token, log, warn) {
   if (!pixel || !token || !lead.ctw_aci_id) return;
   const ph = (lead.telefone || '').replace(/\D/g, '');
   const userData = { ctwa_clid: lead.ctw_aci_id };
-  if (ph)           userData.ph      = hash(ph);
+  if (ph) userData.ph = hash(ph);
   if (lead.page_id) userData.page_id = lead.page_id;
 
   const payload = {
     data: [{
-      event_name:        'LeadSubmitted',
-      event_time:        Math.floor(Date.now() / 1000),
-      action_source:     'business_messaging',
+      event_name: 'LeadSubmitted',
+      event_time: Math.floor(Date.now() / 1000),
+      action_source: 'business_messaging',
       messaging_channel: 'whatsapp',
-      user_data:         userData,
+      user_data: userData,
     }]
   };
 
@@ -318,14 +319,14 @@ async function sendCapiPurchase(lead, pixel, token, log, warn) {
   const ph = (lead.telefone || '').replace(/\D/g, '');
   const nomeParts = (lead.nome || '').trim().split(/\s+/);
   const userData = { ctwa_clid: lead.ctw_aci_id || undefined };
-  if (ph)           userData.ph          = hash(ph);
-  if (nomeParts[0]) userData.fn          = hash(nomeParts[0]);
-  if (nomeParts[1]) userData.ln          = hash(nomeParts.slice(1).join(' '));
-  if (lead.estado)  userData.st          = hash(lead.estado);
-  if (lead.cidade)  userData.ct          = hash(lead.cidade);
-  if (lead.email)   userData.em          = hash(lead.email.toLowerCase().trim());
-  if (lead.cpf)     userData.external_id = hash(lead.cpf.replace(/\D/g, ''));
-  if (lead.page_id) userData.page_id     = lead.page_id;
+  if (ph) userData.ph = hash(ph);
+  if (nomeParts[0]) userData.fn = hash(nomeParts[0]);
+  if (nomeParts[1]) userData.ln = hash(nomeParts.slice(1).join(' '));
+  if (lead.estado) userData.st = hash(lead.estado);
+  if (lead.cidade) userData.ct = hash(lead.cidade);
+  if (lead.email) userData.em = hash(lead.email.toLowerCase().trim());
+  if (lead.cpf) userData.external_id = hash(lead.cpf.replace(/\D/g, ''));
+  if (lead.page_id) userData.page_id = lead.page_id;
   userData.country = hash('br');
 
   const customData = { currency: 'BRL', value: parseFloat(lead.valor_venda || 0) };
@@ -333,12 +334,12 @@ async function sendCapiPurchase(lead, pixel, token, log, warn) {
 
   const payload = {
     data: [{
-      event_name:        'Purchase',
-      event_time:        Math.floor(Date.now() / 1000),
-      action_source:     'business_messaging',
+      event_name: 'Purchase',
+      event_time: Math.floor(Date.now() / 1000),
+      action_source: 'business_messaging',
       messaging_channel: 'whatsapp',
-      user_data:         userData,
-      custom_data:       customData
+      user_data: userData,
+      custom_data: customData
     }]
   };
 
