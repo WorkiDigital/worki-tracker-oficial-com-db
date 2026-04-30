@@ -32,6 +32,13 @@ Novos indicadores no topo da aba de Leads:
 - **Leads Esquecidos:** Leads sem interação há mais de 48h.
 - **Vendas Rápidas:** Porcentagem de conversões em menos de 24h.
 - **Filtro Inteligente (Multi-Tenant):** Os cards de métricas são sincronizados com o filtro global de clientes (`js/leads.js` -> `/api/metrics-temporal?cliente_id`), garantindo recálculo e visualização isolada em tempo real.
+- **Gráfico de Linha do Tempo (Evolução Diária):** Localizado na aba de relatórios, o gráfico `cTimeline` exibe a entrada de Leads vs. Vendas por dia, facilitando a visualização de picos de conversão e sazonalidade.
+
+### 6. Integridade e Precisão de Dados (Abril 2026)
+Para garantir que as métricas de performance e SLA não sejam corrompidas por dados históricos legados ou inconsistentes, foi implementada uma trava global:
+- **Data de Corte:** **2026-04-30**. 
+- **Abrangência:** Todas as métricas temporais (`api/metrics-temporal.js`) e funções de cálculo de KPI no banco de dados (`get_dashboard_stats`) ignoram registros anteriores a esta data.
+- **Impacto:** O Ciclo Médio e o SLA de Resposta agora refletem 100% da operação atual do WappTrack.
 
 ### 5. Gestão de Logs e Espaço
 O sistema possui uma rotina de manutenção para evitar consumo excessivo de banco de dados:
@@ -66,4 +73,6 @@ O rastro completo do lead inclui:
 - `api/logs-prune.js`: Handler de limpeza de banco de dados.
 - `api/logs.js`: Endpoint de listagem com auto-pruning de 30 dias.
 - `js/admin.js`: Lógica de gestão de logs, limpeza e administração de clientes.
-- `index.html`: Dashboard principal com métricas de Ciclo Médio e SLA de Resposta.
+- `index.html`: Dashboard principal com métricas de Ciclo Médio, SLA de Resposta e Gráfico de Linha do Tempo.
+- `api/metrics-temporal.js`: Backend de cálculo de performance com trava de data de corte (2026-04-30).
+- `js/leads.js`: Lógica de renderização de gráficos, filtros dinâmicos e comunicação com API de métricas.
