@@ -38,7 +38,11 @@ async function recarregarLeads(silencioso = false) {
 
 async function carregarMetricasTemporais() {
     try {
-        const data = await authFetch('/api/metrics-temporal').then(r => r.json());
+        const url = clienteAdminSelecionado 
+            ? `/api/metrics-temporal?cliente_id=${clienteAdminSelecionado}` 
+            : '/api/metrics-temporal';
+
+        const data = await authFetch(url).then(r => r.json());
         if (data.error) return;
 
         if ($('avgCycleDays')) $('avgCycleDays').textContent = data.avgCycleDays;
@@ -116,6 +120,9 @@ function aplicarFiltros() {
     pagAtual = 1;
     renderTabela();
     renderRelatorios();
+    
+    // Atualiza as métricas do topo (cards) baseadas no filtro atual
+    carregarMetricasTemporais();
 }
 
 // ── Filtro de Instâncias ──────────────────────────────────────
