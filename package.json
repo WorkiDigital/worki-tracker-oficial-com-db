@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
-    "setup": "node setup-db.js"
+    "setup": "node setup-db.js",
+    "delete:old-shares": "node delete-old-share-links.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
