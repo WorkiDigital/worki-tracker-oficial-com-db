@@ -69,10 +69,27 @@ O rastro completo do lead inclui:
 - `POST /api/logs-prune?days=15`: Executa a limpeza manual de logs via interface.
 
 ## 📁 Estrutura de Arquivos Críticos
-- `api/webhook-evo.js`: Core da inteligência. Processa intenções, registra vendas e mapeia tempo de resposta.
+- `api/webhook-evo.js`: Core da inteligência. Processa intenções, registra vendas e mapeia tempo de resposta. (Atualizado em Maio/2026 com diagnóstico avançado de filtros).
 - `api/logs-prune.js`: Handler de limpeza de banco de dados.
 - `api/logs.js`: Endpoint de listagem com auto-pruning de 30 dias.
 - `js/admin.js`: Lógica de gestão de logs, limpeza e administração de clientes.
 - `index.html`: Dashboard principal com métricas de Ciclo Médio, SLA de Resposta e Gráfico de Linha do Tempo.
 - `api/metrics-temporal.js`: Backend de cálculo de performance com trava de data de corte (2026-04-30).
 - `js/leads.js`: Lógica de renderização de gráficos, filtros dinâmicos e comunicação com API de métricas.
+- `api/evo-manager.js`: Gestão de instâncias da Evolution API (vínculo, criação e configuração automática de webhooks).
+
+## 🚀 Novas Funcionalidades (Maio 2026)
+
+### 1. Diagnóstico Avançado de Webhooks (`api/webhook-evo.js`)
+Melhoria no rastreamento de leads para depuração de falhas de captura:
+- **Logging de Filtros:** O sistema agora registra nos logs do painel o motivo exato de uma mensagem ser ignorada (ex: `no ctwaClid`, `not individual chat`, `not recognized instance`).
+- **Rastreamento de Instâncias:** Logs indicam se a instância recebida da Evolution está corretamente vinculada a um cliente no banco de dados.
+- **Autenticação Reforçada:** O webhook agora suporta e prioriza a validação do `WEBHOOK_SECRET` via parâmetro de URL (`?secret=...`), garantindo que o vínculo funcione mesmo em ambientes onde cabeçalhos HTTP são removidos.
+
+### 2. Automação de Vínculo de Instâncias (`api/evo-manager.js`)
+A funcionalidade de vincular instâncias existentes agora:
+- Configura automaticamente a URL do Webhook na Evolution API apontando para o endpoint interno do Adlytics (`/api/webhook-evo`).
+- Injeta o `WEBHOOK_SECRET` na URL de forma automática no momento do vínculo ou criação da instância.
+
+### 3. Estabilização do Projeto (aDLYTCS)
+O projeto foi formalmente identificado como **Adlytics**, consolidando a marca e a interface (`index.html` e `package.json`) sob esta identidade visual e funcional.
