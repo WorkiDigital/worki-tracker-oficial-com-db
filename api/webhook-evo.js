@@ -94,42 +94,49 @@ export default async function handler(req, res) {
   }
 
   const data = body.data;
-  if (!data?.key?.remoteJid?.endsWith('@s.whatsapp.net')) {
-    return res.status(200).json({ ignored: true, reason: 'not individual chat' });
-  }
+  const fromMe = data?.key?.fromMe === true;
+  const remoteJid = data?.key?.remoteJidAlt || data?.key?.remoteJid || '';
+  const isStatus = remoteJid === 'status@broadcast';
+  const isGroup = remoteJid.endsWith('@g.us');
 
-  if (!data.message) {
-    return res.status(200).json({ ignored: true, reason: 'no message' });
-  }
-
-  const fromMe = data.key.fromMe === true;
-  const remoteJid = data.key.remoteJidAlt || data.key.remoteJid || '';
-  const telefone = remoteJid.split('@')[0];
-
+  // 1. Tenta identificar o cliente_id IMEDIATAMENTE para poder logar
   const pool = getPool();
-  let cliente_id = null;
-
   const prefixMatch = String(instance).match(/^cliente_(\d+)_/);
   if (prefixMatch) {
-    cliente_id = parseInt(prefixMatch[1]);
-  }
-
-  if (!cliente_id) {
+    cid = parseInt(prefixMatch[1]);
+  } else {
     const map = await pool.query(
       'SELECT cliente_id FROM instancias_mapeamento WHERE instance_name = $1',
       [instance]
     );
-    if (map.rows.length > 0) {
-      cliente_id = map.rows[0].cliente_id;
-    }
+    if (map.rows.length > 0) cid = map.rows[0].cliente_id;
   }
 
-  if (!cliente_id) {
-    warn('auth', 'Instância não reconhecida', { instance });
+  // Log inicial de recebimento (ajuda a saber se a Evolution sequer bateu aqui)
+  if (!isStatus && !fromMe) {
+    log('filter', `Requisição recebida da instância: ${instance}`, { 
+      event: body.event, 
+      remoteJid, 
+      found_client: !!cid 
+    });
+  }
+
+  if (!remoteJid.endsWith('@s.whatsapp.net')) {
+    if (!isStatus && !fromMe) log('filter', 'Ignorado: Não é chat individual', { remoteJid });
+    return res.status(200).json({ ignored: true, reason: 'not individual chat' });
+  }
+
+  if (!data.message) {
+    return res.status(200).json({ ignored: true, reason: 'no message content' });
+  }
+
+  if (!cid) {
+    warn('auth', 'Instância não reconhecida ou não vinculada', { instance });
     return res.status(400).json({ error: 'Instância não reconhecida.' });
   }
 
-  cid = cliente_id;
+  const telefone = remoteJid.split('@')[0];
+  cliente_id = cid; // Mantém compatibilidade com código abaixo
 
   const clientRes = await pool.query(
     'SELECT token_meta, pixel_padrao, template_venda FROM clientes WHERE id = $1',
@@ -145,6 +152,7 @@ export default async function handler(req, res) {
     const ctwaClid = adReply.ctwaClid || null;
 
     if (!ctwaClid) {
+      log('filter', 'Ignorado: Lead sem ID de anúncio (ctwaClid)', { telefone });
       return res.status(200).json({ ignored: true, reason: 'no ctwaClid' });
     }
 
