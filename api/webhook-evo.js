@@ -114,10 +114,10 @@ export default async function handler(req, res) {
 
   // Log inicial de recebimento (ajuda a saber se a Evolution sequer bateu aqui)
   if (!isStatus && !fromMe) {
-    log('filter', `Requisição recebida da instância: ${instance}`, { 
-      event: body.event, 
-      remoteJid, 
-      found_client: !!cid 
+    log('filter', `Requisição recebida da instância: ${instance}`, {
+      event: body.event,
+      remoteJid,
+      found_client: !!cid
     });
   }
 
@@ -136,7 +136,7 @@ export default async function handler(req, res) {
   }
 
   const telefone = remoteJid.split('@')[0];
-  cliente_id = cid; // Mantém compatibilidade com código abaixo
+  const cliente_id = cid;
 
   const clientRes = await pool.query(
     'SELECT token_meta, pixel_padrao, template_venda FROM clientes WHERE id = $1',
