@@ -186,6 +186,7 @@ async function salvarEdicaoCliente() {
 // ── WhatsApp / Evolution ───────────────────────────────────────
 let waPollTimer;
 let currentWaInstance = null;
+let _waData = [];
 
 function setWaView(view) {
     if (waPollTimer) clearInterval(waPollTimer);
@@ -198,101 +199,135 @@ function setWaView(view) {
 
 async function carregarListaWa() {
     setWaView('waList');
-    // Mostrar botão "Conectar Existente" só para admin
     const _waUser = JSON.parse(localStorage.getItem('adlytics_user') || '{}');
     const btnExist = $('btnConectarExistente');
     if (btnExist) btnExist.style.display = _waUser.is_admin ? 'flex' : 'none';
 
     const listEl = $('waList');
+    const buscaEl = $('waBusca');
+    if (buscaEl) { buscaEl.style.display = 'none'; buscaEl.value = ''; }
     listEl.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted);">Carregando conexões...</div>';
-    
+
     try {
         const r = await authFetch('/api/evo-manager?action=list');
         const data = await r.json();
-        
+
         if (!r.ok || data.error) throw new Error(data.error || 'Erro ao listar');
-        
+
         if (!data || data.length === 0) {
             listEl.innerHTML = '<div style="text-align:center;padding:40px;background:var(--tag);border-radius:10px;color:var(--muted);">Nenhuma conexão configurada.<br><button class="btn btn-primary" style="margin-top:15px;" onclick="mostrarWaCriar()">Criar Conexão</button></div>';
             return;
         }
 
-        const _waUser2 = JSON.parse(localStorage.getItem('adlytics_user') || '{}');
-        const isAdminView = !!_waUser2.is_admin;
-
-        // Card compacto para cada instância
-        const renderWaCard = inst => {
-            const up      = inst.state === 'open';
-            const mid     = inst.state === 'connecting';
-            const badgeBg = up ? 'rgba(16,185,129,0.15)' : mid ? 'rgba(245,158,11,0.15)' : 'rgba(239,68,68,0.12)';
-            const badgeColor = up ? '#10b981' : mid ? '#f59e0b' : '#ef4444';
-            const statusLabel = up ? '● Conectado' : mid ? '● Conectando...' : '● Desconectado';
-            return `
-            <div style="background:var(--card);border:1px solid ${up ? 'rgba(16,185,129,0.3)' : 'var(--border)'};border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:10px;min-width:0;">
-                <div style="display:flex;align-items:center;gap:10px;">
-                    <div style="width:36px;height:36px;border-radius:9px;background:${up ? 'rgba(37,211,102,0.12)' : 'rgba(156,163,175,0.08)'};display:flex;align-items:center;justify-content:center;flex-shrink:0;border:1px solid ${up ? 'rgba(37,211,102,0.2)' : 'var(--border)'};">
-                        <i data-lucide="smartphone" style="color:${up ? '#25D366' : 'var(--muted)'};width:17px;"></i>
-                    </div>
-                    <div style="min-width:0;flex:1;">
-                        <div style="font-size:13px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${esc(inst.displayName)}">${esc(inst.displayName)}</div>
-                        <span style="display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;background:${badgeBg};color:${badgeColor};margin-top:3px;">${statusLabel}</span>
-                    </div>
-                </div>
-                <div style="display:flex;gap:6px;flex-wrap:wrap;">
-                    ${up
-                        ? `<button class="btn btn-ghost btn-sm" onclick="waDesvincular('${esc(inst.fullName)}')" style="font-size:11px;padding:4px 10px;color:var(--red);border-color:rgba(239,68,68,0.3);"><i data-lucide="link-2-off" style="width:11px;"></i> Desvincular</button>`
-                        : `<button class="btn btn-green btn-sm" onclick="verConexao('${esc(inst.displayName)}')" style="font-size:11px;padding:4px 10px;"><i data-lucide="qr-code" style="width:11px;"></i> Conectar QR</button>`
-                    }
-                    <button class="btn btn-ghost btn-sm" onclick="deletarConexao('${esc(inst.displayName)}')" title="Excluir" style="padding:4px 8px;"><i data-lucide="trash-2" style="width:11px;color:var(--red);"></i></button>
-                </div>
-                <div style="padding-top:8px;border-top:1px solid var(--border);display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-                    <code style="font-family:monospace;font-size:10px;background:var(--tag);padding:2px 6px;border-radius:4px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;">${esc(inst.fullName)}</code>
-                    ${up ? `<span style="font-size:10px;color:#10b981;white-space:nowrap;">✓ Ativo</span>` : ''}
-                </div>
-            </div>`;
-        };
-
-        let html = '';
-        if (isAdminView) {
-            // Agrupa por cliente
-            const groups = {};
-            for (const inst of data) {
-                const key = inst.cliente_id ? String(inst.cliente_id) : 'admin';
-                if (!groups[key]) groups[key] = { nome: inst.cliente_nome || (key === 'admin' ? 'Administrador' : `Cliente #${key}`), instances: [] };
-                groups[key].instances.push(inst);
-            }
-            // Admin primeiro, depois clientes ordenados por nome
-            const keys = Object.keys(groups).sort((a, b) => {
-                if (a === 'admin') return -1;
-                if (b === 'admin') return 1;
-                return groups[a].nome.localeCompare(groups[b].nome);
-            });
-            for (const key of keys) {
-                const g = groups[key];
-                const totalUp = g.instances.filter(i => i.state === 'open').length;
-                html += `
-                <div style="margin-bottom:18px;">
-                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-                        <span style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;">${esc(g.nome)}</span>
-                        <span style="font-size:11px;color:var(--muted);background:var(--tag);padding:1px 8px;border-radius:20px;">${g.instances.length} instância${g.instances.length !== 1 ? 's' : ''}</span>
-                        ${totalUp > 0 ? `<span style="font-size:11px;color:#10b981;">${totalUp} conectada${totalUp !== 1 ? 's' : ''}</span>` : ''}
-                    </div>
-                    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;">
-                        ${g.instances.map(renderWaCard).join('')}
-                    </div>
-                </div>`;
-            }
-        } else {
-            // Cliente: grid simples sem agrupamento
-            html = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;">${data.map(renderWaCard).join('')}</div>`;
-        }
-
-        listEl.innerHTML = html;
-        lucide.createIcons({ nodes: [listEl] });
+        _waData = data;
+        const isAdminView = !!_waUser.is_admin;
+        if (isAdminView && buscaEl) buscaEl.style.display = 'block';
+        renderWaLista(data, isAdminView);
 
     } catch(e) {
         listEl.innerHTML = `<div style="text-align:center;padding:20px;color:var(--red);">Erro: ${esc(e.message)}</div>`;
     }
+}
+
+function renderWaLista(data, isAdminView) {
+    if (isAdminView === undefined) isAdminView = !!(JSON.parse(localStorage.getItem('adlytics_user') || '{}')).is_admin;
+    const listEl = $('waList');
+
+    const renderWaCard = inst => {
+        const up      = inst.state === 'open';
+        const mid     = inst.state === 'connecting';
+        const badgeBg = up ? 'rgba(16,185,129,0.15)' : mid ? 'rgba(245,158,11,0.15)' : 'rgba(239,68,68,0.12)';
+        const badgeColor = up ? '#10b981' : mid ? '#f59e0b' : '#ef4444';
+        const statusLabel = up ? '● Conectado' : mid ? '● Conectando...' : '● Desconectado';
+        return `
+        <div style="background:var(--card);border:1px solid ${up ? 'rgba(16,185,129,0.3)' : 'var(--border)'};border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:10px;min-width:0;">
+            <div style="display:flex;align-items:center;gap:10px;">
+                <div style="width:36px;height:36px;border-radius:9px;background:${up ? 'rgba(37,211,102,0.12)' : 'rgba(156,163,175,0.08)'};display:flex;align-items:center;justify-content:center;flex-shrink:0;border:1px solid ${up ? 'rgba(37,211,102,0.2)' : 'var(--border)'};">
+                    <i data-lucide="smartphone" style="color:${up ? '#25D366' : 'var(--muted)'};width:17px;"></i>
+                </div>
+                <div style="min-width:0;flex:1;">
+                    <div style="font-size:13px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${esc(inst.displayName)}">${esc(inst.displayName)}</div>
+                    <span style="display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;background:${badgeBg};color:${badgeColor};margin-top:3px;">${statusLabel}</span>
+                </div>
+            </div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                ${up
+                    ? `<button class="btn btn-ghost btn-sm" onclick="waDesvincular('${esc(inst.fullName)}')" style="font-size:11px;padding:4px 10px;color:var(--red);border-color:rgba(239,68,68,0.3);"><i data-lucide="link-2-off" style="width:11px;"></i> Desvincular</button>`
+                    : `<button class="btn btn-green btn-sm" onclick="verConexao('${esc(inst.displayName)}')" style="font-size:11px;padding:4px 10px;"><i data-lucide="qr-code" style="width:11px;"></i> Conectar QR</button>`
+                }
+                <button class="btn btn-ghost btn-sm" onclick="deletarConexao('${esc(inst.displayName)}')" title="Excluir" style="padding:4px 8px;"><i data-lucide="trash-2" style="width:11px;color:var(--red);"></i></button>
+            </div>
+            <div style="padding-top:8px;border-top:1px solid var(--border);display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                <code style="font-family:monospace;font-size:10px;background:var(--tag);padding:2px 6px;border-radius:4px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;">${esc(inst.fullName)}</code>
+                ${up ? `<span style="font-size:10px;color:#10b981;white-space:nowrap;">✓ Ativo</span>` : ''}
+            </div>
+        </div>`;
+    };
+
+    let html = '';
+    if (isAdminView) {
+        const groups = {};
+        for (const inst of data) {
+            const key = inst.cliente_id ? String(inst.cliente_id) : 'admin';
+            if (!groups[key]) groups[key] = { nome: inst.cliente_nome || (key === 'admin' ? 'Administrador' : `Cliente #${key}`), instances: [] };
+            groups[key].instances.push(inst);
+        }
+        const keys = Object.keys(groups).sort((a, b) => {
+            if (a === 'admin') return -1;
+            if (b === 'admin') return 1;
+            return groups[a].nome.localeCompare(groups[b].nome);
+        });
+        const savedState = JSON.parse(sessionStorage.getItem('wa_groups') || '{}');
+        for (const key of keys) {
+            const g = groups[key];
+            const totalUp = g.instances.filter(i => i.state === 'open').length;
+            const isOpen = !!savedState[key];
+            html += `
+            <div style="margin-bottom:8px;border:1px solid var(--border);border-radius:10px;overflow:hidden;">
+                <div onclick="toggleWaGroup('${key}')" style="cursor:pointer;padding:12px 16px;display:flex;align-items:center;gap:10px;background:var(--tag);user-select:none;">
+                    <i data-lucide="chevron-right" id="wa-chevron-${key}" style="width:14px;color:var(--muted);transition:transform .2s;flex-shrink:0;${isOpen ? 'transform:rotate(90deg);' : ''}"></i>
+                    <span style="font-size:12px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:.05em;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(g.nome)}</span>
+                    <span style="font-size:11px;color:var(--muted);background:var(--border);padding:1px 8px;border-radius:20px;flex-shrink:0;">${g.instances.length} instância${g.instances.length !== 1 ? 's' : ''}</span>
+                    ${totalUp > 0 ? `<span style="font-size:11px;color:#10b981;font-weight:600;flex-shrink:0;">${totalUp} online</span>` : ''}
+                </div>
+                <div id="wa-group-${key}" style="display:${isOpen ? 'block' : 'none'};padding:12px;border-top:1px solid var(--border);">
+                    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;">
+                        ${g.instances.map(renderWaCard).join('')}
+                    </div>
+                </div>
+            </div>`;
+        }
+    } else {
+        html = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;">${data.map(renderWaCard).join('')}</div>`;
+    }
+
+    listEl.innerHTML = html;
+    lucide.createIcons({ nodes: [listEl] });
+}
+
+function toggleWaGroup(key) {
+    const body = $(`wa-group-${key}`);
+    const chevron = $(`wa-chevron-${key}`);
+    if (!body) return;
+    const open = body.style.display !== 'none';
+    body.style.display = open ? 'none' : 'block';
+    if (chevron) chevron.style.transform = open ? '' : 'rotate(90deg)';
+    const state = JSON.parse(sessionStorage.getItem('wa_groups') || '{}');
+    state[key] = !open;
+    sessionStorage.setItem('wa_groups', JSON.stringify(state));
+}
+
+function filtrarWa(termo) {
+    if (!_waData.length) return;
+    const t = termo.toLowerCase().trim();
+    const filtered = t
+        ? _waData.filter(i =>
+            (i.cliente_nome || '').toLowerCase().includes(t) ||
+            (i.displayName || '').toLowerCase().includes(t) ||
+            (i.fullName || '').toLowerCase().includes(t)
+          )
+        : _waData;
+    renderWaLista(filtered);
 }
 
 function mostrarWaCriar() {
