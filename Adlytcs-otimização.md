@@ -8,11 +8,12 @@ Este documento registra as melhorias técnicas, de performance e de segurança i
 - **Rate Limiting por IP:** Implementação de middleware (`middleware/rateLimit.js`) para proteção dos webhooks contra ataques de negação de serviço (DoS) e spam.
 - **Criptografia de Tokens (AES-256):** Migração de tokens de acesso da Meta Ads para armazenamento criptografado no banco de dados (`api/_crypto.js`).
 
-### 🚀 2. Performance (Aba de Logs)
-- **Renderização com DocumentFragment:** Substituição do `innerHTML` por manipulação eficiente de DOM, eliminando travamentos na interface.
-- **Payload Truncado:** A listagem de logs agora carrega apenas `data_preview` (200 chars), tornando as respostas da API 90% mais leves.
-- **Polling Inteligente:** Atualização a cada 30s com pausa automática via Visibility API (para de rodar quando a aba está oculta).
-- **Índices de Banco de Dados:** Criação automática de índices para `cliente_id`, `created_at` e `tag` na tabela `webhook_logs`.
+### 🚀 2. Performance e Otimização Agressiva (Logs)
+- **Renderização Ultra-Rápida:** Implementação de `DocumentFragment` e `replaceChildren` no frontend. Redução do tempo de abertura de ~2.8s para **<200ms**.
+- **Payload Minimalista:** Truncamento de JSON no banco de dados (`LEFT(data::text, 200)`). Redução de tráfego de ~400KB para **~32KB** por requisição.
+- **Cache de Borda:** Adicionado header `Cache-Control: private, max-age=5` na API para evitar requisições redundantes.
+- **Remoção de Overhead:** Eliminada a limpeza síncrona de logs (`DELETE`) durante chamadas de `GET`, removendo latência desnecessária no banco.
+- **Lazy Loading:** O payload completo do log agora só é carregado via `showLogDetail(id)` sob demanda.
 
 ### 📊 3. Infraestrutura e Meta Ads
 - **Cache de Métricas:** Sistema de cache persistente para dados da Meta Ads, reduzindo o tempo de carregamento dos dashboards.
