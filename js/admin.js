@@ -572,7 +572,7 @@ async function showLogDetail(id) {
         modal.onclick = e => { if (e.target === modal) modal.remove(); };
         document.body.appendChild(modal);
 
-        const r = await authFetch(`/api/logs?id=${id}`);
+        const r = await authFetch(`/api/logs/${id}`);
         const log = await r.json();
         const contentEl = document.getElementById('modal-log-content');
         if (log && log.data) {
@@ -657,9 +657,9 @@ async function carregarLogs(silent) {
     });
 
     try {
-        const r = await authFetch(`/api/logs?${params.toString()}`);
+        const r = await authFetch(`/api/logs/lite?${params.toString()}`);
         const data = await r.json();
-        const logs = data.rows || [];
+        const logs = data.logs || [];
         const total = data.total ?? logs.length;
 
         filters.forEach(id => { const el = $(id); if(el) el.disabled = false; });

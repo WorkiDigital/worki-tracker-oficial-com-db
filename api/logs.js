@@ -66,7 +66,7 @@ export default async function handler(req, res) {
     const [countResult, result] = await Promise.all([
       pool.query(`SELECT COUNT(*)::int AS total FROM webhook_logs ${where}`, params),
       pool.query(
-        `SELECT id, created_at, instance, level, tag, message, LEFT(data::text, 200) as data_preview 
+        `SELECT id, created_at, instance, level, tag, message, data 
          FROM webhook_logs ${where} ORDER BY id DESC LIMIT $${idx++} OFFSET $${idx++}`,
         [...params, limitVal, offsetVal]
       ),
