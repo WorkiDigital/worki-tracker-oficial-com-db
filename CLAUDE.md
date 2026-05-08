@@ -74,9 +74,11 @@ O rastro completo do lead inclui:
 - `api/logs.js`: Endpoint de listagem com auto-pruning de 30 dias.
 - `js/admin.js`: Lógica de gestão de logs, limpeza e administração de clientes.
 - `index.html`: Dashboard principal com métricas de Ciclo Médio, SLA de Resposta e Gráfico de Linha do Tempo.
-- `api/metrics-temporal.js`: Backend de cálculo de performance com trava de data de corte (2026-04-30).
+- `api/metrics-temporal.js`: Backend de cálculo de performance com trava de data de corte (2026-04-30) e sistema de cache inteligente para Meta Ads.
 - `js/leads.js`: Lógica de renderização de gráficos, filtros dinâmicos e comunicação com API de métricas.
 - `api/evo-manager.js`: Gestão de instâncias da Evolution API (vínculo, criação e configuração automática de webhooks).
+- `middleware/rateLimit.js`: Proteção contra ataques de negação de serviço e spam nos webhooks.
+- `api/_crypto.js`: Utilitário central de criptografia para segurança de tokens no banco de dados.
 
 ## 🚀 Novas Funcionalidades (Maio 2026)
 
@@ -98,3 +100,11 @@ O projeto foi formalmente identificado como **Adlytics**, consolidando a marca e
 **Sintoma:** Todos os leads pararam de ser registrados após edição no `webhook-evo.js`.
 **Causa:** A variável `cliente_id` estava sendo atribuída sem declaração (`cliente_id = cid`). Como o arquivo usa `import` (ESM), o strict mode é ativado automaticamente — e em strict mode, atribuir a variável não declarada lança `ReferenceError` antes de qualquer `INSERT`.
 **Atenção:** Ao editar `api/webhook-evo.js`, sempre declarar variáveis com `const` ou `let`. Nunca assumir que uma variável existe por estar disponível em outro escopo.
+
+### 5. Segurança, Performance e Infraestrutura (08/05/2026)
+Consolidação da robustez do sistema com foco em proteção e velocidade:
+- **Rate Limiting por IP:** Implementação de proteção contra abusos no endpoint de webhooks (`middleware/rateLimit.js`), limitando a 100 requisições por minuto por IP.
+- **Cache Inteligente Meta Ads:** Camada de cache persistente para métricas da Meta Ads, otimizando o carregamento de dashboards e economizando cota de API.
+- **Criptografia de Tokens:** Migração para armazenamento criptografado de tokens de acesso de APIs externas, aumentando a segurança do banco de dados.
+- **Persistência de Preferências:** Nova tabela `dashboard_settings` para salvar filtros e configurações de visualização por conta de anúncio.
+- **Branding de Canais:** Ícones oficiais do WhatsApp, Instagram e Google Maps integrados nas tabelas e no Kanban para identificação visual imediata da origem do lead.

@@ -32,7 +32,16 @@ export default async function handler(req, res) {
   pool.query(`DELETE FROM public.webhook_logs WHERE created_at < NOW() - INTERVAL '30 days'`)
     .catch(err => console.error('[AUTO-PRUNE] Erro:', err));
 
-  const { limit = 50, offset = 0, instance, level, tag, search, date_from, date_to } = req.query;
+  const { limit = 50, offset = 0, instance, level, tag, search, date_from, date_to, id } = req.query;
+
+  // BUSCA POR ID ÚNICO (Para o modal de detalhes)
+  if (id) {
+    const { rows } = await pool.query('SELECT * FROM webhook_logs WHERE id = $1', [id]);
+    if (!user.is_admin && rows[0] && rows[0].cliente_id !== user.cliente_id) {
+      return res.status(403).json({ error: 'Acesso negado' });
+    }
+    return res.status(200).json(rows[0] || { error: 'Log não encontrado' });
+  }
 
   let where = 'WHERE 1=1';
   const params = [];
@@ -57,7 +66,8 @@ export default async function handler(req, res) {
     const [countResult, result] = await Promise.all([
       pool.query(`SELECT COUNT(*)::int AS total FROM webhook_logs ${where}`, params),
       pool.query(
-        `SELECT * FROM webhook_logs ${where} ORDER BY id DESC LIMIT $${idx++} OFFSET $${idx++}`,
+        `SELECT id, created_at, instance, level, tag, message, LEFT(data::text, 200) as data_preview 
+         FROM webhook_logs ${where} ORDER BY id DESC LIMIT $${idx++} OFFSET $${idx++}`,
         [...params, limitVal, offsetVal]
       ),
     ]);

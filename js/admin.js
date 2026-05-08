@@ -552,21 +552,33 @@ const LOG_TAG_COLORS = {
     'capi-purchase':{ bg:'rgba(236,72,153,.15)',  color:'#f472b6' },
 };
 
-function abrirLogJson(dataStr) {
+async function abrirLogJson(id) {
     try {
-        const formatted = JSON.stringify(JSON.parse(dataStr), null, 2);
         const modal = document.createElement('div');
         modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
         modal.innerHTML = `<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;max-width:700px;width:100%;max-height:80vh;display:flex;flex-direction:column;">
             <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--border);">
-                <span style="font-weight:600;font-size:14px;">Dados do Log</span>
+                <span style="font-weight:600;font-size:14px;">Dados do Log #${id}</span>
                 <button onclick="this.closest('[style*=fixed]').remove()" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:20px;">×</button>
             </div>
-            <pre style="overflow:auto;padding:20px;margin:0;font-size:12px;color:var(--text);white-space:pre-wrap;word-break:break-all;">${esc(formatted)}</pre>
+            <div id="modal-log-content" style="overflow:auto;padding:20px;margin:0;font-size:12px;color:var(--text);white-space:pre-wrap;word-break:break-all;">
+                <div style="text-align:center;padding:20px;color:var(--muted);">Buscando dados completos...</div>
+            </div>
         </div>`;
         modal.onclick = e => { if (e.target === modal) modal.remove(); };
         document.body.appendChild(modal);
-    } catch(_) {}
+
+        const r = await authFetch(`/api/logs?id=${id}`);
+        const log = await r.json();
+        const contentEl = document.getElementById('modal-log-content');
+        if (log && log.data) {
+            contentEl.innerHTML = `<pre style="margin:0;font-family:monospace;">${esc(JSON.stringify(log.data, null, 2))}</pre>`;
+        } else {
+            contentEl.textContent = 'Nenhum dado adicional encontrado.';
+        }
+    } catch(e) {
+        toast('Erro ao carregar detalhes do log', 'error');
+    }
 }
 
 let _logPage = 1;
@@ -575,12 +587,25 @@ let _logAutoRefreshId = null;
 
 function toggleLogAutoRefresh() {
     if ($('log-auto-refresh').checked) {
-        _logAutoRefreshId = setInterval(() => carregarLogs(true), 15000);
+        _logAutoRefreshId = setInterval(() => {
+            if (!document.hidden) carregarLogs(true);
+        }, 30000);
     } else {
         clearInterval(_logAutoRefreshId);
         _logAutoRefreshId = null;
     }
 }
+
+// Pausa o polling quando a aba não está visível
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden && _logAutoRefreshId) {
+        clearInterval(_logAutoRefreshId);
+        _logAutoRefreshId = null;
+        // O checkbox continua marcado, o polling volta quando o usuário retornar e carregar os logs
+    } else if (!document.hidden && $('log-auto-refresh').checked && !_logAutoRefreshId) {
+        toggleLogAutoRefresh();
+    }
+});
 
 function limparFiltrosLog() {
     $('log-filter-search').value = '';
@@ -600,15 +625,29 @@ function logMudarPagina(dir) {
 }
 
 async function carregarLogs(silent) {
-    const level    = document.getElementById('log-filter-level')?.value    || '';
-    const tag      = document.getElementById('log-filter-tag')?.value      || '';
-    const instance = document.getElementById('log-filter-instance')?.value || '';
-    const search   = document.getElementById('log-filter-search')?.value   || '';
-    const dateFrom = document.getElementById('log-filter-date-from')?.value || '';
-    const dateTo   = document.getElementById('log-filter-date-to')?.value   || '';
+    const filters = [
+        'log-filter-level', 'log-filter-tag', 'log-filter-instance', 
+        'log-filter-search', 'log-filter-date-from', 'log-filter-date-to'
+    ];
     const tbody = $('logs-tbody');
     if (!tbody) return;
-    if (!silent) tbody.innerHTML = '<tr><td colspan="6" style="padding:30px;text-align:center;color:var(--muted);">Carregando...</td></tr>';
+
+    if (!silent) {
+        // Estado de Loading (Skeleton)
+        filters.forEach(id => { const el = $(id); if(el) el.disabled = true; });
+        tbody.innerHTML = Array(5).fill(0).map(() => `
+            <tr class="skeleton-row">
+                <td colspan="6" style="padding:15px;"><div style="height:12px;background:var(--border);border-radius:4px;width:100%;opacity:0.3;animation:pulse 1.5s infinite;"></div></td>
+            </tr>
+        `).join('');
+    }
+
+    const level    = $(filters[0])?.value || '';
+    const tag      = $(filters[1])?.value || '';
+    const instance = $(filters[2])?.value || '';
+    const search   = $(filters[3])?.value || '';
+    const dateFrom = $(filters[4])?.value || '';
+    const dateTo   = $(filters[5])?.value || '';
 
     const offset = (_logPage - 1) * _logPerPage;
     let url = `/api/logs?limit=${_logPerPage}&offset=${offset}`;
@@ -624,6 +663,9 @@ async function carregarLogs(silent) {
         const data = await r.json();
         const logs  = data.rows || data;
         const total = data.total ?? logs.length;
+
+        // Reativar filtros
+        filters.forEach(id => { const el = $(id); if(el) el.disabled = false; });
 
         // Stats
         const statsEl = $('log-stats');
@@ -644,19 +686,31 @@ async function carregarLogs(silent) {
             return;
         }
 
-        tbody.innerHTML = logs.map(l => {
-            const tc   = LOG_TAG_COLORS[l.tag] || { bg:'rgba(156,163,175,.12)', color:'#9ca3af' };
+        // Cache e processamento pré-renderização
+        const processedLogs = logs.map(l => ({
+            ...l,
+            dtFormatted: l.created_at ? new Date(l.created_at).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit' }) : '-',
+            dataShort: l.data_preview ? (l.data_preview.length > 60 ? l.data_preview.substring(0, 60) + '…' : l.data_preview) : ''
+        }));
+
+        // Renderização com DocumentFragment (Performance)
+        const fragment = document.createDocumentFragment();
+        processedLogs.forEach(l => {
+            const tc = LOG_TAG_COLORS[l.tag] || { bg:'rgba(156,163,175,.12)', color:'#9ca3af' };
             const isWarn = l.level === 'warn';
-            const dt   = l.created_at ? new Date(l.created_at).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit' }) : '-';
-            const dataStr = l.data ? JSON.stringify(l.data) : '';
-            const dataShort = dataStr.length > 60 ? dataStr.substring(0, 60) + '…' : dataStr;
-            const dataCell = dataStr
+            
+            const tr = document.createElement('tr');
+            tr.style.borderBottom = '1px solid var(--border)';
+            if (isWarn) tr.style.background = 'rgba(245,158,11,.04)';
+            
+            const dataCellHtml = l.data_preview
                 ? `<td style="padding:8px 10px;font-size:11px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-                    <span onclick="abrirLogJson(${JSON.stringify(dataStr).replace(/"/g,'&quot;')})" style="cursor:pointer;color:#60a5fa;text-decoration:underline dotted;" title="Clique para ver completo">${esc(dataShort)}</span>
+                    <span onclick="abrirLogJson(${l.id})" style="cursor:pointer;color:#60a5fa;text-decoration:underline dotted;" title="Clique para ver completo">${esc(l.dataShort)}</span>
                   </td>`
                 : `<td style="padding:8px 10px;color:var(--muted);font-size:11px;">—</td>`;
-            return `<tr style="border-bottom:1px solid var(--border);${isWarn ? 'background:rgba(245,158,11,.04)' : ''}">
-                <td style="padding:8px 10px;color:var(--muted);white-space:nowrap;">${dt}</td>
+
+            tr.innerHTML = `
+                <td style="padding:8px 10px;color:var(--muted);white-space:nowrap;">${l.dtFormatted}</td>
                 <td style="padding:8px 10px;"><span style="font-size:11px;color:var(--text);">${esc(l.instance||'-')}</span></td>
                 <td style="padding:8px 10px;">
                     <span style="padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;background:${tc.bg};color:${tc.color};">${esc(l.tag)}</span>
@@ -665,12 +719,17 @@ async function carregarLogs(silent) {
                     <span style="font-size:11px;font-weight:600;color:${isWarn ? '#f59e0b' : '#10b981'};">${isWarn ? '⚠ aviso' : '✓ info'}</span>
                 </td>
                 <td style="padding:8px 10px;color:var(--text);">${esc(l.message)}</td>
-                ${dataCell}
-            </tr>`;
-        }).join('');
+                ${dataCellHtml}
+            `;
+            fragment.appendChild(tr);
+        });
+
+        tbody.replaceChildren(fragment);
         renderLogPagination(total);
         lucide.createIcons({ nodes: [tbody] });
+
     } catch(e) {
+        filters.forEach(id => { const el = $(id); if(el) el.disabled = false; });
         tbody.innerHTML = `<tr><td colspan="6" style="padding:30px;text-align:center;color:#ef4444;">Erro ao carregar logs: ${esc(e.message)}</td></tr>`;
     }
 }
