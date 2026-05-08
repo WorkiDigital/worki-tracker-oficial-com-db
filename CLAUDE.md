@@ -107,4 +107,17 @@ Consolidação da robustez do sistema com foco em proteção e velocidade:
 - **Cache Inteligente Meta Ads:** Camada de cache persistente para métricas da Meta Ads, otimizando o carregamento de dashboards e economizando cota de API.
 - **Criptografia de Tokens:** Migração para armazenamento criptografado de tokens de acesso de APIs externas, aumentando a segurança do banco de dados.
 - **Persistência de Preferências:** Nova tabela `dashboard_settings` para salvar filtros e configurações de visualização por conta de anúncio.
-- **Branding de Canais:** Ícones oficiais do WhatsApp, Instagram e Google Maps integrados nas tabelas e no Kanban para identificação visual imediata da origem do lead.
+### 6. Otimização Crítica de Logs e Dashboard (08/05/2026)
+Uma reengenharia completa foi realizada para resolver lentidões extremas no painel administrativo e restaurar a precisão dos KPIs:
+- **Segregação de Endpoints de Logs**:
+    - `GET /api/logs/lite`: Novo endpoint para a tabela administrativa que retorna apenas um preview do payload (`data_preview`), reduzindo o tamanho da resposta de 400KB para ~30KB por linha.
+    - `GET /api/logs/:id`: Endpoint dedicado para carregar o JSON completo sob demanda via modal, suportando fallback entre a nova tabela `webhook_logs` e a tabela legada `logs`.
+    - `GET /api/logs`: Restaurado para retornar o JSON completo, essencial para que as funções de cálculo de métricas do dashboard não quebrem.
+- **Automação de Métricas do Funil**:
+    - **Venda Automática**: O sistema agora detecta e grava automaticamente o timestamp `sale_closed_at` quando um lead é marcado como "Vendido" ou "Venda", alimentando os cards de Ciclo Médio e Vendas Rápidas em tempo real.
+    - **SLA de Resposta**: O `api/webhook-evo.js` monitora interações para preencher `first_response_at` e `last_interaction_at`, garantindo a precisão do card de Resposta Média.
+- **Infraestrutura de Banco de Dados**:
+    - **Tabela `webhook_logs`**: Nova tabela otimizada para logs de alta volumetria.
+    - **Índices de Performance**: Criados `idx_logs_cliente_created` e `idx_logs_tag` para garantir que as buscas de logs ocorram em milissegundos, mesmo com milhões de registros.
+- **Suporte a Rotas Dinâmicas**: O servidor de desenvolvimento (`server.js`) foi atualizado para suportar o padrão de arquivos `[id].js`, alinhando a arquitetura local com a do Vercel.
+- **Correção ReferenceError (CAPI Purchase)**: Resolvido bug `token is not defined` no envio de eventos de compra para o Facebook, garantindo que o token do cliente seja priorizado corretamente.
