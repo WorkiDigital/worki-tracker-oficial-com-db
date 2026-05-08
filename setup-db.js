@@ -202,6 +202,21 @@ async function setup() {
     `);
     console.log('✅ Tabela "dashboard_settings" verificada/criada.');
 
+    // Tabela de Cache de Métricas da Meta Ads
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS public.metrics_cache (
+          id SERIAL PRIMARY KEY,
+          cliente_id INTEGER REFERENCES public.clientes(id) ON DELETE CASCADE,
+          account_id VARCHAR(50),
+          data_referencia DATE,
+          metrics JSONB,
+          atualizado_em TIMESTAMP DEFAULT NOW(),
+          UNIQUE(cliente_id, account_id, data_referencia)
+      );
+    `);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_metrics_cache_lookup ON metrics_cache(cliente_id, account_id, data_referencia);`);
+    console.log('✅ Tabela "metrics_cache" e índices verificados/criados.');
+
     // Dados iniciais de White-label (apenas se não existirem)
     const currentLogo = `<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0"><rect width="32" height="32" rx="8" fill="#3b82f6"/><rect x="6" y="18" width="4" height="8" rx="1.5" fill="white" opacity="0.6"/><rect x="12" y="13" width="4" height="13" rx="1.5" fill="white" opacity="0.8"/><rect x="18" y="8" width="4" height="18" rx="1.5" fill="white"/><polyline points="21,6 25,6 25,10" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/><line x1="18" y1="9" x2="25" y2="6" stroke="white" stroke-width="1.8" stroke-linecap round/></svg>`;
     

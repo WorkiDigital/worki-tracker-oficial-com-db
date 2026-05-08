@@ -80,3 +80,51 @@ export function userCacheKey(user, ...parts) {
   const scope = user?.cliente_id ?? `admin_${user?.id ?? 'unknown'}`;
   return [scope, ...parts].join(':');
 }
+
+// ── Persistent Metrics Cache (DB-backed) ───────────────────────
+const METRICS_TTL = {
+  hoje: 60 * 60 * 1000,           // 1 hora
+  ontem: 6 * 60 * 60 * 1000,      // 6 horas
+  historico: 24 * 60 * 60 * 1000 // 24 horas
+};
+
+import { getPool } from './_db.js';
+
+export async function getCachedMetrics(cliente_id, account_id, data) {
+  const pool = getPool();
+  const res = await pool.query(
+    'SELECT metrics, atualizado_em FROM metrics_cache WHERE cliente_id=$1 AND account_id=$2 AND data_referencia=$3',
+    [cliente_id, account_id, data]
+  );
+  
+  if (!res.rows[0]) return null;
+  
+  const hoje = new Date().toISOString().split('T')[0];
+  const ontem = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+  
+  let ttl = METRICS_TTL.historico;
+  if (data === hoje) ttl = METRICS_TTL.hoje;
+  else if (data === ontem) ttl = METRICS_TTL.ontem;
+  
+  const idade = Date.now() - new Date(res.rows[0].atualizado_em).getTime();
+  const cacheAge = Math.floor(idade / 60000);
+
+  if (idade < ttl) {
+    console.log(`[CACHE] HIT para ${account_id} em ${data} (Idade: ${cacheAge} min)`);
+    return { ...res.rows[0].metrics, fromCache: true, cacheAge };
+  }
+  
+  console.log(`[CACHE] MISS (STALE) para ${account_id} em ${data}`);
+  return null;
+}
+
+export async function setCachedMetrics(cliente_id, account_id, data, metrics) {
+  const pool = getPool();
+  await pool.query(`
+    INSERT INTO metrics_cache (cliente_id, account_id, data_referencia, metrics)
+    VALUES ($1, $2, $3, $4)
+    ON CONFLICT (cliente_id, account_id, data_referencia)
+    DO UPDATE SET metrics=$4, atualizado_em=NOW()
+  `, [cliente_id, account_id, data, metrics]);
+  console.log(`[CACHE] SET para ${account_id} em ${data}`);
+}
