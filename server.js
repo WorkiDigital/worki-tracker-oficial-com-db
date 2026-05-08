@@ -117,6 +117,31 @@ const server = http.createServer(async (req, res) => {
         } catch (e) {
             details.checks.redis = { status: 'error', error: e.message };
         }
+        try {
+            const { getPool } = await import('./api/_db.js');
+            const pool = getPool();
+            const t0 = Date.now();
+            await pool.query('SELECT 1');
+            details.checks.database = { status: 'ok', latencyMs: Date.now() - t0 };
+        } catch (e) {
+            details.status = 'degraded';
+            details.checks.database = { status: 'error', error: e.message };
+        }
+        try {
+            if (process.env.REDIS_URL) {
+                const Redis = (await import('ioredis')).default;
+                const r = new Redis(process.env.REDIS_URL, { connectTimeout: 3000, lazyConnect: true });
+                const t0 = Date.now();
+                await r.connect();
+                await r.ping();
+                details.checks.redis = { status: 'ok', latencyMs: Date.now() - t0 };
+                r.disconnect();
+            } else {
+                details.checks.redis = { status: 'not_configured' };
+            }
+        } catch (e) {
+            details.checks.redis = { status: 'error', error: e.message };
+        }
         const code = details.status === 'ok' ? 200 : 503;
         res.writeHead(code, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify(details));
@@ -126,13 +151,27 @@ const server = http.createServer(async (req, res) => {
     // API routes
     if (pathname.startsWith('/api/')) {
         const route = pathname.slice(5).replace(/\/$/, '') || 'index';
-        const handlerPath = path.join(__dirname, 'api', route + '.js');
-        if (fs.existsSync(handlerPath)) {
-            const wrappedReq = wrapReq(req);
-            const wrappedRes = wrapRes(res);
+        let handlerPath = path.join(__dirname, 'api', route + '.js');
+        const wrappedReq = wrapReq(req);
+        const wrappedRes = wrapRes(res);
 
+        // Suporte para rotas dinâmicas (ex: /api/logs/123 -> api/logs/[id].js)
+        if (!fs.existsSync(handlerPath)) {
+            const parts = route.split('/');
+            if (parts.length >= 2) {
+                const parentDir = path.join(__dirname, 'api', ...parts.slice(0, -1));
+                const dynamicPath = path.join(parentDir, '[id].js');
+                if (fs.existsSync(dynamicPath)) {
+                    handlerPath = dynamicPath;
+                    // Injeta o ID na query
+                    wrappedReq.query.id = parts[parts.length - 1];
+                }
+            }
+        }
+
+        if (fs.existsSync(handlerPath)) {
             // Rate Limit para Webhooks (Proteção contra flooding)
-            if (route === 'webhook-evo' || route === 'webhook-n8n') {
+            if (route.startsWith('webhook-')) {
                 const { checkRateLimit } = await import('./middleware/rateLimit.js');
                 const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '127.0.0.1';
                 if (checkRateLimit(ip, wrappedRes)) return;
