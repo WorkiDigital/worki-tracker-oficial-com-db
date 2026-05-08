@@ -1,4 +1,58 @@
 :root {
+  /* CORES - Top patterns found in index.html */
+  --c1: #ffffff; /* text primary / icons */
+  --c2: #25d366; /* whatsapp green */
+  --c3: #f59e0b; /* amber / trophy */
+  --c4: #10b981; /* accent green */
+  --c5: #ef4444; /* accent red */
+  --c6: #3b82f6; /* accent blue */
+  --c7: #8b5cf6; /* accent purple */
+  --c8: #ec4899; /* accent pink */
+  --c9: #9ca3af; /* text secondary / gray-400 */
+  --c10: #6b7280; /* text muted / gray-500 */
+
+  /* ESPAÇAMENTOS */
+  --p1: 4px;
+  --p2: 8px;
+  --p3: 12px;
+  --p4: 16px;
+  --p5: 24px;
+
+  /* PADDINGS COMPOSTOS - Top literal patterns */
+  --pad-sm: 6px 10px;
+  --pad-md: 10px 12px;
+  --pad-lg: 20px;
+}
+
+/* Classes utilitárias */
+.bg1 { background: var(--c1); }
+.bg2 { background: var(--c2); }
+.bg3 { background: var(--c3); }
+.text1 { color: var(--c1); }
+.text2 { color: var(--c9); }
+.text3 { color: var(--c10); }
+.accent-b { color: var(--c6); }
+.accent-g { color: var(--c4); }
+.accent-r { color: var(--c5); }
+
+.pad-sm { padding: var(--pad-sm); }
+.pad-md { padding: var(--pad-md); }
+.pad-lg { padding: var(--pad-lg); }
+
+/* Typography utilities */
+.fs-xs { font-size: 11px; }
+.fs-sm { font-size: 12px; }
+.fs-md { font-size: 13px; }
+.fs-lg { font-size: 14px; }
+
+/* Alignment utilities */
+.text-center { text-align: center; }
+.flex { display: flex; }
+.flex-col { flex-direction: column; }
+.items-center { align-items: center; }
+.gap-2 { gap: 8px; }
+
+:root {
     --bg: #0a0f1a; --sidebar: rgba(10,15,26,0.92); --card: rgba(13,19,33,0.85);
     --card-solid: #0d1321;
     --text: #e2e8f0; --muted: #64748b;

@@ -36,7 +36,7 @@
 <div id="shareModal" class="modal-overlay" onclick="fecharShareModal(event)">
     <div class="modal" style="width:480px;max-width:96vw;max-height:90vh;overflow-y:auto;" onclick="event.stopPropagation()">
         <div class="modal-head">
-            <div class="modal-icon" style="background:var(--blue)"><i data-lucide="link" style="color:#fff;width:20px;height:20px;"></i></div>
+            <div class="modal-icon" style="background:var(--blue)"><i data-lucide="link" style="width:20px;height:20px;" class="text1"></i></div>
             <div><h3>Configurar Link de Acesso</h3><p id="shareModalAcctName" style="font-size:12px;color:var(--muted);">—</p></div>
             <button class="modal-close" onclick="fecharShareModal()"><i data-lucide="x" style="width:16px;"></i></button>
         </div>
@@ -126,7 +126,7 @@
         <!-- Filtro de status padrão -->
         <div class="input-group" style="margin-bottom:20px;">
             <label>Status padrão ao abrir o link</label>
-            <select id="shareStatusFilter" style="width:100%;background:var(--tag);border:1px solid var(--border);padding:10px 12px;border-radius:8px;color:var(--text);font-size:13px;outline:none;font-family:'Inter';">
+            <select id="shareStatusFilter" class="bare pad-md" style="width:100%;background:var(--tag);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none;font-family:'Inter';">
                 <option value="ACTIVE" selected>Somente Ativas</option>
                 <option value="ALL">Todas (ativas + pausadas)</option>
                 <option value="PAUSED">Somente Pausadas</option>
@@ -136,7 +136,7 @@
         <!-- Prazo de validade -->
         <div class="input-group" style="margin-bottom:20px;">
             <label>Prazo de validade <span style="color:var(--muted);font-weight:400">(opcional — vazio = permanente)</span></label>
-            <input type="date" id="shareExpiresAt" style="width:100%;background:var(--tag);border:1px solid var(--border);padding:10px 12px;border-radius:8px;color:var(--text);font-size:13px;outline:none;box-sizing:border-box;">
+            <input type="date" id="shareExpiresAt" class="pad-md" style="width:100%;background:var(--tag);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none;box-sizing:border-box;">
         </div>
 
         <button class="btn-confirm" id="btnConfirmarShare" onclick="confirmarGerarLink()">
@@ -150,7 +150,7 @@
 <div id="capiModal" class="modal-overlay">
     <div class="modal">
         <div class="modal-head">
-            <div class="modal-icon"><i data-lucide="shopping-bag" style="color:#fff;width:22px;height:22px;"></i></div>
+            <div class="modal-icon"><i data-lucide="shopping-bag" style="width:22px;height:22px;" class="text1"></i></div>
             <div><h3>Registrar Venda</h3><p id="modalLeadNome">—</p></div>
             <button class="modal-close" onclick="fecharModal()"><i data-lucide="x" style="width:16px;"></i></button>
         </div>
@@ -171,7 +171,7 @@
 <div id="modalAddCliente" class="modal-overlay" onclick="if(event.target===this) this.classList.remove('open')">
     <div class="modal">
         <div class="modal-head">
-            <div class="modal-icon"><i data-lucide="building" style="color:#fff;width:22px;height:22px;"></i></div>
+            <div class="modal-icon"><i data-lucide="building" style="width:22px;height:22px;" class="text1"></i></div>
             <div><h3>Novo Cliente SaaS</h3><p>Configure pixel, acesso e conta de anúncios do cliente</p></div>
             <button class="modal-close" onclick="$('modalAddCliente').classList.remove('open')"><i data-lucide="x" style="width:16px;"></i></button>
         </div>
@@ -189,7 +189,7 @@
 <div id="modalCredenciais" class="modal-overlay" onclick="if(event.target===this) this.classList.remove('open')">
     <div class="modal">
         <div class="modal-head">
-            <div class="modal-icon" style="background:var(--green);"><i data-lucide="check-circle" style="color:#fff;width:22px;height:22px;"></i></div>
+            <div class="modal-icon" style="background:var(--green);"><i data-lucide="check-circle" style="width:22px;height:22px;" class="text1"></i></div>
             <div><h3>Cliente Criado!</h3><p>Envie as credenciais ao cliente.</p></div>
             <button class="modal-close" onclick="$('modalCredenciais').classList.remove('open')"><i data-lucide="x" style="width:16px;"></i></button>
         </div>
@@ -260,7 +260,7 @@
         <div id="editPanel-venda" style="display:none;">
             <div class="input-group">
                 <label>Template de Venda <span style="color:var(--muted);font-weight:400;font-size:11px;">(formato da mensagem do atendente)</span></label>
-                <textarea id="editCliTemplate" rows="8" placeholder="Ex:&#10;Nome completo: {nome}&#10;Produto: {produto}&#10;Valor da Compra: {valor}&#10;Endereço: {endereco}&#10;Cidade: {cidade}" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);font-family:monospace;font-size:12px;resize:vertical;margin-top:6px;box-sizing:border-box;"></textarea>
+                <textarea id="editCliTemplate" rows="8" placeholder="Ex:&#10;Nome completo: {nome}&#10;Produto: {produto}&#10;Valor da Compra: {valor}&#10;Endereço: {endereco}&#10;Cidade: {cidade}" class="pad-md" style="width:100%;border:1px solid var(--border);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);font-family:monospace;font-size:12px;resize:vertical;margin-top:6px;box-sizing:border-box;"></textarea>
                 <p style="font-size:11px;color:var(--muted);margin-top:4px;">
                     Enviados à Meta: <code>{valor}</code> <code>{nome}</code> <code>{cidade}</code> <code>{produto}</code> <code>{email}</code> <code>{cpf}</code> &nbsp;|&nbsp;
                     Só banco: <code>{endereco}</code> <code>{cor}</code> <code>{pagamento}</code>
@@ -269,27 +269,27 @@
             <hr style="border:none;border-top:1px solid var(--border);margin:16px 0 12px;">
             <p style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:12px;">Permissões de Acesso</p>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
-                <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--tag);border-radius:8px;cursor:pointer;">
+                <label class="pad-md" style="display:flex;align-items:center;gap:10px;background:var(--tag);border-radius:8px;cursor:pointer;">
                     <input type="checkbox" id="permLeads" style="width:16px;height:16px;accent-color:var(--blue);">
                     <span style="font-size:13px;">Leads Reais</span>
                 </label>
-                <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--tag);border-radius:8px;cursor:pointer;">
+                <label class="pad-md" style="display:flex;align-items:center;gap:10px;background:var(--tag);border-radius:8px;cursor:pointer;">
                     <input type="checkbox" id="permAnuncios" style="width:16px;height:16px;accent-color:var(--blue);">
                     <span style="font-size:13px;">Meta Ads</span>
                 </label>
-                <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--tag);border-radius:8px;cursor:pointer;">
+                <label class="pad-md" style="display:flex;align-items:center;gap:10px;background:var(--tag);border-radius:8px;cursor:pointer;">
                     <input type="checkbox" id="permRelatorios" style="width:16px;height:16px;accent-color:var(--blue);">
                     <span style="font-size:13px;">Relatórios</span>
                 </label>
-                <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--tag);border-radius:8px;cursor:pointer;">
+                <label class="pad-md" style="display:flex;align-items:center;gap:10px;background:var(--tag);border-radius:8px;cursor:pointer;">
                     <input type="checkbox" id="permWhatsapp" style="width:16px;height:16px;accent-color:var(--blue);">
                     <span style="font-size:13px;">Conexão WhatsApp</span>
                 </label>
-                <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--tag);border-radius:8px;cursor:pointer;">
+                <label class="pad-md" style="display:flex;align-items:center;gap:10px;background:var(--tag);border-radius:8px;cursor:pointer;">
                     <input type="checkbox" id="permConfig" style="width:16px;height:16px;accent-color:var(--blue);">
                     <span style="font-size:13px;">Integrações</span>
                 </label>
-                <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--tag);border-radius:8px;cursor:pointer;">
+                <label class="pad-md" style="display:flex;align-items:center;gap:10px;background:var(--tag);border-radius:8px;cursor:pointer;">
                     <input type="checkbox" id="permClientes" style="width:16px;height:16px;accent-color:var(--blue);">
                     <span style="font-size:13px;">Compartilhar Dash</span>
                 </label>
@@ -350,7 +350,7 @@
             </div>
             <span id="userEmail" style="font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;"></span>
         </div>
-        <button class="btn-icon" onclick="fazerLogout()" title="Sair" style="color:var(--red);justify-content:flex-start;gap:10px;padding:10px 12px;">
+        <button class="btn-icon pad-md" onclick="fazerLogout()" title="Sair" style="color:var(--red);justify-content:flex-start;gap:10px;">
             <i data-lucide="log-out" style="width:16px;height:16px;flex-shrink:0;"></i>
             <span class="sidebar-text">Sair</span>
         </button>
@@ -436,22 +436,22 @@
         <div id="aba-leads">
             <!-- NOVAS MÉTRICAS TEMPORAIS (FASE 3) -->
             <div class="metrics-row" id="metricsTemporalRow" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:16px;margin-bottom:20px;margin-top:10px;">
-                <div class="metric-card" style="background:var(--card);padding:20px;border-radius:12px;border:1px solid var(--border);text-align:center;box-shadow:var(--shadow-sm);">
+                <div class="metric-card pad-lg" style="background:var(--card);border-radius:12px;border:1px solid var(--border);text-align:center;box-shadow:var(--shadow-sm);">
                     <h3 style="font-size:12px;color:var(--muted);text-transform:uppercase;margin-bottom:8px;font-weight:600;">⏱️ Ciclo Médio</h3>
                     <div class="big-number" id="avgCycleDays" style="font-size:24px;font-weight:700;color:var(--text);">-</div>
                     <p style="font-size:11px;color:var(--muted);">dias até venda</p>
                 </div>
-                <div class="metric-card" style="background:var(--card);padding:20px;border-radius:12px;border:1px solid var(--border);text-align:center;box-shadow:var(--shadow-sm);">
+                <div class="metric-card pad-lg" style="background:var(--card);border-radius:12px;border:1px solid var(--border);text-align:center;box-shadow:var(--shadow-sm);">
                     <h3 style="font-size:12px;color:var(--muted);text-transform:uppercase;margin-bottom:8px;font-weight:600;">⚡ Resposta Média</h3>
                     <div class="big-number" id="avgResponseTime" style="font-size:24px;font-weight:700;color:var(--text);">-</div>
                     <p style="font-size:11px;color:var(--muted);">minutos</p>
                 </div>
-                <div class="metric-card" style="background:var(--card);padding:20px;border-radius:12px;border:1px solid var(--border);text-align:center;border-left:4px solid #ef4444;box-shadow:var(--shadow-sm);">
+                <div class="metric-card pad-lg" style="background:var(--card);border-radius:12px;border:1px solid var(--border);text-align:center;border-left:4px solid #ef4444;box-shadow:var(--shadow-sm);">
                     <h3 style="font-size:12px;color:var(--muted);text-transform:uppercase;margin-bottom:8px;font-weight:600;">⚠️ Leads Esquecidos</h3>
                     <div class="big-number" id="leadsAtRisk" style="font-size:24px;font-weight:700;color:#ef4444;">-</div>
                     <p style="font-size:11px;color:var(--muted);">sem contato há +48h</p>
                 </div>
-                <div class="metric-card" style="background:var(--card);padding:20px;border-radius:12px;border:1px solid var(--border);text-align:center;box-shadow:var(--shadow-sm);">
+                <div class="metric-card pad-lg" style="background:var(--card);border-radius:12px;border:1px solid var(--border);text-align:center;box-shadow:var(--shadow-sm);">
                     <h3 style="font-size:12px;color:var(--muted);text-transform:uppercase;margin-bottom:8px;font-weight:600;">🏃 Vendas Rápidas</h3>
                     <div class="big-number" id="fastSales" style="font-size:24px;font-weight:700;color:#10b981;">-</div>
                     <p style="font-size:11px;color:var(--muted);" id="fastSalesPercentLabel">fechadas em 24h</p>
@@ -675,7 +675,7 @@
                 <div class="ads-filters" id="ads-filters">
                     <div class="filter-group">
                         <label>Status</label>
-                        <select id="filtroStatusAds" class="bare" onchange="salvarFiltroStatus();filtrarCampanhas()" style="border:1px solid var(--border);border-radius:7px;padding:6px 10px;background:var(--card);color:var(--text);">
+                        <select id="filtroStatusAds" class="bare pad-sm" style="border:1px solid var(--border);border-radius:7px;background:var(--card);color:var(--text);">
                             <option value="">Todos</option>
                             <option value="ACTIVE" selected>Ativas</option>
                             <option value="PAUSED">Pausadas</option>
@@ -683,7 +683,7 @@
                     </div>
                     <div class="filter-group">
                         <label>Objetivo</label>
-                        <select id="filtroObjetivoAds" class="bare" onchange="filtrarCampanhas()" style="border:1px solid var(--border);border-radius:7px;padding:6px 10px;background:var(--card);color:var(--text);">
+                        <select id="filtroObjetivoAds" class="bare pad-sm" style="border:1px solid var(--border);border-radius:7px;background:var(--card);color:var(--text);">
                             <option value="">Todos</option>
                         </select>
                     </div>
@@ -738,19 +738,17 @@
                         </button>
                     </div>
                     <!-- Estado inicial (antes de carregar) -->
-                    <div id="bestAdsEmpty" style="text-align:center;padding:32px 0 20px;color:var(--muted);font-size:13px;">
+                    <div id="bestAdsEmpty" class="text-center pad-y-lg text-muted font-sm">
                         Clique em <strong>Carregar Criativos</strong> para ver os melhores criativos desta conta.
                     </div>
                     <!-- Conteúdo (oculto até primeiro load) -->
                     <div id="bestAdsLoaded" style="display:none;">
                         <div class="best-ads-sort" id="bestAdsSortPills"></div>
                         <div class="best-ads-filters">
-                            <select id="bestAdsCampFilter" class="bare" onchange="renderMelhoresAnuncios()"
-                                    style="border:1px solid var(--border);border-radius:7px;padding:6px 10px;background:var(--card);color:var(--text);font-size:13px;">
+                            <select id="bestAdsCampFilter" class="bare pad-sm" onchange="renderMelhoresAnuncios()">
                                 <option value="">Todas as campanhas</option>
                             </select>
-                            <select id="bestAdsStatusFilter" class="bare" onchange="renderMelhoresAnuncios()"
-                                    style="border:1px solid var(--border);border-radius:7px;padding:6px 10px;background:var(--card);color:var(--text);font-size:13px;">
+                            <select id="bestAdsStatusFilter" class="bare pad-sm" onchange="renderMelhoresAnuncios()">
                                 <option value="ACTIVE">Apenas Ativos</option>
                                 <option value="">Todos</option>
                             </select>
@@ -1094,20 +1092,20 @@
                             <input type="checkbox" id="log-auto-refresh" onchange="toggleLogAutoRefresh()" style="accent-color:#3b82f6;">
                             Auto
                         </label>
-                        <button class="btn btn-ghost btn-sm" onclick="pruneLogs()" style="padding:5px 10px;color:var(--red);" title="Limpar logs antigos (mais de 15 dias)">
-                            <i data-lucide="trash-2" style="width:13px;"></i>
+                        <button class="btn btn-ghost btn-sm" onclick="pruneLogs()" title="Limpar logs antigos (mais de 15 dias)">
+                            <i data-lucide="trash-2" style="width:13px;color:var(--red);"></i>
                         </button>
-                        <button class="btn btn-ghost btn-sm" onclick="carregarLogs()" style="padding:5px 10px;">
+                        <button class="btn btn-ghost btn-sm" onclick="carregarLogs()">
                             <i data-lucide="refresh-cw" style="width:13px;"></i>
                         </button>
                     </div>
                 </div>
                 <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">
-                    <input id="log-filter-search" type="text" placeholder="Buscar mensagem..." onkeyup="if(event.key==='Enter')carregarLogs()" style="background:var(--card);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px;width:180px;">
-                    <input id="log-filter-instance" type="text" placeholder="Instância..." onkeyup="if(event.key==='Enter')carregarLogs()" style="background:var(--card);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px;width:140px;">
-                    <input id="log-filter-date-from" type="date" onchange="carregarLogs()" style="background:var(--card);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px;">
-                    <input id="log-filter-date-to" type="date" onchange="carregarLogs()" style="background:var(--card);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px;">
-                    <select id="log-filter-level" onchange="carregarLogs()" style="background:var(--card);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px;">
+                    <input id="log-filter-search" type="text" placeholder="Buscar mensagem..." onkeyup="if(event.key==='Enter')carregarLogs()" class="bare pad-sm" style="border:1px solid var(--border);border-radius:6px;font-size:12px;width:180px;">
+                    <input id="log-filter-instance" type="text" placeholder="Instância..." onkeyup="if(event.key==='Enter')carregarLogs()" class="bare pad-sm" style="border:1px solid var(--border);border-radius:6px;font-size:12px;width:140px;">
+                    <input id="log-filter-date-from" type="date" onchange="carregarLogs()" class="bare pad-sm" style="border:1px solid var(--border);border-radius:6px;font-size:12px;">
+                    <input id="log-filter-date-to" type="date" onchange="carregarLogs()" class="bare pad-sm" style="border:1px solid var(--border);border-radius:6px;font-size:12px;">
+                    <select id="log-filter-level" onchange="carregarLogs()" class="bare pad-sm" style="border:1px solid var(--border);border-radius:6px;font-size:12px;">
                         <option value="">Todos os níveis</option>
                         <option value="info">Info</option>
                         <option value="warn">Aviso</option>
