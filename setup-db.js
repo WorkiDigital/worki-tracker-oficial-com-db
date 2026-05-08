@@ -172,6 +172,21 @@ async function setup() {
     `);
     console.log('✅ Tabela "configuracoes_sistema" verificada/criada.');
 
+    // Tabela de Configurações do Dashboard (Cards, Colunas, etc por conta de anúncio)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS public.dashboard_settings (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          user_id INTEGER REFERENCES public.usuarios(id),
+          ad_account_id VARCHAR(255) NOT NULL,
+          metrics_cfg JSONB NOT NULL,
+          demo_cfg JSONB NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE(user_id, ad_account_id)
+      );
+    `);
+    console.log('✅ Tabela "dashboard_settings" verificada/criada.');
+
     // Dados iniciais de White-label (apenas se não existirem)
     const currentLogo = `<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0"><rect width="32" height="32" rx="8" fill="#3b82f6"/><rect x="6" y="18" width="4" height="8" rx="1.5" fill="white" opacity="0.6"/><rect x="12" y="13" width="4" height="13" rx="1.5" fill="white" opacity="0.8"/><rect x="18" y="8" width="4" height="18" rx="1.5" fill="white"/><polyline points="21,6 25,6 25,10" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/><line x1="18" y1="9" x2="25" y2="6" stroke="white" stroke-width="1.8" stroke-linecap round/></svg>`;
     
