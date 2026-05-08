@@ -121,3 +121,10 @@ Uma reengenharia completa foi realizada para resolver lentidões extremas no pai
     - **Índices de Performance**: Criados `idx_logs_cliente_created` e `idx_logs_tag` para garantir que as buscas de logs ocorram em milissegundos, mesmo com milhões de registros.
 - **Suporte a Rotas Dinâmicas**: O servidor de desenvolvimento (`server.js`) foi atualizado para suportar o padrão de arquivos `[id].js`, alinhando a arquitetura local com a do Vercel.
 - **Correção ReferenceError (CAPI Purchase)**: Resolvido bug `token is not defined` no envio de eventos de compra para o Facebook, garantindo que o token do cliente seja priorizado corretamente.
+
+### 7. Otimização de Interface e Estilos (08/05/2026)
+Uma limpeza profunda foi realizada no dashboard principal para melhorar a manutenibilidade e performance de renderização:
+- **Extração de Design Tokens**: As cores literais e paddings mais utilizados foram mapeados via script de auditoria e movidos para variáveis nativas CSS (`:root`) no topo do arquivo `css/dashboard.css`.
+- **Classes Utilitárias**: Criadas classes como `.text1`, `.bg2`, `.pad-sm`, `.pad-md`, `.pad-lg` para substituir a proliferação de estilos inline (`style="..."`).
+- **Refatoração do HTML**: O arquivo `index.html` teve milhares de atributos de estilo substituídos pelas novas classes utilitárias, reduzindo o tamanho do DOM sem causar impacto visual (abordagem *pixel-perfect* baseada nos valores exatos de uso atual).
+- **Inventário Visual**: O arquivo `pattern-inventory.json` foi atualizado com os padrões consolidados de uso, servindo de documentação viva para futuras alterações de UI.
