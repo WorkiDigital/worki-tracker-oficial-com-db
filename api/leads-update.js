@@ -23,7 +23,13 @@ export default async function handler(req, res) {
     const values = [];
     let queryIndex = 1;
 
-    if (status)                  { setClauses.push(`status = $${queryIndex++}`);          values.push(status); }
+    if (status) { 
+      setClauses.push(`status = $${queryIndex++}`); 
+      values.push(status); 
+      if (status === 'Vendido' || status === 'Venda') {
+        setClauses.push(`sale_closed_at = NOW()`);
+      }
+    }
     if (valor_venda !== undefined){ setClauses.push(`valor_venda = $${queryIndex++}`);     values.push(valor_venda); }
     if (produto)                 { setClauses.push(`produto = $${queryIndex++}`);          values.push(produto); }
     if (nome)                    { setClauses.push(`nome = $${queryIndex++}`);             values.push(nome); }
@@ -64,6 +70,7 @@ export default async function handler(req, res) {
 }
 
 async function sendCapiPurchase(lead, value, pool) {
+  let token;
   let { pixel, ctw_aci_id, telefone, cidade, estado, cliente_id, page_id } = lead;
 
   if (!pixel && cliente_id) {
