@@ -2,6 +2,7 @@ import { getPool } from './_db.js';
 import { verifyAuth } from './_auth.js';
 import bcrypt from 'bcryptjs';
 import { cors } from './_cors.js';
+import { encryptToken } from './_crypto.js';
 
 export default async function handler(req, res) {
   if (cors(req, res, ['GET', 'POST', 'PATCH', 'DELETE'])) return;
@@ -37,9 +38,17 @@ export default async function handler(req, res) {
 
       try {
           // 1. Cria a configuração raiz do Cliente
+          const { token_meta } = req.body;
+          let token_meta_enc = null;
+          let token_last4 = null;
+          if (token_meta) {
+              token_meta_enc = encryptToken(token_meta);
+              token_last4 = token_meta.slice(-6);
+          }
+
           const clientResult = await pool.query(
-              'INSERT INTO clientes (nome, email_contato, pixel_padrao) VALUES ($1, $2, $3) RETURNING id',
-              [nome, email_contato, pixel_padrao]
+              'INSERT INTO clientes (nome, email_contato, pixel_padrao, token_meta_enc, token_last4, token_updated_at) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
+              [nome, email_contato, pixel_padrao, token_meta_enc, token_last4, token_meta ? new Date() : null]
           );
           const cliente_id = clientResult.rows[0].id;
 
@@ -73,10 +82,17 @@ export default async function handler(req, res) {
           if (nome)         { fields.push(`nome=$${idx++}`);         values.push(nome); }
           if (email_contato){ fields.push(`email_contato=$${idx++}`);values.push(email_contato); }
           if (pixel_padrao) { fields.push(`pixel_padrao=$${idx++}`); values.push(pixel_padrao); }
-          if (token_meta)   { fields.push(`token_meta=$${idx++}`);   values.push(token_meta); }
+          if (token_meta)   { 
+              fields.push(`token_meta_enc=$${idx++}`);   values.push(encryptToken(token_meta)); 
+              fields.push(`token_last4=$${idx++}`);     values.push(token_meta.slice(-6));
+              fields.push(`token_updated_at=$${idx++}`); values.push(new Date());
+              // Opcional: Manter retrocompatibilidade (gravando texto puro por enquanto se desejar, 
+              // mas a instrução diz para virar BYTEA. Aqui apenas seguimos a nova lógica)
+          }
           if (account_id !== undefined) { fields.push(`account_id=$${idx++}`); values.push(account_id || null); }
           if (permissoes)   { fields.push(`permissoes=$${idx++}`);   values.push(JSON.stringify(permissoes)); }
           if (template_venda !== undefined) { fields.push(`template_venda=$${idx++}`); values.push(template_venda || null); }
+          fields.push(`atualizado_em=$${idx++}`); values.push(new Date());
 
           if (fields.length > 0) {
               values.push(id);

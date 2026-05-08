@@ -15,6 +15,13 @@ async function setup() {
       process.exit(1);
   }
 
+  // Verificação de segurança: Chave de Criptografia
+  if (!process.env.TOKEN_ENCRYPTION_KEY || process.env.TOKEN_ENCRYPTION_KEY.length !== 64) {
+    console.error('❌ TOKEN_ENCRYPTION_KEY ausente ou inválida no .env.');
+    console.error('👉 Gere uma chave de 64 caracteres hex (32 bytes) com: openssl rand -hex 32');
+    process.exit(1);
+  }
+
   try {
     const client = await pool.connect();
     console.log('✅ Conexão estabelecida. Iniciando criação de tabelas...');
@@ -57,6 +64,10 @@ async function setup() {
           valor_venda NUMERIC(10,2)
       );
     `);
+    // Índices de Performance para Leads
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_leads_cliente_data ON leads_tracking(cliente_id, created_at DESC);`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_leads_telefone ON leads_tracking(telefone);`);
+    console.log('✅ Índices de performance criados em "leads_tracking".');
     // Criação da tabela de Clientes (Multi-Tenant)
     await client.query(`
       CREATE TABLE IF NOT EXISTS public.clientes (
@@ -65,7 +76,11 @@ async function setup() {
           email_contato VARCHAR(255),
           pixel_padrao VARCHAR(255),
           token_meta TEXT,
-          criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          token_meta_enc BYTEA,
+          token_last4 VARCHAR(6),
+          token_updated_at TIMESTAMP,
+          criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
     console.log('✅ Tabela "clientes" (SaaS) verificada/criada.');
@@ -198,6 +213,21 @@ async function setup() {
       ON CONFLICT (chave) DO NOTHING;
     `, [currentLogo]);
     console.log('✅ Configurações iniciais de marca inseridas.');
+
+    // MIGRATION: Adicionar colunas de criptografia caso a tabela já exista
+    await client.query(`
+      DO $$
+      BEGIN
+        IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clientes' AND column_name='token_meta') THEN
+          ALTER TABLE clientes ADD COLUMN IF NOT EXISTS token_meta_enc BYTEA;
+          ALTER TABLE clientes ADD COLUMN IF NOT EXISTS token_last4 VARCHAR(6);
+          ALTER TABLE clientes ADD COLUMN IF NOT EXISTS token_updated_at TIMESTAMP;
+          ALTER TABLE clientes ADD COLUMN IF NOT EXISTS atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+          RAISE NOTICE 'Migração: colunas de criptografia verificadas/adicionadas';
+        END IF;
+      END $$;
+    `);
+    console.log('✅ Migração automática de criptografia concluída.');
 
     client.release();
     console.log('🚀 Finalizado! Estrutura do Banco de Dados pronta para uso.');
