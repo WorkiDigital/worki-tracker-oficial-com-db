@@ -129,8 +129,17 @@ const server = http.createServer(async (req, res) => {
         const handlerPath = path.join(__dirname, 'api', route + '.js');
         if (fs.existsSync(handlerPath)) {
             const wrappedReq = wrapReq(req);
+            const wrappedRes = wrapRes(res);
+
+            // Rate Limit para Webhooks (Proteção contra flooding)
+            if (route === 'webhook-evo' || route === 'webhook-n8n') {
+                const { checkRateLimit } = await import('./middleware/rateLimit.js');
+                const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '127.0.0.1';
+                if (checkRateLimit(ip, wrappedRes)) return;
+            }
+
             if (await parseBody(wrappedReq, res)) return;
-            return callApiHandler(pathToFileURL(handlerPath).href, wrappedReq, wrapRes(res));
+            return callApiHandler(pathToFileURL(handlerPath).href, wrappedReq, wrappedRes);
         }
         res.writeHead(404); res.end('Not found');
         return;
