@@ -14,7 +14,10 @@ const PUBLIC_DIRS = ['/css/', '/js/'];
 
 async function callApiHandler(modulePath, req, res) {
     try {
-        const mod = await import(`${modulePath}?t=${Date.now()}`);
+        const mod = process.env.NODE_ENV === 'production'
+            ? await import(modulePath)
+            : await import(`${modulePath}?t=${Date.now()}`);
+
         await mod.default(req, res);
     } catch (e) {
         res.writeHead(500, { 'Content-Type': 'application/json' });

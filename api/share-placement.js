@@ -1,11 +1,6 @@
-/**
- * GET /api/share-placement?token=&datePreset=&campaignIds=
- * Endpoint público (token) para posicionamento.
- * Usa level=ad + breakdowns=publisher_platform,platform_position para obter actions.
- * Agrega os resultados por platform_position.
- */
 import { getPool } from './_db.js';
 import { cors } from './_cors.js';
+import { decryptToken } from './_crypto.js';
 
 export default async function handler(req, res) {
   if (cors(req, res, ['GET'], { public: true })) return;
@@ -19,7 +14,7 @@ export default async function handler(req, res) {
   let row;
   try {
     const { rows } = await pool.query(
-      `SELECT st.account_id, st.expires_at, c.token_meta
+      `SELECT st.account_id, st.expires_at, c.token_meta, c.token_meta_enc
        FROM share_tokens st
        LEFT JOIN usuarios u ON u.id = st.user_id
        LEFT JOIN clientes c ON c.id = u.cliente_id
@@ -35,7 +30,10 @@ export default async function handler(req, res) {
 
   if (row.expires_at && new Date(row.expires_at) < new Date()) return res.status(403).json({ error: 'Este link expirou' });
 
-  const metaToken = row.token_meta || process.env.META_ADS_TOKEN;
+  let metaToken = row.token_meta || process.env.META_ADS_TOKEN;
+  if (row.token_meta_enc) {
+    try { metaToken = decryptToken(row.token_meta_enc); } catch (e) { console.error('[SHARE-PLACEMENT] Erro descriptografia', e.message); }
+  }
   if (!metaToken) return res.status(500).json({ error: 'META_ADS_TOKEN not configured' });
 
   const fields = 'spend,impressions,clicks,inline_link_clicks,actions';
@@ -76,18 +74,18 @@ export default async function handler(req, res) {
 
     // Agregar por platform_position (soma publisher_platforms diferentes)
     const agg = {};
-    for (const row of (json.data || [])) {
-      const pos = row.platform_position;
+    for (const rData of (json.data || [])) {
+      const pos = rData.platform_position;
       if (!pos) continue;
       if (!agg[pos]) {
         agg[pos] = { platform_position: pos, spend: 0, impressions: 0, clicks: 0, inline_link_clicks: 0, actions: [] };
       }
-      agg[pos].spend        += parseFloat(row.spend        || 0);
-      agg[pos].impressions  += parseInt(row.impressions    || 0, 10);
-      agg[pos].clicks       += parseInt(row.clicks         || 0, 10);
-      agg[pos].inline_link_clicks += parseInt(row.inline_link_clicks || 0, 10);
+      agg[pos].spend        += parseFloat(rData.spend        || 0);
+      agg[pos].impressions  += parseInt(rData.impressions    || 0, 10);
+      agg[pos].clicks       += parseInt(rData.clicks         || 0, 10);
+      agg[pos].inline_link_clicks += parseInt(rData.inline_link_clicks || 0, 10);
 
-      for (const act of (row.actions || [])) {
+      for (const act of (rData.actions || [])) {
         const existing = agg[pos].actions.find(a => a.action_type === act.action_type);
         if (existing) {
           existing.value = String(parseFloat(existing.value || 0) + parseFloat(act.value || 0));

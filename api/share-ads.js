@@ -1,5 +1,6 @@
 import { getPool } from './_db.js';
 import { cors } from './_cors.js';
+import { decryptToken } from './_crypto.js';
 
 const DEFAULT_SECTIONS = { campanhas: true, demograficos: true, melhores_criativos: true };
 const DEFAULT_METRICS  = ['spend','imps','reach','cpm','ctr','leads','cpl','msgs','cpr','active_campaigns'];
@@ -17,7 +18,7 @@ export default async function handler(req, res) {
   let row;
   try {
     const { rows } = await pool.query(
-      `SELECT st.account_id, st.account_name, st.client_name, st.visible_sections, st.visible_metrics, st.visible_columns, st.status_filter, st.expires_at, c.token_meta
+      `SELECT st.account_id, st.account_name, st.client_name, st.visible_sections, st.visible_metrics, st.visible_columns, st.status_filter, st.expires_at, c.token_meta, c.token_meta_enc
        FROM share_tokens st
        LEFT JOIN usuarios u ON u.id = st.user_id
        LEFT JOIN clientes c ON c.id = u.cliente_id
@@ -33,7 +34,10 @@ export default async function handler(req, res) {
 
   if (row.expires_at && new Date(row.expires_at) < new Date()) return res.status(403).json({ error: 'Este link expirou' });
 
-  const metaToken = row.token_meta || process.env.META_ADS_TOKEN;
+  let metaToken = row.token_meta || process.env.META_ADS_TOKEN;
+  if (row.token_meta_enc) {
+    try { metaToken = decryptToken(row.token_meta_enc); } catch (e) { console.error('[SHARE-ADS] Erro descriptografia', e.message); }
+  }
   if (!metaToken) return res.status(500).json({ error: 'META_ADS_TOKEN not configured' });
 
   const insightFields = 'spend,impressions,clicks,outbound_clicks,ctr,reach,cpm,cpc,frequency,inline_link_clicks,actions,action_values,cost_per_action_type,purchase_roas';

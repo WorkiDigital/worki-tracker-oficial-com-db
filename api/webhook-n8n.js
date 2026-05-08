@@ -1,6 +1,7 @@
 import { getPool } from './_db.js';
 import crypto from 'crypto';
 import { cors } from './_cors.js';
+import { decryptToken } from './_crypto.js';
 
 export default async function handler(req, res) {
   if (cors(req, res, ['POST'], { public: true })) return;
@@ -133,11 +134,15 @@ export default async function handler(req, res) {
 async function sendCapiLead(lead, pool) {
   let { pixel, ctw_aci_id, page_id, telefone, cliente_id } = lead;
 
-  const clientRes = await pool.query('SELECT pixel_padrao, token_meta FROM clientes WHERE id = $1', [cliente_id]);
+  const clientRes = await pool.query('SELECT pixel_padrao, token_meta, token_meta_enc FROM clientes WHERE id = $1', [cliente_id]);
   if (clientRes.rows.length > 0) {
     pixel = pixel || clientRes.rows[0].pixel_padrao;
   }
-  const token = clientRes.rows[0]?.token_meta || process.env.META_ADS_TOKEN || null;
+  const row = clientRes.rows[0];
+  let token = row?.token_meta || process.env.META_ADS_TOKEN || null;
+  if (row?.token_meta_enc) {
+    try { token = decryptToken(row.token_meta_enc); } catch (e) { console.error('CAPI Lead: Erro ao descriptografar token', e.message); }
+  }
 
   if (!pixel || !token || !ctw_aci_id) return;
 
@@ -178,11 +183,15 @@ async function sendCapiLead(lead, pool) {
 async function sendCapiPurchase(lead, pool) {
   let { pixel, ctw_aci_id, telefone, cidade, estado, page_id, cliente_id, valor_venda } = lead;
 
-  const clientRes = await pool.query('SELECT pixel_padrao, token_meta FROM clientes WHERE id = $1', [cliente_id]);
+  const clientRes = await pool.query('SELECT pixel_padrao, token_meta, token_meta_enc FROM clientes WHERE id = $1', [cliente_id]);
   if (clientRes.rows.length > 0) {
     pixel = pixel || clientRes.rows[0].pixel_padrao;
   }
-  const token = clientRes.rows[0]?.token_meta || process.env.META_ADS_TOKEN || null;
+  const row = clientRes.rows[0];
+  let token = row?.token_meta || process.env.META_ADS_TOKEN || null;
+  if (row?.token_meta_enc) {
+    try { token = decryptToken(row.token_meta_enc); } catch (e) { console.error('CAPI Purchase: Erro ao descriptografar token', e.message); }
+  }
 
   if (!pixel || !token) return;
 

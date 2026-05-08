@@ -1,6 +1,7 @@
 import { getPool } from './_db.js';
 import crypto from 'crypto';
 import { diffInHours } from './_metrics_helper.js';
+import { decryptToken } from './_crypto.js';
 
 function normalizarNome(str) {
   if (!str) return '';
@@ -139,11 +140,19 @@ export default async function handler(req, res) {
   const cliente_id = cid;
 
   const clientRes = await pool.query(
-    'SELECT token_meta, pixel_padrao, template_venda FROM clientes WHERE id = $1',
+    'SELECT token_meta, token_meta_enc, pixel_padrao, template_venda FROM clientes WHERE id = $1',
     [cliente_id]
   );
   const cliente = clientRes.rows[0] || {};
-  const token = cliente.token_meta || process.env.META_ADS_TOKEN || null;
+  
+  let token = cliente.token_meta || process.env.META_ADS_TOKEN || null;
+  if (cliente.token_meta_enc) {
+    try {
+      token = decryptToken(cliente.token_meta_enc);
+    } catch (e) {
+      warn('auth', 'Erro ao descriptografar token do cliente', { error: e.message });
+    }
+  }
   const pixel = cliente.pixel_padrao || null;
 
   if (!fromMe) {
