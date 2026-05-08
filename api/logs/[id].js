@@ -14,8 +14,15 @@ export default async function handler(req, res) {
   const pool = getPool();
   
   try {
-    const { rows } = await pool.query('SELECT * FROM webhook_logs WHERE id = $1', [id]);
-    const log = rows[0];
+    // 1. Tenta buscar na tabela nova (webhook_logs)
+    let resLog = await pool.query('SELECT * FROM webhook_logs WHERE id = $1', [id]);
+    
+    // 2. Se não encontrar, tenta na tabela antiga (logs)
+    if (resLog.rows.length === 0) {
+      resLog = await pool.query('SELECT * FROM logs WHERE id = $1', [id]);
+    }
+
+    const log = resLog.rows[0];
 
     if (!log) return res.status(404).json({ error: 'Log não encontrado' });
 
