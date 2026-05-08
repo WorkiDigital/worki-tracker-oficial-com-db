@@ -93,3 +93,8 @@ A funcionalidade de vincular instâncias existentes agora:
 
 ### 3. Estabilização do Projeto (aDLYTCS)
 O projeto foi formalmente identificado como **Adlytics**, consolidando a marca e a interface (`index.html` e `package.json`) sob esta identidade visual e funcional.
+
+### 4. Correção Crítica — ReferenceError no Webhook (Maio 2026)
+**Sintoma:** Todos os leads pararam de ser registrados após edição no `webhook-evo.js`.
+**Causa:** A variável `cliente_id` estava sendo atribuída sem declaração (`cliente_id = cid`). Como o arquivo usa `import` (ESM), o strict mode é ativado automaticamente — e em strict mode, atribuir a variável não declarada lança `ReferenceError` antes de qualquer `INSERT`.
+**Atenção:** Ao editar `api/webhook-evo.js`, sempre declarar variáveis com `const` ou `let`. Nunca assumir que uma variável existe por estar disponível em outro escopo.

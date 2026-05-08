@@ -1459,7 +1459,7 @@ function renderDropdown(lista) {
     }).join('');
 }
 
-function selecionarConta(conta, salvar = true) {
+async function selecionarConta(conta, salvar = true) {
     _contaSelecionada = conta;
     // Atualiza label do botão
     const lbl = $('acctBtnLabel');
@@ -1471,6 +1471,9 @@ function selecionarConta(conta, salvar = true) {
         localStorage.setItem(ACCT_KEY, JSON.stringify(conta));
         $('acctSavedBadge').style.display = 'inline';
     }
+
+    // Carrega configurações específicas desta conta antes de buscar os anúncios
+    await carregarDashboardSettings(conta.id);
     carregarAnuncios();
 }
 
@@ -1979,45 +1982,121 @@ const COLS_DEF = [
 const CFG_KEY = 'wt_metrics_cfg';
 let metricsCfg = { cards:{}, colsOrder:[] };
 
-function carregarMetricsCfg() {
-    const saved = JSON.parse(localStorage.getItem(CFG_KEY) || 'null');
-    CARDS_DEF.forEach(m => metricsCfg.cards[m.key] = saved?.cards?.[m.key] ?? m.on);
+function getDynamicKey(baseKey, accountId) {
+    const user = JSON.parse(localStorage.getItem('adlytics_user') || '{}');
+    const userId = user.id || 'guest';
+    const accId = accountId || _contaSelecionada?.id || 'global';
+    return `${baseKey}_${userId}_${accId}`;
+}
 
-    if (Array.isArray(saved?.colsOrder)) {
-        // Novo formato: array ordenado
-        metricsCfg.colsOrder = saved.colsOrder.filter(k => COLS_DEF.some(d => d.key === k));
-    } else if (saved?.cols) {
-        // Migração do formato antigo { key: bool }
-        metricsCfg.colsOrder = COLS_DEF.filter(m => saved.cols[m.key] ?? m.on).map(m => m.key);
+async function carregarDashboardSettings(accountId) {
+    if (!accountId) return;
+
+    try {
+        // 1. Tentar buscar no banco de dados
+        const r = await authFetch(`/api/dashboard-settings?accountId=${encodeURIComponent(accountId)}`);
+        if (r.ok) {
+            const data = await r.json();
+            if (data.metrics_cfg) {
+                metricsCfg = data.metrics_cfg;
+            }
+            if (data.demo_cfg) {
+                demoCfg = data.demo_cfg;
+            }
+            console.log('✅ Configurações carregadas do banco de dados');
+            aplicarTudo();
+            return;
+        }
+    } catch (e) {
+        console.warn('Erro ao carregar do banco:', e);
+    }
+
+    // 2. Fallback: LocalStorage dinâmico
+    const mKey = getDynamicKey(CFG_KEY, accountId);
+    const dKey = getDynamicKey(DEMO_CFG_KEY, accountId);
+    const savedM = JSON.parse(localStorage.getItem(mKey) || 'null');
+    const savedD = JSON.parse(localStorage.getItem(dKey) || 'null');
+
+    if (savedM) {
+        metricsCfg = savedM;
     } else {
+        // Reset para padrão se não houver salvo
+        metricsCfg.cards = {};
+        CARDS_DEF.forEach(m => metricsCfg.cards[m.key] = m.on);
         metricsCfg.colsOrder = COLS_DEF.filter(m => m.on).map(m => m.key);
     }
 
+    if (savedD) {
+        demoCfg = savedD;
+    } else {
+        demoCfg = { breakdowns:{ age:true, gender:true, plat:true, dev:true, pos:true }, style:'doughnut', activeMetric:'spend' };
+    }
+
+    aplicarTudo();
+}
+
+function aplicarTudo() {
     renderCardsCfgPanel();
     renderColsCfgPanel();
     aplicarMetricsCfg();
-    carregarDemoCfg();
+    sincronizarDemoCfgUI();
 }
 
-function salvarMetricsCfg() {
-    localStorage.setItem(CFG_KEY, JSON.stringify({ cards: metricsCfg.cards, colsOrder: metricsCfg.colsOrder }));
+let _saveTimeout = null;
+async function salvarDashboardSettings() {
+    const accountId = _contaSelecionada?.id;
+    if (!accountId) return;
+
+    // Salva no LocalStorage imediatamente (cache rápido)
+    const mKey = getDynamicKey(CFG_KEY, accountId);
+    const dKey = getDynamicKey(DEMO_CFG_KEY, accountId);
+    localStorage.setItem(mKey, JSON.stringify(metricsCfg));
+    localStorage.setItem(dKey, JSON.stringify(demoCfg));
+
+    // Debounce salvamento no banco de dados (evita muitas requisições)
+    clearTimeout(_saveTimeout);
+    _saveTimeout = setTimeout(async () => {
+        try {
+            await authFetch('/api/dashboard-settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    accountId,
+                    metricsCfg,
+                    demoCfg
+                })
+            });
+        } catch (e) {
+            console.error('Erro ao salvar no banco:', e);
+        }
+    }, 1000);
+}
+
+function carregarMetricsCfg() {
+    // Esta função agora é chamada apenas no init global para a conta salva
+    const accountId = _contaSelecionada?.id;
+    if (accountId) {
+        carregarDashboardSettings(accountId);
+    } else {
+        // Padrão inicial caso não haja conta selecionada
+        CARDS_DEF.forEach(m => metricsCfg.cards[m.key] = m.on);
+        metricsCfg.colsOrder = COLS_DEF.filter(m => m.on).map(m => m.key);
+        renderCardsCfgPanel();
+        renderColsCfgPanel();
+        aplicarMetricsCfg();
+    }
 }
 
 // ── Configuração demográficos ──────────────────────────────────
 const DEMO_CFG_KEY = 'wt_demo_cfg';
-let demoCfg = { breakdowns:{ age:true, gender:true, plat:true, dev:true, pos:true }, style:'doughnut' };
+let demoCfg = { breakdowns:{ age:true, gender:true, plat:true, dev:true, pos:true }, style:'doughnut', activeMetric:'spend' };
 
 function carregarDemoCfg() {
-    const saved = JSON.parse(localStorage.getItem(DEMO_CFG_KEY) || 'null');
-    if (saved) {
-        demoCfg.breakdowns = { ...demoCfg.breakdowns, ...saved.breakdowns };
-        demoCfg.style = saved.style || 'doughnut';
-    }
-    sincronizarDemoCfgUI();
+    // Incorporada em carregarDashboardSettings
 }
 
 function salvarDemoCfg() {
-    localStorage.setItem(DEMO_CFG_KEY, JSON.stringify(demoCfg));
+    salvarDashboardSettings();
 }
 
 function sincronizarDemoCfgUI() {
@@ -2028,6 +2107,12 @@ function sincronizarDemoCfgUI() {
     chk('demoCfgDev',    demoCfg.breakdowns.dev);
     chk('demoCfgPos',    demoCfg.breakdowns.pos);
     document.querySelectorAll('input[name="demoStyle"]').forEach(r => { r.checked = r.value === demoCfg.style; });
+    
+    // Sincroniza pílula de métrica ativa
+    const metrica = demoCfg.activeMetric || 'spend';
+    const btn = document.querySelector(`.demo-pill[onclick*="'${metrica}'"]`);
+    if (btn) selecionarMetricaDemo(metrica, btn, false); // false = não salvar de novo
+
     aplicarDemoCfg();
 }
 
@@ -2041,13 +2126,13 @@ function aplicarDemoCfg() {
 
 function toggleDemoBreakdown(key, on) {
     demoCfg.breakdowns[key] = on;
-    salvarDemoCfg();
+    salvarDashboardSettings();
     aplicarDemoCfg();
 }
 
 function setDemoStyle(style) {
     demoCfg.style = style;
-    salvarDemoCfg();
+    salvarDashboardSettings();
     if (window._demoData) renderDemoGraficos(window._demoData);
 }
 
@@ -2103,7 +2188,7 @@ function renderMetricsCfgPanel() {
 
 function toggleCard(key, on) {
     metricsCfg.cards[key] = on;
-    salvarMetricsCfg();
+    salvarDashboardSettings();
     aplicarMetricsCfg();
 }
 
@@ -2113,7 +2198,7 @@ function toggleCol(key, on) {
     } else {
         metricsCfg.colsOrder = metricsCfg.colsOrder.filter(k => k !== key);
     }
-    salvarMetricsCfg();
+    salvarDashboardSettings();
     renderColsCfgPanel();
     if (campanhasRaw.length) filtrarCampanhas();
 }
@@ -2330,10 +2415,14 @@ function initFunilPills() { renderFunil(); } // compatibilidade
 let demoMetrica = 'spend'; // métrica ativa nos gráficos
 let demoGraficos = {};
 
-function selecionarMetricaDemo(metrica, el) {
+function selecionarMetricaDemo(metrica, el, salvar = true) {
     demoMetrica = metrica;
+    demoCfg.activeMetric = metrica;
     document.querySelectorAll('.demo-pill').forEach(p => p.classList.remove('active'));
-    el.classList.add('active');
+    if (el) el.classList.add('active');
+    
+    if (salvar) salvarDashboardSettings();
+    
     // Re-renderiza com os dados já carregados (sem nova chamada API)
     if (window._demoData) renderDemoGraficos(window._demoData);
 }
