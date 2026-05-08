@@ -675,7 +675,7 @@
                 <div class="ads-filters" id="ads-filters">
                     <div class="filter-group">
                         <label>Status</label>
-                        <select id="filtroStatusAds" class="bare pad-sm" style="border:1px solid var(--border);border-radius:7px;background:var(--card);color:var(--text);">
+                        <select id="filtroStatusAds" class="bare pad-sm" onchange="salvarFiltroStatus();filtrarCampanhas()" style="border:1px solid var(--border);border-radius:7px;background:var(--card);color:var(--text);">
                             <option value="">Todos</option>
                             <option value="ACTIVE" selected>Ativas</option>
                             <option value="PAUSED">Pausadas</option>
@@ -683,7 +683,7 @@
                     </div>
                     <div class="filter-group">
                         <label>Objetivo</label>
-                        <select id="filtroObjetivoAds" class="bare pad-sm" style="border:1px solid var(--border);border-radius:7px;background:var(--card);color:var(--text);">
+                        <select id="filtroObjetivoAds" class="bare pad-sm" onchange="filtrarCampanhas()" style="border:1px solid var(--border);border-radius:7px;background:var(--card);color:var(--text);">
                             <option value="">Todos</option>
                         </select>
                     </div>
