@@ -34,11 +34,9 @@ Novos indicadores no topo da aba de Leads:
 - **Filtro Inteligente (Multi-Tenant):** Os cards de métricas são sincronizados com o filtro global de clientes (`js/leads.js` -> `/api/metrics-temporal?cliente_id`), garantindo recálculo e visualização isolada em tempo real.
 - **Gráfico de Linha do Tempo (Evolução Diária):** Localizado na aba de relatórios, o gráfico `cTimeline` exibe a entrada de Leads vs. Vendas por dia, facilitando a visualização de picos de conversão e sazonalidade.
 
-### 6. Integridade e Precisão de Dados (Abril 2026)
-Para garantir que as métricas de performance e SLA não sejam corrompidas por dados históricos legados ou inconsistentes, foi implementada uma trava global:
-- **Data de Corte:** **2026-04-30**. 
-- **Abrangência:** Todas as métricas temporais (`api/metrics-temporal.js`) e funções de cálculo de KPI no banco de dados (`get_dashboard_stats`) ignoram registros anteriores a esta data.
-- **Impacto:** O Ciclo Médio e o SLA de Resposta agora refletem 100% da operação atual do WappTrack.
+### 6. Integridade e Precisão de Dados (Abril 2026 — Atualizado Mai 2026)
+- **Data de Corte Removida:** A trava fixa `created_at >= '2026-04-30'` foi removida em 13/05/2026. As métricas agora utilizam um filtro dinâmico de 30 dias (`NOW() - INTERVAL '30 days'`) ou o período enviado via query params (`start`/`end`), sem limitar dados arbitrariamente.
+- **Impacto:** O Ciclo Médio e o SLA de Resposta refletem os dados reais do período selecionado.
 
 ### 5. Gestão de Logs e Espaço
 O sistema possui uma rotina de manutenção para evitar consumo excessivo de banco de dados:
@@ -74,7 +72,7 @@ O rastro completo do lead inclui:
 - `api/logs.js`: Endpoint de listagem com auto-pruning de 30 dias.
 - `js/admin.js`: Lógica de gestão de logs, limpeza e administração de clientes.
 - `index.html`: Dashboard principal com métricas de Ciclo Médio, SLA de Resposta e Gráfico de Linha do Tempo.
-- `api/metrics-temporal.js`: Backend de cálculo de performance com trava de data de corte (2026-04-30) e sistema de cache inteligente para Meta Ads.
+- `api/metrics-temporal.js`: Backend de cálculo de performance dos leads (Ciclo Médio, Resposta Média, Leads Esquecidos, Vendas Rápidas). Consulta exclusivamente a tabela `leads_tracking` no PostgreSQL.
 - `js/leads.js`: Lógica de renderização de gráficos, filtros dinâmicos e comunicação com API de métricas.
 - `api/evo-manager.js`: Gestão de instâncias da Evolution API (vínculo, criação e configuração automática de webhooks).
 - `middleware/rateLimit.js`: Proteção contra ataques de negação de serviço e spam nos webhooks.
@@ -128,3 +126,13 @@ Uma limpeza profunda foi realizada no dashboard principal para melhorar a manute
 - **Classes Utilitárias**: Criadas classes como `.text1`, `.bg2`, `.pad-sm`, `.pad-md`, `.pad-lg` para substituir a proliferação de estilos inline (`style="..."`).
 - **Refatoração do HTML**: O arquivo `index.html` teve milhares de atributos de estilo substituídos pelas novas classes utilitárias, reduzindo o tamanho do DOM sem causar impacto visual (abordagem *pixel-perfect* baseada nos valores exatos de uso atual).
 - **Inventário Visual**: O arquivo `pattern-inventory.json` foi atualizado com os padrões consolidados de uso, servindo de documentação viva para futuras alterações de UI.
+
+### 8. Correção Crítica — Métricas Temporais Quebradas (13/05/2026)
+**Sintoma:** Os 4 cartões de métricas (Ciclo Médio, Resposta Média, Leads Esquecidos, Vendas Rápidas) pararam de exibir dados, mostrando apenas `–` no dashboard.
+**Causa Raiz:** O endpoint `api/metrics-temporal.js` continha uma query pesada à API da Meta Ads (gastos, cliques, impressões) que **não tinha relação** com as métricas de tempo de atendimento. Quando essa query falhava (token expirado, timeout, etc.), derrubava toda a resposta da rota, impedindo até os dados válidos do banco de chegarem ao frontend.
+**Correção:**
+- Removida toda a lógica de busca à Meta Ads (`fetchMeta`, `getCachedMetrics`, `setCachedMetrics`) do arquivo.
+- Removida a trava de data fixa `created_at >= '2026-04-30'` que limitava os dados consultados.
+- Adicionado `try/catch` global para garantir que erros de banco retornem um JSON limpo em vez de derrubar a rota.
+- O arquivo agora faz exclusivamente: consulta SQL ao `leads_tracking` → calcula os 4 KPIs → retorna JSON.
+**Atenção:** Métricas de anúncios (spend, clicks, CPL) devem ser buscadas em seus próprios endpoints dedicados, nunca misturadas com métricas de tempo de atendimento.
