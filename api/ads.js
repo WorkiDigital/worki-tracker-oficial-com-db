@@ -21,7 +21,7 @@ export default async function handler(req, res) {
 
   // Campos de insight: spend, impressions, clicks (todos), outbound_clicks (cliques em links),
   // ctr, reach, actions (conversões, leads, mensagens, seguidores)
-  const insightFields = 'spend,impressions,clicks,outbound_clicks,ctr,reach,cpm,cpc,frequency,inline_link_clicks,actions,action_values,cost_per_action_type,purchase_roas,instagram_profile_visits,instagram_follows';
+  const insightFields = 'spend,impressions,clicks,outbound_clicks,ctr,reach,cpm,cpc,frequency,inline_link_clicks,actions,action_values,cost_per_action_type,purchase_roas,instagram_profile_visits';
   const insightsParam = (dateFrom && dateTo)
     ? `insights.time_range({"since":"${dateFrom}","until":"${dateTo}"})`
     : `insights.date_preset(${datePreset})`;
