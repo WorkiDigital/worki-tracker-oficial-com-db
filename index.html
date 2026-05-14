@@ -2232,7 +2232,13 @@ function calcMetricasAds(camps) {
     let cpmSum=0, cpmCount=0;   // CPM ponderado por impressões
     let cpcSum=0, cpcCount=0;   // CPC ponderado por cliques
     let freqSum=0, freqCount=0; // Frequência ponderada por impressões
+    let lpv=0;                  // landing_page_view
     let profileVisits=0;        // instagram_profile_visit
+    let seguidores=0;           // like (curtidas de página)
+    let purchases=0;            // purchase (compras)
+    let purchaseValue=0;        // action_values purchase (valor em compras)
+    let initCheckout=0;         // initiate_checkout
+    let roasSum=0, roasCount=0; // ROAS ponderado por gasto
 
     camps.forEach(c => {
         const ins = getIns(c); if (!ins) return;
