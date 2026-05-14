@@ -2288,7 +2288,8 @@ function calcMetricasAds(camps) {
         profileVisits += pv || getAct(ins, ['instagram_profile_visit']);
 
         // Seguidores / curtidas de página originados do anúncio
-        seguidores += getAct(ins, ['like', 'onsite_conversion.follow_button_click']);
+        const segVal = parseInt(ins.instagram_follows || 0);
+        seguidores += segVal || getAct(ins,['like', 'onsite_conversion.follow_button_click']);
 
         // Compras (purchase) via Pixel/CAPI
         purchases += getAct(ins, ['purchase','offsite_conversion.fb_pixel_purchase','omni_purchase']);
@@ -2620,7 +2621,7 @@ function renderTabelaCampanhas(camps) {
         const msgs       = getAct(ins,['onsite_conversion.messaging_conversation_started_7d']);
         const lpv        = getAct(ins,['landing_page_view']);
         const pv         = parseInt(ins.instagram_profile_visits || 0) || getAct(ins,['instagram_profile_visit']);
-        const seguidores = getAct(ins,['like', 'onsite_conversion.follow_button_click']);
+        const seguidores = parseInt(ins.instagram_follows || 0) || getAct(ins,['like', 'onsite_conversion.follow_button_click']);
         const purchases  = getAct(ins,['purchase','offsite_conversion.fb_pixel_purchase','omni_purchase']);
         const purchaseVal= getActVal(ins,['purchase','offsite_conversion.fb_pixel_purchase','omni_purchase']);
         const initCk     = getAct(ins,['initiate_checkout','offsite_conversion.fb_pixel_initiate_checkout','omni_initiate_checkout']);
