@@ -25,7 +25,7 @@ export default async function handler(req, res) {
       // Criar novo agendamento
       const { instance_name, target_jid, is_group, nome_destino, metricas, frequencia, horario_envio, mensagem_template } = req.body;
 
-      if (!instance_name || !target_jid || !metricas || !horario_envio) {
+      if (!instance_name || !target_jid || !horario_envio) {
         return res.status(400).json({ error: 'Campos obrigatórios ausentes.' });
       }
 
