@@ -232,7 +232,7 @@ function campaignMetrics(campaigns) {
         const ctrV  = parseFloat(ins.ctr||0);       if (ctrV  && imp) { ctrSum  += ctrV*imp;  ctrCount  += imp; }
     });
     return {
-        spend, imps, reach, clicks, leads, msgs, lpv: (lpv + profileVisits), seguidores,
+        spend, imps, reach, clicks, leads, msgs, lpv, profileVisits, seguidores,
         purchases, purchaseValue, initCheckout,
         roas: roasCount ? roasSum/roasCount : 0,
         cpm:  cpmCount  ? cpmSum/cpmCount   : 0,
@@ -278,14 +278,16 @@ function renderSummaryMetrics() {
         { key:'cpm',              label:'CPM',                  value: m.cpm     ? fmtBRL(m.cpm)          : '—',  color:'#a78bfa' },
         { key:'cpc',              label:'CPC',                  value: m.cpc     ? fmtBRL(m.cpc)          : '—',  color:'#fb923c' },
         { key:'ctr',              label:'CTR Médio',            value: m.ctr     ? m.ctr.toFixed(2)+'%'  : '—',  color:'#ec4899' },
-        { key:'lpv',              label:'Visitas pág. destino', value: m.lpv     ? fmt(m.lpv)             : '—',  color:'#34d399' },
-        { key:'cplpv',            label:'Custo/visita',         value: m.lpv     ? fmtBRL(m.spend/m.lpv)  : '—',  color:'#60a5fa' },
+        { key:'lpv',              label:'Visitas (Site)',       value: m.lpv     ? fmt(m.lpv)             : '—',  color:'#34d399' },
+        { key:'cplpv',            label:'CPLPV (Site)',         value: m.lpv     ? fmtBRL(m.spend/m.lpv)  : '—',  color:'#60a5fa' },
+        { key:'profile_visits',   label:'Visitas Perfil (IG)',  value: m.profileVisits ? fmt(m.profileVisits) : '—', color:'#ec4899' },
+        { key:'cppv',             label:'Custo/Visita Perfil',  value: m.profileVisits ? fmtBRL(m.spend/m.profileVisits) : '—', color:'#f472b6' },
         { key:'leads',            label:'Leads',                value: fmt(m.leads),                              color:'#06b6d4' },
         { key:'cpl',              label:'CPL',                  value: m.leads   ? fmtBRL(m.spend/m.leads): '—',  color:'#f472b6' },
         { key:'msgs',             label:'Conversas',            value: fmt(m.msgs),                               color:'#4ade80' },
         { key:'cpr',              label:'CPR',                  value: m.msgs    ? fmtBRL(m.spend/m.msgs) : '—',  color:'#facc15' },
-        { key:'seguidores',       label:'Seguidores',           value: m.seguidores ? fmt(m.seguidores)   : '—',  color:'#c084fc' },
-        { key:'cps',              label:'Custo/seguidor',       value: m.seguidores ? fmtBRL(m.spend/m.seguidores): '—', color:'#f87171' },
+        { key:'seguidores',       label:'Seguidores (IG)',      value: m.seguidores ? fmt(m.seguidores)   : '—',  color:'#c084fc' },
+        { key:'cps',              label:'Custo/Seguidor',       value: m.seguidores ? fmtBRL(m.spend/m.seguidores): '—', color:'#f87171' },
         { key:'purchases',        label:'Compras',              value: m.purchases ? fmt(m.purchases) : '—',       color:'#ec4899' },
         { key:'purchase_value',   label:'Valor em Compras',     value: m.purchaseValue ? fmtBRL(m.purchaseValue) : '—', color:'#f472b6' },
         { key:'roas',             label:'ROAS',                 value: m.roas ? m.roas.toFixed(2)+'x' : '—',       color:'#10b981' },
@@ -327,14 +329,16 @@ const ALL_COL_DEFS = [
     { key:'clicks',     th:'Cliques' },
     { key:'cpc',        th:'CPC' },
     { key:'ctr',        th:'CTR' },
-    { key:'lpv',        th:'Visitas' },
-    { key:'cplpv',      th:'Custo/visita' },
+    { key:'lpv',        th:'Visitas (Site)' },
+    { key:'cplpv',      th:'CPLPV (Site)' },
+    { key:'profile_visits', th:'Visitas Perfil (IG)' },
+    { key:'cppv',       th:'Custo/Visita Perfil' },
     { key:'leads',      th:'Leads' },
     { key:'cpl',        th:'CPL' },
     { key:'msgs',       th:'Conversas' },
     { key:'cpr',        th:'CPR' },
-    { key:'seguidores', th:'Seguidores' },
-    { key:'cps',        th:'Custo/seg.' },
+    { key:'seguidores', th:'Seguidores (IG)' },
+    { key:'cps',        th:'Custo/Seguidor' },
     { key:'purchases',      th:'Compras' },
     { key:'purchase_value', th:'Valor Compras' },
     { key:'roas',           th:'ROAS' },
@@ -383,8 +387,10 @@ function renderTable() {
                 case 'clicks':     return `<td>${clicks ? fmt(clicks) : '—'}</td>`;
                 case 'cpc':        return `<td>${ins?.cpc  ? fmtBRL(ins.cpc)  : '—'}</td>`;
                 case 'ctr':        { const v=parseFloat(ins?.ctr||0); return `<td>${v?v.toFixed(2)+'%':'—'}</td>`; }
-                case 'lpv':        return `<td>${totalVisits ? fmt(totalVisits) : '—'}</td>`;
-                case 'cplpv':      return `<td>${totalVisits ? fmtBRL(spend/totalVisits): '—'}</td>`;
+                case 'lpv':        return `<td>${lpv ? fmt(lpv) : '—'}</td>`;
+                case 'cplpv':      return `<td>${lpv ? fmtBRL(spend/lpv): '—'}</td>`;
+                case 'profile_visits': return `<td>${pv ? fmt(pv) : '—'}</td>`;
+                case 'cppv':       return `<td>${pv ? fmtBRL(spend/pv) : '—'}</td>`;
                 case 'leads':      return `<td>${fmt(leads)}</td>`;
                 case 'cpl':        return `<td>${leads ? fmtBRL(spend/leads): '—'}</td>`;
                 case 'msgs':       return `<td>${fmt(msgs)}</td>`;

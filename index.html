@@ -567,14 +567,16 @@
                     <div class="ads-metric" data-card="clicks"><div class="ads-metric-val" id="ads-clicks">0</div><div class="ads-metric-lbl">Cliques (Links)</div></div>
                     <div class="ads-metric" data-card="cpc"><div class="ads-metric-val" id="ads-cpc-val">—</div><div class="ads-metric-lbl">CPC (custo/clique)</div></div>
                     <div class="ads-metric" data-card="ctr"><div class="ads-metric-val" id="ads-ctr">—</div><div class="ads-metric-lbl">CTR Médio</div></div>
-                    <div class="ads-metric" data-card="lpv"><div class="ads-metric-val" id="ads-lpv">—</div><div class="ads-metric-lbl">Visitas pág. destino</div></div>
-                    <div class="ads-metric" data-card="cplpv"><div class="ads-metric-val" id="ads-cplpv">—</div><div class="ads-metric-lbl">Custo/visita destino</div></div>
+                    <div class="ads-metric" data-card="lpv"><div class="ads-metric-val" id="ads-lpv">—</div><div class="ads-metric-lbl">Visitas (Site)</div></div>
+                    <div class="ads-metric" data-card="cplpv"><div class="ads-metric-val" id="ads-cplpv">—</div><div class="ads-metric-lbl">CPLPV (Site)</div></div>
+                    <div class="ads-metric" data-card="profile_visits"><div class="ads-metric-val" id="ads-profile-visits">—</div><div class="ads-metric-lbl">Visitas Perfil (IG)</div></div>
+                    <div class="ads-metric" data-card="cppv"><div class="ads-metric-val" id="ads-cppv">—</div><div class="ads-metric-lbl">Custo/Visita Perfil</div></div>
                     <div class="ads-metric" data-card="leads"><div class="ads-metric-val" id="ads-leads">0</div><div class="ads-metric-lbl">Leads (formulário)</div></div>
                     <div class="ads-metric" data-card="cpl"><div class="ads-metric-val" id="ads-cpl">—</div><div class="ads-metric-lbl">CPL (custo/lead)</div></div>
                     <div class="ads-metric" data-card="msgs"><div class="ads-metric-val" id="ads-msgs">0</div><div class="ads-metric-lbl">Conversas Iniciadas</div></div>
                     <div class="ads-metric" data-card="cpr"><div class="ads-metric-val" id="ads-cpr">—</div><div class="ads-metric-lbl">CPR (custo/conversa)</div></div>
-                    <div class="ads-metric" data-card="seguidores"><div class="ads-metric-val" id="ads-seguidores">—</div><div class="ads-metric-lbl">Seguidores (curtidas)</div></div>
-                    <div class="ads-metric" data-card="cps"><div class="ads-metric-val" id="ads-cps">—</div><div class="ads-metric-lbl">Custo/seguidor</div></div>
+                    <div class="ads-metric" data-card="seguidores"><div class="ads-metric-val" id="ads-seguidores">—</div><div class="ads-metric-lbl">Seguidores (IG)</div></div>
+                    <div class="ads-metric" data-card="cps"><div class="ads-metric-val" id="ads-cps">—</div><div class="ads-metric-lbl">Custo/Seguidor</div></div>
                     <div class="ads-metric" data-card="purchases"><div class="ads-metric-val" id="ads-purchases">—</div><div class="ads-metric-lbl">Compras</div></div>
                     <div class="ads-metric" data-card="purchase_value"><div class="ads-metric-val" id="ads-purchase-value">—</div><div class="ads-metric-lbl">Valor em Compras</div></div>
                     <div class="ads-metric" data-card="roas"><div class="ads-metric-val" id="ads-roas">—</div><div class="ads-metric-lbl">ROAS</div></div>
@@ -1939,14 +1941,16 @@ const CARDS_DEF = [
     { key:'clicks',    label:'Cliques (Links)',      on:true  },
     { key:'cpc',       label:'CPC',                 on:true  },
     { key:'ctr',       label:'CTR Médio',           on:true  },
-    { key:'lpv',       label:'Visitas',             on:true  },
-    { key:'cplpv',     label:'Custo/visita',        on:true  },
+    { key:'lpv',       label:'Visitas (Site)',      on:true  },
+    { key:'cplpv',     label:'CPLPV (Site)',        on:true  },
+    { key:'profile_visits', label:'Visitas Perfil (IG)', on:true },
+    { key:'cppv',      label:'Custo/Visita Perfil',  on:true },
     { key:'leads',     label:'Leads',               on:true  },
     { key:'cpl',       label:'CPL',                 on:true  },
     { key:'msgs',      label:'Conversas',           on:true  },
     { key:'cpr',       label:'CPR',                 on:true  },
-    { key:'seguidores',label:'Seguidores',          on:false },
-    { key:'cps',       label:'Custo/seguidor',      on:false },
+    { key:'seguidores',label:'Seguidores (IG)',     on:true },
+    { key:'cps',       label:'Custo/Seguidor',      on:true },
     { key:'purchases',     label:'Compras',              on:false },
     { key:'purchase_value',label:'Valor em Compras',     on:false },
     { key:'roas',          label:'ROAS',                 on:false },
@@ -1962,14 +1966,16 @@ const COLS_DEF = [
     { key:'clicks',     label:'Cliques (Links)',       on:true  },
     { key:'cpc',        label:'CPC',                  on:true  },
     { key:'ctr',        label:'CTR Médio',            on:true  },
-    { key:'lpv',        label:'Visitas',              on:true  },
-    { key:'cplpv',      label:'Custo/visita',         on:true  },
+    { key:'lpv',        label:'Visitas (Site)',       on:true  },
+    { key:'cplpv',      label:'CPLPV (Site)',         on:true  },
+    { key:'profile_visits', label:'Visitas Perfil (IG)',  on:true  },
+    { key:'cppv',       label:'Custo/Visita Perfil',  on:true  },
     { key:'leads',      label:'Leads',                on:true  },
     { key:'cpl',        label:'CPL',                  on:true  },
     { key:'msgs',       label:'Conversas',            on:true  },
     { key:'cpr',        label:'CPR',                  on:true  },
-    { key:'seguidores', label:'Seguidores',           on:false },
-    { key:'cps',        label:'Custo/seguidor',       on:false },
+    { key:'seguidores', label:'Seguidores (IG)',      on:true },
+    { key:'cps',        label:'Custo/Seguidor',       on:true },
     { key:'purchases',      label:'Compras',              on:false },
     { key:'purchase_value', label:'Valor em Compras',     on:false },
     { key:'roas',           label:'ROAS',                 on:false },
@@ -2309,10 +2315,19 @@ function calcMetricasAds(camps) {
     $('ads-cpc-val').textContent  = cpcCount   ? brl(cpcSum/cpcCount)  : '—';
     $('ads-ctr').textContent      = ctrCount   ? (ctrSum/ctrCount).toFixed(2)+'%' : '—';
     
-    // Somar Landing Page Views + Profile Visits para a métrica de "Visitas"
-    const totalVisits = lpv + profileVisits;
-    $('ads-lpv').textContent      = totalVisits ? fmtN(totalVisits) : '—';
-    $('ads-cplpv').textContent    = totalVisits ? brl(spend/totalVisits) : '—';
+    $('ads-lpv').textContent      = lpv        ? fmtN(lpv)   : '—';
+    $('ads-cplpv').textContent    = lpv        ? brl(spend/lpv) : '—';
+    
+    // Novas métricas separadas
+    const adsProfileVisits = $('ads-profile-visits');
+    const adsCppv = $('ads-cppv');
+    const adsSeguidores = $('ads-seguidores');
+    const adsCps = $('ads-cps');
+
+    if (adsProfileVisits) adsProfileVisits.textContent = profileVisits ? fmtN(profileVisits) : '—';
+    if (adsCppv) adsCppv.textContent = profileVisits ? brl(spend/profileVisits) : '—';
+    if (adsSeguidores) adsSeguidores.textContent = seguidores ? fmtN(seguidores) : '—';
+    if (adsCps) adsCps.textContent = seguidores ? brl(spend/seguidores) : '—';
     $('ads-leads').textContent    = fmtN(leads);
     $('ads-cpl').textContent      = leads      ? brl(spend/leads) : '—';
     $('ads-msgs').textContent     = fmtN(msgs);
@@ -2605,7 +2620,6 @@ function renderTabelaCampanhas(camps) {
         const msgs       = getAct(ins,['onsite_conversion.messaging_conversation_started_7d']);
         const lpv        = getAct(ins,['landing_page_view']);
         const pv         = parseInt(ins.instagram_profile_visits || 0) || getAct(ins,['instagram_profile_visit']);
-        const totalVisits= lpv + pv;
         const seguidores = getAct(ins,['like', 'onsite_conversion.follow_button_click']);
         const purchases  = getAct(ins,['purchase','offsite_conversion.fb_pixel_purchase','omni_purchase']);
         const purchaseVal= getActVal(ins,['purchase','offsite_conversion.fb_pixel_purchase','omni_purchase']);
@@ -2622,8 +2636,10 @@ function renderTabelaCampanhas(camps) {
                 case 'clicks':     return fmtN(getAct(ins,['link_click']));
                 case 'cpc':        { const v=parseFloat(ins?.cpc||0); return v?brl(v):'—'; }
                 case 'ctr':        { const v=parseFloat(ins?.ctr||0); return v?v.toFixed(2)+'%':'—'; }
-                case 'totalVisits':        return fmtN(totalVisits);
-                case 'cptotalVisits':      return totalVisits ? brl(spend/totalVisits) : '—';
+                case 'lpv':            return lpv ? fmtN(lpv) : '—';
+                case 'cplpv':          return lpv ? brl(spend/lpv) : '—';
+                case 'profile_visits': return pv ? fmtN(pv) : '—';
+                case 'cppv':           return pv ? brl(spend/pv) : '—';
                 case 'leads':      return fmtN(leads);
                 case 'cpl':        return leads ? brl(spend/leads) : '—';
                 case 'msgs':       return fmtN(msgs);
