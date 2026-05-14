@@ -334,25 +334,12 @@
                 </div>
             </div>
 
-            <div class="input-group">
-                <label>Métricas a Incluir</label>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;max-height:150px;overflow-y:auto;padding:12px;background:var(--tag);border-radius:8px;border:1px solid var(--border);">
-                    <label style="font-size:13px;cursor:pointer;"><input type="checkbox" class="rel-metric" value="spend" checked style="accent-color:var(--blue);"> Gasto</label>
-                    <label style="font-size:13px;cursor:pointer;"><input type="checkbox" class="rel-metric" value="leads" checked style="accent-color:var(--blue);"> Leads</label>
-                    <label style="font-size:13px;cursor:pointer;"><input type="checkbox" class="rel-metric" value="cpl" checked style="accent-color:var(--blue);"> CPL</label>
-                    <label style="font-size:13px;cursor:pointer;"><input type="checkbox" class="rel-metric" value="msgs" style="accent-color:var(--blue);"> Conversas</label>
-                    <label style="font-size:13px;cursor:pointer;"><input type="checkbox" class="rel-metric" value="cpr" style="accent-color:var(--blue);"> Custo/Conv.</label>
-                    <label style="font-size:13px;cursor:pointer;"><input type="checkbox" class="rel-metric" value="clicks" style="accent-color:var(--blue);"> Cliques</label>
-                    <label style="font-size:13px;cursor:pointer;"><input type="checkbox" class="rel-metric" value="ctr" style="accent-color:var(--blue);"> CTR</label>
-                    <label style="font-size:13px;cursor:pointer;"><input type="checkbox" class="rel-metric" value="roas" style="accent-color:var(--blue);"> ROAS</label>
-                </div>
-            </div>
 
             <div class="input-group">
                 <label>Modelo de Mensagem <span style="color:var(--muted);font-weight:400;font-size:11px;">(Opcional)</span></label>
                 <textarea id="relatorioTemplate" rows="4" class="pad-md" style="width:100%;border-radius:8px;font-family:'Inter';font-size:12px;background:var(--bg);border:1px solid var(--border);color:var(--text);resize:vertical;" placeholder="Ex: 📊 Resumo de Ontem:&#10;💰 Gasto: {gasto}&#10;🎯 Leads: {leads}&#10;🏷️ CPL: {cpl}"></textarea>
-                <div style="font-size:10px;color:var(--muted);margin-top:6px;line-height:1.4;">
-                    Tags: <code>{gasto}</code> <code>{leads}</code> <code>{cpl}</code> <code>{msgs}</code> <code>{cpr}</code> <code>{cliques}</code> <code>{ctr}</code> <code>{roas}</code>
+                <div style="font-size:10px;color:var(--muted);margin-top:6px;line-height:1.6;">
+                    Tags: <code>{gasto}</code> <code>{leads}</code> <code>{cpl}</code> <code>{msgs}</code> <code>{cpr}</code> <code>{cliques}</code> <code>{ctr}</code> <code>{roas}</code> <code>{cpc}</code> <code>{cpm}</code> <code>{alcance}</code> <code>{impressoes}</code> <code>{seguidores}</code>
                 </div>
             </div>
 

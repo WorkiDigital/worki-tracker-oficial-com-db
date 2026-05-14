@@ -145,19 +145,19 @@ export default async function handler(req, res) {
                          .replace(/{cpr}/gi, fmtBrl(cpr))
                          .replace(/{cliques}/gi, totalClicks)
                          .replace(/{ctr}/gi, ctr.toFixed(2) + '%')
-                         .replace(/{roas}/gi, roas.toFixed(2));
+                         .replace(/{roas}/gi, roas.toFixed(2))
+                         .replace(/{cpc}/gi, fmtBrl(cpc))
+                         .replace(/{cpm}/gi, fmtBrl(cpm))
+                         .replace(/{alcance}/gi, totalReach)
+                         .replace(/{impressoes}/gi, totalImps)
+                         .replace(/{seguidores}/gi, totalFollows);
             } else {
                 // Fallback: Mensagem Padrão se não houver template
                 msg = `📊 *Resumo de Performance (${rel.frequencia === 'semanal' ? 'Últimos 7 dias' : 'Ontem'})*\n`;
                 msg += `_Conta: ${accountId}_\n\n`;
-
-                if(metricas.includes('spend')) msg += `💰 *Gasto Total:* ${fmtBrl(totalSpend)}\n`;
-                if(metricas.includes('leads')) msg += `🎯 *Leads Gerados:* ${totalLeads}\n`;
-                if(metricas.includes('cpl'))   msg += `🏷️ *Custo p/ Lead (CPL):* ${fmtBrl(cpl)}\n`;
-                if(metricas.includes('msgs'))  msg += `💬 *Conversas Iniciadas:* ${totalConversas}\n`;
-                if(metricas.includes('cpr'))   msg += `🤝 *Custo p/ Conv. (CPR):* ${fmtBrl(cpr)}\n`;
-                if(metricas.includes('clicks')) msg += `🖱️ *Cliques Totais:* ${totalClicks}\n`;
-                
+                msg += `💰 *Gasto Total:* ${fmtBrl(totalSpend)}\n`;
+                msg += `🎯 *Leads Gerados:* ${totalLeads}\n`;
+                msg += `🏷️ *Custo p/ Lead (CPL):* ${fmtBrl(cpl)}\n`;
                 msg += `\n🤖 _Enviado via automação._`;
             }
 

@@ -160,14 +160,13 @@ async function salvarRelatorioAgendado() {
         target_jid = target_jid.replace(/\D/g, '') + '@s.whatsapp.net';
     }
 
-    const checkboxes = document.querySelectorAll('.rel-metric:checked');
-    const metricas = Array.from(checkboxes).map(c => c.value);
+    const metricas = []; // Controlado pelo Template agora
     const frequencia = $('relatorioFrequencia').value;
     const horario_envio = $('relatorioHorario').value;
     const mensagem_template = $('relatorioTemplate').value;
 
-    if(!instance_name || !target_jid || metricas.length === 0 || !horario_envio) {
-        toast('Preencha todos os campos e selecione pelo menos uma métrica.', 'error');
+    if(!instance_name || !target_jid || !horario_envio) {
+        toast('Preencha os campos obrigatórios (Destino e Horário).', 'error');
         return;
     }
 
