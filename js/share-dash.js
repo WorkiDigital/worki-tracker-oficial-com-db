@@ -217,7 +217,8 @@ function campaignMetrics(campaigns) {
         leads      += getAct(ins, ['lead','offsite_conversion.lead']);
         msgs       += getAct(ins, ['onsite_conversion.messaging_conversation_started_7d']);
         lpv        += getAct(ins, ['landing_page_view']);
-        profileVisits += getAct(ins, ['instagram_profile_visit']);
+        const pv   = parseInt(ins.instagram_profile_visits || 0);
+        profileVisits += pv || getAct(ins, ['instagram_profile_visit']);
         seguidores += getAct(ins, ['like','onsite_conversion.follow_button_click']);
         purchases     += getAct(ins, ['purchase','offsite_conversion.fb_pixel_purchase','omni_purchase']);
         purchaseValue += getActVal(ins, ['purchase','offsite_conversion.fb_pixel_purchase','omni_purchase']);
@@ -362,7 +363,9 @@ function renderTable() {
         const spend  = parseFloat(ins?.spend||0);
         const leads  = getAct(ins, ['lead','offsite_conversion.lead']);
         const msgs   = getAct(ins, ['onsite_conversion.messaging_conversation_started_7d']);
-        const lpv    = getAct(ins, ['landing_page_view','instagram_profile_visit']);
+        const lpv    = getAct(ins, ['landing_page_view']);
+        const pv     = parseInt(ins.instagram_profile_visits || 0) || getAct(ins, ['instagram_profile_visit']);
+        const totalVisits = lpv + pv;
         const seg    = getAct(ins, ['like','onsite_conversion.follow_button_click']);
         const clicks = getAct(ins, ['link_click']);
         const purchases  = getAct(ins, ['purchase','offsite_conversion.fb_pixel_purchase','omni_purchase']);
@@ -380,8 +383,8 @@ function renderTable() {
                 case 'clicks':     return `<td>${clicks ? fmt(clicks) : '—'}</td>`;
                 case 'cpc':        return `<td>${ins?.cpc  ? fmtBRL(ins.cpc)  : '—'}</td>`;
                 case 'ctr':        { const v=parseFloat(ins?.ctr||0); return `<td>${v?v.toFixed(2)+'%':'—'}</td>`; }
-                case 'lpv':        return `<td>${lpv   ? fmt(lpv)         : '—'}</td>`;
-                case 'cplpv':      return `<td>${lpv   ? fmtBRL(spend/lpv): '—'}</td>`;
+                case 'lpv':        return `<td>${totalVisits ? fmt(totalVisits) : '—'}</td>`;
+                case 'cplpv':      return `<td>${totalVisits ? fmtBRL(spend/totalVisits): '—'}</td>`;
                 case 'leads':      return `<td>${fmt(leads)}</td>`;
                 case 'cpl':        return `<td>${leads ? fmtBRL(spend/leads): '—'}</td>`;
                 case 'msgs':       return `<td>${fmt(msgs)}</td>`;

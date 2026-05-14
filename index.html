@@ -2277,8 +2277,9 @@ function calcMetricasAds(camps) {
         // Visitas à página de destino (requer pixel instalado)
         lpv += getAct(ins, ['landing_page_view']);
 
-        // Visitas ao Perfil do Instagram
-        profileVisits += getAct(ins, ['instagram_profile_visit']);
+        // Visitas ao Perfil do Instagram (prioriza campo direto, fallback para actions)
+        const pv = parseInt(ins.instagram_profile_visits || 0);
+        profileVisits += pv || getAct(ins, ['instagram_profile_visit']);
 
         // Seguidores / curtidas de página originados do anúncio
         seguidores += getAct(ins, ['like', 'onsite_conversion.follow_button_click']);
@@ -2602,7 +2603,9 @@ function renderTabelaCampanhas(camps) {
         const spend      = parseFloat(ins?.spend||0);
         const leads      = getAct(ins,['lead','offsite_conversion.lead']);
         const msgs       = getAct(ins,['onsite_conversion.messaging_conversation_started_7d']);
-        const lpv        = getAct(ins,['landing_page_view', 'instagram_profile_visit']);
+        const lpv        = getAct(ins,['landing_page_view']);
+        const pv         = parseInt(ins.instagram_profile_visits || 0) || getAct(ins,['instagram_profile_visit']);
+        const totalVisits= lpv + pv;
         const seguidores = getAct(ins,['like', 'onsite_conversion.follow_button_click']);
         const purchases  = getAct(ins,['purchase','offsite_conversion.fb_pixel_purchase','omni_purchase']);
         const purchaseVal= getActVal(ins,['purchase','offsite_conversion.fb_pixel_purchase','omni_purchase']);
@@ -2619,8 +2622,8 @@ function renderTabelaCampanhas(camps) {
                 case 'clicks':     return fmtN(getAct(ins,['link_click']));
                 case 'cpc':        { const v=parseFloat(ins?.cpc||0); return v?brl(v):'—'; }
                 case 'ctr':        { const v=parseFloat(ins?.ctr||0); return v?v.toFixed(2)+'%':'—'; }
-                case 'lpv':        return fmtN(lpv);
-                case 'cplpv':      return lpv ? brl(spend/lpv) : '—';
+                case 'totalVisits':        return fmtN(totalVisits);
+                case 'cptotalVisits':      return totalVisits ? brl(spend/totalVisits) : '—';
                 case 'leads':      return fmtN(leads);
                 case 'cpl':        return leads ? brl(spend/leads) : '—';
                 case 'msgs':       return fmtN(msgs);
@@ -2801,7 +2804,9 @@ async function toggleExpand(level, parentId, btn, e) {
         const spend = parseFloat(ins?.spend||0);
         const leads = getAct(ins,['lead','offsite_conversion.lead']);
         const msgs  = getAct(ins,['onsite_conversion.messaging_conversation_started_7d']);
-        const lpv   = getAct(ins,['landing_page_view', 'instagram_profile_visit']);
+        const lpv   = getAct(ins,['landing_page_view']);
+        const pv    = parseInt(ins.instagram_profile_visits || 0) || getAct(ins,['instagram_profile_visit']);
+        const totalVisits = lpv + pv;
         const seg   = getAct(ins,['like', 'onsite_conversion.follow_button_click']);
         const purchases  = getAct(ins,['purchase','offsite_conversion.fb_pixel_purchase','omni_purchase']);
         const purchaseVal= getActVal(ins,['purchase','offsite_conversion.fb_pixel_purchase','omni_purchase']);
