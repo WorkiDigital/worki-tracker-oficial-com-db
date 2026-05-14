@@ -3249,7 +3249,7 @@ document.addEventListener('keydown', e => {
 });
 
 // ── Abas ───────────────────────────────────────────────────────
-const ABAS = ['leads','relatorios','anuncios','clientes','config','ajustes','agencia','whatsapp','logs'];
+const ABAS = ['leads','relatorios','anuncios','clientes','config','ajustes','agencia','whatsapp','relatorios-zap','logs'];
 const TITULOS = {
     leads:     '<i data-lucide="users" style="color:var(--blue);"></i> Leads Reais',
     relatorios:'<i data-lucide="bar-chart-2" style="color:var(--blue);"></i> Relatórios',
@@ -3259,6 +3259,7 @@ const TITULOS = {
     ajustes:   '<i data-lucide="settings" style="color:var(--blue);"></i> Configurações',
     agencia:   '<i data-lucide="building" style="color:var(--blue);"></i> Gestão de Clientes',
     whatsapp:  '<i data-lucide="smartphone" style="color:#25D366;"></i> Conexão WhatsApp SaaS',
+    'relatorios-zap': '<i data-lucide="send" style="color:var(--blue);"></i> Relatórios Zap',
     logs:      '<i data-lucide="terminal" style="color:var(--blue);"></i> Logs do Sistema',
 };
 
@@ -3277,6 +3278,7 @@ function mudarAba(aba) {
     if (aba === 'clientes') { renderShareLinks(); }
     if (aba === 'agencia')  { carregarClientesAdmin(); }
     if (aba === 'whatsapp') { carregarListaWa(); }
+    if (aba === 'relatorios-zap') { carregarListaRelatorios(); }
     if (aba === 'logs')     { carregarLogs(); }
     // Fecha sidebar mobile ao trocar de aba
     $('sidebar').classList.remove('mobile-open');

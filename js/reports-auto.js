@@ -185,11 +185,3 @@ async function deletarRelatorio(id) {
     }
 }
 
-// Interceptar mudanças de abas para carregar lista
-const originalMudarAbaRelZap = window.mudarAba;
-window.mudarAba = function(aba) {
-    if(originalMudarAbaRelZap) originalMudarAbaRelZap(aba);
-    if(aba === 'relatorios-zap') {
-        carregarListaRelatorios();
-    }
-};
