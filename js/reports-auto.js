@@ -1,8 +1,13 @@
-// Lógica Frontend para Relatórios Automatizados (WhatsApp)
+// Lógica Frontend para Relatórios Automatizados (WhatsApp) - Centralizado
+let relatorioGruposCache = [];
 
 function abrirModalNovoRelatorio() {
+    const instance = $('relatorioGlobalInstance').value;
+    if(!instance) {
+        return toast('Selecione uma instância de envio primeiro no topo da página.', 'error');
+    }
     $('modalNovoRelatorio').classList.add('open');
-    carregarInstanciasRelatorio();
+    carregarGruposRelatorio(); // Carrega os grupos da instância selecionada no topo
 }
 
 function fecharModalNovoRelatorio() {
@@ -15,49 +20,66 @@ function toggleRelatorioDestino() {
     $('relatorioContainerContato').style.display = isGrupo ? 'none' : 'block';
 }
 
+// Quando mudar a instância no topo, resetamos o modal e podemos salvar a preferência
+function onChangeGlobalInstance() {
+    const instance = $('relatorioGlobalInstance').value;
+    localStorage.setItem('relatorio_pref_instance', instance);
+    carregarGruposRelatorio(); // Pré-carrega grupos se o modal for aberto
+}
+
 async function carregarInstanciasRelatorio() {
     try {
+        const token = localStorage.getItem('adlytics_token');
         const res = await fetch('/api/evo-manager?action=list', {
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+            headers: { 'Authorization': `Bearer ${token}` }
         });
         if (!res.ok) throw new Error('Falha ao carregar instâncias');
         const instances = await res.json();
         
-        const sel = $('relatorioInstance');
-        sel.innerHTML = '<option value="">Selecione uma instância...</option>';
+        const sel = $('relatorioGlobalInstance');
+        sel.innerHTML = '<option value="">Selecionar número...</option>';
         
         instances.forEach(i => {
             if(i.state === 'open') {
                 const opt = document.createElement('option');
                 opt.value = i.fullName;
-                opt.textContent = i.displayName;
+                const label = i.cliente_nome ? `${i.cliente_nome} (${i.displayName})` : i.displayName;
+                opt.textContent = label;
                 sel.appendChild(opt);
             }
         });
+
+        // Tenta recuperar preferência salva
+        const pref = localStorage.getItem('relatorio_pref_instance');
+        if(pref && Array.from(sel.options).some(o => o.value === pref)) {
+            sel.value = pref;
+        } else if (sel.options.length > 1) {
+            sel.selectedIndex = 1; // Seleciona a primeira disponível
+        }
+
     } catch(e) {
         console.error(e);
-        toast('Erro ao carregar instâncias para relatório.', 'error');
+        toast('Erro ao carregar instâncias.', 'error');
     }
 }
 
 async function carregarGruposRelatorio() {
-    const instanceName = $('relatorioInstance').value;
+    const instanceName = $('relatorioGlobalInstance').value;
     const selGroup = $('relatorioTargetGroup');
     
-    if(!instanceName) {
-        selGroup.innerHTML = '<option value="">Selecione uma instância primeiro...</option>';
-        return;
-    }
+    if(!instanceName) return;
 
     selGroup.innerHTML = '<option value="">Carregando grupos...</option>';
     
     try {
+        const token = localStorage.getItem('adlytics_token');
         const res = await fetch(`/api/evo-groups?instanceName=${instanceName}`, {
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+            headers: { 'Authorization': `Bearer ${token}` }
         });
         if (!res.ok) throw new Error('Falha ao buscar grupos');
         const groups = await res.json();
         
+        relatorioGruposCache = groups;
         selGroup.innerHTML = '<option value="">Selecione um grupo...</option>';
         groups.forEach(g => {
             const opt = document.createElement('option');
@@ -72,9 +94,15 @@ async function carregarGruposRelatorio() {
 }
 
 async function carregarListaRelatorios() {
+    // Primeiro garante que temos as instâncias para o topo
+    if($('relatorioGlobalInstance').options.length <= 1) {
+        await carregarInstanciasRelatorio();
+    }
+
     try {
+        const token = localStorage.getItem('adlytics_token');
         const res = await fetch('/api/reports-config', {
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+            headers: { 'Authorization': `Bearer ${token}` }
         });
         if(!res.ok) return;
         const relatorios = await res.json();
@@ -83,7 +111,7 @@ async function carregarListaRelatorios() {
         tbody.innerHTML = '';
         
         if(relatorios.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);">Nenhum relatório agendado.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:40px;">Nenhum relatório agendado.</td></tr>';
             return;
         }
 
@@ -116,7 +144,7 @@ async function carregarListaRelatorios() {
 }
 
 async function salvarRelatorioAgendado() {
-    const instance_name = $('relatorioInstance').value;
+    const instance_name = $('relatorioGlobalInstance').value;
     const isGroup = document.querySelector('input[name="relatorioTipoDestino"]:checked').value === 'grupo';
     const targetGroup = $('relatorioTargetGroup');
     const targetContato = $('relatorioTargetContato').value;
@@ -149,11 +177,12 @@ async function salvarRelatorioAgendado() {
     };
 
     try {
+        const token = localStorage.getItem('adlytics_token');
         const res = await fetch('/api/reports-config', {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('token')}` 
+                'Authorization': `Bearer ${token}` 
             },
             body: JSON.stringify(payload)
         });
@@ -172,9 +201,10 @@ async function salvarRelatorioAgendado() {
 async function deletarRelatorio(id) {
     if(!confirm('Deseja excluir este agendamento?')) return;
     try {
+        const token = localStorage.getItem('adlytics_token');
         const res = await fetch(`/api/reports-config?id=${id}`, {
             method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+            headers: { 'Authorization': `Bearer ${token}` }
         });
         if(!res.ok) throw new Error('Falha ao deletar');
         toast('Relatório excluído.', 'success');
@@ -184,4 +214,3 @@ async function deletarRelatorio(id) {
         toast('Erro ao excluir.', 'error');
     }
 }
-

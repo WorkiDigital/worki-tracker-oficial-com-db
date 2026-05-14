@@ -307,10 +307,7 @@
             <button class="btn-icon" onclick="fecharModalNovoRelatorio()"><i data-lucide="x" style="width:20px;"></i></button>
         </div>
         <div class="modal-body" style="display:flex;flex-direction:column;gap:16px;">
-            <div class="input-group">
-                <label>Instância Remetente</label>
-                <select id="relatorioInstance" class="pad-md" style="width:100%;border-radius:8px;" onchange="carregarGruposRelatorio()"></select>
-            </div>
+            <!-- Removido seletor de instância daqui -->
             
             <div class="input-group">
                 <label>Destino</label>
@@ -1161,12 +1158,18 @@
         <!-- ABA: RELATÓRIOS ZAP -->
         <div id="aba-relatorios-zap" class="aba-oculta">
             <div class="card" style="padding:24px;">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
-                    <div>
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;gap:20px;">
+                    <div style="flex:1;">
                         <h2 style="font-size:18px;font-weight:700;margin:0 0 4px 0;">Relatórios Automatizados</h2>
                         <p style="color:var(--text-secondary);font-size:14px;margin:0;">Agende o envio de métricas para grupos ou contatos do WhatsApp.</p>
                     </div>
-                    <button class="btn btn-primary" onclick="abrirModalNovoRelatorio()">+ Novo Agendamento</button>
+                    <div style="display:flex;align-items:center;gap:12px;background:var(--tag);padding:10px 16px;border-radius:12px;border:1px solid var(--border);">
+                        <div style="display:flex;flex-direction:column;gap:2px;">
+                            <span style="font-size:10px;text-transform:uppercase;font-weight:700;color:var(--muted);">Instância de Envio</span>
+                            <select id="relatorioGlobalInstance" class="bare" style="font-size:13px;font-weight:600;min-width:180px;" onchange="onChangeGlobalInstance()"></select>
+                        </div>
+                        <button class="btn btn-primary btn-sm" onclick="abrirModalNovoRelatorio()" style="height:38px;padding:0 16px;">+ Novo</button>
+                    </div>
                 </div>
                 
                 <div class="table-container">
