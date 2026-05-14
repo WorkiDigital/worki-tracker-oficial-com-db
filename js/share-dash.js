@@ -219,7 +219,7 @@ function campaignMetrics(campaigns) {
         lpv        += getAct(ins, ['landing_page_view']);
         const pv   = parseInt(ins.instagram_profile_visits || 0);
         profileVisits += pv || getAct(ins, ['instagram_profile_visit']);
-        seguidores += getAct(ins, ['like','onsite_conversion.follow_button_click']);
+        seguidores += getAct(ins, ['like','onsite_conversion.follow_button_click', 'instagram_follows']);
         purchases     += getAct(ins, ['purchase','offsite_conversion.fb_pixel_purchase','omni_purchase']);
         purchaseValue += getActVal(ins, ['purchase','offsite_conversion.fb_pixel_purchase','omni_purchase']);
         initCheckout  += getAct(ins, ['initiate_checkout','offsite_conversion.fb_pixel_initiate_checkout','omni_initiate_checkout']);
@@ -370,7 +370,7 @@ function renderTable() {
         const lpv    = getAct(ins, ['landing_page_view']);
         const pv     = parseInt(ins.instagram_profile_visits || 0) || getAct(ins, ['instagram_profile_visit']);
         const totalVisits = lpv + pv;
-        const seg    = getAct(ins, ['like','onsite_conversion.follow_button_click']);
+        const seg    = getAct(ins, ['like','onsite_conversion.follow_button_click', 'instagram_follows']);
         const clicks = getAct(ins, ['link_click']);
         const purchases  = getAct(ins, ['purchase','offsite_conversion.fb_pixel_purchase','omni_purchase']);
         const purchaseVal= getActVal(ins, ['purchase','offsite_conversion.fb_pixel_purchase','omni_purchase']);
