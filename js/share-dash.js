@@ -205,7 +205,7 @@ function showError(msg) {
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 function campaignMetrics(campaigns) {
-    let spend=0, imps=0, reach=0, leads=0, msgs=0, lpv=0, seguidores=0, clicks=0;
+    let spend=0, imps=0, reach=0, leads=0, msgs=0, lpv=0, seguidores=0, profileVisits=0, clicks=0;
     let purchases=0, purchaseValue=0, initCheckout=0, roasSum=0, roasCount=0;
     let cpmSum=0, cpmCount=0, cpcSum=0, cpcCount=0, ctrSum=0, ctrCount=0, freqSum=0, freqCount=0;
     campaigns.forEach(c => {
@@ -217,7 +217,8 @@ function campaignMetrics(campaigns) {
         leads      += getAct(ins, ['lead','offsite_conversion.lead']);
         msgs       += getAct(ins, ['onsite_conversion.messaging_conversation_started_7d']);
         lpv        += getAct(ins, ['landing_page_view']);
-        seguidores += getAct(ins, ['like']);
+        profileVisits += getAct(ins, ['instagram_profile_visit']);
+        seguidores += getAct(ins, ['like','onsite_conversion.follow_button_click']);
         purchases     += getAct(ins, ['purchase','offsite_conversion.fb_pixel_purchase','omni_purchase']);
         purchaseValue += getActVal(ins, ['purchase','offsite_conversion.fb_pixel_purchase','omni_purchase']);
         initCheckout  += getAct(ins, ['initiate_checkout','offsite_conversion.fb_pixel_initiate_checkout','omni_initiate_checkout']);
@@ -230,7 +231,7 @@ function campaignMetrics(campaigns) {
         const ctrV  = parseFloat(ins.ctr||0);       if (ctrV  && imp) { ctrSum  += ctrV*imp;  ctrCount  += imp; }
     });
     return {
-        spend, imps, reach, clicks, leads, msgs, lpv, seguidores,
+        spend, imps, reach, clicks, leads, msgs, lpv: (lpv + profileVisits), seguidores,
         purchases, purchaseValue, initCheckout,
         roas: roasCount ? roasSum/roasCount : 0,
         cpm:  cpmCount  ? cpmSum/cpmCount   : 0,
@@ -361,8 +362,8 @@ function renderTable() {
         const spend  = parseFloat(ins?.spend||0);
         const leads  = getAct(ins, ['lead','offsite_conversion.lead']);
         const msgs   = getAct(ins, ['onsite_conversion.messaging_conversation_started_7d']);
-        const lpv    = getAct(ins, ['landing_page_view']);
-        const seg    = getAct(ins, ['like']);
+        const lpv    = getAct(ins, ['landing_page_view','instagram_profile_visit']);
+        const seg    = getAct(ins, ['like','onsite_conversion.follow_button_click']);
         const clicks = getAct(ins, ['link_click']);
         const purchases  = getAct(ins, ['purchase','offsite_conversion.fb_pixel_purchase','omni_purchase']);
         const purchaseVal= getActVal(ins, ['purchase','offsite_conversion.fb_pixel_purchase','omni_purchase']);

@@ -1939,7 +1939,7 @@ const CARDS_DEF = [
     { key:'clicks',    label:'Cliques (Links)',      on:true  },
     { key:'cpc',       label:'CPC',                 on:true  },
     { key:'ctr',       label:'CTR Médio',           on:true  },
-    { key:'lpv',       label:'Visitas pág. destino',on:true  },
+    { key:'lpv',       label:'Visitas',             on:true  },
     { key:'cplpv',     label:'Custo/visita',        on:true  },
     { key:'leads',     label:'Leads',               on:true  },
     { key:'cpl',       label:'CPL',                 on:true  },
@@ -1962,7 +1962,7 @@ const COLS_DEF = [
     { key:'clicks',     label:'Cliques (Links)',       on:true  },
     { key:'cpc',        label:'CPC',                  on:true  },
     { key:'ctr',        label:'CTR Médio',            on:true  },
-    { key:'lpv',        label:'Visitas pág. destino', on:true  },
+    { key:'lpv',        label:'Visitas',              on:true  },
     { key:'cplpv',      label:'Custo/visita',         on:true  },
     { key:'leads',      label:'Leads',                on:true  },
     { key:'cpl',        label:'CPL',                  on:true  },
@@ -2232,12 +2232,7 @@ function calcMetricasAds(camps) {
     let cpmSum=0, cpmCount=0;   // CPM ponderado por impressões
     let cpcSum=0, cpcCount=0;   // CPC ponderado por cliques
     let freqSum=0, freqCount=0; // Frequência ponderada por impressões
-    let lpv=0;                  // landing_page_view
-    let seguidores=0;           // like (curtidas de página)
-    let purchases=0;            // purchase (compras)
-    let purchaseValue=0;        // action_values purchase (valor em compras)
-    let initCheckout=0;         // initiate_checkout
-    let roasSum=0, roasCount=0; // ROAS ponderado por gasto
+    let profileVisits=0;        // instagram_profile_visit
 
     camps.forEach(c => {
         const ins = getIns(c); if (!ins) return;
@@ -2276,8 +2271,11 @@ function calcMetricasAds(camps) {
         // Visitas à página de destino (requer pixel instalado)
         lpv += getAct(ins, ['landing_page_view']);
 
+        // Visitas ao Perfil do Instagram
+        profileVisits += getAct(ins, ['instagram_profile_visit']);
+
         // Seguidores / curtidas de página originados do anúncio
-        seguidores += getAct(ins, ['like']);
+        seguidores += getAct(ins, ['like', 'onsite_conversion.follow_button_click']);
 
         // Compras (purchase) via Pixel/CAPI
         purchases += getAct(ins, ['purchase','offsite_conversion.fb_pixel_purchase','omni_purchase']);
@@ -2303,8 +2301,11 @@ function calcMetricasAds(camps) {
     $('ads-clicks').textContent   = linkClicks ? fmtN(linkClicks) : '—';
     $('ads-cpc-val').textContent  = cpcCount   ? brl(cpcSum/cpcCount)  : '—';
     $('ads-ctr').textContent      = ctrCount   ? (ctrSum/ctrCount).toFixed(2)+'%' : '—';
-    $('ads-lpv').textContent      = lpv        ? fmtN(lpv)   : '—';
-    $('ads-cplpv').textContent    = lpv        ? brl(spend/lpv) : '—';
+    
+    // Somar Landing Page Views + Profile Visits para a métrica de "Visitas"
+    const totalVisits = lpv + profileVisits;
+    $('ads-lpv').textContent      = totalVisits ? fmtN(totalVisits) : '—';
+    $('ads-cplpv').textContent    = totalVisits ? brl(spend/totalVisits) : '—';
     $('ads-leads').textContent    = fmtN(leads);
     $('ads-cpl').textContent      = leads      ? brl(spend/leads) : '—';
     $('ads-msgs').textContent     = fmtN(msgs);
@@ -2595,8 +2596,8 @@ function renderTabelaCampanhas(camps) {
         const spend      = parseFloat(ins?.spend||0);
         const leads      = getAct(ins,['lead','offsite_conversion.lead']);
         const msgs       = getAct(ins,['onsite_conversion.messaging_conversation_started_7d']);
-        const lpv        = getAct(ins,['landing_page_view']);
-        const seguidores = getAct(ins,['like']);
+        const lpv        = getAct(ins,['landing_page_view', 'instagram_profile_visit']);
+        const seguidores = getAct(ins,['like', 'onsite_conversion.follow_button_click']);
         const purchases  = getAct(ins,['purchase','offsite_conversion.fb_pixel_purchase','omni_purchase']);
         const purchaseVal= getActVal(ins,['purchase','offsite_conversion.fb_pixel_purchase','omni_purchase']);
         const initCk     = getAct(ins,['initiate_checkout','offsite_conversion.fb_pixel_initiate_checkout','omni_initiate_checkout']);
@@ -2794,8 +2795,8 @@ async function toggleExpand(level, parentId, btn, e) {
         const spend = parseFloat(ins?.spend||0);
         const leads = getAct(ins,['lead','offsite_conversion.lead']);
         const msgs  = getAct(ins,['onsite_conversion.messaging_conversation_started_7d']);
-        const lpv   = getAct(ins,['landing_page_view']);
-        const seg   = getAct(ins,['like']);
+        const lpv   = getAct(ins,['landing_page_view', 'instagram_profile_visit']);
+        const seg   = getAct(ins,['like', 'onsite_conversion.follow_button_click']);
         const purchases  = getAct(ins,['purchase','offsite_conversion.fb_pixel_purchase','omni_purchase']);
         const purchaseVal= getActVal(ins,['purchase','offsite_conversion.fb_pixel_purchase','omni_purchase']);
         const initCk     = getAct(ins,['initiate_checkout','offsite_conversion.fb_pixel_initiate_checkout','omni_initiate_checkout']);
