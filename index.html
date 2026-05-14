@@ -348,6 +348,14 @@
                 </div>
             </div>
 
+            <div class="input-group">
+                <label>Modelo de Mensagem <span style="color:var(--muted);font-weight:400;font-size:11px;">(Opcional)</span></label>
+                <textarea id="relatorioTemplate" rows="4" class="pad-md" style="width:100%;border-radius:8px;font-family:'Inter';font-size:12px;background:var(--bg);border:1px solid var(--border);color:var(--text);resize:vertical;" placeholder="Ex: 📊 Resumo de Ontem:&#10;💰 Gasto: {gasto}&#10;🎯 Leads: {leads}&#10;🏷️ CPL: {cpl}"></textarea>
+                <div style="font-size:10px;color:var(--muted);margin-top:6px;line-height:1.4;">
+                    Tags: <code>{gasto}</code> <code>{leads}</code> <code>{cpl}</code> <code>{msgs}</code> <code>{cpr}</code> <code>{cliques}</code> <code>{ctr}</code> <code>{roas}</code>
+                </div>
+            </div>
+
             <div style="display:flex;gap:16px;">
                 <div class="input-group" style="flex:1;">
                     <label>Frequência</label>

@@ -104,7 +104,11 @@ async function carregarListaRelatorios() {
         const res = await fetch('/api/reports-config', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
-        if(!res.ok) return;
+        if(!res.ok) {
+            const err = await res.json();
+            console.error('[Relatorios] Erro ao carregar lista:', err);
+            return;
+        }
         const relatorios = await res.json();
         
         const tbody = $('lista-relatorios-zap');
@@ -139,7 +143,7 @@ async function carregarListaRelatorios() {
         });
         lucide.createIcons();
     } catch(e) {
-        console.error(e);
+        console.error('[Relatorios] Erro crítico:', e);
     }
 }
 
@@ -160,6 +164,7 @@ async function salvarRelatorioAgendado() {
     const metricas = Array.from(checkboxes).map(c => c.value);
     const frequencia = $('relatorioFrequencia').value;
     const horario_envio = $('relatorioHorario').value;
+    const mensagem_template = $('relatorioTemplate').value;
 
     if(!instance_name || !target_jid || metricas.length === 0 || !horario_envio) {
         toast('Preencha todos os campos e selecione pelo menos uma métrica.', 'error');
@@ -173,7 +178,8 @@ async function salvarRelatorioAgendado() {
         nome_destino,
         metricas,
         frequencia,
-        horario_envio
+        horario_envio,
+        mensagem_template
     };
 
     try {

@@ -23,7 +23,7 @@ export default async function handler(req, res) {
 
     if (method === 'POST') {
       // Criar novo agendamento
-      const { instance_name, target_jid, is_group, nome_destino, metricas, frequencia, horario_envio } = req.body;
+      const { instance_name, target_jid, is_group, nome_destino, metricas, frequencia, horario_envio, mensagem_template } = req.body;
 
       if (!instance_name || !target_jid || !metricas || !horario_envio) {
         return res.status(400).json({ error: 'Campos obrigatórios ausentes.' });
@@ -31,8 +31,8 @@ export default async function handler(req, res) {
 
       const result = await pool.query(
         `INSERT INTO relatorios_agendados 
-        (cliente_id, instance_name, target_jid, is_group, nome_destino, metricas, frequencia, horario_envio) 
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+        (cliente_id, instance_name, target_jid, is_group, nome_destino, metricas, frequencia, horario_envio, mensagem_template) 
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
         [
             user.cliente_id, 
             instance_name, 
@@ -41,7 +41,8 @@ export default async function handler(req, res) {
             nome_destino || target_jid, 
             JSON.stringify(metricas), 
             frequencia || 'diario', 
-            horario_envio
+            horario_envio,
+            mensagem_template || null
         ]
       );
       return res.status(201).json(result.rows[0]);

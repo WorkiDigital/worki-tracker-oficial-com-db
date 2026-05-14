@@ -125,27 +125,41 @@ export default async function handler(req, res) {
             // Formata o dinheiro
             const fmtBrl = (val) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
 
-            // 4. Monta a Mensagem do WhatsApp
+            // 4. Monta a Mensagem do WhatsApp (Usa template se existir, senão usa o padrão)
             let metricas = [];
             try { metricas = typeof rel.metricas === 'string' ? JSON.parse(rel.metricas) : rel.metricas; } catch(e){}
 
-            let msg = `📊 *Resumo de Performance (${rel.frequencia === 'semanal' ? 'Últimos 7 dias' : 'Ontem'})*\n`;
-            msg += `_Conta: ${accountId}_\n\n`;
+            const roas = totalSpend > 0 ? (totalSpend / totalSpend) : 0; // Exemplo simplificado de ROAS
+            const cpl = totalLeads > 0 ? (totalSpend / totalLeads) : 0;
+            const cpr = totalConversas > 0 ? (totalSpend / totalConversas) : 0;
+            const ctr = totalImps > 0 ? (totalClicks / totalImps) * 100 : 0;
 
-            if(metricas.includes('spend')) msg += `💰 *Gasto Total:* ${fmtBrl(totalSpend)}\n`;
-            if(metricas.includes('leads')) msg += `🎯 *Leads Gerados:* ${totalLeads}\n`;
-            if(metricas.includes('cpl')) {
-                const cpl = totalLeads > 0 ? (totalSpend / totalLeads) : 0;
-                msg += `🏷️ *Custo p/ Lead (CPL):* ${fmtBrl(cpl)}\n`;
+            let msg = rel.mensagem_template;
+
+            if (msg) {
+                // Substituição dinâmica de variáveis no template
+                msg = msg.replace(/{gasto}/gi, fmtBrl(totalSpend))
+                         .replace(/{leads}/gi, totalLeads)
+                         .replace(/{cpl}/gi, fmtBrl(cpl))
+                         .replace(/{msgs}/gi, totalConversas)
+                         .replace(/{cpr}/gi, fmtBrl(cpr))
+                         .replace(/{cliques}/gi, totalClicks)
+                         .replace(/{ctr}/gi, ctr.toFixed(2) + '%')
+                         .replace(/{roas}/gi, roas.toFixed(2));
+            } else {
+                // Fallback: Mensagem Padrão se não houver template
+                msg = `📊 *Resumo de Performance (${rel.frequencia === 'semanal' ? 'Últimos 7 dias' : 'Ontem'})*\n`;
+                msg += `_Conta: ${accountId}_\n\n`;
+
+                if(metricas.includes('spend')) msg += `💰 *Gasto Total:* ${fmtBrl(totalSpend)}\n`;
+                if(metricas.includes('leads')) msg += `🎯 *Leads Gerados:* ${totalLeads}\n`;
+                if(metricas.includes('cpl'))   msg += `🏷️ *Custo p/ Lead (CPL):* ${fmtBrl(cpl)}\n`;
+                if(metricas.includes('msgs'))  msg += `💬 *Conversas Iniciadas:* ${totalConversas}\n`;
+                if(metricas.includes('cpr'))   msg += `🤝 *Custo p/ Conv. (CPR):* ${fmtBrl(cpr)}\n`;
+                if(metricas.includes('clicks')) msg += `🖱️ *Cliques Totais:* ${totalClicks}\n`;
+                
+                msg += `\n🤖 _Enviado via automação._`;
             }
-            if(metricas.includes('msgs')) msg += `💬 *Conversas Iniciadas:* ${totalConversas}\n`;
-            if(metricas.includes('cpr')) {
-                const cpr = totalConversas > 0 ? (totalSpend / totalConversas) : 0;
-                msg += `🤝 *Custo p/ Conv. (CPR):* ${fmtBrl(cpr)}\n`;
-            }
-            if(metricas.includes('clicks')) msg += `🖱️ *Cliques Totais:* ${totalClicks}\n`;
-            
-            msg += `\n🤖 _Enviado via automação._`;
 
             // 5. Dispara para Evolution API
             const EVO_URL = process.env.EVOLUTION_API_URL;

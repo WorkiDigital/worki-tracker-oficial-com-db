@@ -258,6 +258,7 @@ async function setup() {
           metricas JSONB NOT NULL DEFAULT '[]',
           frequencia VARCHAR(50) DEFAULT 'diario',
           horario_envio VARCHAR(10) NOT NULL,
+          mensagem_template TEXT,
           status BOOLEAN DEFAULT TRUE,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
