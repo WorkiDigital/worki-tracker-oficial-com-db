@@ -246,6 +246,25 @@ async function setup() {
     `, [currentLogo]);
     console.log('✅ Configurações iniciais de marca inseridas.');
 
+    // Tabela de Agendamento de Relatórios no WhatsApp (Fase 1)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS public.relatorios_agendados (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          cliente_id INTEGER REFERENCES public.clientes(id) ON DELETE CASCADE,
+          instance_name VARCHAR(255) NOT NULL,
+          target_jid VARCHAR(255) NOT NULL,
+          is_group BOOLEAN DEFAULT FALSE,
+          nome_destino VARCHAR(255),
+          metricas JSONB NOT NULL DEFAULT '[]',
+          frequencia VARCHAR(50) DEFAULT 'diario',
+          horario_envio VARCHAR(10) NOT NULL,
+          status BOOLEAN DEFAULT TRUE,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    console.log('✅ Tabela "relatorios_agendados" verificada/criada.');
+
     // MIGRATION: Adicionar colunas de criptografia caso a tabela já exista
     await client.query(`
       DO $$
