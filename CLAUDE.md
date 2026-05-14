@@ -135,4 +135,20 @@ Uma limpeza profunda foi realizada no dashboard principal para melhorar a manute
 - Removida a trava de data fixa `created_at >= '2026-04-30'` que limitava os dados consultados.
 - Adicionado `try/catch` global para garantir que erros de banco retornem um JSON limpo em vez de derrubar a rota.
 - O arquivo agora faz exclusivamente: consulta SQL ao `leads_tracking` → calcula os 4 KPIs → retorna JSON.
-**Atenção:** Métricas de anúncios (spend, clicks, CPL) devem ser buscadas em seus próprios endpoints dedicados, nunca misturadas com métricas de tempo de atendimento.
+### 9. Relatórios Automatizados via WhatsApp (14/05/2026)
+Implementação de um motor de relatórios agendados que envia métricas do Meta Ads diretamente para grupos ou contatos via WhatsApp:
+- **Motor de Cron (`api/cron/send-reports.js`):** Endpoint responsável por consultar agendamentos no banco, extrair métricas em tempo real e disparar via Evolution API.
+- **Templates Dinâmicos:** Sistema de modelos de mensagem que suporta tags dinâmicas como `{gasto}`, `{leads}`, `{cpl}`, `{msgs}`, `{cliques}`, `{ctr}`, `{roas}`, `{cpc}`, `{cpm}`, `{alcance}` e `{impressoes}`.
+- **Interface de Agendamento:** Nova seção na aba "Relatórios Zap" com seletor de instância global, listagem de grupos automática e configuração de frequência (Diário/Semanal) e horário.
+- **Infraestrutura:** Tabela `relatorios_agendados` criada para persistir configurações e templates por cliente.
+
+### 10. Evolução de Métricas Instagram Ads (14/05/2026)
+Aprimoramento da precisão dos dados para campanhas focadas em perfil de Instagram:
+- **Visitas ao Perfil:** Implementada a métrica nativa `instagram_profile_visits` para rastreamento preciso de tráfego para o perfil.
+- **Seguidores (Instagram Follows):** Resolvida a limitação de busca de seguidores via array de ações nativas da Meta, corrigindo o erro `#100` e garantindo a captura real de novos seguidores atribuídos aos anúncios.
+
+### 11. Automação e Robustez Evolution (14/05/2026)
+Melhorias na integração com a Evolution API para facilitar a escala:
+- **Sync Groups/Contacts:** Novas instâncias agora são configuradas automaticamente para sincronizar grupos e contatos, garantindo que os destinos de relatórios apareçam instantaneamente no sistema.
+- **Eventos Webhook:** Inclusão do evento `GROUPS_UPSERT` no registro de webhooks para manter a lista de grupos sempre atualizada.
+- **Robustez de URL:** Implementada codificação de URL (`encodeURIComponent`) nas rotas de busca de grupos para evitar falhas com instâncias que possuem nomes especiais.
