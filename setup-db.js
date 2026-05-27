@@ -122,6 +122,24 @@ async function setup() {
     `);
     console.log('✅ Tabela "instancias_mapeamento" verificada/criada.');
 
+    // Tabela de agendamentos de relatórios via WhatsApp
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS public.zap_agendamentos (
+        id            SERIAL PRIMARY KEY,
+        cliente_id    INTEGER REFERENCES public.clientes(id) ON DELETE CASCADE,
+        instance_name VARCHAR(255) NOT NULL,
+        destino_tipo  VARCHAR(20)  DEFAULT 'grupo',
+        destino_jid   VARCHAR(255) NOT NULL,
+        destino_nome  VARCHAR(255),
+        template      TEXT,
+        frequencia    VARCHAR(50)  DEFAULT 'diario',
+        horario       TIME         NOT NULL DEFAULT '08:00',
+        status        VARCHAR(20)  DEFAULT 'ativo',
+        criado_em     TIMESTAMP    DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    console.log('✅ Tabela "zap_agendamentos" verificada/criada.');
+
     // Migração: ampliar ctw_aci_id para TEXT (ctwaClid pode ter >255 chars)
     await client.query(`
       ALTER TABLE public.leads_tracking

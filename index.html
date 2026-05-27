@@ -798,6 +798,9 @@
         <a id="btn-whatsapp" class="nav-item" onclick="mudarAba('whatsapp')">
             <i data-lucide="smartphone" style="width:17px;flex-shrink:0;"></i><span>Conexão WhatsApp</span>
         </a>
+        <a id="btn-zaprelatorios" class="nav-item" onclick="mudarAba('zaprelatorios')">
+            <i data-lucide="send" style="width:17px;flex-shrink:0;color:#25D366;"></i><span>Relatórios Zap</span>
+        </a>
         <a id="btn-logs" class="nav-item" onclick="mudarAba('logs')">
             <i data-lucide="terminal" style="width:17px;flex-shrink:0;"></i><span>Logs do Sistema</span>
         </a>
@@ -1387,6 +1390,118 @@
                     </div>
                 </div>
 
+            </div>
+        </div>
+
+        <!-- ABA: RELATÓRIOS ZAP -->
+        <div id="aba-zaprelatorios" class="aba-oculta">
+            <div class="card" style="padding:18px 20px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
+                    <div>
+                        <h3 style="margin:0;font-size:16px;font-weight:700;">Relatórios Automatizados</h3>
+                        <p style="color:var(--muted);font-size:12px;margin:4px 0 0;">Agende o envio de métricas para grupos ou contatos do WhatsApp.</p>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                        <div style="display:flex;flex-direction:column;gap:2px;">
+                            <span style="font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;">Instância de Envio</span>
+                            <select id="zapInstanciaSelect" class="bare" style="min-width:200px;" onchange="zapOnInstanciaChange()">
+                                <option value="">Carregando instâncias...</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-primary btn-sm" style="margin-top:14px;" onclick="abrirModalZapNovo()">
+                            <i data-lucide="plus" style="width:12px;"></i> Novo
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tabela de agendamentos -->
+                <div style="overflow-x:auto;">
+                    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+                        <thead>
+                            <tr style="border-bottom:1px solid var(--border);">
+                                <th style="padding:8px 10px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;">Destino</th>
+                                <th style="padding:8px 10px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;">Frequência</th>
+                                <th style="padding:8px 10px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;">Horário</th>
+                                <th style="padding:8px 10px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;">Status</th>
+                                <th style="padding:8px 10px;text-align:right;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="zapRelatoriosTbody">
+                            <tr><td colspan="5" style="padding:32px;text-align:center;color:var(--muted);font-size:13px;">Nenhum relatório agendado.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL: AGENDAR RELATÓRIO ZAP -->
+        <div id="modalZapRelatorio" class="modal-overlay" onclick="if(event.target===this)fecharModalZap()">
+            <div class="modal-box" style="max-width:420px;">
+                <div class="modal-head">
+                    <i data-lucide="send" style="color:#25D366;width:20px;height:20px;flex-shrink:0;"></i>
+                    <h3 style="margin:0;font-size:16px;font-weight:700;">Agendar Novo Relatório</h3>
+                    <button class="btn-icon" onclick="fecharModalZap()" style="margin-left:auto;width:28px;height:28px;">
+                        <i data-lucide="x" style="width:14px;"></i>
+                    </button>
+                </div>
+
+                <!-- Destino -->
+                <div style="margin-bottom:14px;">
+                    <label style="display:block;font-size:12px;font-weight:600;margin-bottom:8px;">Destino</label>
+                    <div style="display:flex;gap:16px;">
+                        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;">
+                            <input type="radio" name="zapDestinoTipo" value="grupo" checked onchange="zapOnDestinoChange()" style="accent-color:var(--blue);">
+                            Grupo
+                        </label>
+                        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;">
+                            <input type="radio" name="zapDestinoTipo" value="contato" onchange="zapOnDestinoChange()" style="accent-color:var(--blue);">
+                            Contato Direto
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Select grupo -->
+                <div id="zapGrupoArea" style="margin-bottom:14px;">
+                    <label style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;">Grupo WhatsApp</label>
+                    <select id="zapGrupoSelect" class="form-control" style="width:100%;">
+                        <option value="">Selecione uma instância primeiro</option>
+                    </select>
+                </div>
+
+                <!-- Input contato direto -->
+                <div id="zapContatoArea" style="margin-bottom:14px;display:none;">
+                    <label style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;">Número (com código país)</label>
+                    <input type="tel" id="zapContatoInput" class="form-control" placeholder="Ex: 5511999999999" style="width:100%;">
+                </div>
+
+                <!-- Template -->
+                <div style="margin-bottom:14px;">
+                    <label style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;">Modelo de Mensagem <span style="color:var(--muted);font-weight:400;">(Opcional)</span></label>
+                    <textarea id="zapTemplate" class="form-control" rows="4" style="width:100%;resize:vertical;" placeholder="Ex: 📊 Resumo de Ontem:&#10;🔥 Gasto: {gasto}&#10;🎯 Leads: {leads}&#10;💰 CPL: {cpl}"></textarea>
+                    <p style="color:var(--muted);font-size:11px;margin:5px 0 0;line-height:1.6;">
+                        Tags: <code style="font-size:10px;">{gasto}</code> <code style="font-size:10px;">{leads}</code> <code style="font-size:10px;">{cpl}</code> <code style="font-size:10px;">{msgs}</code> <code style="font-size:10px;">{cpr}</code> <code style="font-size:10px;">{cliques}</code> <code style="font-size:10px;">{ctr}</code> <code style="font-size:10px;">{roas}</code> <code style="font-size:10px;">{cpc}</code> <code style="font-size:10px;">{cpm}</code> <code style="font-size:10px;">{alcance}</code> <code style="font-size:10px;">{impressoes}</code> <code style="font-size:10px;">{seguidores}</code>
+                    </p>
+                </div>
+
+                <!-- Frequência + Horário -->
+                <div style="display:flex;gap:12px;margin-bottom:18px;">
+                    <div style="flex:1;">
+                        <label style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;">Frequência</label>
+                        <select id="zapFrequencia" class="form-control" style="width:100%;">
+                            <option value="diario">Diário</option>
+                            <option value="semanal">Semanal</option>
+                            <option value="mensal">Mensal</option>
+                        </select>
+                    </div>
+                    <div style="flex:1;">
+                        <label style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;">Horário</label>
+                        <input type="time" id="zapHorario" class="form-control" value="08:00" style="width:100%;">
+                    </div>
+                </div>
+
+                <button class="btn-confirm" onclick="salvarAgendamentoZap()">
+                    <i data-lucide="save" style="width:14px;display:inline;vertical-align:-2px;margin-right:6px;"></i> Salvar Agendamento
+                </button>
             </div>
         </div>
 
@@ -3601,16 +3716,17 @@ document.addEventListener('keydown', e => {
 });
 
 // ── Abas ───────────────────────────────────────────────────────
-const ABAS = ['leads','relatorios','anuncios','clientes','config','agencia','whatsapp','logs'];
+const ABAS = ['leads','relatorios','anuncios','clientes','config','agencia','whatsapp','zaprelatorios','logs'];
 const TITULOS = {
-    leads:     '<i data-lucide="users" style="color:var(--blue);"></i> Leads Reais',
-    relatorios:'<i data-lucide="bar-chart-2" style="color:var(--blue);"></i> Relatórios',
-    anuncios:  '<img src="https://cdn.simpleicons.org/meta/0082FB" style="width:16px;height:16px;display:inline;vertical-align:-2px;margin-right:6px;" alt="Meta"> Meta Ads',
-    clientes:  '<i data-lucide="share-2" style="color:var(--blue);"></i> Compartilhar Dash',
-    config:    '<i data-lucide="workflow" style="color:var(--blue);"></i> Integrações',
-    agencia:   '<i data-lucide="building" style="color:var(--blue);"></i> Gestão de Clientes',
-    whatsapp:  '<i data-lucide="smartphone" style="color:#25D366;"></i> Conexão WhatsApp SaaS',
-    logs:      '<i data-lucide="terminal" style="color:var(--blue);"></i> Logs do Sistema',
+    leads:          '<i data-lucide="users" style="color:var(--blue);"></i> Leads Reais',
+    relatorios:     '<i data-lucide="bar-chart-2" style="color:var(--blue);"></i> Relatórios',
+    anuncios:       '<img src="https://cdn.simpleicons.org/meta/0082FB" style="width:16px;height:16px;display:inline;vertical-align:-2px;margin-right:6px;" alt="Meta"> Meta Ads',
+    clientes:       '<i data-lucide="share-2" style="color:var(--blue);"></i> Compartilhar Dash',
+    config:         '<i data-lucide="workflow" style="color:var(--blue);"></i> Integrações',
+    agencia:        '<i data-lucide="building" style="color:var(--blue);"></i> Gestão de Clientes',
+    whatsapp:       '<i data-lucide="smartphone" style="color:#25D366;"></i> Conexão WhatsApp SaaS',
+    zaprelatorios:  '<i data-lucide="send" style="color:#25D366;"></i> Relatórios Zap',
+    logs:           '<i data-lucide="terminal" style="color:var(--blue);"></i> Logs do Sistema',
 };
 
 function mudarAba(aba) {
@@ -3627,11 +3743,200 @@ function mudarAba(aba) {
     if (aba === 'config')   { renderConfigContas(); }
     if (aba === 'clientes') { renderShareLinks(); }
     if (aba === 'agencia')  { carregarClientesAdmin(); }
-    if (aba === 'whatsapp') { carregarListaWa(); }
-    if (aba === 'logs')     { carregarLogs(); }
+    if (aba === 'whatsapp')       { carregarListaWa(); }
+    if (aba === 'zaprelatorios') { carregarZapRelatorios(); }
+    if (aba === 'logs')          { carregarLogs(); }
     // Fecha sidebar mobile ao trocar de aba
     $('sidebar').classList.remove('mobile-open');
     $('sidebarOverlay').classList.remove('open');
+}
+
+// ── Relatórios Zap ─────────────────────────────────────────────
+let _zapGrupos = []; // cache de grupos da instância selecionada
+
+async function carregarZapRelatorios() {
+    // Popula dropdown de instâncias
+    const selInst = $('zapInstanciaSelect');
+    if (selInst) {
+        selInst.innerHTML = '<option value="">Carregando...</option>';
+        try {
+            const r = await authFetch('/api/evo-manager?action=list');
+            const data = await r.json();
+            const instancias = Array.isArray(data) ? data.filter(i => i.state === 'open') : [];
+            if (instancias.length === 0) {
+                selInst.innerHTML = '<option value="">Nenhuma instância conectada</option>';
+            } else {
+                selInst.innerHTML = instancias.map(i =>
+                    `<option value="${esc(i.fullName)}">${esc(i.cliente_nome ? `${i.cliente_nome} (${i.displayName})` : i.displayName)}</option>`
+                ).join('');
+            }
+        } catch { selInst.innerHTML = '<option value="">Erro ao carregar instâncias</option>'; }
+    }
+    // Carrega lista de agendamentos
+    await _renderZapTabela();
+}
+
+async function _renderZapTabela() {
+    const tbody = $('zapRelatoriosTbody');
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="5" style="padding:24px;text-align:center;color:var(--muted);">Carregando...</td></tr>';
+    try {
+        const r = await authFetch('/api/zap-reports');
+        const rows = await r.json();
+        if (!rows.length) {
+            tbody.innerHTML = '<tr><td colspan="5" style="padding:32px;text-align:center;color:var(--muted);font-size:13px;">Nenhum relatório agendado.</td></tr>';
+            return;
+        }
+        const FREQ = { diario:'Diário', semanal:'Semanal', mensal:'Mensal' };
+        tbody.innerHTML = rows.map(row => `
+            <tr style="border-bottom:1px solid var(--border);">
+                <td style="padding:10px 10px;">
+                    <div style="font-size:13px;font-weight:600;">${esc(row.destino_nome || row.destino_jid)}</div>
+                    <div style="font-size:11px;color:var(--muted);">${row.destino_tipo === 'grupo' ? 'Grupo' : 'Contato'} · ${esc(row.instance_name)}</div>
+                </td>
+                <td style="padding:10px 10px;font-size:13px;">${FREQ[row.frequencia] || row.frequencia}</td>
+                <td style="padding:10px 10px;font-size:13px;">${esc(row.horario)}</td>
+                <td style="padding:10px 10px;">
+                    <span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;${row.status==='ativo'?'background:rgba(16,185,129,.15);color:#10b981':'background:var(--tag);color:var(--muted)'}">
+                        ${row.status === 'ativo' ? 'Ativo' : 'Pausado'}
+                    </span>
+                </td>
+                <td style="padding:10px 10px;text-align:right;">
+                    <button class="btn btn-ghost btn-sm" onclick="toggleStatusZap(${row.id})" title="${row.status==='ativo'?'Pausar':'Ativar'}" style="margin-right:4px;">
+                        <i data-lucide="${row.status==='ativo'?'pause':'play'}" style="width:12px;"></i>
+                    </button>
+                    <button class="btn btn-ghost btn-sm" onclick="deletarAgendamentoZap(${row.id})" title="Excluir" style="color:var(--red);border-color:rgba(239,68,68,.3);">
+                        <i data-lucide="trash-2" style="width:12px;"></i>
+                    </button>
+                </td>
+            </tr>`).join('');
+        lucide.createIcons({ nodes:[tbody] });
+    } catch { tbody.innerHTML = '<tr><td colspan="5" style="padding:24px;text-align:center;color:var(--red);">Erro ao carregar agendamentos.</td></tr>'; }
+}
+
+function zapOnInstanciaChange() {
+    // Limpa cache de grupos ao trocar instância
+    _zapGrupos = [];
+    const sel = $('zapGrupoSelect');
+    if (sel) sel.innerHTML = '<option value="">Selecione uma instância primeiro</option>';
+}
+
+async function carregarGruposZap(instanceName) {
+    const sel = $('zapGrupoSelect');
+    if (!sel) return;
+    sel.innerHTML = '<option value="">Carregando grupos...</option>';
+    try {
+        const r = await authFetch(`/api/evo-manager?action=fetchGroups&instanceName=${encodeURIComponent(instanceName)}`);
+        const data = await r.json();
+        if (!r.ok || data.error) throw new Error(data.error || 'Falha');
+        _zapGrupos = Array.isArray(data) ? data : [];
+        if (_zapGrupos.length === 0) {
+            sel.innerHTML = '<option value="">Nenhum grupo encontrado</option>';
+        } else {
+            sel.innerHTML = _zapGrupos.map(g =>
+                `<option value="${esc(g.id)}">${esc(g.subject)}${g.size ? ` (${g.size})` : ''}</option>`
+            ).join('');
+        }
+    } catch {
+        sel.innerHTML = '<option value="">Erro ao carregar grupos</option>';
+    }
+}
+
+function abrirModalZapNovo() {
+    // Resetar campos
+    document.querySelectorAll('input[name="zapDestinoTipo"]').forEach(r => { r.checked = r.value === 'grupo'; });
+    $('zapGrupoArea').style.display = '';
+    $('zapContatoArea').style.display = 'none';
+    $('zapTemplate').value = '';
+    $('zapFrequencia').value = 'diario';
+    $('zapHorario').value = '08:00';
+
+    const instancia = $('zapInstanciaSelect')?.value;
+    if (instancia) {
+        carregarGruposZap(instancia);
+    } else {
+        const sel = $('zapGrupoSelect');
+        if (sel) sel.innerHTML = '<option value="">Selecione uma instância primeiro</option>';
+    }
+
+    $('modalZapRelatorio').classList.add('open');
+    lucide.createIcons({ nodes:[$('modalZapRelatorio')] });
+}
+
+function fecharModalZap() {
+    $('modalZapRelatorio').classList.remove('open');
+}
+
+function zapOnDestinoChange() {
+    const tipo = document.querySelector('input[name="zapDestinoTipo"]:checked')?.value;
+    $('zapGrupoArea').style.display   = tipo === 'grupo'   ? '' : 'none';
+    $('zapContatoArea').style.display = tipo === 'contato' ? '' : 'none';
+}
+
+async function salvarAgendamentoZap() {
+    const instanceName = $('zapInstanciaSelect')?.value;
+    if (!instanceName) { toast('Selecione uma instância antes de salvar.', 'error'); return; }
+
+    const tipo = document.querySelector('input[name="zapDestinoTipo"]:checked')?.value || 'grupo';
+    let jid = '', nome = '';
+
+    if (tipo === 'grupo') {
+        const sel = $('zapGrupoSelect');
+        jid  = sel?.value || '';
+        nome = sel?.options[sel.selectedIndex]?.text || '';
+        if (!jid) { toast('Selecione um grupo.', 'error'); return; }
+    } else {
+        jid  = ($('zapContatoInput')?.value || '').replace(/\D/g,'');
+        nome = jid;
+        if (!jid) { toast('Informe o número do contato.', 'error'); return; }
+        jid += '@s.whatsapp.net';
+    }
+
+    const horario = $('zapHorario')?.value || '08:00';
+    const body = {
+        instance_name: instanceName,
+        destino_tipo:  tipo,
+        destino_jid:   jid,
+        destino_nome:  nome,
+        template:      $('zapTemplate')?.value || '',
+        frequencia:    $('zapFrequencia')?.value || 'diario',
+        horario,
+    };
+
+    const btn = $('modalZapRelatorio').querySelector('.btn-confirm');
+    if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
+    try {
+        const r = await authFetch('/api/zap-reports', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+        const d = await r.json();
+        if (!r.ok || d.error) throw new Error(d.error || 'Falha ao salvar');
+        fecharModalZap();
+        toast('Relatório agendado com sucesso!', 'success');
+        await _renderZapTabela();
+    } catch(e) {
+        toast(e.message, 'error');
+    } finally {
+        if (btn) { btn.disabled = false; btn.innerHTML = '<i data-lucide="save" style="width:14px;display:inline;vertical-align:-2px;margin-right:6px;"></i> Salvar Agendamento'; lucide.createIcons({nodes:[btn]}); }
+    }
+}
+
+async function toggleStatusZap(id) {
+    try {
+        const r = await authFetch('/api/zap-reports', { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ id }) });
+        const d = await r.json();
+        if (!r.ok || d.error) throw new Error(d.error || 'Falha');
+        await _renderZapTabela();
+    } catch(e) { toast(e.message, 'error'); }
+}
+
+async function deletarAgendamentoZap(id) {
+    if (!confirm('Excluir este agendamento?')) return;
+    try {
+        const r = await authFetch(`/api/zap-reports?id=${id}`, { method:'DELETE' });
+        const d = await r.json();
+        if (!r.ok || d.error) throw new Error(d.error || 'Falha');
+        toast('Agendamento excluído.', 'success');
+        await _renderZapTabela();
+    } catch(e) { toast(e.message, 'error'); }
 }
 
 // ── Admin: Clientes/Agências (SaaS) ────────────────────────────

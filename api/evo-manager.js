@@ -238,6 +238,21 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true, message: 'Instância desvinculada com sucesso.' });
     }
 
+    if (action === 'fetchGroups') {
+      const target = req.query.instanceName || req.body?.instanceName;
+      if (!target) return res.status(400).json({ error: 'instanceName obrigatório' });
+      const r = await fetch(`${EVO_URL}/group/fetchAllGroups/${target}`, { headers });
+      if (!r.ok) return res.status(r.status).json({ error: 'Erro ao buscar grupos na Evolution' });
+      const data = await r.json();
+      const grupos = Array.isArray(data) ? data : [];
+      return res.status(200).json(grupos.map(g => ({
+        id:         g.id,
+        subject:    g.subject,
+        size:       g.size,
+        pictureUrl: g.pictureUrl || null,
+      })));
+    }
+
     return res.status(400).json({ error: 'Action inválida.' });
   } catch (error) {
     console.error('Evolution Manager Error:', error);
