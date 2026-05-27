@@ -3434,7 +3434,7 @@ async function carregarGruposZap(instanceName) {
     if (!sel) return;
     sel.innerHTML = '<option value="">Carregando grupos...</option>';
     try {
-        const r = await authFetch(`/api/evo-manager?action=fetchGroups&instanceName=${encodeURIComponent(instanceName)}`);
+        const r = await authFetch(`/api/evo-groups?instanceName=${encodeURIComponent(instanceName)}`);
         const data = await r.json();
         if (!r.ok || data.error) throw new Error(data.error || 'Falha');
         _zapGrupos = Array.isArray(data) ? data : [];
@@ -3442,7 +3442,7 @@ async function carregarGruposZap(instanceName) {
             sel.innerHTML = '<option value="">Nenhum grupo encontrado</option>';
         } else {
             sel.innerHTML = _zapGrupos.map(g =>
-                `<option value="${esc(g.id)}">${esc(g.subject)}${g.size ? ` (${g.size})` : ''}</option>`
+                `<option value="${esc(g.id)}">${esc(g.name)}</option>`
             ).join('');
         }
     } catch {
