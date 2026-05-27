@@ -3,6 +3,7 @@ import { verifyAuth } from './_auth.js';
 import crypto from 'crypto';
 import { cors } from './_cors.js';
 import { rateLimit } from './_rate-limit.js';
+import { decryptToken } from './_crypto.js';
 
 export default async function handler(req, res) {
   if (cors(req, res, ['PATCH'])) return;
@@ -22,7 +23,13 @@ export default async function handler(req, res) {
     const values = [];
     let queryIndex = 1;
 
-    if (status)                  { setClauses.push(`status = $${queryIndex++}`);          values.push(status); }
+    if (status) { 
+      setClauses.push(`status = $${queryIndex++}`); 
+      values.push(status); 
+      if (status === 'Vendido' || status === 'Venda') {
+        setClauses.push(`sale_closed_at = NOW()`);
+      }
+    }
     if (valor_venda !== undefined){ setClauses.push(`valor_venda = $${queryIndex++}`);     values.push(valor_venda); }
     if (produto)                 { setClauses.push(`produto = $${queryIndex++}`);          values.push(produto); }
     if (nome)                    { setClauses.push(`nome = $${queryIndex++}`);             values.push(nome); }
@@ -63,17 +70,31 @@ export default async function handler(req, res) {
 }
 
 async function sendCapiPurchase(lead, value, pool) {
+  let token;
   let { pixel, ctw_aci_id, telefone, cidade, estado, cliente_id, page_id } = lead;
 
   if (!pixel && cliente_id) {
-    const clientRes = await pool.query('SELECT pixel_padrao, token_meta FROM clientes WHERE id = $1', [cliente_id]);
-    if (clientRes.rows.length > 0) {
-      pixel = pixel || clientRes.rows[0].pixel_padrao;
+    const clientRes = await pool.query('SELECT pixel_padrao, token_meta, token_meta_enc FROM clientes WHERE id = $1', [cliente_id]);
+    const row = clientRes.rows[0];
+    if (row) {
+      pixel = pixel || row.pixel_padrao;
+      let tokenValue = row.token_meta || process.env.META_ADS_TOKEN || null;
+      if (row.token_meta_enc) {
+        try { tokenValue = decryptToken(row.token_meta_enc); } catch (e) { console.error('CAPI Purchase (Update): Erro descriptografia', e.message); }
+      }
+      token = tokenValue;
     }
+  } else if (cliente_id) {
+    const clientRes = await pool.query('SELECT token_meta, token_meta_enc FROM clientes WHERE id = $1', [cliente_id]);
+    const row = clientRes.rows[0];
+    let tokenValue = row?.token_meta || process.env.META_ADS_TOKEN || null;
+    if (row?.token_meta_enc) {
+      try { tokenValue = decryptToken(row.token_meta_enc); } catch (e) { console.error('CAPI Purchase (Update): Erro descriptografia', e.message); }
+    }
+    token = tokenValue;
+  } else {
+    token = process.env.META_ADS_TOKEN || null;
   }
-  const token = (cliente_id
-    ? (await pool.query('SELECT token_meta FROM clientes WHERE id=$1', [cliente_id])).rows[0]?.token_meta
-    : null) || process.env.META_ADS_TOKEN || null;
 
   if (!pixel || !token) {
     console.warn('CAPI não enviada: falta Pixel ou Token para o lead ID', lead.id);

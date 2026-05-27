@@ -36,6 +36,26 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Email e senha obrigatórios.' });
   }
 
+  // --- LOGIN ADMIN VIA VARIÁVEIS DE AMBIENTE (FALLBACK/RECUPERAÇÃO) ---
+  const envAdminEmail = process.env.ADMIN_EMAIL;
+  const envAdminPassword = process.env.ADMIN_PASSWORD;
+
+  if (envAdminEmail && envAdminPassword && email === envAdminEmail && password === envAdminPassword) {
+      if (!process.env.JWT_SECRET) {
+          return res.status(500).json({ error: 'JWT_SECRET não configurado no servidor.' });
+      }
+      
+      const payload = {
+          id: 0, // ID zero para identificar admin do .env
+          email: envAdminEmail,
+          is_admin: true,
+          cliente_id: null,
+          permissoes: { leads: true, anuncios: true, relatorios: true, whatsapp: true, config: true }
+      };
+      const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '7d' });
+      return res.status(200).json({ token, user: payload });
+  }
+
   try {
     const pool = getPool();
     const result = await pool.query('SELECT id, email, senha_hash, is_admin, cliente_id FROM usuarios WHERE email = $1', [email]);
@@ -64,7 +84,10 @@ export default async function handler(req, res) {
         }
     }
 
-    const secret = process.env.JWT_SECRET || 'SECRET_LOCAL_DEV';
+    if (!process.env.JWT_SECRET) {
+        return res.status(500).json({ error: 'Erro crítico interno: configuração de segurança ausente.' });
+    }
+
     const payload = {
         id: user.id,
         email: user.email,
@@ -72,7 +95,7 @@ export default async function handler(req, res) {
         cliente_id: user.cliente_id,
         permissoes
     };
-    const token = jwt.sign(payload, secret, { expiresIn: '7d' });
+    const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '7d' });
 
     return res.status(200).json({ 
         token, 

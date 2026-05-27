@@ -1,10 +1,49 @@
 import { cors } from './_cors.js';
+import { getPool } from './_db.js';
+
+const ENSURE_TABLE = `
+  CREATE TABLE IF NOT EXISTS public.configuracoes_sistema (
+    id SERIAL PRIMARY KEY,
+    chave VARCHAR(100) UNIQUE NOT NULL,
+    valor TEXT NOT NULL,
+    criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  );
+`;
+
+function isSafeLogo(value) {
+  const logo = String(value || '').trim();
+  if (!logo || logo.length > 100000) return false;
+  if (logo.startsWith('<svg')) {
+    return !/(<script\b|<foreignObject\b|\son[a-z]+\s*=|javascript:)/i.test(logo);
+  }
+  if (/^https?:\/\/[^\s"'<>]+$/i.test(logo)) return true;
+  return /^data:image\/(png|jpe?g|webp|gif);base64,[a-z0-9+/=]+$/i.test(logo);
+}
 
 export default async function handler(req, res) {
   if (cors(req, res, ['GET'], { public: true })) return;
 
-  // Exposes only public config
+  let projectName = process.env.PROJECT_NAME || 'Adlytics';
+  let projectLogo = null;
+
+  try {
+    const pool = getPool();
+    // Auto-cria tabela se não existir
+    await pool.query(ENSURE_TABLE);
+
+    const result = await pool.query('SELECT chave, valor FROM configuracoes_sistema');
+    const configs = {};
+    result.rows.forEach(row => { configs[row.chave] = row.valor; });
+    
+    if (configs.projeto_nome) projectName = configs.projeto_nome;
+    if (configs.projeto_logo && isSafeLogo(configs.projeto_logo)) projectLogo = configs.projeto_logo;
+  } catch (err) {
+    console.error('Config API Load Error:', err.message);
+  }
+
   return res.status(200).json({
-    projectName: process.env.PROJECT_NAME || 'Adlytics'
+    projectName,
+    projectLogo
   });
 }

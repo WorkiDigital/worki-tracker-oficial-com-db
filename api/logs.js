@@ -12,7 +12,10 @@ async function ensureTable(pool) {
       tag VARCHAR(50),
       message TEXT,
       data JSONB
-    )
+    );
+    CREATE INDEX IF NOT EXISTS idx_logs_cliente_id ON public.webhook_logs(cliente_id);
+    CREATE INDEX IF NOT EXISTS idx_logs_created_at ON public.webhook_logs(created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_logs_tag ON public.webhook_logs(tag);
   `);
 }
 
@@ -27,29 +30,49 @@ export default async function handler(req, res) {
   const pool = getPool();
   await ensureTable(pool);
 
-  const { limit = 300, instance, level, tag, date_from, date_to } = req.query;
+  res.setHeader('Cache-Control', 'private, max-age=5');
 
-  let query = 'SELECT * FROM webhook_logs WHERE 1=1';
+  const { limit = 50, offset = 0, instance, level, tag, search, date_from, date_to, id } = req.query;
+
+  // BUSCA POR ID ÚNICO (Para o modal de detalhes)
+  if (id) {
+    const { rows } = await pool.query('SELECT * FROM webhook_logs WHERE id = $1', [id]);
+    if (!user.is_admin && rows[0] && rows[0].cliente_id !== user.cliente_id) {
+      return res.status(403).json({ error: 'Acesso negado' });
+    }
+    return res.status(200).json(rows[0] || { error: 'Log não encontrado' });
+  }
+
+  let where = 'WHERE 1=1';
   const params = [];
   let idx = 1;
 
   if (!user.is_admin) {
-    query += ` AND cliente_id = $${idx++}`;
+    where += ` AND cliente_id = $${idx++}`;
     params.push(user.cliente_id);
   }
 
-  if (instance)  { query += ` AND instance ILIKE $${idx++}`;  params.push(`%${instance}%`); }
-  if (level)     { query += ` AND level = $${idx++}`;          params.push(level); }
-  if (tag)       { query += ` AND tag = $${idx++}`;            params.push(tag); }
-  if (date_from) { query += ` AND created_at >= $${idx++}`;   params.push(date_from); }
-  if (date_to)   { query += ` AND created_at < $${idx++}`;    params.push(date_to + ' 23:59:59'); }
+  if (instance)  { where += ` AND instance ILIKE $${idx++}`;  params.push(`%${instance}%`); }
+  if (level)     { where += ` AND level = $${idx++}`;          params.push(level); }
+  if (tag)       { where += ` AND tag = $${idx++}`;            params.push(tag); }
+  if (search)    { where += ` AND message ILIKE $${idx++}`;   params.push(`%${search}%`); }
+  if (date_from) { where += ` AND created_at >= $${idx++}`;   params.push(date_from); }
+  if (date_to)   { where += ` AND created_at < $${idx++}`;    params.push(date_to + ' 23:59:59'); }
 
-  query += ` ORDER BY id DESC LIMIT $${idx}`;
-  params.push(Math.min(parseInt(limit) || 300, 500));
+  const limitVal  = Math.min(parseInt(limit) || 50, 200);
+  const offsetVal = Math.max(parseInt(offset) || 0, 0);
 
   try {
-    const result = await pool.query(query, params);
-    return res.status(200).json(result.rows);
+    const [countResult, result] = await Promise.all([
+      pool.query(`SELECT COUNT(*)::int AS total FROM webhook_logs ${where}`, params),
+      pool.query(
+        `SELECT id, created_at, instance, level, tag, message, data 
+         FROM webhook_logs ${where} ORDER BY id DESC LIMIT $${idx++} OFFSET $${idx++}`,
+        [...params, limitVal, offsetVal]
+      ),
+    ]);
+
+    return res.status(200).json({ rows: result.rows, total: countResult.rows[0].total });
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }

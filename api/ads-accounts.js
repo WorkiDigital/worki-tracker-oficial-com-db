@@ -35,6 +35,9 @@ export default async function handler(req, res) {
 
     // Para clientes (não-admin): filtra apenas a conta vinculada no painel
     const allowedId = await getClientAccountId(user);
+    if (!user.is_admin && !allowedId && process.env.ALLOW_UNSCOPED_CLIENT_ACCOUNTS !== 'true') {
+      return res.status(403).json({ error: 'Conta de anúncios não vinculada ao cliente.' });
+    }
     const lista = allowedId
       ? todas.filter(a => String(a.account_id) === String(allowedId).replace(/^act_/, '') ||
                           String(a.id) === `act_${String(allowedId).replace(/^act_/, '')}`)

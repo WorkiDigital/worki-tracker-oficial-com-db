@@ -1,5 +1,6 @@
 import { getPool } from './_db.js';
 import { cors } from './_cors.js';
+import { decryptToken } from './_crypto.js';
 
 export default async function handler(req, res) {
   if (cors(req, res, ['GET'], { public: true })) return;
@@ -15,7 +16,11 @@ export default async function handler(req, res) {
   let row;
   try {
     const { rows } = await pool.query(
-      `SELECT account_id, expires_at FROM share_tokens WHERE token = $1`,
+      `SELECT st.account_id, st.expires_at, c.token_meta, c.token_meta_enc
+       FROM share_tokens st
+       LEFT JOIN usuarios u ON u.id = st.user_id
+       LEFT JOIN clientes c ON c.id = u.cliente_id
+       WHERE st.token = $1`,
       [token]
     );
     if (rows.length === 0) return res.status(404).json({ error: 'Link inválido ou expirado' });
@@ -27,7 +32,10 @@ export default async function handler(req, res) {
 
   if (row.expires_at && new Date(row.expires_at) < new Date()) return res.status(403).json({ error: 'Este link expirou' });
 
-  const metaToken = process.env.META_ADS_TOKEN;
+  let metaToken = row.token_meta || process.env.META_ADS_TOKEN;
+  if (row.token_meta_enc) {
+    try { metaToken = decryptToken(row.token_meta_enc); } catch (e) { console.error('[SHARE-DEMO] Erro descriptografia', e.message); }
+  }
   if (!metaToken) return res.status(500).json({ error: 'META_ADS_TOKEN not configured' });
 
   const fields = 'spend,impressions,clicks,actions';

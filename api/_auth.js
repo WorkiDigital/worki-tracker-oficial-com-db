@@ -1,4 +1,6 @@
 import jwt from 'jsonwebtoken';
+import { getPool } from './_db.js';
+import { decryptToken } from './_crypto.js';
 
 // Alerta crítico em produção se JWT_SECRET não estiver configurado
 if (!process.env.JWT_SECRET) {
@@ -17,7 +19,8 @@ export async function verifyAuth(req, res) {
   }
 
   try {
-    const secret = process.env.JWT_SECRET || 'SECRET_LOCAL_DEV';
+    const secret = process.env.JWT_SECRET;
+    if (!secret) return null;
     const decoded = jwt.verify(token, secret);
     return decoded; // { id, email, iat, exp, is_admin, cliente_id }
   } catch (error) {
@@ -33,5 +36,29 @@ export async function verifyAuth(req, res) {
  */
 export async function getTokenForUser(user) {
     if (!user) return null;
-    return process.env.META_ADS_TOKEN || null;
+    if (user.is_admin || !user.cliente_id) {
+        return process.env.META_ADS_TOKEN || null;
+    }
+
+    try {
+        const r = await getPool().query(
+            'SELECT token_meta, token_meta_enc FROM clientes WHERE id = $1',
+            [user.cliente_id]
+        );
+        const row = r.rows[0];
+        if (!row) return process.env.META_ADS_TOKEN || null;
+
+        // Prioridade: Token Criptografado -> Token Texto Puro -> Env
+        if (row.token_meta_enc) {
+            try {
+                return decryptToken(row.token_meta_enc);
+            } catch (e) {
+                console.error('[AUTH] Erro ao descriptografar token:', e.message);
+            }
+        }
+        return row.token_meta || process.env.META_ADS_TOKEN || null;
+    } catch (err) {
+        console.error('[AUTH] Erro ao buscar token do cliente:', err.message);
+        return process.env.META_ADS_TOKEN || null;
+    }
 }
