@@ -1,4 +1,5 @@
 import { verifyAuth } from './_auth.js';
+import { getPool } from './_db.js';
 import { cors } from './_cors.js';
 import { rateLimit } from './_rate-limit.js';
 
@@ -21,11 +22,20 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Parâmetro instanceName é obrigatório.' });
   }
 
-  // Verifica se o usuário tem acesso à instância (Segurança Múlti-Tenant)
-  // Apenas admins podem ver qualquer instância, ou a instância deve ter o prefixo do cliente
-  const prefix = `cliente_${user.cliente_id}_`;
-  if (!user.is_admin && !instanceName.startsWith(prefix)) {
-    return res.status(403).json({ error: 'Acesso negado a esta instância.' });
+  // Segurança multi-tenant: admin passa direto; cliente deve ter instância com prefixo
+  // OU vinculada na tabela instancias_mapeamento
+  if (!user.is_admin) {
+    const prefix = `cliente_${user.cliente_id}_`;
+    if (!instanceName.startsWith(prefix)) {
+      const pool = getPool();
+      const linked = await pool.query(
+        'SELECT id FROM instancias_mapeamento WHERE instance_name = $1 AND cliente_id = $2',
+        [instanceName, user.cliente_id]
+      );
+      if (linked.rowCount === 0) {
+        return res.status(403).json({ error: 'Acesso negado a esta instância.' });
+      }
+    }
   }
 
   try {
