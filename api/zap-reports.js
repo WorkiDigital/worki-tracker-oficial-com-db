@@ -9,7 +9,12 @@ export default async function handler(req, res) {
   if (!user) return;
 
   const pool = getPool();
-  const clienteId = user.cliente_id;
+  const clienteId = user.cliente_id ?? null;
+
+  // Cláusula de isolamento: admin sem cliente_id vê tudo; cliente vê só os seus
+  const tenantWhere  = clienteId !== null ? 'WHERE cliente_id = $1'       : '';
+  const tenantAnd    = clienteId !== null ? 'AND cliente_id = $2'          : '';
+  const tenantParams = clienteId !== null ? [clienteId]                    : [];
 
   try {
     // LIST
@@ -19,9 +24,9 @@ export default async function handler(req, res) {
                 template, frequencia, to_char(horario,'HH24:MI') AS horario,
                 status, criado_em
          FROM zap_agendamentos
-         WHERE cliente_id = $1
+         ${tenantWhere}
          ORDER BY criado_em DESC`,
-        [clienteId]
+        tenantParams
       );
       return res.status(200).json(result.rows);
     }
@@ -49,9 +54,9 @@ export default async function handler(req, res) {
       const result = await pool.query(
         `UPDATE zap_agendamentos
          SET status = CASE WHEN status = 'ativo' THEN 'pausado' ELSE 'ativo' END
-         WHERE id = $1 AND cliente_id = $2
+         WHERE id = $1 ${tenantAnd}
          RETURNING status`,
-        [id, clienteId]
+        [id, ...tenantParams]
       );
       if (result.rowCount === 0) return res.status(404).json({ error: 'Agendamento não encontrado' });
       return res.status(200).json({ status: result.rows[0].status });
@@ -62,8 +67,8 @@ export default async function handler(req, res) {
       const id = req.query.id || req.body?.id;
       if (!id) return res.status(400).json({ error: 'id obrigatório' });
       const result = await pool.query(
-        'DELETE FROM zap_agendamentos WHERE id = $1 AND cliente_id = $2 RETURNING id',
-        [id, clienteId]
+        `DELETE FROM zap_agendamentos WHERE id = $1 ${tenantAnd} RETURNING id`,
+        [id, ...tenantParams]
       );
       if (result.rowCount === 0) return res.status(404).json({ error: 'Agendamento não encontrado' });
       return res.status(200).json({ ok: true });
