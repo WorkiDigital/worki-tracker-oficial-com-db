@@ -1168,10 +1168,11 @@
                 </div>
 
                 <div style="overflow-x:auto;">
-                    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+                    <table class="zap-table" style="width:100%;border-collapse:collapse;font-size:13px;">
                         <thead>
                             <tr style="border-bottom:2px solid var(--border);">
                                 <th style="padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">Destino</th>
+                                <th style="padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">Tipo</th>
                                 <th style="padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">Instância</th>
                                 <th style="padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">Frequência</th>
                                 <th style="padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">Período</th>
@@ -1181,7 +1182,7 @@
                             </tr>
                         </thead>
                         <tbody id="zapRelatoriosTbody">
-                            <tr><td colspan="7" style="padding:48px;text-align:center;color:var(--muted);font-size:13px;">Carregando...</td></tr>
+                            <tr><td colspan="8" style="padding:48px;text-align:center;color:var(--muted);font-size:13px;">Carregando...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -3443,14 +3444,14 @@ const _ZAP_PERIODO_LABEL = {
 async function _renderZapTabela() {
     const tbody = $('zapRelatoriosTbody');
     if (!tbody) return;
-    tbody.innerHTML = `<tr><td colspan="7" style="padding:48px;text-align:center;color:var(--muted);font-size:13px;">Carregando...</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8" style="padding:48px;text-align:center;color:var(--muted);font-size:13px;">Carregando...</td></tr>`;
     try {
         const r = await authFetch('/api/zap-reports');
         if (!r.ok) throw new Error('Falha ao carregar');
         const rows = await r.json();
         if (!Array.isArray(rows) || rows.length === 0) {
             tbody.innerHTML = `
-                <tr><td colspan="7" style="padding:56px 24px;text-align:center;">
+                <tr><td colspan="8" style="padding:56px 24px;text-align:center;">
                     <div style="display:flex;flex-direction:column;align-items:center;gap:10px;">
                         <i data-lucide="calendar-x" style="width:32px;height:32px;color:var(--muted);opacity:.4;"></i>
                         <span style="color:var(--muted);font-size:13px;">Nenhum relatório agendado ainda.</span>
@@ -3468,15 +3469,15 @@ async function _renderZapTabela() {
             const periodoLabel = _ZAP_PERIODO_LABEL[row.periodo] || row.periodo || 'Ontem';
             return `
             <tr style="border-bottom:1px solid var(--border);transition:background .1s;" onmouseenter="this.style.background='rgba(255,255,255,.03)'" onmouseleave="this.style.background=''">
-                <td style="padding:8px 12px;vertical-align:middle;">
-                    <div style="font-size:13px;font-weight:600;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(row.destino_nome || row.destino_jid)}</div>
-                    <div style="font-size:11px;color:var(--muted);margin-top:2px;">${row.destino_tipo === 'grupo' ? '👥 Grupo' : '👤 Contato'}</div>
+                <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;">
+                    <span style="font-size:13px;font-weight:600;">${esc(row.destino_nome || row.destino_jid)}</span>
                 </td>
-                <td style="padding:8px 12px;font-size:11px;color:var(--muted);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle;" title="${esc(row.instance_name)}">${esc(row.instance_name)}</td>
-                <td style="padding:8px 12px;font-size:13px;vertical-align:middle;">${FREQ[row.frequencia] || row.frequencia}</td>
-                <td style="padding:8px 12px;font-size:12px;color:var(--muted);vertical-align:middle;">${esc(periodoLabel)}</td>
-                <td style="padding:8px 12px;font-size:13px;font-variant-numeric:tabular-nums;vertical-align:middle;">${esc(row.horario)}</td>
-                <td style="padding:8px 12px;white-space:nowrap;vertical-align:middle;">
+                <td style="font-size:11px;color:var(--muted);">${row.destino_tipo === 'grupo' ? '👥 Grupo' : '👤 Contato'}</td>
+                <td style="font-size:11px;color:var(--muted);max-width:160px;overflow:hidden;text-overflow:ellipsis;" title="${esc(row.instance_name)}">${esc(row.instance_name)}</td>
+                <td style="font-size:13px;">${FREQ[row.frequencia] || row.frequencia}</td>
+                <td style="font-size:12px;color:var(--muted);">${esc(periodoLabel)}</td>
+                <td style="font-size:13px;font-variant-numeric:tabular-nums;">${esc(row.horario)}</td>
+                <td>
                     <button onclick="toggleStatusZap(${row.id})" title="${isAtivo ? 'Pausar agendamento' : 'Ativar agendamento'}" style="display:inline-flex;align-items:center;gap:7px;background:none;border:none;cursor:pointer;padding:2px 0;white-space:nowrap;">
                         <span style="flex-shrink:0;display:inline-flex;align-items:center;width:32px;height:18px;border-radius:9px;padding:3px;box-sizing:border-box;background:${isAtivo ? '#10b981' : 'rgba(255,255,255,.15)'};transition:background .2s;justify-content:${isAtivo ? 'flex-end' : 'flex-start'};">
                             <span style="width:12px;height:12px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.4);flex-shrink:0;"></span>
@@ -3484,22 +3485,24 @@ async function _renderZapTabela() {
                         <span style="font-size:11px;font-weight:600;color:${isAtivo ? '#10b981' : 'var(--muted)'};">${isAtivo ? 'Ativo' : 'Pausado'}</span>
                     </button>
                 </td>
-                <td style="padding:8px 12px;text-align:right;white-space:nowrap;vertical-align:middle;">
-                    <button class="btn btn-ghost btn-sm" title="Editar agendamento" onclick="abrirModalZapEditar(_zapRowsCache[${row.id}])" style="margin-right:4px;">
-                        <i data-lucide="pencil" style="width:12px;"></i>
-                    </button>
-                    <button class="btn btn-ghost btn-sm" title="Duplicar agendamento" onclick="duplicarAgendamentoZap(_zapRowsCache[${row.id}])" style="margin-right:4px;color:var(--muted);">
-                        <i data-lucide="copy" style="width:12px;"></i>
-                    </button>
-                    <button class="btn btn-ghost btn-sm" title="Excluir agendamento" onclick="deletarAgendamentoZap(${row.id})" style="color:var(--red);border-color:rgba(239,68,68,.25);">
-                        <i data-lucide="trash-2" style="width:12px;"></i>
-                    </button>
+                <td class="actions-cell">
+                    <div class="zap-actions">
+                        <button class="zap-action-btn" title="Editar agendamento" onclick="abrirModalZapEditar(_zapRowsCache[${row.id}])">
+                            <i data-lucide="pencil" style="width:13px;height:13px;"></i>
+                        </button>
+                        <button class="zap-action-btn" title="Duplicar agendamento" onclick="duplicarAgendamentoZap(_zapRowsCache[${row.id}])">
+                            <i data-lucide="copy" style="width:13px;height:13px;"></i>
+                        </button>
+                        <button class="zap-action-btn danger" title="Excluir agendamento" onclick="deletarAgendamentoZap(${row.id})">
+                            <i data-lucide="trash-2" style="width:13px;height:13px;"></i>
+                        </button>
+                    </div>
                 </td>
             </tr>`;
         }).join('');
         lucide.createIcons({ nodes:[tbody] });
     } catch(e) {
-        tbody.innerHTML = `<tr><td colspan="7" style="padding:40px;text-align:center;color:var(--red);font-size:13px;">Erro ao carregar agendamentos: ${esc(e.message)}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" style="padding:40px;text-align:center;color:var(--red);font-size:13px;">Erro ao carregar agendamentos: ${esc(e.message)}</td></tr>`;
     }
 }
 
