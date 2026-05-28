@@ -3468,23 +3468,23 @@ async function _renderZapTabela() {
             const periodoLabel = _ZAP_PERIODO_LABEL[row.periodo] || row.periodo || 'Ontem';
             return `
             <tr style="border-bottom:1px solid var(--border);transition:background .1s;" onmouseenter="this.style.background='rgba(255,255,255,.03)'" onmouseleave="this.style.background=''">
-                <td style="padding:8px 12px;">
+                <td style="padding:8px 12px;vertical-align:middle;">
                     <div style="font-size:13px;font-weight:600;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(row.destino_nome || row.destino_jid)}</div>
                     <div style="font-size:11px;color:var(--muted);margin-top:2px;">${row.destino_tipo === 'grupo' ? '👥 Grupo' : '👤 Contato'}</div>
                 </td>
-                <td style="padding:8px 12px;font-size:11px;color:var(--muted);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(row.instance_name)}">${esc(row.instance_name)}</td>
-                <td style="padding:8px 12px;font-size:13px;">${FREQ[row.frequencia] || row.frequencia}</td>
-                <td style="padding:8px 12px;font-size:12px;color:var(--muted);">${esc(periodoLabel)}</td>
-                <td style="padding:8px 12px;font-size:13px;font-variant-numeric:tabular-nums;">${esc(row.horario)}</td>
-                <td style="padding:8px 12px;">
+                <td style="padding:8px 12px;font-size:11px;color:var(--muted);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle;" title="${esc(row.instance_name)}">${esc(row.instance_name)}</td>
+                <td style="padding:8px 12px;font-size:13px;vertical-align:middle;">${FREQ[row.frequencia] || row.frequencia}</td>
+                <td style="padding:8px 12px;font-size:12px;color:var(--muted);vertical-align:middle;">${esc(periodoLabel)}</td>
+                <td style="padding:8px 12px;font-size:13px;font-variant-numeric:tabular-nums;vertical-align:middle;">${esc(row.horario)}</td>
+                <td style="padding:8px 12px;white-space:nowrap;vertical-align:middle;">
                     <button onclick="toggleStatusZap(${row.id})" title="${isAtivo ? 'Pausar agendamento' : 'Ativar agendamento'}" style="display:flex;align-items:center;gap:6px;background:none;border:none;cursor:pointer;padding:2px 0;">
                         <span style="width:30px;height:17px;border-radius:9px;background:${isAtivo ? '#10b981' : 'rgba(255,255,255,.12)'};position:relative;display:inline-block;transition:background .2s;flex-shrink:0;">
                             <span style="width:12px;height:12px;border-radius:50%;background:#fff;position:absolute;top:50%;transform:translate(${isAtivo ? '15px' : '2px'},-50%);transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.4);"></span>
                         </span>
-                        <span style="font-size:11px;font-weight:600;color:${isAtivo ? '#10b981' : 'var(--muted)'};">${isAtivo ? 'Ativo' : 'Pausado'}</span>
+                        <span style="font-size:11px;font-weight:600;white-space:nowrap;color:${isAtivo ? '#10b981' : 'var(--muted)'};">${isAtivo ? 'Ativo' : 'Pausado'}</span>
                     </button>
                 </td>
-                <td style="padding:8px 12px;text-align:right;white-space:nowrap;">
+                <td style="padding:8px 12px;text-align:right;white-space:nowrap;vertical-align:middle;">
                     <button class="btn btn-ghost btn-sm" title="Editar agendamento" onclick="abrirModalZapEditar(_zapRowsCache[${row.id}])" style="margin-right:4px;">
                         <i data-lucide="pencil" style="width:12px;"></i>
                     </button>
