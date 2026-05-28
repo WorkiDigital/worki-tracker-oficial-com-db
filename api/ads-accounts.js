@@ -1,5 +1,6 @@
 import { verifyAuth, getTokenForUser } from './_auth.js';
 import { getClientAccountId } from './_validate.js';
+import { getPool } from './_db.js';
 import { cacheGet, cacheSet, userCacheKey } from './_cache.js';
 import { fetchMeta } from './_meta-client.js';
 import { cors } from './_cors.js';
@@ -42,6 +43,21 @@ export default async function handler(req, res) {
       ? todas.filter(a => String(a.account_id) === String(allowedId).replace(/^act_/, '') ||
                           String(a.id) === `act_${String(allowedId).replace(/^act_/, '')}`)
       : todas;
+
+    // scope=configured: filtra às contas cadastradas em "Integrações" (clientes.account_id)
+    if (req.query.scope === 'configured' && user.is_admin) {
+      try {
+        const pool = getPool();
+        const { rows } = await pool.query(
+          `SELECT DISTINCT account_id FROM clientes WHERE account_id IS NOT NULL AND account_id <> ''`
+        );
+        if (rows.length > 0) {
+          const configuredIds = new Set(rows.map(r => String(r.account_id).replace(/^act_/, '')));
+          const filtrada = lista.filter(a => configuredIds.has(String(a.account_id)));
+          if (filtrada.length > 0) lista.splice(0, lista.length, ...filtrada);
+        }
+      } catch (_) {}
+    }
 
     lista.sort((a, b) => a.name.localeCompare(b.name));
     await cacheSet(ck, lista, 120000); // 120s TTL

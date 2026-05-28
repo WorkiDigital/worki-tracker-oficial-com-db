@@ -1244,7 +1244,9 @@
                     </div>
 
                     <div id="zapGrupoArea" style="margin-bottom:16px;">
-                        <label style="display:block;font-size:12px;font-weight:600;color:var(--text,#f0f4ff);margin-bottom:6px;">Grupo WhatsApp <span style="color:#ef4444;">*</span></label>
+                        <label style="display:flex;align-items:center;gap:4px;font-size:12px;font-weight:600;color:var(--text,#f0f4ff);margin-bottom:6px;">Grupo WhatsApp <span style="color:#ef4444;">*</span>
+                            <button type="button" onclick="delete _zapGruposCache[$('zapModalInstancia')?.value];zapModalOnInstanciaChange();" title="Atualizar lista de grupos" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:0 2px;line-height:1;margin-left:2px;">↻</button>
+                        </label>
                         <select id="zapGrupoSelect" class="form-control" style="width:100%;opacity:.5;" disabled onchange="zapVerificarCampos()">
                             <option value="">— Selecione a instância primeiro —</option>
                         </select>
@@ -3434,6 +3436,7 @@ function mudarAba(aba) {
 let _zapInstancias = [];
 let _zapEditingId  = null;
 let _zapRowsCache  = {};
+const _zapGruposCache = {}; // { instanceName: { grupos: [], ts: number } }
 
 async function carregarZapRelatorios() {
     await _renderZapTabela();
@@ -3545,7 +3548,7 @@ async function _carregarContasZap() {
     if (!sel) return;
     sel.innerHTML = '<option value="">Carregando contas...</option>';
     try {
-        const r = await authFetch('/api/ads-accounts');
+        const r = await authFetch('/api/ads-accounts?scope=configured');
         if (!r.ok) throw new Error('Falha');
         const contas = await r.json();
         if (!Array.isArray(contas) || contas.length === 0) {
@@ -3562,22 +3565,36 @@ async function _carregarContasZap() {
     zapAtualizarPreview();
 }
 
+function _popularGruposSelect(sel, grupos) {
+    if (!grupos.length) {
+        sel.innerHTML = '<option value="">Nenhum grupo nesta instância</option>';
+    } else {
+        sel.innerHTML = '<option value="">— Selecione o grupo —</option>' +
+            grupos.map(g => `<option value="${esc(g.id)}">${esc(g.name)}</option>`).join('');
+    }
+}
+
 async function zapModalOnInstanciaChange() {
     const instanceName = $('zapModalInstancia')?.value;
     const grupoSel = $('zapGrupoSelect');
     if (!grupoSel) return;
     if (!instanceName) {
         grupoSel.innerHTML = '<option value="">— Selecione a instância primeiro —</option>';
-        grupoSel.disabled = true;
-        grupoSel.style.opacity = '.5';
-        zapVerificarCampos();
-        return;
+        grupoSel.disabled = true; grupoSel.style.opacity = '.5';
+        zapVerificarCampos(); return;
     }
     const tipo = document.querySelector('input[name="zapTipo"]:checked')?.value;
     if (tipo !== 'grupo') { zapVerificarCampos(); return; }
+
+    // Cache hit (5 min TTL) — não busca novamente se já carregou recentemente
+    const cached = _zapGruposCache[instanceName];
+    if (cached && Date.now() - cached.ts < 5 * 60 * 1000) {
+        _popularGruposSelect(grupoSel, cached.grupos);
+        zapVerificarCampos(); return;
+    }
+
     grupoSel.innerHTML = '<option value="">Carregando grupos...</option>';
-    grupoSel.disabled = true;
-    grupoSel.style.opacity = '.5';
+    grupoSel.disabled = true; grupoSel.style.opacity = '.5';
     try {
         const r = await authFetch(`/api/evo-groups?instanceName=${encodeURIComponent(instanceName)}`);
         const data = await r.json();
@@ -3586,17 +3603,12 @@ async function zapModalOnInstanciaChange() {
             throw new Error((data.error || 'Erro na Evolution API') + detail);
         }
         const grupos = Array.isArray(data) ? data : [];
-        if (grupos.length === 0) {
-            grupoSel.innerHTML = '<option value="">Nenhum grupo encontrado nesta instância</option>';
-        } else {
-            grupoSel.innerHTML = '<option value="">— Selecione o grupo —</option>' +
-                grupos.map(g => `<option value="${esc(g.id)}">${esc(g.name)}</option>`).join('');
-        }
+        _zapGruposCache[instanceName] = { grupos, ts: Date.now() };
+        _popularGruposSelect(grupoSel, grupos);
     } catch(e) {
         grupoSel.innerHTML = `<option value="">Falha: ${esc(e.message)}</option>`;
     } finally {
-        grupoSel.disabled = false;
-        grupoSel.style.opacity = '';
+        grupoSel.disabled = false; grupoSel.style.opacity = '';
         zapVerificarCampos();
     }
 }
