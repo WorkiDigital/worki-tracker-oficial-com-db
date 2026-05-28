@@ -3477,11 +3477,11 @@ async function _renderZapTabela() {
                 <td style="padding:8px 12px;font-size:12px;color:var(--muted);vertical-align:middle;">${esc(periodoLabel)}</td>
                 <td style="padding:8px 12px;font-size:13px;font-variant-numeric:tabular-nums;vertical-align:middle;">${esc(row.horario)}</td>
                 <td style="padding:8px 12px;white-space:nowrap;vertical-align:middle;">
-                    <button onclick="toggleStatusZap(${row.id})" title="${isAtivo ? 'Pausar agendamento' : 'Ativar agendamento'}" style="display:flex;align-items:center;gap:6px;background:none;border:none;cursor:pointer;padding:2px 0;">
-                        <span style="width:30px;height:17px;border-radius:9px;background:${isAtivo ? '#10b981' : 'rgba(255,255,255,.12)'};position:relative;display:inline-block;transition:background .2s;flex-shrink:0;">
-                            <span style="width:12px;height:12px;border-radius:50%;background:#fff;position:absolute;top:50%;transform:translate(${isAtivo ? '15px' : '2px'},-50%);transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.4);"></span>
+                    <button onclick="toggleStatusZap(${row.id})" title="${isAtivo ? 'Pausar agendamento' : 'Ativar agendamento'}" style="display:inline-flex;align-items:center;gap:7px;background:none;border:none;cursor:pointer;padding:2px 0;white-space:nowrap;">
+                        <span style="flex-shrink:0;display:inline-flex;align-items:center;width:32px;height:18px;border-radius:9px;padding:3px;box-sizing:border-box;background:${isAtivo ? '#10b981' : 'rgba(255,255,255,.15)'};transition:background .2s;justify-content:${isAtivo ? 'flex-end' : 'flex-start'};">
+                            <span style="width:12px;height:12px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.4);flex-shrink:0;"></span>
                         </span>
-                        <span style="font-size:11px;font-weight:600;white-space:nowrap;color:${isAtivo ? '#10b981' : 'var(--muted)'};">${isAtivo ? 'Ativo' : 'Pausado'}</span>
+                        <span style="font-size:11px;font-weight:600;color:${isAtivo ? '#10b981' : 'var(--muted)'};">${isAtivo ? 'Ativo' : 'Pausado'}</span>
                     </button>
                 </td>
                 <td style="padding:8px 12px;text-align:right;white-space:nowrap;vertical-align:middle;">
