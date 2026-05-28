@@ -54,7 +54,7 @@ export default async function handler(req, res) {
             SELECT z.*, c.token_meta, c.token_meta_enc,
                    c.account_id AS cliente_account_id
             FROM zap_agendamentos z
-            JOIN clientes c ON c.id = z.cliente_id
+            LEFT JOIN clientes c ON c.id = z.cliente_id
             WHERE z.status = 'ativo'
         `);
 
@@ -80,7 +80,7 @@ export default async function handler(req, res) {
 
             const token = ag.token_meta_enc
                 ? decryptToken(ag.token_meta_enc.toString('hex'))
-                : ag.token_meta;
+                : (ag.token_meta || process.env.META_ADS_TOKEN);
 
             const accountId = String(ag.account_id || ag.cliente_account_id || '').replace(/^act_/, '');
 
@@ -194,10 +194,11 @@ export default async function handler(req, res) {
             }
 
             try {
+                const evoNumber = formatEvolutionNumber(ag.destino_jid, ag.destino_tipo);
                 const evoRes = await fetch(`${EVO_URL}/message/sendText/${ag.instance_name}`, {
                     method: 'POST',
                     headers: { 'apikey': EVO_KEY, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ number: ag.destino_jid, text: msg })
+                    body: JSON.stringify({ number: evoNumber, text: msg })
                 });
                 if (evoRes.ok) {
                     enviados++;
@@ -207,7 +208,7 @@ export default async function handler(req, res) {
                          WHERE id = $2`,
                         [envioChave, ag.id]
                     );
-                    console.log(`[Cron] ✅ Enviado para ${ag.destino_jid}`);
+                    console.log(`[Cron] ✅ Enviado para ${evoNumber}`);
                 } else {
                     const errText = await evoRes.text();
                     console.error(`[Cron] Evolution ${evoRes.status}: ${errText.slice(0, 200)}`);
@@ -229,4 +230,10 @@ function hhmmToMinutes(value) {
     const match = String(value || '').match(/^(\d{2}):(\d{2})$/);
     if (!match) return NaN;
     return Number(match[1]) * 60 + Number(match[2]);
+}
+
+function formatEvolutionNumber(jid, tipo) {
+    const value = String(jid || '').trim();
+    if (tipo === 'grupo' || value.endsWith('@g.us')) return value;
+    return value.replace(/@s\.whatsapp\.net$/i, '').replace(/\D/g, '');
 }
