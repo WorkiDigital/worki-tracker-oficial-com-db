@@ -162,6 +162,13 @@ async function setup() {
     `);
     console.log('✅ Coluna "periodo" injetada na tabela "zap_agendamentos".');
 
+    // Migração: coluna account_id em zap_agendamentos
+    await client.query(`
+      ALTER TABLE public.zap_agendamentos
+      ADD COLUMN IF NOT EXISTS account_id VARCHAR(255);
+    `);
+    console.log('✅ Coluna "account_id" injetada na tabela "zap_agendamentos".');
+
     // Migração: ampliar ctw_aci_id para TEXT (ctwaClid pode ter >255 chars)
     await client.query(`
       ALTER TABLE public.leads_tracking

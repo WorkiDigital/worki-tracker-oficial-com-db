@@ -1211,6 +1211,13 @@
                     </div>
 
                     <div style="margin-bottom:16px;">
+                        <label style="display:block;font-size:12px;font-weight:600;color:var(--text,#f0f4ff);margin-bottom:6px;">Conta de Anúncios <span style="color:#ef4444;">*</span></label>
+                        <select id="zapModalConta" class="form-control" style="width:100%;" onchange="zapVerificarCampos()">
+                            <option value="">Carregando contas...</option>
+                        </select>
+                    </div>
+
+                    <div style="margin-bottom:16px;">
                         <label style="display:block;font-size:12px;font-weight:600;color:var(--text,#f0f4ff);margin-bottom:6px;">Instância WhatsApp <span style="color:#ef4444;">*</span></label>
                         <select id="zapModalInstancia" class="form-control" style="width:100%;" onchange="zapModalOnInstanciaChange();zapVerificarCampos();">
                             <option value="">— Selecione a instância —</option>
@@ -3533,6 +3540,27 @@ async function _carregarInstanciasZap() {
     }
 }
 
+async function _carregarContasZap() {
+    const sel = $('zapModalConta');
+    if (!sel) return;
+    sel.innerHTML = '<option value="">Carregando contas...</option>';
+    try {
+        const r = await authFetch('/api/ads-accounts');
+        if (!r.ok) throw new Error('Falha');
+        const contas = await r.json();
+        if (!Array.isArray(contas) || contas.length === 0) {
+            sel.innerHTML = '<option value="">Nenhuma conta encontrada</option>';
+            return;
+        }
+        sel.innerHTML = '<option value="">— Selecione a conta —</option>' +
+            contas.map(c => `<option value="${esc(String(c.account_id))}">${esc(c.name)}</option>`).join('');
+        if (contas.length === 1) sel.value = String(contas[0].account_id);
+    } catch {
+        sel.innerHTML = '<option value="">Erro ao carregar contas</option>';
+    }
+    zapVerificarCampos();
+}
+
 async function zapModalOnInstanciaChange() {
     const instanceName = $('zapModalInstancia')?.value;
     const grupoSel = $('zapGrupoSelect');
@@ -3602,10 +3630,12 @@ function abrirModalZapNovo() {
     const btn  = $('zapBtnSalvar');    if (btn)  { btn.disabled = true; btn.innerHTML = '<i data-lucide="check" style="width:14px;display:inline;vertical-align:-2px;margin-right:6px;"></i> Salvar Agendamento'; }
     const pa   = $('zapPreviewArea');  if (pa)   pa.style.display = 'none';
     const tit  = $('zapModalTitulo');  if (tit)  tit.textContent = 'Agendar Relatório';
+    const cta  = $('zapModalConta');   if (cta)  cta.innerHTML = '<option value="">Carregando contas...</option>';
 
     $('modalZapRelatorio').classList.add('open');
     lucide.createIcons({ nodes:[$('modalZapRelatorio')] });
     _carregarInstanciasZap();
+    _carregarContasZap();
 }
 
 function fecharModalZap() {
@@ -3614,6 +3644,7 @@ function fecharModalZap() {
 
 function zapVerificarCampos() {
     const instancia = $('zapModalInstancia')?.value;
+    const conta     = $('zapModalConta')?.value;
     const tipo = document.querySelector('input[name="zapTipo"]:checked')?.value || 'grupo';
     let destino = '';
     if (tipo === 'grupo') {
@@ -3623,7 +3654,7 @@ function zapVerificarCampos() {
     }
     const horario = $('zapHorario')?.value;
     const btn = $('zapBtnSalvar');
-    if (btn) btn.disabled = !(instancia && destino && horario);
+    if (btn) btn.disabled = !(instancia && conta && destino && horario);
 }
 
 function zapInserirTag(tag) {
@@ -3704,6 +3735,7 @@ async function salvarAgendamentoZap() {
         frequencia:    $('zapFrequencia')?.value || 'diario',
         horario:       $('zapHorario')?.value    || '08:00',
         periodo:       $('zapPeriodo')?.value    || 'yesterday',
+        account_id:    $('zapModalConta')?.value || null,
     };
 
     if (_zapEditingId) body.id = _zapEditingId;
@@ -3780,7 +3812,20 @@ async function abrirModalZapEditar(row) {
     lucide.createIcons({ nodes:[$('modalZapRelatorio')] });
     zapAtualizarPreview();
 
-    await _carregarInstanciasZap();
+    await Promise.all([_carregarInstanciasZap(), _carregarContasZap()]);
+
+    const contaSel = $('zapModalConta');
+    if (contaSel && row.account_id) {
+        contaSel.value = row.account_id;
+        if (!contaSel.value) {
+            const opt = document.createElement('option');
+            opt.value = row.account_id;
+            opt.textContent = row.account_id;
+            contaSel.add(opt);
+            contaSel.value = row.account_id;
+        }
+    }
+
     const sel = $('zapModalInstancia');
     if (sel && row.instance_name) {
         sel.value = row.instance_name;
@@ -3822,6 +3867,7 @@ async function duplicarAgendamentoZap(row) {
             frequencia:    row.frequencia,
             horario:       row.horario,
             periodo:       row.periodo,
+            account_id:    row.account_id || null,
         };
         const r = await authFetch('/api/zap-reports', {
             method: 'POST',

@@ -23,6 +23,7 @@ export default async function handler(req, res) {
         `SELECT id, instance_name, destino_tipo, destino_jid, destino_nome,
                 template, frequencia, to_char(horario,'HH24:MI') AS horario,
                 COALESCE(periodo, 'yesterday') AS periodo,
+                account_id,
                 status, criado_em
          FROM zap_agendamentos
          ${tenantWhere}
@@ -34,34 +35,34 @@ export default async function handler(req, res) {
 
     // CREATE
     if (req.method === 'POST') {
-      const { instance_name, destino_tipo, destino_jid, destino_nome, template, frequencia, horario, periodo } = req.body || {};
+      const { instance_name, destino_tipo, destino_jid, destino_nome, template, frequencia, horario, periodo, account_id } = req.body || {};
       if (!instance_name || !destino_jid || !horario) {
         return res.status(400).json({ error: 'instance_name, destino_jid e horario são obrigatórios' });
       }
       const result = await pool.query(
         `INSERT INTO zap_agendamentos
-           (cliente_id, instance_name, destino_tipo, destino_jid, destino_nome, template, frequencia, horario, periodo)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+           (cliente_id, instance_name, destino_tipo, destino_jid, destino_nome, template, frequencia, horario, periodo, account_id)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
          RETURNING id`,
-        [clienteId, instance_name, destino_tipo || 'grupo', destino_jid, destino_nome || '', template || '', frequencia || 'diario', horario, periodo || 'yesterday']
+        [clienteId, instance_name, destino_tipo || 'grupo', destino_jid, destino_nome || '', template || '', frequencia || 'diario', horario, periodo || 'yesterday', account_id || null]
       );
       return res.status(201).json({ id: result.rows[0].id });
     }
 
     // EDIT
     if (req.method === 'PUT') {
-      const { id, instance_name, destino_tipo, destino_jid, destino_nome, template, frequencia, horario, periodo } = req.body || {};
+      const { id, instance_name, destino_tipo, destino_jid, destino_nome, template, frequencia, horario, periodo, account_id } = req.body || {};
       if (!id || !instance_name || !destino_jid || !horario) {
         return res.status(400).json({ error: 'id, instance_name, destino_jid e horario são obrigatórios' });
       }
-      const params = [instance_name, destino_tipo || 'grupo', destino_jid, destino_nome || '', template || '', frequencia || 'diario', horario, periodo || 'yesterday', id];
+      const params = [instance_name, destino_tipo || 'grupo', destino_jid, destino_nome || '', template || '', frequencia || 'diario', horario, periodo || 'yesterday', account_id || null, id];
       const tenantClause = clienteId !== null ? ` AND cliente_id = $${params.length + 1}` : '';
       if (clienteId !== null) params.push(clienteId);
       const result = await pool.query(
         `UPDATE zap_agendamentos
          SET instance_name=$1, destino_tipo=$2, destino_jid=$3, destino_nome=$4,
-             template=$5, frequencia=$6, horario=$7, periodo=$8
-         WHERE id=$9${tenantClause}
+             template=$5, frequencia=$6, horario=$7, periodo=$8, account_id=$9
+         WHERE id=$10${tenantClause}
          RETURNING id`,
         params
       );
