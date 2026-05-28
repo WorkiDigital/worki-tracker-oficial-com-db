@@ -155,6 +155,13 @@ async function setup() {
     `);
     console.log('✅ Tabela "zap_agendamentos" verificada/criada.');
 
+    // Migração: coluna periodo em zap_agendamentos
+    await client.query(`
+      ALTER TABLE public.zap_agendamentos
+      ADD COLUMN IF NOT EXISTS periodo VARCHAR(50) DEFAULT 'yesterday';
+    `);
+    console.log('✅ Coluna "periodo" injetada na tabela "zap_agendamentos".');
+
     // Migração: ampliar ctw_aci_id para TEXT (ctwaClid pode ter >255 chars)
     await client.query(`
       ALTER TABLE public.leads_tracking

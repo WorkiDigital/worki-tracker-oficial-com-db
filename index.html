@@ -1174,13 +1174,14 @@
                                 <th style="padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">Destino</th>
                                 <th style="padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">Instância</th>
                                 <th style="padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">Frequência</th>
+                                <th style="padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">Período</th>
                                 <th style="padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">Horário</th>
                                 <th style="padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">Status</th>
                                 <th style="padding:10px 12px;text-align:right;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">Ações</th>
                             </tr>
                         </thead>
                         <tbody id="zapRelatoriosTbody">
-                            <tr><td colspan="6" style="padding:48px;text-align:center;color:var(--muted);font-size:13px;">Carregando...</td></tr>
+                            <tr><td colspan="7" style="padding:48px;text-align:center;color:var(--muted);font-size:13px;">Carregando...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -1189,8 +1190,8 @@
 
         <!-- MODAL: AGENDAR RELATÓRIO ZAP -->
         <div id="modalZapRelatorio" class="modal-overlay" onclick="if(event.target===this)fecharModalZap()">
-            <div class="modal-box" style="max-width:460px;width:100%;">
-                <div class="modal-head">
+            <div class="modal-box" style="max-width:500px;width:100%;max-height:92vh;overflow-y:auto;">
+                <div class="modal-head" style="position:sticky;top:0;background:var(--card,#0d1117);z-index:1;padding-bottom:12px;border-bottom:1px solid var(--border);">
                     <span style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;background:rgba(37,211,102,.12);border-radius:8px;flex-shrink:0;">
                         <i data-lucide="send" style="color:#25D366;width:16px;height:16px;"></i>
                     </span>
@@ -1200,83 +1201,124 @@
                     </button>
                 </div>
 
-                <div style="padding:0 4px;">
-                    <!-- Instância -->
+                <div style="padding:4px 4px 0;">
+
+                    <!-- ── CONFIGURAÇÃO ── -->
+                    <div style="display:flex;align-items:center;gap:8px;margin:18px 0 12px;">
+                        <span style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;white-space:nowrap;">Configuração</span>
+                        <div style="flex:1;height:1px;background:var(--border);"></div>
+                    </div>
+
                     <div style="margin-bottom:16px;">
-                        <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">Instância WhatsApp</label>
+                        <label style="display:block;font-size:12px;font-weight:600;color:var(--text,#f0f4ff);margin-bottom:6px;">Instância WhatsApp</label>
                         <select id="zapModalInstancia" class="form-control" style="width:100%;" onchange="zapModalOnInstanciaChange()">
                             <option value="">— Selecione a instância —</option>
                         </select>
                     </div>
 
-                    <!-- Tipo de destino -->
-                    <div style="margin-bottom:16px;">
-                        <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Enviar para</label>
-                        <div style="display:flex;gap:0;border:1px solid var(--border);border-radius:8px;overflow:hidden;">
-                            <label id="zapTipoGrupoLabel" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:9px 12px;cursor:pointer;font-size:13px;font-weight:600;background:var(--blue);color:#fff;transition:all .15s;">
+                    <!-- ── DESTINO ── -->
+                    <div style="display:flex;align-items:center;gap:8px;margin:20px 0 12px;">
+                        <span style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;white-space:nowrap;">Destino</span>
+                        <div style="flex:1;height:1px;background:var(--border);"></div>
+                    </div>
+
+                    <div style="margin-bottom:14px;">
+                        <div style="display:flex;gap:0;border:1px solid var(--border);border-radius:6px;overflow:hidden;">
+                            <label id="zapTipoGrupoLabel" style="flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:6px 10px;cursor:pointer;font-size:12px;font-weight:600;background:var(--blue);color:#fff;transition:all .15s;">
                                 <input type="radio" name="zapTipo" value="grupo" checked onchange="zapOnTipoChange()" style="display:none;">
-                                <i data-lucide="users" style="width:13px;"></i> Grupo
+                                <i data-lucide="users" style="width:12px;"></i> Grupo
                             </label>
-                            <label id="zapTipoContatoLabel" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:9px 12px;cursor:pointer;font-size:13px;font-weight:600;background:transparent;color:var(--muted);transition:all .15s;">
+                            <label id="zapTipoContatoLabel" style="flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:6px 10px;cursor:pointer;font-size:12px;font-weight:600;background:transparent;color:var(--muted);transition:all .15s;">
                                 <input type="radio" name="zapTipo" value="contato" onchange="zapOnTipoChange()" style="display:none;">
-                                <i data-lucide="user" style="width:13px;"></i> Contato
+                                <i data-lucide="user" style="width:12px;"></i> Contato Direto
                             </label>
                         </div>
                     </div>
 
-                    <!-- Grupo -->
                     <div id="zapGrupoArea" style="margin-bottom:16px;">
-                        <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">Grupo</label>
+                        <label style="display:block;font-size:12px;font-weight:600;color:var(--text,#f0f4ff);margin-bottom:6px;">Grupo WhatsApp</label>
                         <select id="zapGrupoSelect" class="form-control" style="width:100%;">
                             <option value="">— Selecione a instância primeiro —</option>
                         </select>
                     </div>
 
-                    <!-- Contato -->
                     <div id="zapContatoArea" style="margin-bottom:16px;display:none;">
-                        <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">Número (com DDI)</label>
+                        <label style="display:block;font-size:12px;font-weight:600;color:var(--text,#f0f4ff);margin-bottom:6px;">Número (com DDI)</label>
                         <input type="tel" id="zapContatoInput" class="form-control" placeholder="Ex: 5511999999999" style="width:100%;">
                     </div>
 
-                    <!-- Frequência + Horário -->
-                    <div style="display:flex;gap:12px;margin-bottom:16px;">
-                        <div style="flex:1;">
-                            <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">Frequência</label>
+                    <!-- ── AGENDAMENTO ── -->
+                    <div style="display:flex;align-items:center;gap:8px;margin:20px 0 12px;">
+                        <span style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;white-space:nowrap;">Agendamento</span>
+                        <div style="flex:1;height:1px;background:var(--border);"></div>
+                    </div>
+
+                    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px;">
+                        <div>
+                            <label style="display:block;font-size:12px;font-weight:600;color:var(--text,#f0f4ff);margin-bottom:6px;">Frequência</label>
                             <select id="zapFrequencia" class="form-control" style="width:100%;">
                                 <option value="diario">Diário</option>
                                 <option value="semanal">Semanal</option>
                                 <option value="mensal">Mensal</option>
                             </select>
                         </div>
-                        <div style="flex:1;">
-                            <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">Horário</label>
+                        <div>
+                            <label style="display:block;font-size:12px;font-weight:600;color:var(--text,#f0f4ff);margin-bottom:6px;">Horário</label>
                             <input type="time" id="zapHorario" class="form-control" value="08:00" style="width:100%;">
                         </div>
-                    </div>
-
-                    <!-- Template -->
-                    <div style="margin-bottom:20px;">
-                        <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">
-                            Mensagem <span style="font-weight:400;text-transform:none;">(opcional)</span>
-                        </label>
-                        <textarea id="zapTemplate" class="form-control" rows="4" style="width:100%;resize:vertical;font-size:13px;" placeholder="Ex:&#10;📊 Resumo de ontem:&#10;🔥 Gasto: {gasto}&#10;🎯 Leads: {leads}&#10;💰 CPL: {cpl}&#10;📈 ROAS: {roas}"></textarea>
-                        <div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:4px;">
-                            <span style="font-size:10px;color:var(--muted);margin-right:2px;align-self:center;">Tags:</span>
-                            <code style="font-size:10px;background:var(--tag,rgba(255,255,255,.06));padding:2px 5px;border-radius:4px;cursor:pointer;" onclick="zapInserirTag('{gasto}')">{gasto}</code>
-                            <code style="font-size:10px;background:var(--tag,rgba(255,255,255,.06));padding:2px 5px;border-radius:4px;cursor:pointer;" onclick="zapInserirTag('{leads}')">{leads}</code>
-                            <code style="font-size:10px;background:var(--tag,rgba(255,255,255,.06));padding:2px 5px;border-radius:4px;cursor:pointer;" onclick="zapInserirTag('{cpl}')">{cpl}</code>
-                            <code style="font-size:10px;background:var(--tag,rgba(255,255,255,.06));padding:2px 5px;border-radius:4px;cursor:pointer;" onclick="zapInserirTag('{msgs}')">{msgs}</code>
-                            <code style="font-size:10px;background:var(--tag,rgba(255,255,255,.06));padding:2px 5px;border-radius:4px;cursor:pointer;" onclick="zapInserirTag('{cpr}')">{cpr}</code>
-                            <code style="font-size:10px;background:var(--tag,rgba(255,255,255,.06));padding:2px 5px;border-radius:4px;cursor:pointer;" onclick="zapInserirTag('{cliques}')">{cliques}</code>
-                            <code style="font-size:10px;background:var(--tag,rgba(255,255,255,.06));padding:2px 5px;border-radius:4px;cursor:pointer;" onclick="zapInserirTag('{ctr}')">{ctr}</code>
-                            <code style="font-size:10px;background:var(--tag,rgba(255,255,255,.06));padding:2px 5px;border-radius:4px;cursor:pointer;" onclick="zapInserirTag('{roas}')">{roas}</code>
-                            <code style="font-size:10px;background:var(--tag,rgba(255,255,255,.06));padding:2px 5px;border-radius:4px;cursor:pointer;" onclick="zapInserirTag('{cpc}')">{cpc}</code>
-                            <code style="font-size:10px;background:var(--tag,rgba(255,255,255,.06));padding:2px 5px;border-radius:4px;cursor:pointer;" onclick="zapInserirTag('{alcance}')">{alcance}</code>
-                            <code style="font-size:10px;background:var(--tag,rgba(255,255,255,.06));padding:2px 5px;border-radius:4px;cursor:pointer;" onclick="zapInserirTag('{impressoes}')">{impressoes}</code>
+                        <div>
+                            <label style="display:block;font-size:12px;font-weight:600;color:var(--text,#f0f4ff);margin-bottom:6px;">Período</label>
+                            <select id="zapPeriodo" class="form-control" style="width:100%;">
+                                <option value="yesterday">Ontem</option>
+                                <option value="last_7_days">Últimos 7 dias</option>
+                                <option value="last_14_days">Últimos 14 dias</option>
+                                <option value="last_30_days">Últimos 30 dias</option>
+                                <option value="current_month">Este mês</option>
+                                <option value="previous_month">Mês anterior</option>
+                            </select>
                         </div>
                     </div>
 
-                    <button id="zapBtnSalvar" class="btn-confirm" onclick="salvarAgendamentoZap()">
+                    <!-- ── MENSAGEM ── -->
+                    <div style="display:flex;align-items:center;gap:8px;margin:20px 0 12px;">
+                        <span style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;white-space:nowrap;">Mensagem</span>
+                        <div style="flex:1;height:1px;background:var(--border);"></div>
+                        <span style="font-size:10px;color:var(--muted);font-weight:400;white-space:nowrap;">opcional</span>
+                    </div>
+
+                    <textarea id="zapTemplate" class="form-control" rows="6" style="width:100%;resize:vertical;font-size:13px;line-height:1.6;margin-bottom:8px;"
+                        oninput="zapAtualizarPreview()"
+                        placeholder="Ex:&#10;📊 Resumo — {periodo}&#10;&#10;💰 Gasto: {gasto}&#10;🎯 Leads: {leads}&#10;📉 CPL: {cpl}&#10;📈 ROAS: {roas}"></textarea>
+
+                    <!-- Tags chips -->
+                    <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:12px;align-items:center;">
+                        <span style="font-size:10px;color:var(--muted);margin-right:2px;">Inserir:</span>
+                        <button class="zap-tag-chip" title="Período selecionado (ex: Últimos 7 dias)" onclick="zapInserirTag('{periodo}')">{periodo}</button>
+                        <button class="zap-tag-chip" title="Data de início do período" onclick="zapInserirTag('{data_inicio}')">{data_inicio}</button>
+                        <button class="zap-tag-chip" title="Data de fim do período" onclick="zapInserirTag('{data_fim}')">{data_fim}</button>
+                        <button class="zap-tag-chip" title="Gasto total em reais" onclick="zapInserirTag('{gasto}')">{gasto}</button>
+                        <button class="zap-tag-chip" title="Quantidade de leads" onclick="zapInserirTag('{leads}')">{leads}</button>
+                        <button class="zap-tag-chip" title="Custo por lead" onclick="zapInserirTag('{cpl}')">{cpl}</button>
+                        <button class="zap-tag-chip" title="Mensagens recebidas" onclick="zapInserirTag('{msgs}')">{msgs}</button>
+                        <button class="zap-tag-chip" title="Custo por resultado" onclick="zapInserirTag('{cpr}')">{cpr}</button>
+                        <button class="zap-tag-chip" title="Cliques no anúncio" onclick="zapInserirTag('{cliques}')">{cliques}</button>
+                        <button class="zap-tag-chip" title="Taxa de cliques (%)" onclick="zapInserirTag('{ctr}')">{ctr}</button>
+                        <button class="zap-tag-chip" title="Retorno sobre investimento em ads" onclick="zapInserirTag('{roas}')">{roas}</button>
+                        <button class="zap-tag-chip" title="Custo por clique" onclick="zapInserirTag('{cpc}')">{cpc}</button>
+                        <button class="zap-tag-chip" title="Custo por 1000 impressões" onclick="zapInserirTag('{cpm}')">{cpm}</button>
+                        <button class="zap-tag-chip" title="Alcance de pessoas únicas" onclick="zapInserirTag('{alcance}')">{alcance}</button>
+                        <button class="zap-tag-chip" title="Total de impressões" onclick="zapInserirTag('{impressoes}')">{impressoes}</button>
+                    </div>
+
+                    <!-- Preview em tempo real -->
+                    <div id="zapPreviewArea" style="display:none;margin-bottom:16px;border:1px solid var(--border);border-radius:8px;padding:12px 14px;background:rgba(37,211,102,.04);">
+                        <div style="font-size:10px;font-weight:700;color:#25D366;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;display:flex;align-items:center;gap:5px;">
+                            <i data-lucide="eye" style="width:11px;"></i> Preview
+                        </div>
+                        <pre id="zapPreviewText" style="margin:0;font-size:12px;line-height:1.7;color:var(--text,#f0f4ff);white-space:pre-wrap;word-break:break-word;font-family:inherit;"></pre>
+                    </div>
+
+                    <button id="zapBtnSalvar" class="btn-confirm" onclick="salvarAgendamentoZap()" style="margin-bottom:4px;">
                         <i data-lucide="check" style="width:14px;display:inline;vertical-align:-2px;margin-right:6px;"></i> Salvar Agendamento
                     </button>
                 </div>
@@ -3387,17 +3429,26 @@ async function carregarZapRelatorios() {
     await _renderZapTabela();
 }
 
+const _ZAP_PERIODO_LABEL = {
+    yesterday:      'Ontem',
+    last_7_days:    'Últ. 7 dias',
+    last_14_days:   'Últ. 14 dias',
+    last_30_days:   'Últ. 30 dias',
+    current_month:  'Este mês',
+    previous_month: 'Mês anterior',
+};
+
 async function _renderZapTabela() {
     const tbody = $('zapRelatoriosTbody');
     if (!tbody) return;
-    tbody.innerHTML = `<tr><td colspan="6" style="padding:48px;text-align:center;color:var(--muted);font-size:13px;">Carregando...</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" style="padding:48px;text-align:center;color:var(--muted);font-size:13px;">Carregando...</td></tr>`;
     try {
         const r = await authFetch('/api/zap-reports');
         if (!r.ok) throw new Error('Falha ao carregar');
         const rows = await r.json();
         if (!Array.isArray(rows) || rows.length === 0) {
             tbody.innerHTML = `
-                <tr><td colspan="6" style="padding:56px 24px;text-align:center;">
+                <tr><td colspan="7" style="padding:56px 24px;text-align:center;">
                     <div style="display:flex;flex-direction:column;align-items:center;gap:10px;">
                         <i data-lucide="calendar-x" style="width:32px;height:32px;color:var(--muted);opacity:.4;"></i>
                         <span style="color:var(--muted);font-size:13px;">Nenhum relatório agendado ainda.</span>
@@ -3410,21 +3461,23 @@ async function _renderZapTabela() {
         const FREQ = { diario:'Diário', semanal:'Semanal', mensal:'Mensal' };
         tbody.innerHTML = rows.map(row => {
             const isAtivo = row.status === 'ativo';
+            const periodoLabel = _ZAP_PERIODO_LABEL[row.periodo] || row.periodo || 'Ontem';
             return `
-            <tr style="border-bottom:1px solid var(--border);">
-                <td style="padding:12px 12px;">
+            <tr style="border-bottom:1px solid var(--border);transition:background .1s;" onmouseenter="this.style.background='rgba(255,255,255,.03)'" onmouseleave="this.style.background=''">
+                <td style="padding:8px 12px;">
                     <div style="font-size:13px;font-weight:600;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(row.destino_nome || row.destino_jid)}</div>
                     <div style="font-size:11px;color:var(--muted);margin-top:2px;">${row.destino_tipo === 'grupo' ? '👥 Grupo' : '👤 Contato'}</div>
                 </td>
-                <td style="padding:12px 12px;font-size:11px;color:var(--muted);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(row.instance_name)}</td>
-                <td style="padding:12px 12px;font-size:13px;">${FREQ[row.frequencia] || row.frequencia}</td>
-                <td style="padding:12px 12px;font-size:13px;font-variant-numeric:tabular-nums;">${esc(row.horario)}</td>
-                <td style="padding:12px 12px;">
+                <td style="padding:8px 12px;font-size:11px;color:var(--muted);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(row.instance_name)}</td>
+                <td style="padding:8px 12px;font-size:13px;">${FREQ[row.frequencia] || row.frequencia}</td>
+                <td style="padding:8px 12px;font-size:12px;color:var(--muted);">${esc(periodoLabel)}</td>
+                <td style="padding:8px 12px;font-size:13px;font-variant-numeric:tabular-nums;">${esc(row.horario)}</td>
+                <td style="padding:8px 12px;">
                     <span style="font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;${isAtivo ? 'background:rgba(16,185,129,.15);color:#10b981;' : 'background:rgba(255,255,255,.06);color:var(--muted);'}">
                         ${isAtivo ? 'Ativo' : 'Pausado'}
                     </span>
                 </td>
-                <td style="padding:12px 12px;text-align:right;white-space:nowrap;">
+                <td style="padding:8px 12px;text-align:right;white-space:nowrap;">
                     <button class="btn btn-ghost btn-sm" title="${isAtivo ? 'Pausar' : 'Ativar'}" onclick="toggleStatusZap(${row.id})" style="margin-right:4px;">
                         <i data-lucide="${isAtivo ? 'pause' : 'play'}" style="width:12px;"></i>
                     </button>
@@ -3436,7 +3489,7 @@ async function _renderZapTabela() {
         }).join('');
         lucide.createIcons({ nodes:[tbody] });
     } catch(e) {
-        tbody.innerHTML = `<tr><td colspan="6" style="padding:40px;text-align:center;color:var(--red);font-size:13px;">Erro ao carregar agendamentos: ${esc(e.message)}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" style="padding:40px;text-align:center;color:var(--red);font-size:13px;">Erro ao carregar agendamentos: ${esc(e.message)}</td></tr>`;
     }
 }
 
@@ -3514,19 +3567,20 @@ function zapOnTipoChange() {
 }
 
 function abrirModalZapNovo() {
-    // Resetar
     document.querySelectorAll('input[name="zapTipo"]').forEach(r => { r.checked = r.value === 'grupo'; });
     $('zapGrupoArea').style.display = '';
     $('zapContatoArea').style.display = 'none';
     const lG = $('zapTipoGrupoLabel'), lC = $('zapTipoContatoLabel');
     if (lG) { lG.style.background = 'var(--blue)'; lG.style.color = '#fff'; }
     if (lC) { lC.style.background = 'transparent'; lC.style.color = 'var(--muted)'; }
-    const tmpl = $('zapTemplate'); if (tmpl) tmpl.value = '';
+    const tmpl = $('zapTemplate');    if (tmpl) tmpl.value = '';
     const freq = $('zapFrequencia'); if (freq) freq.value = 'diario';
-    const hor  = $('zapHorario');   if (hor)  hor.value  = '08:00';
+    const hor  = $('zapHorario');    if (hor)  hor.value  = '08:00';
+    const per  = $('zapPeriodo');    if (per)  per.value  = 'yesterday';
     const gs   = $('zapGrupoSelect'); if (gs) { gs.innerHTML = '<option value="">— Selecione a instância primeiro —</option>'; gs.disabled = false; }
     const ci   = $('zapContatoInput'); if (ci) ci.value = '';
     const btn  = $('zapBtnSalvar'); if (btn) { btn.disabled = false; btn.innerHTML = '<i data-lucide="check" style="width:14px;display:inline;vertical-align:-2px;margin-right:6px;"></i> Salvar Agendamento'; }
+    const pa   = $('zapPreviewArea'); if (pa) pa.style.display = 'none';
 
     $('modalZapRelatorio').classList.add('open');
     lucide.createIcons({ nodes:[$('modalZapRelatorio')] });
@@ -3544,6 +3598,47 @@ function zapInserirTag(tag) {
     ta.value = ta.value.slice(0, s) + tag + ta.value.slice(e);
     ta.selectionStart = ta.selectionEnd = s + tag.length;
     ta.focus();
+    zapAtualizarPreview();
+}
+
+function zapAtualizarPreview() {
+    const ta = $('zapTemplate');
+    const pa = $('zapPreviewArea');
+    const pt = $('zapPreviewText');
+    if (!ta || !pa || !pt) return;
+    const txt = ta.value.trim();
+    if (!txt) { pa.style.display = 'none'; return; }
+
+    const periodoLabel = _ZAP_PERIODO_LABEL[$('zapPeriodo')?.value || 'yesterday'] || 'Ontem';
+    const hoje = new Date();
+    const fmtDate = d => d.toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric' });
+    const dataFim   = fmtDate(new Date(hoje.setDate(hoje.getDate() - 1)));
+    const dataInicio = fmtDate(new Date());
+
+    const mocked = {
+        '{periodo}':      periodoLabel,
+        '{data_inicio}':  dataInicio,
+        '{data_fim}':     dataFim,
+        '{gasto}':        'R$ 0,00',
+        '{leads}':        '0',
+        '{cpl}':          'R$ 0,00',
+        '{msgs}':         '0',
+        '{cpr}':          'R$ 0,00',
+        '{cliques}':      '0',
+        '{ctr}':          '0,00%',
+        '{roas}':         '0,00x',
+        '{cpc}':          'R$ 0,00',
+        '{cpm}':          'R$ 0,00',
+        '{alcance}':      '0',
+        '{impressoes}':   '0',
+    };
+    let preview = txt;
+    for (const [tag, val] of Object.entries(mocked)) {
+        preview = preview.replaceAll(tag, val);
+    }
+    pt.textContent = preview;
+    pa.style.display = '';
+    lucide.createIcons({ nodes:[pa] });
 }
 
 async function salvarAgendamentoZap() {
@@ -3570,9 +3665,10 @@ async function salvarAgendamentoZap() {
         destino_tipo:  tipo,
         destino_jid:   jid,
         destino_nome:  nome,
-        template:      $('zapTemplate')?.value || '',
+        template:      $('zapTemplate')?.value  || '',
         frequencia:    $('zapFrequencia')?.value || 'diario',
-        horario:       $('zapHorario')?.value   || '08:00',
+        horario:       $('zapHorario')?.value    || '08:00',
+        periodo:       $('zapPeriodo')?.value    || 'yesterday',
     };
 
     const btn = $('zapBtnSalvar');

@@ -328,6 +328,17 @@ html.light .modal { background:#fff; border-color:var(--border); }
 .btn-confirm:hover { filter:brightness(1.1); }
 .btn-confirm:disabled { background:var(--tag); color:var(--muted); cursor:not-allowed; filter:none; }
 
+/* ── Modal box (novo padrão) ─────────────── */
+.modal-box { background:var(--card,#0d1117); border-radius:14px; padding:20px 22px 22px; border:1px solid var(--border); box-shadow:0 25px 50px -12px rgba(0,0,0,.6); transform:translateY(16px); transition:.25s; width:100%; }
+.modal-overlay.open .modal-box { transform:none; }
+html.light .modal-box { background:#fff; }
+
+/* ── Zap tag chips ───────────────────────── */
+.zap-tag-chip { background:rgba(255,255,255,.05); border:1px solid var(--border); border-radius:4px; padding:2px 7px; font-size:10px; font-family:monospace; color:var(--muted); cursor:pointer; transition:background .12s, color .12s, border-color .12s; }
+.zap-tag-chip:hover { background:var(--blue); color:#fff; border-color:var(--blue); }
+html.light .zap-tag-chip { background:rgba(0,0,0,.04); }
+html.light .zap-tag-chip:hover { background:var(--blue); color:#fff; border-color:var(--blue); }
+
 /* ── Demográficos ────────────────────────── */
 .demo-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
 .demo-grid--5 { grid-template-columns:repeat(5,1fr) !important; }

@@ -22,6 +22,7 @@ export default async function handler(req, res) {
       const result = await pool.query(
         `SELECT id, instance_name, destino_tipo, destino_jid, destino_nome,
                 template, frequencia, to_char(horario,'HH24:MI') AS horario,
+                COALESCE(periodo, 'yesterday') AS periodo,
                 status, criado_em
          FROM zap_agendamentos
          ${tenantWhere}
@@ -33,16 +34,16 @@ export default async function handler(req, res) {
 
     // CREATE
     if (req.method === 'POST') {
-      const { instance_name, destino_tipo, destino_jid, destino_nome, template, frequencia, horario } = req.body || {};
+      const { instance_name, destino_tipo, destino_jid, destino_nome, template, frequencia, horario, periodo } = req.body || {};
       if (!instance_name || !destino_jid || !horario) {
         return res.status(400).json({ error: 'instance_name, destino_jid e horario são obrigatórios' });
       }
       const result = await pool.query(
         `INSERT INTO zap_agendamentos
-           (cliente_id, instance_name, destino_tipo, destino_jid, destino_nome, template, frequencia, horario)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+           (cliente_id, instance_name, destino_tipo, destino_jid, destino_nome, template, frequencia, horario, periodo)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
          RETURNING id`,
-        [clienteId, instance_name, destino_tipo || 'grupo', destino_jid, destino_nome || '', template || '', frequencia || 'diario', horario]
+        [clienteId, instance_name, destino_tipo || 'grupo', destino_jid, destino_nome || '', template || '', frequencia || 'diario', horario, periodo || 'yesterday']
       );
       return res.status(201).json({ id: result.rows[0].id });
     }
