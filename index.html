@@ -1212,7 +1212,7 @@
 
                     <div style="margin-bottom:16px;">
                         <label style="display:block;font-size:12px;font-weight:600;color:var(--text,#f0f4ff);margin-bottom:6px;">Conta de Anúncios <span style="color:#ef4444;">*</span></label>
-                        <select id="zapModalConta" class="form-control" style="width:100%;" onchange="zapVerificarCampos()">
+                        <select id="zapModalConta" class="form-control" style="width:100%;" onchange="zapVerificarCampos();zapAtualizarPreview()">
                             <option value="">Carregando contas...</option>
                         </select>
                     </div>
@@ -1276,7 +1276,7 @@
                         </div>
                         <div>
                             <label style="display:block;font-size:12px;font-weight:600;color:var(--text,#f0f4ff);margin-bottom:6px;">Período</label>
-                            <select id="zapPeriodo" class="form-control" style="width:100%;">
+                            <select id="zapPeriodo" class="form-control" style="width:100%;" onchange="zapAtualizarPreview()">
                                 <option value="yesterday">Ontem</option>
                                 <option value="last_7_days">Últimos 7 dias</option>
                                 <option value="last_14_days">Últimos 14 dias</option>
@@ -3559,6 +3559,7 @@ async function _carregarContasZap() {
         sel.innerHTML = '<option value="">Erro ao carregar contas</option>';
     }
     zapVerificarCampos();
+    zapAtualizarPreview();
 }
 
 async function zapModalOnInstanciaChange() {
@@ -3667,44 +3668,102 @@ function zapInserirTag(tag) {
     zapAtualizarPreview();
 }
 
+let _zapPreviewTimer = null;
+let _zapPreviewReqId = 0;
+
 function zapAtualizarPreview() {
     const ta = $('zapTemplate');
     const pa = $('zapPreviewArea');
     const pt = $('zapPreviewText');
     if (!ta || !pa || !pt) return;
     const txt = ta.value.trim();
-    if (!txt) { pa.style.display = 'none'; return; }
+    if (!txt) {
+        clearTimeout(_zapPreviewTimer);
+        _zapPreviewReqId++;
+        pa.style.display = 'none';
+        return;
+    }
 
     const periodoLabel = _ZAP_PERIODO_LABEL[$('zapPeriodo')?.value || 'yesterday'] || 'Ontem';
+    const periodo = $('zapPeriodo')?.value || 'yesterday';
+    const conta   = $('zapModalConta')?.value || '';
+
     const hoje = new Date();
     const fmtDate = d => d.toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric' });
-    const dataFim   = fmtDate(new Date(hoje.setDate(hoje.getDate() - 1)));
-    const dataInicio = fmtDate(new Date());
-
-    const mocked = {
-        '{periodo}':      periodoLabel,
-        '{data_inicio}':  dataInicio,
-        '{data_fim}':     dataFim,
-        '{gasto}':        'R$ 0,00',
-        '{leads}':        '0',
-        '{cpl}':          'R$ 0,00',
-        '{msgs}':         '0',
-        '{cpr}':          'R$ 0,00',
-        '{cliques}':      '0',
-        '{ctr}':          '0,00%',
-        '{roas}':         '0,00x',
-        '{cpc}':          'R$ 0,00',
-        '{cpm}':          'R$ 0,00',
-        '{alcance}':      '0',
-        '{impressoes}':   '0',
+    const getPeriodoDatas = (p) => {
+        const y = hoje.getFullYear(), m = hoje.getMonth(), d = hoje.getDate();
+        if (p === 'current_month') return [new Date(y, m, 1), new Date(y, m, d)];
+        if (p === 'previous_month') return [new Date(y, m - 1, 1), new Date(y, m, 0)];
+        const dias = { last_7_days: 7, last_14_days: 14, last_30_days: 30 }[p] || 1;
+        return [new Date(y, m, d - dias), new Date(y, m, d - 1)];
     };
-    let preview = txt;
-    for (const [tag, val] of Object.entries(mocked)) {
-        preview = preview.replaceAll(tag, val);
+    const [inicioPeriodo, fimPeriodo] = getPeriodoDatas(periodo);
+    const dataInicio = fmtDate(inicioPeriodo);
+    const dataFim    = fmtDate(fimPeriodo);
+
+    const renderPreview = (vals) => {
+        let preview = txt;
+        for (const [tag, val] of Object.entries(vals)) preview = preview.replaceAll(tag, val);
+        pt.textContent = preview;
+        pa.style.display = '';
+        lucide.createIcons({ nodes:[pa] });
+    };
+
+    if (!conta) {
+        clearTimeout(_zapPreviewTimer);
+        _zapPreviewReqId++;
+        renderPreview({
+            '{periodo}': periodoLabel, '{data_inicio}': dataInicio, '{data_fim}': dataFim,
+            '{gasto}': '—', '{leads}': '—', '{cpl}': '—', '{msgs}': '—', '{cpr}': '—',
+            '{cliques}': '—', '{ctr}': '—', '{roas}': '—', '{cpc}': '—', '{cpm}': '—',
+            '{alcance}': '—', '{impressoes}': '—',
+        });
+        return;
     }
-    pt.textContent = preview;
+
+    // Mostra loading enquanto busca
+    pt.textContent = '⏳ Buscando dados reais...';
     pa.style.display = '';
-    lucide.createIcons({ nodes:[pa] });
+
+    clearTimeout(_zapPreviewTimer);
+    const reqId = ++_zapPreviewReqId;
+    _zapPreviewTimer = setTimeout(async () => {
+        try {
+            const r = await authFetch(`/api/zap-preview-metrics?account_id=${encodeURIComponent(conta)}&periodo=${encodeURIComponent(periodo)}`);
+            if (!r.ok) {
+                let msg = 'Falha ao buscar métricas';
+                try {
+                    const err = await r.json();
+                    msg = err.error || msg;
+                } catch {}
+                throw new Error(msg);
+            }
+            const m = await r.json();
+            if (reqId !== _zapPreviewReqId) return;
+            const fmtBrl = v => new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' }).format(v || 0);
+            const fmtNum = v => new Intl.NumberFormat('pt-BR').format(v || 0);
+            renderPreview({
+                '{periodo}':    periodoLabel,
+                '{data_inicio}': dataInicio,
+                '{data_fim}':    dataFim,
+                '{gasto}':       fmtBrl(m.spend),
+                '{leads}':       fmtNum(m.leads),
+                '{cpl}':         fmtBrl(m.cpl),
+                '{msgs}':        fmtNum(m.msgs),
+                '{cpr}':         fmtBrl(m.cpr),
+                '{cliques}':     fmtNum(m.clicks),
+                '{ctr}':         (m.ctr || 0).toFixed(2) + '%',
+                '{roas}':        (m.roas || 0).toFixed(2) + 'x',
+                '{cpc}':         fmtBrl(m.cpc),
+                '{cpm}':         fmtBrl(m.cpm),
+                '{alcance}':     fmtNum(m.reach),
+                '{impressoes}':  fmtNum(m.impressions),
+            });
+        } catch (e) {
+            if (reqId !== _zapPreviewReqId) return;
+            pt.textContent = '⚠️ Erro ao carregar dados: ' + e.message;
+        }
+    }, 600);
 }
 
 async function salvarAgendamentoZap() {
@@ -3824,6 +3883,7 @@ async function abrirModalZapEditar(row) {
             contaSel.add(opt);
             contaSel.value = row.account_id;
         }
+        zapAtualizarPreview();
     }
 
     const sel = $('zapModalInstancia');
