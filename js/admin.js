@@ -588,6 +588,7 @@ async function showLogDetail(id) {
 let _logPage = 1;
 const _logPerPage = 50;
 let _logAutoRefreshId = null;
+let _logDefaultDateApplied = false;
 
 function toggleLogAutoRefresh() {
     if ($('log-auto-refresh').checked) {
@@ -629,8 +630,18 @@ function logMudarPagina(dir) {
 }
 
 async function carregarLogs(silent) {
+    // Aplica filtro padrão de 48h apenas na primeira abertura da aba
+    if (!_logDefaultDateApplied) {
+        _logDefaultDateApplied = true;
+        const dateFromEl = $('log-filter-date-from');
+        if (dateFromEl && !dateFromEl.value) {
+            const d = new Date(); d.setDate(d.getDate() - 2);
+            dateFromEl.value = d.toISOString().split('T')[0];
+        }
+    }
+
     const filters = [
-        'log-filter-level', 'log-filter-tag', 'log-filter-instance', 
+        'log-filter-level', 'log-filter-tag', 'log-filter-instance',
         'log-filter-search', 'log-filter-date-from', 'log-filter-date-to'
     ];
     const tbody = $('logs-tbody');

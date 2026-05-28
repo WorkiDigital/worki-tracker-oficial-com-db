@@ -35,6 +35,9 @@ export default async function handler(req, res) {
   const limitVal  = Math.min(parseInt(limit) || 50, 200);
   const offsetVal = Math.max(parseInt(offset) || 0, 0);
 
+  // Auto-prune silencioso: remove logs > 7 dias sem bloquear a resposta
+  pool.query(`DELETE FROM webhook_logs WHERE created_at < NOW() - INTERVAL '7 days'`).catch(() => {});
+
   try {
     const [countResult, result] = await Promise.all([
       pool.query(`SELECT COUNT(*)::int AS total FROM webhook_logs ${where}`, params),
