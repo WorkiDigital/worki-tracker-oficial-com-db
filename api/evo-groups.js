@@ -44,27 +44,39 @@ export default async function handler(req, res) {
       'Content-Type': 'application/json'
     };
 
-    // A Evolution API tem a rota para buscar todos os grupos usando getParticipants=false
-    const r = await fetch(`${EVO_URL}/group/fetchAll/${instanceName}?getParticipants=false`, { 
-        method: 'GET',
-        headers 
-    });
-    
-    if (!r.ok) {
-        const errorData = await r.text();
-        return res.status(r.status).json({ error: 'Falha ao buscar grupos da Evolution API.', details: errorData });
+    // Tenta as duas variantes de endpoint da Evolution API (v1 e v2)
+    const endpoints = [
+      `${EVO_URL}/group/fetchAllGroups/${instanceName}?getParticipants=false`,
+      `${EVO_URL}/group/fetchAll/${instanceName}?getParticipants=false`,
+    ];
+
+    let data = null;
+    let lastStatus = 0;
+    let lastBody = '';
+
+    for (const url of endpoints) {
+      const r = await fetch(url, { method: 'GET', headers });
+      lastStatus = r.status;
+      if (r.ok) {
+        data = await r.json();
+        break;
+      }
+      lastBody = await r.text();
+      console.warn(`[evo-groups] ${url} → ${r.status}: ${lastBody.slice(0, 200)}`);
     }
 
-    const data = await r.json();
-    
-    // Filtra e formata para enviar apenas o necessário ao frontend
-    // O retorno da Evolution normalmente é um array de grupos com { id, subject }
+    if (data === null) {
+      return res.status(lastStatus || 500).json({
+        error: `Evolution API retornou erro ${lastStatus}`,
+        details: lastBody.slice(0, 500)
+      });
+    }
+
     const groups = Array.isArray(data) ? data.map(g => ({
-        id: g.id, 
-        name: g.subject || 'Grupo Sem Nome'
+      id:   g.id,
+      name: g.subject || g.name || 'Grupo Sem Nome'
     })) : [];
 
-    // Ordena alfabeticamente
     groups.sort((a, b) => a.name.localeCompare(b.name));
 
     return res.status(200).json(groups);

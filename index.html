@@ -3482,7 +3482,10 @@ async function zapModalOnInstanciaChange() {
     try {
         const r = await authFetch(`/api/evo-groups?instanceName=${encodeURIComponent(instanceName)}`);
         const data = await r.json();
-        if (!r.ok || data.error) throw new Error(data.error || 'Erro na Evolution API');
+        if (!r.ok || data.error) {
+            const detail = data.details ? ` (${data.details.slice(0,120)})` : '';
+            throw new Error((data.error || 'Erro na Evolution API') + detail);
+        }
         const grupos = Array.isArray(data) ? data : [];
         if (grupos.length === 0) {
             grupoSel.innerHTML = '<option value="">Nenhum grupo encontrado nesta instância</option>';
