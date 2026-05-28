@@ -49,9 +49,10 @@ export async function runCronJob() {
     const toleranciaMin = Math.max(0, parseInt(process.env.ZAP_CRON_TOLERANCE_MINUTES || '2', 10));
     const minutosAgora  = hhmmToMinutes(horarioAtual);
 
-    // Garante colunas de idempotência
+    // Garante colunas (migrações automáticas)
     await pool.query(`
         ALTER TABLE zap_agendamentos
+        ADD COLUMN IF NOT EXISTS account_id VARCHAR(255),
         ADD COLUMN IF NOT EXISTS ultimo_envio_chave VARCHAR(32),
         ADD COLUMN IF NOT EXISTS ultimo_envio_em TIMESTAMPTZ
     `).catch(() => {});
