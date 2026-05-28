@@ -1195,7 +1195,7 @@
                     <span style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;background:rgba(37,211,102,.12);border-radius:8px;flex-shrink:0;">
                         <i data-lucide="send" style="color:#25D366;width:16px;height:16px;"></i>
                     </span>
-                    <h3 style="margin:0;font-size:15px;font-weight:700;">Agendar Relatório</h3>
+                    <h3 id="zapModalTitulo" style="margin:0;font-size:15px;font-weight:700;">Agendar Relatório</h3>
                     <button class="btn-icon" onclick="fecharModalZap()" style="margin-left:auto;">
                         <i data-lucide="x" style="width:14px;"></i>
                     </button>
@@ -1210,8 +1210,8 @@
                     </div>
 
                     <div style="margin-bottom:16px;">
-                        <label style="display:block;font-size:12px;font-weight:600;color:var(--text,#f0f4ff);margin-bottom:6px;">Instância WhatsApp</label>
-                        <select id="zapModalInstancia" class="form-control" style="width:100%;" onchange="zapModalOnInstanciaChange()">
+                        <label style="display:block;font-size:12px;font-weight:600;color:var(--text,#f0f4ff);margin-bottom:6px;">Instância WhatsApp <span style="color:#ef4444;">*</span></label>
+                        <select id="zapModalInstancia" class="form-control" style="width:100%;" onchange="zapModalOnInstanciaChange();zapVerificarCampos();">
                             <option value="">— Selecione a instância —</option>
                         </select>
                     </div>
@@ -1236,15 +1236,15 @@
                     </div>
 
                     <div id="zapGrupoArea" style="margin-bottom:16px;">
-                        <label style="display:block;font-size:12px;font-weight:600;color:var(--text,#f0f4ff);margin-bottom:6px;">Grupo WhatsApp</label>
-                        <select id="zapGrupoSelect" class="form-control" style="width:100%;">
+                        <label style="display:block;font-size:12px;font-weight:600;color:var(--text,#f0f4ff);margin-bottom:6px;">Grupo WhatsApp <span style="color:#ef4444;">*</span></label>
+                        <select id="zapGrupoSelect" class="form-control" style="width:100%;opacity:.5;" disabled onchange="zapVerificarCampos()">
                             <option value="">— Selecione a instância primeiro —</option>
                         </select>
                     </div>
 
                     <div id="zapContatoArea" style="margin-bottom:16px;display:none;">
-                        <label style="display:block;font-size:12px;font-weight:600;color:var(--text,#f0f4ff);margin-bottom:6px;">Número (com DDI)</label>
-                        <input type="tel" id="zapContatoInput" class="form-control" placeholder="Ex: 5511999999999" style="width:100%;">
+                        <label style="display:block;font-size:12px;font-weight:600;color:var(--text,#f0f4ff);margin-bottom:6px;">Número (com DDI) <span style="color:#ef4444;">*</span></label>
+                        <input type="tel" id="zapContatoInput" class="form-control" placeholder="Ex: 5511999999999" style="width:100%;" oninput="zapVerificarCampos()">
                     </div>
 
                     <!-- ── AGENDAMENTO ── -->
@@ -1318,7 +1318,7 @@
                         <pre id="zapPreviewText" style="margin:0;font-size:12px;line-height:1.7;color:var(--text,#f0f4ff);white-space:pre-wrap;word-break:break-word;font-family:inherit;"></pre>
                     </div>
 
-                    <button id="zapBtnSalvar" class="btn-confirm" onclick="salvarAgendamentoZap()" style="margin-bottom:4px;">
+                    <button id="zapBtnSalvar" class="btn-confirm" onclick="salvarAgendamentoZap()" style="margin-bottom:4px;" disabled>
                         <i data-lucide="check" style="width:14px;display:inline;vertical-align:-2px;margin-right:6px;"></i> Salvar Agendamento
                     </button>
                 </div>
@@ -3424,6 +3424,8 @@ function mudarAba(aba) {
 
 // ── Relatórios Zap ─────────────────────────────────────────────
 let _zapInstancias = [];
+let _zapEditingId  = null;
+let _zapRowsCache  = {};
 
 async function carregarZapRelatorios() {
     await _renderZapTabela();
@@ -3459,6 +3461,8 @@ async function _renderZapTabela() {
             return;
         }
         const FREQ = { diario:'Diário', semanal:'Semanal', mensal:'Mensal' };
+        _zapRowsCache = {};
+        rows.forEach(r => { _zapRowsCache[r.id] = r; });
         tbody.innerHTML = rows.map(row => {
             const isAtivo = row.status === 'ativo';
             const periodoLabel = _ZAP_PERIODO_LABEL[row.periodo] || row.periodo || 'Ontem';
@@ -3468,20 +3472,26 @@ async function _renderZapTabela() {
                     <div style="font-size:13px;font-weight:600;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(row.destino_nome || row.destino_jid)}</div>
                     <div style="font-size:11px;color:var(--muted);margin-top:2px;">${row.destino_tipo === 'grupo' ? '👥 Grupo' : '👤 Contato'}</div>
                 </td>
-                <td style="padding:8px 12px;font-size:11px;color:var(--muted);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(row.instance_name)}</td>
+                <td style="padding:8px 12px;font-size:11px;color:var(--muted);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(row.instance_name)}">${esc(row.instance_name)}</td>
                 <td style="padding:8px 12px;font-size:13px;">${FREQ[row.frequencia] || row.frequencia}</td>
                 <td style="padding:8px 12px;font-size:12px;color:var(--muted);">${esc(periodoLabel)}</td>
                 <td style="padding:8px 12px;font-size:13px;font-variant-numeric:tabular-nums;">${esc(row.horario)}</td>
                 <td style="padding:8px 12px;">
-                    <span style="font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;${isAtivo ? 'background:rgba(16,185,129,.15);color:#10b981;' : 'background:rgba(255,255,255,.06);color:var(--muted);'}">
-                        ${isAtivo ? 'Ativo' : 'Pausado'}
-                    </span>
+                    <button onclick="toggleStatusZap(${row.id})" title="${isAtivo ? 'Pausar agendamento' : 'Ativar agendamento'}" style="display:flex;align-items:center;gap:6px;background:none;border:none;cursor:pointer;padding:2px 0;">
+                        <span style="width:30px;height:17px;border-radius:9px;background:${isAtivo ? '#10b981' : 'rgba(255,255,255,.12)'};position:relative;display:inline-block;transition:background .2s;flex-shrink:0;">
+                            <span style="width:12px;height:12px;border-radius:50%;background:#fff;position:absolute;top:50%;transform:translate(${isAtivo ? '15px' : '2px'},-50%);transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.4);"></span>
+                        </span>
+                        <span style="font-size:11px;font-weight:600;color:${isAtivo ? '#10b981' : 'var(--muted)'};">${isAtivo ? 'Ativo' : 'Pausado'}</span>
+                    </button>
                 </td>
                 <td style="padding:8px 12px;text-align:right;white-space:nowrap;">
-                    <button class="btn btn-ghost btn-sm" title="${isAtivo ? 'Pausar' : 'Ativar'}" onclick="toggleStatusZap(${row.id})" style="margin-right:4px;">
-                        <i data-lucide="${isAtivo ? 'pause' : 'play'}" style="width:12px;"></i>
+                    <button class="btn btn-ghost btn-sm" title="Editar agendamento" onclick="abrirModalZapEditar(_zapRowsCache[${row.id}])" style="margin-right:4px;">
+                        <i data-lucide="pencil" style="width:12px;"></i>
                     </button>
-                    <button class="btn btn-ghost btn-sm" title="Excluir" onclick="deletarAgendamentoZap(${row.id})" style="color:var(--red);border-color:rgba(239,68,68,.25);">
+                    <button class="btn btn-ghost btn-sm" title="Duplicar agendamento" onclick="duplicarAgendamentoZap(_zapRowsCache[${row.id}])" style="margin-right:4px;color:var(--muted);">
+                        <i data-lucide="copy" style="width:12px;"></i>
+                    </button>
+                    <button class="btn btn-ghost btn-sm" title="Excluir agendamento" onclick="deletarAgendamentoZap(${row.id})" style="color:var(--red);border-color:rgba(239,68,68,.25);">
                         <i data-lucide="trash-2" style="width:12px;"></i>
                     </button>
                 </td>
@@ -3526,12 +3536,16 @@ async function zapModalOnInstanciaChange() {
     if (!grupoSel) return;
     if (!instanceName) {
         grupoSel.innerHTML = '<option value="">— Selecione a instância primeiro —</option>';
+        grupoSel.disabled = true;
+        grupoSel.style.opacity = '.5';
+        zapVerificarCampos();
         return;
     }
     const tipo = document.querySelector('input[name="zapTipo"]:checked')?.value;
-    if (tipo !== 'grupo') return;
+    if (tipo !== 'grupo') { zapVerificarCampos(); return; }
     grupoSel.innerHTML = '<option value="">Carregando grupos...</option>';
     grupoSel.disabled = true;
+    grupoSel.style.opacity = '.5';
     try {
         const r = await authFetch(`/api/evo-groups?instanceName=${encodeURIComponent(instanceName)}`);
         const data = await r.json();
@@ -3550,6 +3564,8 @@ async function zapModalOnInstanciaChange() {
         grupoSel.innerHTML = `<option value="">Falha: ${esc(e.message)}</option>`;
     } finally {
         grupoSel.disabled = false;
+        grupoSel.style.opacity = '';
+        zapVerificarCampos();
     }
 }
 
@@ -3563,24 +3579,26 @@ function zapOnTipoChange() {
     const lContato = $('zapTipoContatoLabel');
     if (lGrupo)   { lGrupo.style.background   = isGrupo ? 'var(--blue)' : 'transparent'; lGrupo.style.color   = isGrupo ? '#fff' : 'var(--muted)'; }
     if (lContato) { lContato.style.background = isGrupo ? 'transparent' : 'var(--blue)'; lContato.style.color = isGrupo ? 'var(--muted)' : '#fff'; }
-    if (isGrupo) zapModalOnInstanciaChange();
+    if (isGrupo) zapModalOnInstanciaChange(); else zapVerificarCampos();
 }
 
 function abrirModalZapNovo() {
+    _zapEditingId = null;
     document.querySelectorAll('input[name="zapTipo"]').forEach(r => { r.checked = r.value === 'grupo'; });
     $('zapGrupoArea').style.display = '';
     $('zapContatoArea').style.display = 'none';
     const lG = $('zapTipoGrupoLabel'), lC = $('zapTipoContatoLabel');
     if (lG) { lG.style.background = 'var(--blue)'; lG.style.color = '#fff'; }
     if (lC) { lC.style.background = 'transparent'; lC.style.color = 'var(--muted)'; }
-    const tmpl = $('zapTemplate');    if (tmpl) tmpl.value = '';
-    const freq = $('zapFrequencia'); if (freq) freq.value = 'diario';
-    const hor  = $('zapHorario');    if (hor)  hor.value  = '08:00';
-    const per  = $('zapPeriodo');    if (per)  per.value  = 'yesterday';
-    const gs   = $('zapGrupoSelect'); if (gs) { gs.innerHTML = '<option value="">— Selecione a instância primeiro —</option>'; gs.disabled = false; }
-    const ci   = $('zapContatoInput'); if (ci) ci.value = '';
-    const btn  = $('zapBtnSalvar'); if (btn) { btn.disabled = false; btn.innerHTML = '<i data-lucide="check" style="width:14px;display:inline;vertical-align:-2px;margin-right:6px;"></i> Salvar Agendamento'; }
-    const pa   = $('zapPreviewArea'); if (pa) pa.style.display = 'none';
+    const tmpl = $('zapTemplate');     if (tmpl) tmpl.value = '';
+    const freq = $('zapFrequencia');   if (freq) freq.value = 'diario';
+    const hor  = $('zapHorario');      if (hor)  hor.value  = '08:00';
+    const per  = $('zapPeriodo');      if (per)  per.value  = 'yesterday';
+    const gs   = $('zapGrupoSelect');  if (gs)   { gs.innerHTML = '<option value="">— Selecione a instância primeiro —</option>'; gs.disabled = true; gs.style.opacity = '.5'; }
+    const ci   = $('zapContatoInput'); if (ci)   ci.value = '';
+    const btn  = $('zapBtnSalvar');    if (btn)  { btn.disabled = true; btn.innerHTML = '<i data-lucide="check" style="width:14px;display:inline;vertical-align:-2px;margin-right:6px;"></i> Salvar Agendamento'; }
+    const pa   = $('zapPreviewArea');  if (pa)   pa.style.display = 'none';
+    const tit  = $('zapModalTitulo');  if (tit)  tit.textContent = 'Agendar Relatório';
 
     $('modalZapRelatorio').classList.add('open');
     lucide.createIcons({ nodes:[$('modalZapRelatorio')] });
@@ -3589,6 +3607,20 @@ function abrirModalZapNovo() {
 
 function fecharModalZap() {
     $('modalZapRelatorio').classList.remove('open');
+}
+
+function zapVerificarCampos() {
+    const instancia = $('zapModalInstancia')?.value;
+    const tipo = document.querySelector('input[name="zapTipo"]:checked')?.value || 'grupo';
+    let destino = '';
+    if (tipo === 'grupo') {
+        destino = $('zapGrupoSelect')?.value || '';
+    } else {
+        destino = ($('zapContatoInput')?.value || '').replace(/\D/g, '');
+    }
+    const horario = $('zapHorario')?.value;
+    const btn = $('zapBtnSalvar');
+    if (btn) btn.disabled = !(instancia && destino && horario);
 }
 
 function zapInserirTag(tag) {
@@ -3671,18 +3703,21 @@ async function salvarAgendamentoZap() {
         periodo:       $('zapPeriodo')?.value    || 'yesterday',
     };
 
+    if (_zapEditingId) body.id = _zapEditingId;
+    const method = _zapEditingId ? 'PUT' : 'POST';
+
     const btn = $('zapBtnSalvar');
     if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
     try {
         const r = await authFetch('/api/zap-reports', {
-            method: 'POST',
+            method,
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(body)
         });
         const d = await r.json();
         if (!r.ok || d.error) throw new Error(d.error || 'Falha ao salvar');
         fecharModalZap();
-        toast('Relatório agendado!', 'success');
+        toast(_zapEditingId ? 'Agendamento atualizado!' : 'Relatório agendado!', 'success');
         _renderZapTabela();
     } catch(e) {
         toast(e.message, 'error');
@@ -3710,6 +3745,89 @@ async function deletarAgendamentoZap(id) {
         const d = await r.json();
         if (!r.ok || d.error) throw new Error(d.error || 'Falha');
         toast('Agendamento excluído.', 'success');
+        _renderZapTabela();
+    } catch(e) { toast(e.message, 'error'); }
+}
+
+async function abrirModalZapEditar(row) {
+    if (!row) return;
+    _zapEditingId = row.id;
+
+    const isGrupo = row.destino_tipo !== 'contato';
+    document.querySelectorAll('input[name="zapTipo"]').forEach(r => { r.checked = r.value === row.destino_tipo; });
+    $('zapGrupoArea').style.display   = isGrupo ? '' : 'none';
+    $('zapContatoArea').style.display = isGrupo ? 'none' : '';
+    const lG = $('zapTipoGrupoLabel'), lC = $('zapTipoContatoLabel');
+    if (lG) { lG.style.background = isGrupo ? 'var(--blue)' : 'transparent'; lG.style.color = isGrupo ? '#fff' : 'var(--muted)'; }
+    if (lC) { lC.style.background = isGrupo ? 'transparent' : 'var(--blue)'; lC.style.color = isGrupo ? 'var(--muted)' : '#fff'; }
+
+    const freq = $('zapFrequencia');   if (freq) freq.value = row.frequencia || 'diario';
+    const hor  = $('zapHorario');      if (hor)  hor.value  = row.horario    || '08:00';
+    const per  = $('zapPeriodo');      if (per)  per.value  = row.periodo    || 'yesterday';
+    const tmpl = $('zapTemplate');     if (tmpl) { tmpl.value = row.template || ''; }
+    const ci   = $('zapContatoInput');
+    if (!isGrupo && ci) ci.value = (row.destino_jid || '').replace(/@s\.whatsapp\.net$/, '');
+
+    const tit = $('zapModalTitulo'); if (tit) tit.textContent = 'Editar Agendamento';
+    const btn = $('zapBtnSalvar');
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i data-lucide="save" style="width:14px;display:inline;vertical-align:-2px;margin-right:6px;"></i> Salvar Alterações'; }
+    const pa = $('zapPreviewArea'); if (pa) pa.style.display = 'none';
+
+    $('modalZapRelatorio').classList.add('open');
+    lucide.createIcons({ nodes:[$('modalZapRelatorio')] });
+    zapAtualizarPreview();
+
+    await _carregarInstanciasZap();
+    const sel = $('zapModalInstancia');
+    if (sel && row.instance_name) {
+        sel.value = row.instance_name;
+        if (!sel.value) {
+            const opt = document.createElement('option');
+            opt.value = row.instance_name;
+            opt.textContent = row.instance_name + ' ⚠';
+            sel.add(opt);
+            sel.value = row.instance_name;
+        }
+    }
+
+    if (isGrupo) {
+        await zapModalOnInstanciaChange();
+        const gs = $('zapGrupoSelect');
+        if (gs && row.destino_jid) {
+            gs.value = row.destino_jid;
+            if (!gs.value) {
+                const opt = document.createElement('option');
+                opt.value = row.destino_jid;
+                opt.textContent = row.destino_nome || row.destino_jid;
+                gs.add(opt);
+                gs.value = row.destino_jid;
+            }
+        }
+    }
+    zapVerificarCampos();
+}
+
+async function duplicarAgendamentoZap(row) {
+    if (!row) return;
+    try {
+        const body = {
+            instance_name: row.instance_name,
+            destino_tipo:  row.destino_tipo,
+            destino_jid:   row.destino_jid,
+            destino_nome:  row.destino_nome,
+            template:      row.template,
+            frequencia:    row.frequencia,
+            horario:       row.horario,
+            periodo:       row.periodo,
+        };
+        const r = await authFetch('/api/zap-reports', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+        const d = await r.json();
+        if (!r.ok || d.error) throw new Error(d.error || 'Falha ao duplicar');
+        toast('Agendamento duplicado!', 'success');
         _renderZapTabela();
     } catch(e) { toast(e.message, 'error'); }
 }

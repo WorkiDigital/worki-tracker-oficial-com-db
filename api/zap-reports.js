@@ -3,7 +3,7 @@ import { getPool } from './_db.js';
 import { cors } from './_cors.js';
 
 export default async function handler(req, res) {
-  if (cors(req, res, ['GET', 'POST', 'PATCH', 'DELETE'])) return;
+  if (cors(req, res, ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'])) return;
 
   const user = await verifyAuth(req, res);
   if (!user) return;
@@ -46,6 +46,27 @@ export default async function handler(req, res) {
         [clienteId, instance_name, destino_tipo || 'grupo', destino_jid, destino_nome || '', template || '', frequencia || 'diario', horario, periodo || 'yesterday']
       );
       return res.status(201).json({ id: result.rows[0].id });
+    }
+
+    // EDIT
+    if (req.method === 'PUT') {
+      const { id, instance_name, destino_tipo, destino_jid, destino_nome, template, frequencia, horario, periodo } = req.body || {};
+      if (!id || !instance_name || !destino_jid || !horario) {
+        return res.status(400).json({ error: 'id, instance_name, destino_jid e horario são obrigatórios' });
+      }
+      const params = [instance_name, destino_tipo || 'grupo', destino_jid, destino_nome || '', template || '', frequencia || 'diario', horario, periodo || 'yesterday', id];
+      const tenantClause = clienteId !== null ? ` AND cliente_id = $${params.length + 1}` : '';
+      if (clienteId !== null) params.push(clienteId);
+      const result = await pool.query(
+        `UPDATE zap_agendamentos
+         SET instance_name=$1, destino_tipo=$2, destino_jid=$3, destino_nome=$4,
+             template=$5, frequencia=$6, horario=$7, periodo=$8
+         WHERE id=$9${tenantClause}
+         RETURNING id`,
+        params
+      );
+      if (result.rowCount === 0) return res.status(404).json({ error: 'Agendamento não encontrado' });
+      return res.status(200).json({ ok: true });
     }
 
     // TOGGLE STATUS
