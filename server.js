@@ -237,7 +237,22 @@ function pathToFileURL(p) { return new URL('file:///' + p.replace(/\\/g,'/')); }
 server.listen(PORT, () => {
     console.log(`✅ Dev server running at http://localhost:${PORT}`);
     console.log(`   API routes: /api/leads, /api/config, /api/ads, /api/ads-accounts`);
+    iniciarCronZap();
 });
+
+async function iniciarCronZap() {
+    try {
+        const { runCronJob } = await import('./api/cron/send-reports.js');
+        const tick = async () => {
+            try { await runCronJob(); }
+            catch (e) { console.error('[CronZap]', e.message); }
+        };
+        setInterval(tick, 60_000);
+        console.log('⏰ CronZap iniciado — verifica agendamentos a cada 60s');
+    } catch (e) {
+        console.error('[CronZap] Falha ao iniciar:', e.message);
+    }
+}
 
 // ── Graceful shutdown (evita "npm error signal SIGTERM" no EasyPanel) ──
 function shutdown(signal) {
