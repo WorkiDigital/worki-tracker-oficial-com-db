@@ -3740,22 +3740,23 @@ function zapAtualizarPreview() {
             }
             const m = await r.json();
             if (reqId !== _zapPreviewReqId) return;
-            const fmtBrl = v => new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' }).format(v || 0);
+            // fmtVal: número formatado SEM "R$" — o usuário já escreve "R$ {gasto}" no template
+            const fmtVal = v => new Intl.NumberFormat('pt-BR', { minimumFractionDigits:2, maximumFractionDigits:2 }).format(v || 0);
             const fmtNum = v => new Intl.NumberFormat('pt-BR').format(v || 0);
             renderPreview({
-                '{periodo}':    periodoLabel,
+                '{periodo}':     periodoLabel,
                 '{data_inicio}': dataInicio,
                 '{data_fim}':    dataFim,
-                '{gasto}':       fmtBrl(m.spend),
+                '{gasto}':       fmtVal(m.spend),
                 '{leads}':       fmtNum(m.leads),
-                '{cpl}':         fmtBrl(m.cpl),
+                '{cpl}':         fmtVal(m.cpl),
                 '{msgs}':        fmtNum(m.msgs),
-                '{cpr}':         fmtBrl(m.cpr),
+                '{cpr}':         fmtVal(m.cpr),
                 '{cliques}':     fmtNum(m.clicks),
-                '{ctr}':         (m.ctr || 0).toFixed(2) + '%',
-                '{roas}':        (m.roas || 0).toFixed(2) + 'x',
-                '{cpc}':         fmtBrl(m.cpc),
-                '{cpm}':         fmtBrl(m.cpm),
+                '{ctr}':         (m.ctr || 0).toFixed(2),
+                '{roas}':        (m.roas || 0).toFixed(2),
+                '{cpc}':         fmtVal(m.cpc),
+                '{cpm}':         fmtVal(m.cpm),
                 '{alcance}':     fmtNum(m.reach),
                 '{impressoes}':  fmtNum(m.impressions),
             });

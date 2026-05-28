@@ -136,6 +136,8 @@ export async function runCronJob() {
         }
 
         const fmtBrl = v => new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' }).format(v);
+        // fmtVal: valor monetário SEM prefixo R$ (para templates onde o usuário já escreveu "R$ {gasto}")
+        const fmtVal = v => new Intl.NumberFormat('pt-BR', { minimumFractionDigits:2, maximumFractionDigits:2 }).format(v || 0);
         const fmtNum = v => new Intl.NumberFormat('pt-BR').format(v);
 
         const cpl  = totalLeads  > 0 ? totalSpend / totalLeads  : 0;
@@ -152,22 +154,40 @@ export async function runCronJob() {
         };
         const periodoLabel = periodoLabels[ag.periodo] || 'Ontem';
 
+        // Datas do período
+        const fmtDate = d => d.toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric' });
+        const hojeD   = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
+        const ontemD  = new Date(hojeD.getFullYear(), hojeD.getMonth(), hojeD.getDate() - 1);
+        const periodoDataMap = {
+            yesterday:      [ontemD, ontemD],
+            last_7_days:    [new Date(hojeD.getFullYear(), hojeD.getMonth(), hojeD.getDate() - 7), ontemD],
+            last_14_days:   [new Date(hojeD.getFullYear(), hojeD.getMonth(), hojeD.getDate() - 14), ontemD],
+            last_30_days:   [new Date(hojeD.getFullYear(), hojeD.getMonth(), hojeD.getDate() - 30), ontemD],
+            current_month:  [new Date(hojeD.getFullYear(), hojeD.getMonth(), 1), ontemD],
+            previous_month: [new Date(hojeD.getFullYear(), hojeD.getMonth() - 1, 1), new Date(hojeD.getFullYear(), hojeD.getMonth(), 0)],
+        };
+        const [dInicio, dFim] = periodoDataMap[ag.periodo] || [ontemD, ontemD];
+        const dataInicio = fmtDate(dInicio);
+        const dataFim    = fmtDate(dFim);
+
         let msg = (ag.template || '').trim();
         if (msg) {
             msg = msg
-                .replace(/{periodo}/gi,    periodoLabel)
-                .replace(/{gasto}/gi,      fmtBrl(totalSpend))
-                .replace(/{leads}/gi,      fmtNum(totalLeads))
-                .replace(/{cpl}/gi,        fmtBrl(cpl))
-                .replace(/{msgs}/gi,       fmtNum(totalMsgs))
-                .replace(/{cpr}/gi,        fmtBrl(cpr))
-                .replace(/{cliques}/gi,    fmtNum(totalClicks))
-                .replace(/{ctr}/gi,        ctr.toFixed(2) + '%')
-                .replace(/{roas}/gi,       roas.toFixed(2) + 'x')
-                .replace(/{cpc}/gi,        fmtBrl(cpc))
-                .replace(/{cpm}/gi,        fmtBrl(cpm))
-                .replace(/{alcance}/gi,    fmtNum(totalReach))
-                .replace(/{impressoes}/gi, fmtNum(totalImps));
+                .replace(/{periodo}/gi,     periodoLabel)
+                .replace(/{data_inicio}/gi, dataInicio)
+                .replace(/{data_fim}/gi,    dataFim)
+                .replace(/{gasto}/gi,       fmtVal(totalSpend))
+                .replace(/{leads}/gi,       fmtNum(totalLeads))
+                .replace(/{cpl}/gi,         fmtVal(cpl))
+                .replace(/{msgs}/gi,        fmtNum(totalMsgs))
+                .replace(/{cpr}/gi,         fmtVal(cpr))
+                .replace(/{cliques}/gi,     fmtNum(totalClicks))
+                .replace(/{ctr}/gi,         ctr.toFixed(2))
+                .replace(/{roas}/gi,        roas.toFixed(2))
+                .replace(/{cpc}/gi,         fmtVal(cpc))
+                .replace(/{cpm}/gi,         fmtVal(cpm))
+                .replace(/{alcance}/gi,     fmtNum(totalReach))
+                .replace(/{impressoes}/gi,  fmtNum(totalImps));
         } else {
             msg = `📊 *Resumo — ${periodoLabel}*\n\n`
                 + `💰 *Gasto:* ${fmtBrl(totalSpend)}\n`
