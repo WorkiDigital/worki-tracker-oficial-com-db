@@ -34,10 +34,22 @@ export default async function handler(req, res) {
     const horarioAtual = new Intl.DateTimeFormat('pt-BR', {
         timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit'
     }).format(now);
-    const diaSemana = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' })).getDay();
-    const diaDoMes  = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' })).getDate();
+    const agoraSp = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
+    const diaSemana = agoraSp.getDay();
+    const diaDoMes  = agoraSp.getDate();
+    const hojeChave = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit'
+    }).format(now);
+    const toleranciaMin = Math.max(0, parseInt(process.env.ZAP_CRON_TOLERANCE_MINUTES || '10', 10));
+    const minutosAgora = hhmmToMinutes(horarioAtual);
 
     try {
+        await pool.query(`
+            ALTER TABLE zap_agendamentos
+            ADD COLUMN IF NOT EXISTS ultimo_envio_chave VARCHAR(32),
+            ADD COLUMN IF NOT EXISTS ultimo_envio_em TIMESTAMPTZ
+        `);
+
         const { rows: agendamentos } = await pool.query(`
             SELECT z.*, c.token_meta, c.token_meta_enc,
                    c.account_id AS cliente_account_id
@@ -47,17 +59,24 @@ export default async function handler(req, res) {
         `);
 
         let enviados = 0;
+        let elegiveis = 0;
 
         for (const ag of agendamentos) {
             // Filtro de frequência
             if (ag.frequencia === 'semanal' && diaSemana !== 1) continue;
             if (ag.frequencia === 'mensal'  && diaDoMes  !== 1) continue;
 
-            // Filtro de horário — compara HH:MM
+            // Filtro de horário — aceita pequena janela para cron externo que roda atrasado.
             const horaAgendada = String(ag.horario || '').substring(0, 5);
-            if (horaAgendada !== horarioAtual) continue;
+            const minutosAgendado = hhmmToMinutes(horaAgendada);
+            const atrasoMin = minutosAgora - minutosAgendado;
+            if (!Number.isFinite(minutosAgendado) || atrasoMin < 0 || atrasoMin > toleranciaMin) continue;
 
-            console.log(`[Cron] Processando #${ag.id} → ${ag.destino_nome || ag.destino_jid}`);
+            const envioChave = `${hojeChave}:${horaAgendada}`;
+            if (ag.ultimo_envio_chave === envioChave) continue;
+            elegiveis++;
+
+            console.log(`[Cron] Processando #${ag.id} → ${ag.destino_nome || ag.destino_jid} (${horaAgendada}, atraso ${atrasoMin}min)`);
 
             const token = ag.token_meta_enc
                 ? decryptToken(ag.token_meta_enc.toString('hex'))
@@ -182,6 +201,12 @@ export default async function handler(req, res) {
                 });
                 if (evoRes.ok) {
                     enviados++;
+                    await pool.query(
+                        `UPDATE zap_agendamentos
+                         SET ultimo_envio_chave = $1, ultimo_envio_em = NOW()
+                         WHERE id = $2`,
+                        [envioChave, ag.id]
+                    );
                     console.log(`[Cron] ✅ Enviado para ${ag.destino_jid}`);
                 } else {
                     const errText = await evoRes.text();
@@ -192,10 +217,16 @@ export default async function handler(req, res) {
             }
         }
 
-        return res.status(200).json({ success: true, enviados, total: agendamentos.length });
+        return res.status(200).json({ success: true, enviados, elegiveis, total: agendamentos.length, horarioAtual, toleranciaMin });
 
     } catch (err) {
         console.error('[Cron Error]', err);
         return res.status(500).json({ error: err.message });
     }
+}
+
+function hhmmToMinutes(value) {
+    const match = String(value || '').match(/^(\d{2}):(\d{2})$/);
+    if (!match) return NaN;
+    return Number(match[1]) * 60 + Number(match[2]);
 }

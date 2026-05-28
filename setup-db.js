@@ -169,6 +169,14 @@ async function setup() {
     `);
     console.log('✅ Coluna "account_id" injetada na tabela "zap_agendamentos".');
 
+    // Controle de idempotência do cron de relatórios Zap
+    await client.query(`
+      ALTER TABLE public.zap_agendamentos
+      ADD COLUMN IF NOT EXISTS ultimo_envio_chave VARCHAR(32),
+      ADD COLUMN IF NOT EXISTS ultimo_envio_em TIMESTAMPTZ;
+    `);
+    console.log('✅ Controle de último envio injetado na tabela "zap_agendamentos".');
+
     // Migração: ampliar ctw_aci_id para TEXT (ctwaClid pode ter >255 chars)
     await client.query(`
       ALTER TABLE public.leads_tracking
