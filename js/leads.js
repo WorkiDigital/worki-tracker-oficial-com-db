@@ -13,6 +13,9 @@ async function recarregarLeads(silencioso = false) {
     if (!silencioso) renderSkeleton();
 
     try {
+        // Dispara a fase 3 (métricas) em paralelo, não bloqueia a tabela
+        carregarMetricasTemporais();
+
         const data = await authFetch('/api/leads').then(r=>r.json());
         if (!Array.isArray(data)) throw new Error(data.error || 'Erro ao buscar leads');
         rawData = data;
@@ -22,9 +25,6 @@ async function recarregarLeads(silencioso = false) {
         const agora = new Date().toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'});
         dot.className   = 'refresh-dot';
         label.textContent = `atualizado ${agora}`;
-        
-        // FASE 3: Carrega métricas temporais
-        carregarMetricasTemporais();
     } catch(e) {
         dot.className   = 'refresh-dot';
         dot.style.background = 'var(--red)';
