@@ -15,9 +15,9 @@ export default async function handler(req, res) {
     let result;
     try {
         if (user.is_admin) {
-            result = await pool.query('SELECT * FROM leads_tracking ORDER BY id DESC LIMIT 3000');
+            result = await pool.query('SELECT * FROM leads_tracking ORDER BY created_at DESC LIMIT 3000');
         } else {
-            result = await pool.query('SELECT * FROM leads_tracking WHERE cliente_id = $1 ORDER BY id DESC LIMIT 3000', [user.cliente_id]);
+            result = await pool.query('SELECT * FROM leads_tracking WHERE cliente_id = $1 ORDER BY created_at DESC LIMIT 3000', [user.cliente_id]);
         }
         return res.status(200).json(result.rows);
     } catch (dbError) {
