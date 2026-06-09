@@ -10,7 +10,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 3000;
 const MAX_BODY_BYTES = parseInt(process.env.MAX_BODY_BYTES || `${2 * 1024 * 1024}`, 10);
 const PUBLIC_ROOT_FILES = new Set(['/index.html', '/login.html', '/share.html']);
-const PUBLIC_DIRS = ['/css/', '/js/'];
+const PUBLIC_DIRS = ['/css/', '/js/', '/img/'];
 
 async function callApiHandler(modulePath, req, res) {
     try {
