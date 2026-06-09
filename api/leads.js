@@ -13,9 +13,15 @@ export default async function handler(req, res) {
   try {
     const pool = getPool();
     let result;
+    const requestedClient = req.query.cliente_id;
+
     try {
         if (user.is_admin) {
-            result = await pool.query('SELECT * FROM leads_tracking ORDER BY created_at DESC LIMIT 3000');
+            if (requestedClient) {
+                result = await pool.query('SELECT * FROM leads_tracking WHERE cliente_id = $1 ORDER BY created_at DESC LIMIT 3000', [requestedClient]);
+            } else {
+                result = await pool.query('SELECT * FROM leads_tracking ORDER BY created_at DESC LIMIT 3000');
+            }
         } else {
             result = await pool.query('SELECT * FROM leads_tracking WHERE cliente_id = $1 ORDER BY created_at DESC LIMIT 3000', [user.cliente_id]);
         }

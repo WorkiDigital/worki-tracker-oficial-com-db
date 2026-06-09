@@ -16,7 +16,11 @@ async function recarregarLeads(silencioso = false) {
         // Dispara a fase 3 (métricas) em paralelo, não bloqueia a tabela
         carregarMetricasTemporais();
 
-        const data = await authFetch('/api/leads').then(r=>r.json());
+        let url = '/api/leads';
+        if (typeof clienteAdminSelecionado !== 'undefined' && clienteAdminSelecionado) {
+            url += `?cliente_id=${clienteAdminSelecionado}`;
+        }
+        const data = await authFetch(url).then(r=>r.json());
         if (!Array.isArray(data)) throw new Error(data.error || 'Erro ao buscar leads');
         rawData = data;
         popularFiltroInstancias();
