@@ -22,6 +22,7 @@ body {
     border-radius: 14px;
     object-fit: contain;
     display: block;
+    mix-blend-mode: screen;
 }
 .auth-logo-icon {
     background:var(--blue); width:64px; height:64px; border-radius:14px;
