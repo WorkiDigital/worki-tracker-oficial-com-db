@@ -15,7 +15,7 @@ body {
 
 .auth-logo {
     display:flex; align-items:center; justify-content:center;
-    margin-bottom: 12px;
+    margin-bottom: -5px; /* Compensa o aumento extra */
 }
 .auth-banner-logo {
     max-width: 100%; width: 420px;
@@ -23,7 +23,7 @@ body {
     object-fit: contain;
     display: block;
     mix-blend-mode: screen;
-    transform: scale(1.45); /* Aumenta bastante o tamanho */
+    transform: scale(1.65); /* Aumenta ainda mais para ler o subtítulo */
 }
 .auth-logo-icon {
     background:var(--blue); width:64px; height:64px; border-radius:14px;
