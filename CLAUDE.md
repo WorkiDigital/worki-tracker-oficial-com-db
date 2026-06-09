@@ -152,3 +152,9 @@ Melhorias na integração com a Evolution API para facilitar a escala:
 - **Sync Groups/Contacts:** Novas instâncias agora são configuradas automaticamente para sincronizar grupos e contatos, garantindo que os destinos de relatórios apareçam instantaneamente no sistema.
 - **Eventos Webhook:** Inclusão do evento `GROUPS_UPSERT` no registro de webhooks para manter a lista de grupos sempre atualizada.
 - **Robustez de URL:** Implementada codificação de URL (`encodeURIComponent`) nas rotas de busca de grupos para evitar falhas com instâncias que possuem nomes especiais.
+
+### 12. Splash Screen Premium Pós-Login (Junho 2026)
+Implementação de uma animação de introdução visual de alto impacto (estética SaaS Premium) logo após o login e antes do carregamento completo do dashboard:
+- **Fluxo Visual:** Exibição sequencial temporizada das palavras-chave ("Rastreie", "Atribua", "Venda mais") seguidas de uma revelação em grande escala do logotipo **Adlytics Pro**.
+- **Efeitos Cinematográficos:** Aura pulsante (breathing glow azul/verde), anéis de luz expansivos em cascata e transições suaves de opacidade/desfoque com dark mode imersivo.
+- **Arquitetura Técnica:** Componente isolado e sobreposto em `index.html` (`#premiumSplash`), estilizado de forma modular em `css/splash.css`. Ativado no client-side via flag transiente `sessionStorage.getItem('play_splash')` injetada pela rota de login, garantindo que só rode na transição inicial. Duração de exibição calibrada para 8 segundos.
