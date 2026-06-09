@@ -4,15 +4,39 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title id="page-title">Dashboard</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;800;900&display=swap" rel="stylesheet">
 
     <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     <link rel="stylesheet" href="css/dashboard.css">
+    <link rel="stylesheet" href="css/splash.css">
     <script src="js/utils.js"></script>
 </head>
 <body>
+
+<!-- Premium Splash Overlay -->
+<div id="premiumSplash" class="premium-splash" style="display: none;">
+    <div class="splash-particles"></div>
+    <div class="splash-word word-1 glow-blue">Atribua</div>
+    <div class="splash-word word-2 glow-blue">Escale</div>
+    <div class="splash-word word-3 glow-green">Venda mais</div>
+    <!-- Anéis de luz expandindo atrás da logo -->
+    <div class="splash-ring ring-1"></div>
+    <div class="splash-ring ring-2"></div>
+    <div class="splash-ring ring-3"></div>
+    <!-- Aura glow atrás da logo -->
+    <div class="splash-glow-aura"></div>
+    <div id="splashLogoContainer" class="splash-logo">
+        <img src="/img/logo-login-fundo-branco.png" alt="Adlytics Pro" id="splashLogoImg">
+    </div>
+</div>
+
+<script>
+    if (sessionStorage.getItem('play_splash') === 'true') {
+        document.getElementById('premiumSplash').style.display = 'flex';
+    }
+</script>
 
 <!-- Toast area -->
 <div id="toast-area"></div>
@@ -1534,6 +1558,23 @@ async function init() {
     // Theme
     if (ls('theme') === 'light') document.documentElement.classList.add('light');
 
+    // Premium Splash screen logic
+    const playSplash = sessionStorage.getItem('play_splash') === 'true';
+    if (playSplash) {
+        sessionStorage.removeItem('play_splash');
+        
+        // Schedule splash removal
+        setTimeout(() => {
+            const splashEl = $('premiumSplash');
+            if (splashEl) {
+                splashEl.style.opacity = '0';
+                setTimeout(() => {
+                    splashEl.style.display = 'none';
+                }, 500); // match transition duration in splash.css (0.5s)
+            }
+        }, 8000); // Aumentado para dar mais tempo de visualização
+    }
+
     // Config + Auth
     try {
         const cfg = await fetch('/api/config').then(r=>r.json());
@@ -1551,6 +1592,26 @@ async function init() {
                 if (svg) { svg.setAttribute('width', '40'); svg.setAttribute('height', '40'); }
             } else {
                 logoArea.innerHTML = `<img src="${cfg.projectLogo}" style="width:40px;height:40px;object-fit:contain;border-radius:8px;">`;
+            }
+        }
+
+        // Apply white label custom logo to the premium splash screen if playing
+        if (playSplash) {
+            const splashLogoContainer = $('splashLogoContainer');
+            if (splashLogoContainer && cfg.projectLogo) {
+                if (cfg.projectLogo.trim().startsWith('<svg')) {
+                    splashLogoContainer.innerHTML = cfg.projectLogo;
+                    const svg = splashLogoContainer.querySelector('svg');
+                    if (svg) {
+                        svg.style.width = '100%';
+                        svg.style.height = '100%';
+                        svg.style.maxWidth = '320px';
+                    }
+                } else {
+                    splashLogoContainer.innerHTML = `<img src="${cfg.projectLogo}" alt="${brandName}" style="width:100%; max-width:320px; object-fit:contain;">`;
+                }
+            } else if (brandName && $('splashLogoImg')) {
+                $('splashLogoImg').alt = brandName;
             }
         }
 

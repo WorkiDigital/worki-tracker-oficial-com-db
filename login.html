@@ -238,10 +238,10 @@ async function fazerCadastro() {
     }
 }
 
-// ── Splash de boas-vindas ───────────────────────────────────────
+// ── Splash de boas-vindas transferida para o dashboard ──────────────────
 function mostrarSplash() {
-    document.getElementById('splash').classList.add('show');
-    setTimeout(() => { window.location.href = '/'; }, 800);
+    sessionStorage.setItem('play_splash', 'true');
+    window.location.href = '/';
 }
 
 // ── Enter para submeter ─────────────────────────────────────────
