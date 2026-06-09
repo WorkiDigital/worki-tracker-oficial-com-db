@@ -87,6 +87,16 @@ function calcRange(periodo) {
     if (periodo === 'hoje')   return [hoje, amanha];
     if (periodo === 'ontem')  { const d=new Date(hoje); d.setDate(d.getDate()-1); return [d, hoje]; }
     if (periodo === '7dias')  { const d=new Date(hoje); d.setDate(d.getDate()-7); return [d, amanha]; }
+    if (periodo === '14dias') { const d=new Date(hoje); d.setDate(d.getDate()-14); return [d, amanha]; }
+    if (periodo === 'esteMes') { 
+        const d = new Date(hoje.getFullYear(), hoje.getMonth(), 1); 
+        return [d, amanha]; 
+    }
+    if (periodo === 'mesPassado') { 
+        const d1 = new Date(hoje.getFullYear(), hoje.getMonth()-1, 1);
+        const d2 = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+        return [d1, d2];
+    }
     if (periodo === 'personalizado') {
         const a = $('dataInicio').value, b = $('dataFim').value;
         if (a && b) { const f=new Date(b); f.setDate(f.getDate()+1); return [new Date(a), f]; }
