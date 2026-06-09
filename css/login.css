@@ -6,7 +6,28 @@
 * { margin:0; padding:0; box-sizing:border-box; font-family:'Inter',sans-serif; }
 body {
     background:var(--bg); color:var(--text);
-    min-height:100vh; display:flex; align-items:center; justify-content:center;
+    min-height:100vh; margin:0; padding:0;
+}
+
+.auth-split { display:flex; min-height:100vh; }
+.auth-banner {
+    display:none; flex:1;
+    background: url('../img/banner-loguin.png') center/cover no-repeat;
+    position: relative;
+}
+/* Overlay escuro opcional no banner para ficar mais legível se tiver texto */
+.auth-banner::after {
+    content: ""; position: absolute; inset: 0;
+    background: linear-gradient(to right, rgba(0,0,0,0.1), rgba(10,15,26,0.8));
+}
+.auth-form-side {
+    flex:1; display:flex; align-items:center; justify-content:center;
+    background: var(--bg); position: relative; z-index: 10;
+}
+
+@media (min-width: 850px) {
+    .auth-banner { display:block; }
+    .auth-form-side { flex: 0 0 450px; box-shadow: -10px 0 30px rgba(0,0,0,0.5); }
 }
 
 .auth-wrap {
