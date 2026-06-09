@@ -1060,6 +1060,41 @@
                 <h3><i data-lucide="trending-up" style="width:14px;color:var(--blue);"></i> Evolução Diária (Leads vs Vendas)</h3>
                 <div class="canvas-wrap" style="height: 300px; width: 100%;"><canvas id="cTimeline"></canvas></div>
             </div>
+
+            <!-- HEATMAP DE HORÁRIOS -->
+            <style>
+                .heatmap-container { margin: 20px 0; padding: 24px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; }
+                .heatmap-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+                .heatmap-title { font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+                .heatmap-toggle { display: flex; background: var(--tag); border-radius: 8px; padding: 4px; }
+                .heatmap-toggle button { border: none; background: transparent; color: var(--text); padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+                .heatmap-toggle button.active { background: var(--blue); color: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+                .heatmap-wrapper { overflow-x: auto; padding-bottom: 10px; }
+                .heatmap-grid { display: grid; grid-template-columns: 40px repeat(24, 1fr); gap: 3px; min-width: 700px; }
+                .heatmap-col-header { text-align: center; font-size: 10px; color: var(--muted); margin-bottom: 4px; }
+                .heatmap-row-label { display: flex; align-items: center; justify-content: flex-end; padding-right: 8px; font-size: 11px; color: var(--muted); font-weight: 600; }
+                .heatmap-cell { height: 16px; border-radius: 4px; background-color: var(--tag); position: relative; cursor: pointer; transition: transform 0.1s; }
+                .heatmap-cell:hover { transform: scale(1.15); z-index: 10; box-shadow: 0 0 6px rgba(0,0,0,0.2); }
+                .heatmap-cell::after { content: attr(data-tooltip); position: absolute; bottom: calc(100% + 4px); left: 50%; transform: translateX(-50%); background: var(--text); color: var(--card); padding: 4px 8px; border-radius: 4px; font-size: 11px; white-space: nowrap; opacity: 0; visibility: hidden; transition: opacity 0.2s; pointer-events: none; z-index: 20; }
+                .heatmap-cell:hover::after { opacity: 1; visibility: visible; }
+            </style>
+            
+            <div class="heatmap-container">
+                <div class="heatmap-header">
+                    <div class="heatmap-title">
+                        <i data-lucide="calendar-clock" style="width:16px; color:var(--blue);"></i>
+                        Heatmap de Horários
+                    </div>
+                    <div class="heatmap-toggle">
+                        <button id="btnHeatmapLeads" class="active" onclick="renderHeatmap('leads')">Leads</button>
+                        <button id="btnHeatmapVendas" onclick="renderHeatmap('vendas')">Vendas</button>
+                    </div>
+                </div>
+                <div class="heatmap-wrapper">
+                    <div class="heatmap-grid" id="heatmapGrid"></div>
+                </div>
+            </div>
+
             <div class="charts-grid">
                 <div class="chart-card">
                     <h3><i data-lucide="target" style="width:14px;color:#ec4899;"></i> Anúncios / Leads</h3>

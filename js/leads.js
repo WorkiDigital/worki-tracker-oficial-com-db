@@ -318,6 +318,69 @@ function renderRelatorios() {
     
     // NOVO: Gráfico de Linha do Tempo
     renderTimelineChart();
+    
+    // NOVO: Heatmap de Horários
+    renderHeatmap(window.currentHeatmapTipo || 'leads');
+}
+
+window.currentHeatmapTipo = 'leads';
+
+function renderHeatmap(tipo) {
+    window.currentHeatmapTipo = tipo;
+    const btnLeads = $('btnHeatmapLeads');
+    const btnVendas = $('btnHeatmapVendas');
+    if (btnLeads) btnLeads.classList.toggle('active', tipo === 'leads');
+    if (btnVendas) btnVendas.classList.toggle('active', tipo === 'vendas');
+    
+    const container = $('heatmapGrid');
+    if (!container) return;
+    
+    let dados = dadosFiltrados;
+    if (tipo === 'vendas') {
+        dados = dadosFiltrados.filter(l => (l.status||'').toLowerCase() === 'vendido');
+    }
+    
+    // Dias da semana: Dom a Sáb
+    const dias = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+    const matrix = Array(7).fill(0).map(() => Array(24).fill(0));
+    
+    let maxVal = 0;
+    
+    dados.forEach(l => {
+        const dStr = l.event_time || l.created_at;
+        if (!dStr) return;
+        const d = new Date(dStr);
+        if (isNaN(d.getTime())) return;
+        
+        const dia = d.getDay();
+        const hora = d.getHours();
+        matrix[dia][hora]++;
+        if (matrix[dia][hora] > maxVal) {
+            maxVal = matrix[dia][hora];
+        }
+    });
+    
+    // Render
+    let html = '<div></div>'; // top-left empty corner
+    for (let h=0; h<24; h++) {
+        html += `<div class="heatmap-col-header">${h}h</div>`;
+    }
+    
+    for (let d=0; d<7; d++) {
+        html += `<div class="heatmap-row-label">${dias[d]}</div>`;
+        for (let h=0; h<24; h++) {
+            const val = matrix[d][h];
+            let bg = 'var(--tag)';
+            if (val > 0) {
+                const intensity = maxVal > 1 ? 0.2 + (0.8 * (val / maxVal)) : 1.0;
+                bg = `rgba(14, 165, 233, ${intensity.toFixed(2)})`;
+            }
+            const tooltip = val === 1 ? `1 ${tipo.slice(0,-1)} às ${h}h (${dias[d]})` : `${val} ${tipo} às ${h}h (${dias[d]})`;
+            html += `<div class="heatmap-cell" style="background:${bg};" data-tooltip="${tooltip}"></div>`;
+        }
+    }
+    
+    container.innerHTML = html;
 }
 
 function renderTimelineChart() {
