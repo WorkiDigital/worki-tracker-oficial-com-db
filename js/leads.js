@@ -257,7 +257,7 @@ function renderTabela() {
             <td><div class="platform-icon ${platCls}">${esc(lead.plataforma||'instagram')}</div></td>
             <td title="${esc(lead.event_time)}" style="white-space:nowrap;">${data}</td>
             <td style="font-size:11px;font-weight:600;">${tempoFunil}</td>
-            <td>${temCapi ? `<button class="btn btn-sm" style="background:rgba(59, 130, 246, 0.1);color:#3b82f6;border:1px solid rgba(59,130,246,0.3);margin-right:6px;" onclick="qualificarLead(${idx}, this)" title="Marcar como Qualificado e enviar para CAPI"><i data-lucide="check-circle" style="width:11px;"></i></button><button class="btn btn-green btn-sm" onclick="abrirModal(${idx})" title="Registrar Venda e CAPI"><i data-lucide="zap" style="width:11px;"></i> Venda</button>` : '<span style="color:var(--muted);font-size:12px;">—</span>'}</td>
+            <td style="white-space:nowrap;">${temCapi ? `<div style="display:inline-flex;gap:4px;align-items:center;"><button class="btn btn-sm" style="background:rgba(59, 130, 246, 0.1);color:#3b82f6;border:1px solid rgba(59,130,246,0.3);padding:2px 8px;display:inline-flex;align-items:center;justify-content:center;" onclick="qualificarLead(${idx}, this)" title="Marcar como Qualificado e enviar para CAPI"><i data-lucide="check-circle" style="width:12px;"></i></button><button class="btn btn-green btn-sm" onclick="abrirModal(${idx})" title="Registrar Venda e CAPI" style="margin:0;"><i data-lucide="zap" style="width:11px;"></i> Venda</button></div>` : '<span style="color:var(--muted);font-size:12px;">—</span>'}</td>
         </tr>`;
     }).join('');
 
