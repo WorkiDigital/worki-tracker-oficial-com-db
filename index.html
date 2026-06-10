@@ -285,6 +285,11 @@
             <div class="input-group">
                 <label>Template de Venda <span style="color:var(--muted);font-weight:400;font-size:11px;">(formato da mensagem do atendente)</span></label>
                 <textarea id="editCliTemplate" rows="8" placeholder="Ex:&#10;Nome completo: {nome}&#10;Produto: {produto}&#10;Valor da Compra: {valor}&#10;Endereço: {endereco}&#10;Cidade: {cidade}" class="pad-md" style="width:100%;border:1px solid var(--border);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);font-family:monospace;font-size:12px;resize:vertical;margin-top:6px;box-sizing:border-box;"></textarea>
+            </div>
+            <div style="margin-bottom:15px;">
+                <label style="font-weight:600;font-size:13px;display:block;">Gatilho de Qualificação (Opcional)</label>
+                <span style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Palavra-chave ou hashtag que marca o lead como Qualificado (ex: #qualificado). Se vazio, usa #qualificado.</span>
+                <input type="text" id="editCliTemplateQualificacao" placeholder="Ex: #leadbom" class="pad-md" style="width:100%;border:1px solid var(--border);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);box-sizing:border-box;">
                 <p style="font-size:11px;color:var(--muted);margin-top:4px;">
                     Enviados à Meta: <code>{valor}</code> <code>{nome}</code> <code>{cidade}</code> <code>{produto}</code> <code>{email}</code> <code>{cpf}</code> &nbsp;|&nbsp;
                     Só banco: <code>{endereco}</code> <code>{cor}</code> <code>{pagamento}</code>

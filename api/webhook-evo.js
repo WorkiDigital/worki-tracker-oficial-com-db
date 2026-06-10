@@ -140,7 +140,7 @@ export default async function handler(req, res) {
   const cliente_id = cid;
 
   const clientRes = await pool.query(
-    'SELECT token_meta, token_meta_enc, pixel_padrao, template_venda FROM clientes WHERE id = $1',
+    'SELECT token_meta, token_meta_enc, pixel_padrao, template_venda, template_qualificacao FROM clientes WHERE id = $1',
     [cliente_id]
   );
   const cliente = clientRes.rows[0] || {};
@@ -240,7 +240,9 @@ export default async function handler(req, res) {
     const valor = parseFloat(valorRaw.replace(/[^0-9,.]/g, '').replace(',', '.')) || 0;
 
     // --- QUALIFICAÇÃO POR PALAVRA-CHAVE ---
-    if (msg.toLowerCase().includes('#qualificado')) {
+    const gatilhoQualificacao = (cliente.template_qualificacao || '#qualificado').toLowerCase();
+    
+    if (msg.toLowerCase().includes(gatilhoQualificacao)) {
       const leadQuery = await pool.query(
         'SELECT * FROM leads_tracking WHERE telefone = $1 AND cliente_id = $2 ORDER BY id DESC LIMIT 1',
         [telefone, cliente_id]

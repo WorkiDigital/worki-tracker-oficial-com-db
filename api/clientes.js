@@ -21,7 +21,7 @@ export default async function handler(req, res) {
   if (req.method === 'GET') {
       try {
           // Lista todos os clientes para montar o painel Admin (EXCLUI token_meta por segurança)
-          const result = await pool.query('SELECT id, nome, email_contato, pixel_padrao, account_id, permissoes, template_venda, criado_em FROM clientes ORDER BY id DESC');
+          const result = await pool.query('SELECT id, nome, email_contato, pixel_padrao, account_id, permissoes, template_venda, template_qualificacao, criado_em FROM clientes ORDER BY id DESC');
           return res.status(200).json(result.rows);
       } catch (err) {
           console.error(err);
@@ -71,7 +71,7 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'PATCH') {
-      const { id, nome, email_contato, pixel_padrao, token_meta, account_id, senha_acesso, permissoes, template_venda } = req.body;
+      const { id, nome, email_contato, pixel_padrao, token_meta, account_id, senha_acesso, permissoes, template_venda, template_qualificacao } = req.body;
       if (!id) return res.status(400).json({ error: 'ID do cliente é obrigatório' });
 
       try {
@@ -92,6 +92,7 @@ export default async function handler(req, res) {
           if (account_id !== undefined) { fields.push(`account_id=$${idx++}`); values.push(account_id || null); }
           if (permissoes)   { fields.push(`permissoes=$${idx++}`);   values.push(JSON.stringify(permissoes)); }
           if (template_venda !== undefined) { fields.push(`template_venda=$${idx++}`); values.push(template_venda || null); }
+          if (template_qualificacao !== undefined) { fields.push(`template_qualificacao=$${idx++}`); values.push(template_qualificacao || null); }
           fields.push(`atualizado_em=$${idx++}`); values.push(new Date());
 
           if (fields.length > 0) {

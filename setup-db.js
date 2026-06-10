@@ -184,12 +184,12 @@ async function setup() {
     `);
     console.log('✅ Coluna ctw_aci_id migrada para TEXT.');
 
-    // Template de venda configurável por cliente
-    await client.query(`
-      ALTER TABLE public.clientes
-      ADD COLUMN IF NOT EXISTS template_venda TEXT;
-    `);
-    console.log('✅ Coluna "template_venda" injetada na tabela "clientes".');
+      await client.query(`
+        ALTER TABLE clientes 
+        ADD COLUMN IF NOT EXISTS template_venda TEXT,
+        ADD COLUMN IF NOT EXISTS template_qualificacao TEXT;
+      `);
+      console.log('✅ Colunas "template_venda" e "template_qualificacao" na tabela "clientes".');
 
     // Campos de venda (produto, endereco, cor, forma_pagamento, cpf, email) injetados em "leads_tracking".
     await client.query(`

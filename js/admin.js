@@ -123,6 +123,7 @@ function abrirEditCliente(id) {
     $('editCliToken').value     = c.token_meta || '';
     $('editCliAccountId').value = c.account_id || '';
     $('editCliTemplate').value  = c.template_venda || '';
+    $('editCliTemplateQualificacao').value = c.template_qualificacao || '';
     $('editCliEmail').value     = c.email_contato || '';
     $('editCliSenha').value     = '';
     $('editCliSubtitle').textContent = c.nome || '';
@@ -149,6 +150,7 @@ async function salvarEdicaoCliente() {
         token_meta:    $('editCliToken').value.trim() || undefined,
         account_id:     $('editCliAccountId').value.trim() || undefined,
         template_venda: $('editCliTemplate').value.trim() || undefined,
+        template_qualificacao: $('editCliTemplateQualificacao').value.trim() || undefined,
         permissoes: {
             leads:      $('permLeads').checked,
             anuncios:   $('permAnuncios').checked,
