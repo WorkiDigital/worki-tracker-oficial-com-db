@@ -257,7 +257,7 @@ function renderTabela() {
             <td><div class="platform-icon ${platCls}">${esc(lead.plataforma||'instagram')}</div></td>
             <td title="${esc(lead.event_time)}" style="white-space:nowrap;">${data}</td>
             <td style="font-size:11px;font-weight:600;">${tempoFunil}</td>
-            <td style="white-space:nowrap;">${temCapi ? `<div style="display:inline-flex;gap:4px;align-items:center;"><button class="btn btn-sm" style="background:rgba(59, 130, 246, 0.1);color:#3b82f6;border:1px solid rgba(59,130,246,0.3);padding:2px 8px;display:inline-flex;align-items:center;justify-content:center;" onclick="qualificarLead(${idx}, this)" title="Marcar como Qualificado e enviar para CAPI"><i data-lucide="check-circle" style="width:12px;"></i></button><button class="btn btn-green btn-sm" onclick="abrirModal(${idx})" title="Registrar Venda e CAPI" style="margin:0;"><i data-lucide="zap" style="width:11px;"></i> Venda</button></div>` : '<span style="color:var(--muted);font-size:12px;">—</span>'}</td>
+            <td style="white-space:nowrap;">${temCapi ? `<div style="display:inline-flex;gap:4px;align-items:center;"><button class="btn btn-sm" style="background:rgba(59, 130, 246, 0.1);color:#3b82f6;border:1px solid rgba(59,130,246,0.3);padding:2px 8px;display:inline-flex;align-items:center;justify-content:center;" onclick="qualificarLead(${idx})" title="Marcar como Qualificado e enviar para CAPI"><i data-lucide="check-circle" style="width:12px;"></i></button><button class="btn btn-green btn-sm" onclick="abrirModal(${idx})" title="Registrar Venda e CAPI" style="margin:0;"><i data-lucide="zap" style="width:11px;"></i> Venda</button></div>` : '<span style="color:var(--muted);font-size:12px;">—</span>'}</td>
         </tr>`;
     }).join('');
 
@@ -620,13 +620,24 @@ async function confirmarVenda() {
     }
 }
 
+let chumboQualificarIdx = null;
+
 // ── Qualificação Rápida ────────────────────────────────────────
-async function qualificarLead(idx, btn) {
+function qualificarLead(idx) {
     const lead = rawData[idx];
     if (!lead) return;
+    
+    chumboQualificarIdx = idx;
+    $('modalQualificarNome').textContent = lead.nome || 'desconhecido';
+    $('qualificarModal').classList.add('open');
+}
 
-    if (!confirm(`Marcar o lead ${lead.nome || 'desconhecido'} como Qualificado? O evento será enviado para a Meta.`)) return;
+async function confirmarQualificacao() {
+    if (chumboQualificarIdx === null) return;
+    const lead = rawData[chumboQualificarIdx];
+    if (!lead) return;
 
+    const btn = $('btnConfirmarQualificacao');
     const prevHtml = btn.innerHTML;
     btn.innerHTML = '...'; 
     btn.disabled = true;
@@ -646,10 +657,13 @@ async function qualificarLead(idx, btn) {
         lead.status = 'Qualificado';
         aplicarFiltros();
         toast('Lead Qualificado! Evento enviado.', 'success');
+        $('qualificarModal').classList.remove('open');
     } catch(e) {
         toast('Erro: ' + e.message, 'error');
+    } finally {
         btn.innerHTML = prevHtml;
         btn.disabled = false;
+        chumboQualificarIdx = null;
     }
 }
 

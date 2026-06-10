@@ -191,6 +191,21 @@
     </div>
 </div>
 
+<!-- Qualificar Modal -->
+<div id="qualificarModal" class="modal-overlay" onclick="if(event.target===this) this.classList.remove('open')">
+    <div class="modal" style="max-width:400px;text-align:center;">
+        <div class="modal-head" style="justify-content:center;margin-bottom:15px;border-bottom:none;">
+            <div class="modal-icon" style="background:rgba(59, 130, 246, 0.1);color:#3b82f6;"><i data-lucide="check-circle" style="width:24px;height:24px;"></i></div>
+        </div>
+        <h3 style="margin:0 0 10px;font-size:18px;">Qualificar Lead</h3>
+        <p style="color:var(--muted);font-size:13px;margin-bottom:20px;">Marcar o lead <strong id="modalQualificarNome" style="color:var(--text-primary)"></strong> como Qualificado?<br>O evento será enviado para a Meta imediatamente.</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <button class="btn btn-sm" onclick="$('qualificarModal').classList.remove('open')" style="border:1px solid var(--border);background:var(--bg-secondary);color:var(--text-primary);">Cancelar</button>
+            <button class="btn btn-sm" id="btnConfirmarQualificacao" onclick="confirmarQualificacao()" style="background:#3b82f6;color:#fff;border:none;">Confirmar 🚀</button>
+        </div>
+    </div>
+</div>
+
 <!-- Modal Novo Cliente -->
 <div id="modalAddCliente" class="modal-overlay" onclick="if(event.target===this) this.classList.remove('open')">
     <div class="modal">
