@@ -257,7 +257,7 @@ function renderTabela() {
             <td><div class="platform-icon ${platCls}">${esc(lead.plataforma||'instagram')}</div></td>
             <td title="${esc(lead.event_time)}" style="white-space:nowrap;">${data}</td>
             <td style="font-size:11px;font-weight:600;">${tempoFunil}</td>
-            <td>${temCapi ? `<button class="btn btn-green btn-sm" onclick="abrirModal(${idx})"><i data-lucide="zap" style="width:11px;"></i> Venda</button>` : '<span style="color:var(--muted);font-size:12px;">—</span>'}</td>
+            <td>${temCapi ? `<button class="btn btn-sm" style="background:rgba(59, 130, 246, 0.1);color:#3b82f6;border:1px solid rgba(59,130,246,0.3);margin-right:6px;" onclick="qualificarLead(${idx}, this)" title="Marcar como Qualificado e enviar para CAPI"><i data-lucide="check-circle" style="width:11px;"></i></button><button class="btn btn-green btn-sm" onclick="abrirModal(${idx})" title="Registrar Venda e CAPI"><i data-lucide="zap" style="width:11px;"></i> Venda</button>` : '<span style="color:var(--muted);font-size:12px;">—</span>'}</td>
         </tr>`;
     }).join('');
 
@@ -616,7 +616,40 @@ async function confirmarVenda() {
         fecharModal();
     } catch(e) {
         toast('Erro: ' + e.message, 'error');
-    } finally {
         btn.textContent = originalLabel; btn.disabled = false;
     }
 }
+
+// ── Qualificação Rápida ────────────────────────────────────────
+async function qualificarLead(idx, btn) {
+    const lead = rawData[idx];
+    if (!lead) return;
+
+    if (!confirm(`Marcar o lead ${lead.nome || 'desconhecido'} como Qualificado? O evento será enviado para a Meta.`)) return;
+
+    const prevHtml = btn.innerHTML;
+    btn.innerHTML = '...'; 
+    btn.disabled = true;
+
+    try {
+        const r = await authFetch('/api/leads-update', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                id: lead.id,
+                status: 'Qualificado'
+            })
+        });
+        const result = await r.json();
+        if (!r.ok || result.error) throw new Error(result.error || 'Erro ao qualificar');
+
+        lead.status = 'Qualificado';
+        aplicarFiltros();
+        toast('Lead Qualificado! Evento enviado.', 'success');
+    } catch(e) {
+        toast('Erro: ' + e.message, 'error');
+        btn.innerHTML = prevHtml;
+        btn.disabled = false;
+    }
+}
+

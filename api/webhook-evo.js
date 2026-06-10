@@ -239,13 +239,34 @@ export default async function handler(req, res) {
     const valorRaw = extract('valor') || '0';
     const valor = parseFloat(valorRaw.replace(/[^0-9,.]/g, '').replace(',', '.')) || 0;
 
+    // --- QUALIFICAÇÃO POR PALAVRA-CHAVE ---
+    if (msg.toLowerCase().includes('#qualificado')) {
+      const leadQuery = await pool.query(
+        'SELECT * FROM leads_tracking WHERE telefone = $1 AND cliente_id = $2 ORDER BY id DESC LIMIT 1',
+        [telefone, cliente_id]
+      );
+      if (leadQuery.rows.length > 0) {
+        const updateResult = await pool.query(`
+          UPDATE leads_tracking 
+          SET status = 'Qualificado', qualified_at = NOW(),
+              last_interaction_at = NOW(), first_response_at = COALESCE(first_response_at, NOW())
+          WHERE id = $1 RETURNING *
+        `, [leadQuery.rows[0].id]);
+        
+        const leadAtualizado = updateResult.rows[0];
+        await sendCapiQualifiedLead(leadAtualizado, pixel, token, log, warn);
+        return res.status(200).json({ success: true, message: 'Lead qualificado via hashtag', lead_id: leadAtualizado.id });
+      }
+    }
+    // ----------------------------------------
+
     if (valor <= 0) {
-      // Se não for uma venda, apenas atualiza a última interação do lead
+      // Se não for uma venda nem qualificação, apenas atualiza a última interação do lead
       await pool.query(
         'UPDATE leads_tracking SET last_interaction_at = NOW(), first_response_at = COALESCE(first_response_at, NOW()) WHERE telefone = $1 AND cliente_id = $2',
         [telefone, cliente_id]
       );
-      return res.status(200).json({ ignored: true, reason: 'not a sale message' });
+      return res.status(200).json({ ignored: true, reason: 'not a sale or qualify message' });
     }
 
     log('sale', 'Venda detectada via template', { instance, telefone, valor });
@@ -367,4 +388,38 @@ async function sendCapiPurchase(lead, pixel, token, log, warn) {
     const resp = await r.json();
     if (resp.events_received) log('capi-purchase', '✅ CAPI Purchase aceita');
   } catch (e) { warn('capi-purchase', 'Erro CAPI', { error: e.message }); }
+}
+
+async function sendCapiQualifiedLead(lead, pixel, token, log, warn) {
+  if (!pixel || !token) return;
+  const ph = (lead.telefone || '').replace(/\D/g, '');
+  const nomeParts = (lead.nome || '').trim().split(/\s+/);
+  const userData = { ctwa_clid: lead.ctw_aci_id || undefined };
+  if (ph) userData.ph = hash(ph);
+  if (nomeParts[0]) userData.fn = hash(nomeParts[0]);
+  if (nomeParts[1]) userData.ln = hash(nomeParts.slice(1).join(' '));
+  if (lead.estado) userData.st = hash(lead.estado);
+  if (lead.cidade) userData.ct = hash(lead.cidade);
+  if (lead.email) userData.em = hash(lead.email.toLowerCase().trim());
+  if (lead.cpf) userData.external_id = hash(lead.cpf.replace(/\D/g, ''));
+  if (lead.page_id) userData.page_id = lead.page_id;
+  userData.country = hash('br');
+
+  const payload = {
+    data: [{
+      event_name: 'QualifiedLead',
+      event_time: Math.floor(Date.now() / 1000),
+      action_source: 'business_messaging',
+      messaging_channel: 'whatsapp',
+      user_data: userData
+    }]
+  };
+
+  try {
+    const r = await fetch(`https://graph.facebook.com/v25.0/${pixel}/events?access_token=${token}`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+    });
+    const resp = await r.json();
+    if (resp.events_received) log('capi-qualified', '✅ CAPI QualifiedLead aceita');
+  } catch (e) { warn('capi-qualified', 'Erro CAPI QualifiedLead', { error: e.message }); }
 }
