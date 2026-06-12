@@ -20,8 +20,10 @@ async function recarregarLeads(silencioso = false) {
         if (typeof clienteAdminSelecionado !== 'undefined' && clienteAdminSelecionado) {
             url += `?cliente_id=${clienteAdminSelecionado}`;
         }
-        const data = await authFetch(url).then(r=>r.json());
-        if (!Array.isArray(data)) throw new Error(data.error || 'Erro ao buscar leads');
+        const resp = await authFetch(url);
+        if (!resp.ok) throw new Error(`Falha ao buscar leads (HTTP ${resp.status})`);
+        const data = await resp.json();
+        if (!Array.isArray(data)) throw new Error(data.error || 'Resposta inesperada do servidor');
         rawData = data;
         popularFiltroInstancias();
         aplicarFiltros();

@@ -29,7 +29,7 @@ async function salvarNovoCliente() {
             body: JSON.stringify({ nome, email_contato, pixel_padrao, senha_acesso })
         });
         const data = await r.json();
-        if (!r.ok || data.error) throw new Error(data.error || 'Erro ao criar cliente');
+        if (!r.ok || data.error) throw new Error(data.error || `Erro ao criar cliente (HTTP ${r.status})`);
 
         $('modalAddCliente').classList.remove('open');
         // Limpar campos
@@ -174,7 +174,7 @@ async function salvarEdicaoCliente() {
             body: JSON.stringify(body)
         });
         const data = await r.json();
-        if (!r.ok || data.error) throw new Error(data.error || 'Erro ao salvar');
+        if (!r.ok || data.error) throw new Error(data.error || `Erro ao salvar (HTTP ${r.status})`);
         toast('Cliente atualizado!', 'success');
         $('modalEditCliente').classList.remove('open');
         carregarClientesAdmin();
@@ -214,7 +214,7 @@ async function carregarListaWa() {
         const r = await authFetch('/api/evo-manager?action=list');
         const data = await r.json();
 
-        if (!r.ok || data.error) throw new Error(data.error || 'Erro ao listar');
+        if (!r.ok || data.error) throw new Error(data.error || `Erro ao listar conexões (HTTP ${r.status})`);
 
         if (!data || data.length === 0) {
             listEl.innerHTML = '<div style="text-align:center;padding:40px;background:var(--tag);border-radius:10px;color:var(--muted);">Nenhuma conexão configurada.<br><button class="btn btn-primary" style="margin-top:15px;" onclick="mostrarWaCriar()">Criar Conexão</button></div>';
@@ -350,7 +350,7 @@ async function deletarConexao(name) {
         const data = await r.json();
         if (!r.ok) throw new Error(data.error || 'Erro ao excluir');
         toast("Conexão excluída da Evolution.", "success");
-        setTimeout(carregarListaWa, 800);
+        await carregarListaWa();
     } catch(e) { toast('Erro ao excluir: ' + e.message, 'error'); }
 }
 
@@ -365,7 +365,7 @@ async function checkWaStatus(fetchQrIfNotOpen = false) {
         if (isConnected) {
             if (waPollTimer) { clearInterval(waPollTimer); waPollTimer = null; }
             toast(`✅ WhatsApp conectado: ${currentWaInstance}`, 'success');
-            setTimeout(carregarListaWa, 1200);
+            await carregarListaWa();
         } else {
             setWaView('waQrView');
             $('waQrTitle').textContent = `Conectar: ${currentWaInstance}`;
@@ -435,7 +435,7 @@ async function waLogout(name) {
     try {
         await authFetch('/api/evo-manager', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({action:'logout', instanceName: name}) });
         toast("Sessão encerrada remotamente.", "success");
-        setTimeout(carregarListaWa, 1500);
+        await carregarListaWa();
     } catch(e) {
         toast("Erro ao tentar deslogar.", "error");
     }
@@ -522,7 +522,7 @@ async function confirmarVincularInstancia() {
         if (!r.ok) throw new Error(data.error || 'Erro ao vincular');
         toast('Instância vinculada com sucesso!', 'success');
         $('modalVincularInstancia').classList.remove('open');
-        setTimeout(carregarListaWa, 600);
+        await carregarListaWa();
     } catch(e) {
         toast(e.message, 'error');
     } finally {
@@ -605,12 +605,11 @@ function toggleLogAutoRefresh() {
 
 // Pausa o polling quando a aba não está visível
 document.addEventListener('visibilitychange', () => {
-    if (document.hidden && _logAutoRefreshId) {
-        clearInterval(_logAutoRefreshId);
-        _logAutoRefreshId = null;
-        // O checkbox continua marcado, o polling volta quando o usuário retornar e carregar os logs
-    } else if (!document.hidden && $('log-auto-refresh').checked && !_logAutoRefreshId) {
-        toggleLogAutoRefresh();
+    if (document.hidden) {
+        if (_logAutoRefreshId) { clearInterval(_logAutoRefreshId); _logAutoRefreshId = null; }
+        if (waPollTimer) { clearInterval(waPollTimer); waPollTimer = null; }
+    } else {
+        if ($('log-auto-refresh')?.checked && !_logAutoRefreshId) toggleLogAutoRefresh();
     }
 });
 
