@@ -6,12 +6,11 @@ import { decryptToken } from './_crypto.js';
 export default async function handler(req, res) {
   if (cors(req, res, ['POST'], { public: true })) return;
 
-  // Valida segredo do webhook (se configurado em WEBHOOK_SECRET)
   const webhookSecret = process.env.WEBHOOK_SECRET;
-  if (!webhookSecret && process.env.NODE_ENV === 'production') {
+  if (!webhookSecret) {
     return res.status(503).json({ error: 'WEBHOOK_SECRET não configurado.' });
   }
-  if (webhookSecret && req.headers['x-webhook-secret'] !== webhookSecret) {
+  if (req.headers['x-webhook-secret'] !== webhookSecret) {
     return res.status(401).json({ error: 'Webhook secret inválido.' });
   }
 

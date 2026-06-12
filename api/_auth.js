@@ -2,9 +2,9 @@ import jwt from 'jsonwebtoken';
 import { getPool } from './_db.js';
 import { decryptToken } from './_crypto.js';
 
-// Alerta crítico em produção se JWT_SECRET não estiver configurado
 if (!process.env.JWT_SECRET) {
-  console.error('[SECURITY] CRÍTICO: JWT_SECRET não definido. Qualquer pessoa pode forjar tokens de admin. Configure a variável de ambiente imediatamente.');
+  console.error('❌ FATAL: JWT_SECRET não definido. Servidor não pode operar com segurança.');
+  process.exit(1);
 }
 
 /**
@@ -19,9 +19,7 @@ export async function verifyAuth(req, res) {
   }
 
   try {
-    const secret = process.env.JWT_SECRET;
-    if (!secret) return null;
-    const decoded = jwt.verify(token, secret);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     return decoded; // { id, email, iat, exp, is_admin, cliente_id }
   } catch (error) {
     res.status(401).json({ error: 'Sessão inválida ou expirada' });

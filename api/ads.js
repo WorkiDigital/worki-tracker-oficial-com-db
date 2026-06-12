@@ -13,6 +13,14 @@ export default async function handler(req, res) {
   if (await rateLimit(req, res, user)) return;
 
   const { datePreset = 'last_30d', accountId, dateFrom, dateTo } = req.query;
+
+  const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+  if (dateFrom && !dateRegex.test(dateFrom)) return res.status(400).json({ error: 'dateFrom inválido. Use formato YYYY-MM-DD.' });
+  if (dateTo && !dateRegex.test(dateTo)) return res.status(400).json({ error: 'dateTo inválido. Use formato YYYY-MM-DD.' });
+
+  const validPresets = new Set(['today', 'yesterday', 'last_3d', 'last_7d', 'last_14d', 'last_28d', 'last_30d', 'last_90d', 'this_month', 'last_month', 'this_quarter', 'maximum']);
+  if (!validPresets.has(datePreset)) return res.status(400).json({ error: 'datePreset inválido.' });
+
   const token = await getTokenForUser(user);
 
   if (!token) return res.status(403).json({ error: 'Token Meta não configurado para sua conta. Solicite ao administrador da plataforma.' });

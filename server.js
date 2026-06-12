@@ -7,6 +7,15 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+const REQUIRED_ENV = ['DATABASE_URL', 'JWT_SECRET', 'TOKEN_ENCRYPTION_KEY'];
+for (const key of REQUIRED_ENV) {
+    if (!process.env[key]) {
+        console.error(`❌ FATAL: ${key} não configurado. Servidor não pode iniciar.`);
+        process.exit(1);
+    }
+}
+
 const PORT = process.env.PORT || 3000;
 const MAX_BODY_BYTES = parseInt(process.env.MAX_BODY_BYTES || `${2 * 1024 * 1024}`, 10);
 const PUBLIC_ROOT_FILES = new Set(['/index.html', '/login.html', '/share.html']);
@@ -60,7 +69,11 @@ function parseBody(req, res) {
 function wrapRes(res) {
     res.status = (code) => { res.statusCode = code; return res; };
     res.json = (data) => {
-        if (!res.headersSent) res.setHeader('Content-Type', 'application/json');
+        if (!res.headersSent) {
+            res.setHeader('Content-Type', 'application/json');
+            res.setHeader('X-Content-Type-Options', 'nosniff');
+            res.setHeader('X-Frame-Options', 'DENY');
+        }
         res.end(JSON.stringify(data));
     };
     res.end = res.end.bind(res);
@@ -92,31 +105,6 @@ const server = http.createServer(async (req, res) => {
         }
 
         const details = { status: 'ok', uptime: Math.round(process.uptime()), memory: Math.round(process.memoryUsage().rss / 1024 / 1024) + 'MB', checks: {} };
-        try {
-            const { getPool } = await import('./api/_db.js');
-            const pool = getPool();
-            const t0 = Date.now();
-            await pool.query('SELECT 1');
-            details.checks.database = { status: 'ok', latencyMs: Date.now() - t0 };
-        } catch (e) {
-            details.status = 'degraded';
-            details.checks.database = { status: 'error', error: e.message };
-        }
-        try {
-            if (process.env.REDIS_URL) {
-                const Redis = (await import('ioredis')).default;
-                const r = new Redis(process.env.REDIS_URL, { connectTimeout: 3000, lazyConnect: true });
-                const t0 = Date.now();
-                await r.connect();
-                await r.ping();
-                details.checks.redis = { status: 'ok', latencyMs: Date.now() - t0 };
-                r.disconnect();
-            } else {
-                details.checks.redis = { status: 'not_configured' };
-            }
-        } catch (e) {
-            details.checks.redis = { status: 'error', error: e.message };
-        }
         try {
             const { getPool } = await import('./api/_db.js');
             const pool = getPool();
@@ -225,6 +213,10 @@ const server = http.createServer(async (req, res) => {
         res.writeHead(200, {
             'Content-Type': types[ext] || 'application/octet-stream',
             'X-Content-Type-Options': 'nosniff',
+            'X-Frame-Options': 'DENY',
+            'X-XSS-Protection': '1; mode=block',
+            'Referrer-Policy': 'strict-origin-when-cross-origin',
+            'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
         });
         fs.createReadStream(filePath).pipe(res);
     } else {

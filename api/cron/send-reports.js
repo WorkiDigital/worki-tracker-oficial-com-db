@@ -1,25 +1,6 @@
 import { getPool } from '../_db.js';
 import { fetchMeta } from '../_meta-client.js';
-import crypto from 'crypto';
-
-const decryptToken = (encryptedHex) => {
-    try {
-        if (!encryptedHex) return null;
-        const keyBuffer = Buffer.from(process.env.TOKEN_ENCRYPTION_KEY, 'hex');
-        const data = Buffer.from(encryptedHex, 'hex');
-        const iv = data.slice(0, 16);
-        const authTag = data.slice(data.length - 16);
-        const encryptedText = data.slice(16, data.length - 16);
-        const decipher = crypto.createDecipheriv('aes-256-gcm', keyBuffer, iv);
-        decipher.setAuthTag(authTag);
-        let decrypted = decipher.update(encryptedText);
-        decrypted = Buffer.concat([decrypted, decipher.final()]);
-        return decrypted.toString('utf8');
-    } catch (e) {
-        console.error('Falha ao descriptografar token:', e);
-        return null;
-    }
-};
+import { decryptToken } from '../_crypto.js';
 
 function hhmmToMinutes(value) {
     const match = String(value || '').match(/^(\d{2}):(\d{2})$/);
@@ -82,9 +63,10 @@ export async function runCronJob() {
 
         console.log(`[CronZap] #${ag.id} → ${ag.destino_nome || ag.destino_jid} (${horaAgendada})`);
 
-        const token     = ag.token_meta_enc
-            ? decryptToken(ag.token_meta_enc.toString('hex'))
-            : (ag.token_meta || process.env.META_ADS_TOKEN);
+        let token = ag.token_meta || process.env.META_ADS_TOKEN;
+        if (ag.token_meta_enc) {
+            try { token = decryptToken(ag.token_meta_enc); } catch (e) { console.error(`[CronZap] Erro ao descriptografar token #${ag.id}:`, e.message); }
+        }
         const accountId = String(ag.account_id || ag.cliente_account_id || '').replace(/^act_/, '');
 
         if (!token || !accountId) {
