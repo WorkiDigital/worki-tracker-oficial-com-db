@@ -3,13 +3,16 @@
 import { logMetaCall } from './_logger.js';
 
 const MAX_RETRIES = 3;
+const REQUEST_TIMEOUT_MS = 30000;
 
 export async function fetchMeta(url, opts = {}) {
   let lastError;
   const t0 = Date.now();
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
-      const r = await fetch(url, opts);
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+      const r = await fetch(url, { ...opts, signal: controller.signal }).finally(() => clearTimeout(timeout));
 
       // Success or client error (4xx except 429) — return immediately
       if (r.ok || (r.status >= 400 && r.status < 500 && r.status !== 429)) {

@@ -6,9 +6,9 @@
     <title id="page-title">Dashboard</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;800;900&display=swap" rel="stylesheet">
 
-    <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     <link rel="stylesheet" href="css/dashboard.css">
     <link rel="stylesheet" href="css/splash.css">
     <script src="js/utils.js"></script>
@@ -433,7 +433,7 @@
         </a>
         <a id="btn-anuncios"   class="nav-item"          onclick="mudarAba('anuncios')">
             <style>.nav-img-icon{filter:grayscale(100%) opacity(50%);transition:.2s;}.nav-item.active .nav-img-icon,.nav-item:hover .nav-img-icon{filter:none;opacity:1;}</style>
-            <img src="https://cdn.simpleicons.org/meta/0082FB" class="nav-img-icon" style="width:17px;height:17px;flex-shrink:0;" alt="Meta"><span>Meta Ads</span>
+            <img src="https://cdn.simpleicons.org/meta/0082FB" class="nav-img-icon" style="width:17px;height:17px;flex-shrink:0;" alt="Meta" loading="lazy"><span>Meta Ads</span>
         </a>
         <a id="btn-agencia" class="nav-item" onclick="mudarAba('agencia')" style="display:none;">
             <i data-lucide="building" style="width:17px;flex-shrink:0;"></i><span>Gestão de Clientes</span>
@@ -1210,7 +1210,7 @@
                 <div id="waQrView" style="display:none;text-align:center;padding:10px 0;">
                     <h4 id="waQrTitle" style="margin-bottom:10px;font-size:14px;">Conectar: </h4>
                     <div style="background:var(--tag);border-radius:10px;padding:16px;margin:0 auto 14px;display:inline-flex;align-items:center;justify-content:center;min-height:220px;min-width:220px;">
-                        <img id="waQrImage" src="" style="width:200px;height:200px;display:none;border-radius:8px;background:#fff;padding:8px;">
+                        <img id="waQrImage" src="" alt="QR Code WhatsApp" style="width:200px;height:200px;display:none;border-radius:8px;background:#fff;padding:8px;" loading="lazy">
                         <div id="waWaitQr" style="color:var(--muted);font-size:13px;">Carregando QR Code...</div>
                     </div>
                     <div><button class="btn btn-ghost btn-sm" onclick="carregarListaWa()">← Voltar</button></div>

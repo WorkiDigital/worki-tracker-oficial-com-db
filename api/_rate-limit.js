@@ -28,6 +28,7 @@ if (process.env.REDIS_URL) {
 
 // ── In-memory fallback ─────────────────────────────────────────
 const memWindows = new Map();
+const MEM_MAX_ENTRIES = 10000;
 
 function memCheck(key) {
   const now = Date.now();
@@ -37,6 +38,12 @@ function memCheck(key) {
   }
   entry.count++;
   memWindows.set(key, entry);
+
+  if (memWindows.size > MEM_MAX_ENTRIES) {
+    const oldest = memWindows.keys().next().value;
+    memWindows.delete(oldest);
+  }
+
   return { count: entry.count, resetAt: entry.resetAt };
 }
 

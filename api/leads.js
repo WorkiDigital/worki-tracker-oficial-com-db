@@ -14,16 +14,19 @@ export default async function handler(req, res) {
     const pool = getPool();
     let result;
     const requestedClient = req.query.cliente_id;
+    const page = Math.max(1, parseInt(req.query.page || '1', 10));
+    const limit = Math.min(200, Math.max(1, parseInt(req.query.limit || '200', 10)));
+    const offset = (page - 1) * limit;
 
     try {
         if (user.is_admin) {
             if (requestedClient) {
-                result = await pool.query('SELECT * FROM leads_tracking WHERE cliente_id = $1 ORDER BY created_at DESC LIMIT 3000', [requestedClient]);
+                result = await pool.query('SELECT * FROM leads_tracking WHERE cliente_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3', [requestedClient, limit, offset]);
             } else {
-                result = await pool.query('SELECT * FROM leads_tracking ORDER BY created_at DESC LIMIT 3000');
+                result = await pool.query('SELECT * FROM leads_tracking ORDER BY created_at DESC LIMIT $1 OFFSET $2', [limit, offset]);
             }
         } else {
-            result = await pool.query('SELECT * FROM leads_tracking WHERE cliente_id = $1 ORDER BY created_at DESC LIMIT 3000', [user.cliente_id]);
+            result = await pool.query('SELECT * FROM leads_tracking WHERE cliente_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3', [user.cliente_id, limit, offset]);
         }
         return res.status(200).json(result.rows);
     } catch (dbError) {

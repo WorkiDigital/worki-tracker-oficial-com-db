@@ -67,6 +67,7 @@ async function setup() {
     // Índices de Performance para Leads
     await client.query(`CREATE INDEX IF NOT EXISTS idx_leads_cliente_data ON leads_tracking(cliente_id, created_at DESC);`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_leads_telefone ON leads_tracking(telefone);`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_leads_cliente_status ON leads_tracking(cliente_id, status, created_at DESC);`);
     console.log('✅ Índices de performance criados em "leads_tracking".');
     // Criação da tabela de Clientes (Multi-Tenant)
     await client.query(`
