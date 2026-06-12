@@ -17,10 +17,18 @@ async function recarregarLeads(silencioso = false) {
         carregarMetricasTemporais();
 
         let url = '/api/leads';
+        const params = new URLSearchParams();
         if (typeof clienteAdminSelecionado !== 'undefined' && clienteAdminSelecionado) {
-            url += `?cliente_id=${clienteAdminSelecionado}`;
+            params.append('cliente_id', clienteAdminSelecionado);
         }
-        const resp = await authFetch(url);
+        const periodo = $('periodoSelect')?.value || 'hojeOntem';
+        const range = (periodo && periodo !== 'todos') ? calcRange(periodo) : null;
+        if (range) {
+            params.append('start', range[0].toISOString());
+            params.append('end', range[1].toISOString());
+        }
+
+        const resp = await authFetch(url + '?' + params.toString());
         if (!resp.ok) throw new Error(`Falha ao buscar leads (HTTP ${resp.status})`);
         const data = await resp.json();
         if (!Array.isArray(data)) throw new Error(data.error || 'Resposta inesperada do servidor');
@@ -44,8 +52,8 @@ async function recarregarLeads(silencioso = false) {
 
 async function carregarMetricasTemporais() {
     try {
-        const periodo = $('periodoSelect')?.value;
-        const range = periodo ? calcRange(periodo) : null;
+        const periodo = $('periodoSelect')?.value || 'hojeOntem';
+        const range = (periodo && periodo !== 'todos') ? calcRange(periodo) : null;
         
         let url = '/api/metrics-temporal?';
         const params = new URLSearchParams();
@@ -92,6 +100,7 @@ function calcRange(periodo) {
     const amanha = new Date(hoje); amanha.setDate(amanha.getDate()+1);
     if (periodo === 'hoje')   return [hoje, amanha];
     if (periodo === 'ontem')  { const d=new Date(hoje); d.setDate(d.getDate()-1); return [d, hoje]; }
+    if (periodo === 'hojeOntem') { const d=new Date(hoje); d.setDate(d.getDate()-1); return [d, amanha]; }
     if (periodo === '7dias')  { const d=new Date(hoje); d.setDate(d.getDate()-7); return [d, amanha]; }
     if (periodo === '14dias') { const d=new Date(hoje); d.setDate(d.getDate()-14); return [d, amanha]; }
     if (periodo === 'esteMes') { 
@@ -112,8 +121,8 @@ function calcRange(periodo) {
 
 function aplicarFiltros() {
     const busca   = ($('inputBusca').value||'').toLowerCase().trim();
-    const periodo = $('periodoSelect').value;
-    const range   = calcRange(periodo);
+    const periodo = $('periodoSelect')?.value || 'hojeOntem';
+    const range = (periodo && periodo !== 'todos') ? calcRange(periodo) : null;
     const instanciaFiltro = ($('selectInstancia')?.value || '');
 
     dadosFiltrados = rawData.filter(l => {

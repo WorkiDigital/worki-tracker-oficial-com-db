@@ -15,7 +15,7 @@ export default async function handler(req, res) {
     let result;
     const requestedClient = req.query.cliente_id;
     const page = Math.max(1, parseInt(req.query.page || '1', 10));
-    const limit = Math.min(200, Math.max(1, parseInt(req.query.limit || '200', 10)));
+    const limit = Math.min(5000, Math.max(1, parseInt(req.query.limit || '5000', 10)));
     const offset = (page - 1) * limit;
 
     try {

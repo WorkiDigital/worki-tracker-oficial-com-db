@@ -521,13 +521,14 @@
                 <div class="ctrl-box">
                     <i data-lucide="calendar" style="width:14px;color:var(--muted);flex-shrink:0;"></i>
                     <select id="periodoSelect" class="bare" onchange="onPeriodoChange()">
-                        <option value="todos">Todo período</option>
+                        <option value="hojeOntem" selected>Hoje e Ontem</option>
                         <option value="hoje">Hoje</option>
                         <option value="ontem">Ontem</option>
                         <option value="7dias">7 dias</option>
                         <option value="14dias">14 dias</option>
                         <option value="esteMes">Este mês</option>
                         <option value="mesPassado">Mês passado</option>
+                        <option value="todos">Todo período</option>
                         <option value="personalizado">Personalizado</option>
                     </select>
                 </div>
@@ -536,7 +537,7 @@
                     <input type="date" id="dataInicio" style="color-scheme:var(--scheme);border:none;background:transparent;color:var(--text);outline:none;font-size:13px;">
                     <span style="color:var(--muted);font-size:12px;">→</span>
                     <input type="date" id="dataFim"    style="color-scheme:var(--scheme);border:none;background:transparent;color:var(--text);outline:none;font-size:13px;">
-                    <button class="btn btn-primary btn-sm" onclick="aplicarFiltros()">OK</button>
+                    <button class="btn btn-primary btn-sm" onclick="recarregarLeads()">OK</button>
                 </div>
                 <!-- Export CSV -->
                 <button class="btn btn-ghost" id="btnExport" onclick="exportarCSV()" title="Exportar CSV" style="display:none;">
