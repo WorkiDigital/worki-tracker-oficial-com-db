@@ -243,7 +243,7 @@ html.light .tag { color:#374151; }
 .acct-saved-badge { font-size:10px; background:rgba(59,130,246,.15); color:var(--blue); border-radius:4px; padding:1px 5px; white-space:nowrap; flex-shrink:0; }
 .acct-chevron { flex-shrink:0; color:var(--muted); transition:transform .2s; }
 .acct-btn.open .acct-chevron { transform:rotate(180deg); }
-.acct-dropdown { position:absolute; top:calc(100% + 6px); left:0; min-width:100%; width:340px; background:var(--card); border:1px solid var(--border); border-radius:10px; box-shadow:0 8px 32px rgba(0,0,0,.4); z-index:500; display:none; animation:fadeUp .15s ease; overflow:hidden; }
+.acct-dropdown { position:absolute; top:calc(100% + 6px); left:0; min-width:100%; width:340px; background:var(--card-solid); border:1px solid var(--border); border-radius:10px; box-shadow:0 8px 32px rgba(0,0,0,.4); z-index:500; display:none; animation:fadeUp .15s ease; overflow:hidden; }
 .acct-dropdown.open { display:block; }
 .acct-search-box { display:flex; align-items:center; gap:8px; padding:10px 14px; border-bottom:1px solid var(--border); }
 .acct-search-box input { background:transparent; border:none; color:var(--text); font-size:13px; outline:none; font-family:'Inter'; width:100%; }
