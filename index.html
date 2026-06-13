@@ -3287,48 +3287,6 @@ function getCreativeKey(ad) {
         || ad.id;
 }
 
-async function carregarMelhoresAnunciosLegacy() {
-    const accountId = $('adsAccountSelect').value;
-    if (!accountId) return;
-    // Mostra área de conteúdo e spinner, esconde estado vazio
-    $('bestAdsEmpty').style.display = 'none';
-    $('bestAdsLoaded').style.display = '';
-    $('bestAdsLoading').style.display = '';
-    $('bestAdsGrid').innerHTML = '';
-    $('btnMaisAds').style.display = 'none';
-
-    const dateQs = _getDateQs() || `datePreset=last_30d`;
-    const data = await authFetch(`/api/ads-best?accountId=${encodeURIComponent(accountId)}&${dateQs}`)
-        .then(r => r.json()).catch(() => ({ error: 'Erro de rede' }));
-    $('bestAdsLoading').style.display = 'none';
-    if (data.error) { toast(data.error, 'error'); return; }
-
-    // Deduplicar por criativo — manter o de maior gasto
-    const seen = new Map();
-    for (const ad of (data.data || [])) {
-        const key  = getCreativeKey(ad);
-        const prev = seen.get(key);
-        if (!prev || getSpendAd(ad) > getSpendAd(prev)) seen.set(key, ad);
-    }
-    bestAdsRaw = [...seen.values()];
-    bestAdsRaw.forEach(ad => { adBestMap[ad.id] = ad; });
-
-    // Popular dropdown de campanhas
-    const camps = [...new Set(bestAdsRaw.map(a => a.campaign?.name).filter(Boolean))].sort();
-    $('bestAdsCampFilter').innerHTML = '<option value="">Todas as campanhas</option>' +
-        camps.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
-    bestAdsPagina = 0;
-    renderBestAdsSortPills();
-    renderMelhoresAnuncios();
-
-    // Botão vira "Atualizar" após primeiro load
-    $('btnCarregarBestAds').innerHTML = '<i data-lucide="refresh-cw" style="width:13px;"></i> Atualizar';
-    lucide.createIcons({ nodes: [$('bestAdsSection')] });
-
-    // Scroll suave até os cards
-    setTimeout(() => $('bestAdsGrid').scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
-}
-
 async function carregarMelhoresAnuncios() {
     const accountId = $('adsAccountSelect').value;
     if (!accountId) return;
