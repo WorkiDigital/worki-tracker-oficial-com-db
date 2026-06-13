@@ -50,9 +50,16 @@ O índice `idx_leads_cliente_data (cliente_id, created_at DESC)` já existe (`se
 - `[x]` **Causa raiz:** descasamento de índice. A tabela renderiza com índice de `dadosFiltrados`, e `abrirModal(idx)` usava `dadosFiltrados[idx]` (correto), mas `qualificarLead(idx)`/`confirmarQualificacao` usavam `rawData[idx]`. Quando havia filtro/busca/recarga, `rawData` e `dadosFiltrados` divergiam → pegava o lead errado ou `undefined` (botão "não pega").
 - `[x]` **Correção:** `qualificarLead` agora lê de `dadosFiltrados[idx]` e guarda o **id do lead** (estável), não o índice. `confirmarQualificacao` resolve o lead via `rawData.find(l => l.id === ...)`. (`js/leads.js`)
 
-### Bug 2 — QualifiedLead rejeitado pela Meta ✅ (causa raiz confirmada pela Meta)
-- `[x]` **Causa raiz real:** a Meta retornou `error_subcode 2804064` — *"Remove todos os argumentos inválidos... QualifiedLead com business_messaging: client_ip_address client_user_agent"*. Ou seja, esses campos são **proibidos** nesse canal/evento (o oposto da suspeita inicial). O page_id nunca foi o problema.
-- `[x]` **Correção:** removidos `client_ip_address`/`client_user_agent` do `user_data` de QualifiedLead **e** Purchase (constante `CAPI_CLIENT_HINTS` excluída). `event_name` mantido (é válido).
+### Bug 2 — Purchase/QualifiedLead rejeitados pela Meta ✅ RESOLVIDO (testado e aceito)
+Diagnóstico em duas etapas, ambas confirmadas pelos `error_subcode` da própria Meta:
+
+- `[x]` **Etapa 1 (`2804064`):** *"Remove argumentos inválidos... business_messaging: client_ip_address client_user_agent"*. Esses dois campos são **proibidos** no canal. Removidos do `user_data`. (Eu os havia adicionado por engano achando que ajudariam — erro meu.)
+- `[x]` **Etapa 2 (`2804116`) — causa raiz final:** *"page_id ou whatsapp_business_account_id em falta"*. O lead testado (Nilza) tinha `page_id` **NULL** no banco. Motivo: a URL do anúncio CTWA chega encurtada (`fb.me/7327eWL7S`, sem número), e `extrairPageId` (regex `facebook.com/<num>`) não capturava nada. O Lead "passava" porque eram leads diferentes, com page_id.
+- `[x]` **Correção em 2 camadas:**
+  - **Leads novos** (`webhook-evo.js`): quando a regex falha, busca o page_id real na **Graph API** pelo `sourceId` do anúncio (`creative.object_story_spec.page_id`) e salva no lead. Também corrige a leitura do `contextInfo`, que vem em `body.data.contextInfo` (`msgData.contextInfo`).
+  - **Leads antigos** (`leads-update.js` → `resolvePageId`): usa o page_id **dominante do cliente** como fallback.
+- `[x]` **Validado em produção:** `✅ CAPI Purchase aceita` e `✅ CAPI QualifiedLead aceita` com fbtrace_id retornado pela Meta.
+- Nota: o `page_id` SEMPRE foi o campo correto (você estava certo) — o problema era ele estar **ausente** para alguns leads, não errado. Advanced matching (em, fn, ln, external_id, ct, st, country) mantido em array hasheado e aceito.
 - `[x]` O `resp.error` completo logado foi o que revelou o subcode — manter esse log ajuda em diagnósticos futuros.
 
 ### Bug 3 — Logs de CAPI não aparecem na aba "Logs do Sistema" ✅
