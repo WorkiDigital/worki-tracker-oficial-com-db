@@ -33,6 +33,9 @@ async function recarregarLeads(silencioso = false) {
         const data = await resp.json();
         if (!Array.isArray(data)) throw new Error(data.error || 'Resposta inesperada do servidor');
         rawData = data;
+        // Registra qual período está de fato em rawData (usado por onPeriodoChange p/ decidir
+        // se pode refiltrar a memória ou precisa rebuscar).
+        window._periodoCarregado = periodo;
         popularFiltroInstancias();
         aplicarFiltros();
 
@@ -91,12 +94,23 @@ function renderSkeleton() {
 }
 
 // ── Filtros ────────────────────────────────────────────────────
+// Períodos curtos que vêm juntos no carregamento "hojeOntem" — podem ser recortados
+// da memória sem nova requisição, desde que o conjunto base seja hoje+ontem.
+const PERIODOS_LOCAIS = ['hoje', 'ontem', 'hojeOntem'];
+
 function onPeriodoChange() {
     const v = $('periodoSelect').value;
     $('areaPersonalizada').style.display = v === 'personalizado' ? 'flex' : 'none';
-    // Leads são carregados sob demanda do backend por período — rebusca em vez de só refiltrar a memória.
-    // Para 'personalizado', só recarrega quando o usuário confirma (botão OK chama recarregarLeads()).
-    if (v !== 'personalizado') recarregarLeads();
+    if (v === 'personalizado') return; // só recarrega no botão OK
+
+    // Se o período pedido é hoje/ontem E o que está carregado também é curto (hoje+ontem),
+    // basta refiltrar a memória — troca instantânea, sem ir ao backend.
+    if (PERIODOS_LOCAIS.includes(v) && PERIODOS_LOCAIS.includes(window._periodoCarregado)) {
+        aplicarFiltros();
+        return;
+    }
+    // Períodos maiores (ou vindo de um período maior) rebuscam do backend (dados frescos).
+    recarregarLeads();
 }
 
 function calcRange(periodo) {

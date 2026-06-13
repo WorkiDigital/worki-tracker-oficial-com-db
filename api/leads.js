@@ -14,7 +14,9 @@ export default async function handler(req, res) {
     const pool = getPool();
     const requestedClient = req.query.cliente_id;
     const page = Math.max(1, parseInt(req.query.page || '1', 10));
-    const limit = Math.min(5000, Math.max(1, parseInt(req.query.limit || '500', 10)));
+    // Sem teto de produto: o período (start/end) define o volume. O limite é só uma
+    // guarda de segurança alta contra acidente, não um corte que esconde dados.
+    const limit = Math.min(50000, Math.max(1, parseInt(req.query.limit || '50000', 10)));
     const offset = (page - 1) * limit;
     const { start, end } = req.query;
 
@@ -36,8 +38,15 @@ export default async function handler(req, res) {
         params.push(limit); const limitIdx = i++;
         params.push(offset); const offsetIdx = i++;
 
+        // Colunas explícitas (evita SELECT * que puxava TEXT pesados como
+        // event_source_url/anuncio_thumbnail_url). Inclui o que tabela, gráficos e CSV usam.
+        const COLS = `id, nome, telefone, status, plataforma, instancia, event_time,
+            created_at, utm_campaign, utm_content, mensagem_recebida, valor_venda,
+            lead_score, qualified_at, email, cpf, endereco, cidade, estado, produto,
+            ctw_aci_id, cliente_id`;
+
         const result = await pool.query(
-            `SELECT * FROM leads_tracking ${whereSql} ORDER BY created_at DESC LIMIT $${limitIdx} OFFSET $${offsetIdx}`,
+            `SELECT ${COLS} FROM leads_tracking ${whereSql} ORDER BY created_at DESC LIMIT $${limitIdx} OFFSET $${offsetIdx}`,
             params
         );
         return res.status(200).json(result.rows);
