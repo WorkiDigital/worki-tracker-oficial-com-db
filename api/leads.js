@@ -12,22 +12,34 @@ export default async function handler(req, res) {
 
   try {
     const pool = getPool();
-    let result;
     const requestedClient = req.query.cliente_id;
     const page = Math.max(1, parseInt(req.query.page || '1', 10));
-    const limit = Math.min(5000, Math.max(1, parseInt(req.query.limit || '5000', 10)));
+    const limit = Math.min(5000, Math.max(1, parseInt(req.query.limit || '500', 10)));
     const offset = (page - 1) * limit;
+    const { start, end } = req.query;
 
     try {
+        // Monta WHERE dinâmico: escopo de cliente + janela de datas (start/end vindos do front).
+        const where = [];
+        const params = [];
+        let i = 1;
+
         if (user.is_admin) {
-            if (requestedClient) {
-                result = await pool.query('SELECT * FROM leads_tracking WHERE cliente_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3', [requestedClient, limit, offset]);
-            } else {
-                result = await pool.query('SELECT * FROM leads_tracking ORDER BY created_at DESC LIMIT $1 OFFSET $2', [limit, offset]);
-            }
+            if (requestedClient) { where.push(`cliente_id = $${i++}`); params.push(requestedClient); }
         } else {
-            result = await pool.query('SELECT * FROM leads_tracking WHERE cliente_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3', [user.cliente_id, limit, offset]);
+            where.push(`cliente_id = $${i++}`); params.push(user.cliente_id);
         }
+        if (start) { where.push(`created_at >= $${i++}`); params.push(start); }
+        if (end)   { where.push(`created_at <  $${i++}`); params.push(end); }
+
+        const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
+        params.push(limit); const limitIdx = i++;
+        params.push(offset); const offsetIdx = i++;
+
+        const result = await pool.query(
+            `SELECT * FROM leads_tracking ${whereSql} ORDER BY created_at DESC LIMIT $${limitIdx} OFFSET $${offsetIdx}`,
+            params
+        );
         return res.status(200).json(result.rows);
     } catch (dbError) {
         console.warn('DB Error, returning Mock Data:', dbError.message);
