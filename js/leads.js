@@ -67,7 +67,9 @@ async function carregarMetricasTemporais() {
         const data = await authFetch(url + params.toString()).then(r => r.json());
         if (data.error) return;
 
-        if ($('avgCycleDays')) $('avgCycleDays').textContent = data.avgCycleDays;
+        // Ciclo médio: usa o rótulo formatado pelo backend (h/min/dias conforme a escala).
+        if ($('avgCycleDays')) $('avgCycleDays').textContent = data.avgCycleLabel?.value ?? data.avgCycleDays;
+        if ($('avgCycleLabel') && data.avgCycleLabel?.unit) $('avgCycleLabel').textContent = data.avgCycleLabel.unit;
         if ($('avgResponseTime')) $('avgResponseTime').textContent = data.avgResponseMin;
         if ($('leadsAtRisk')) $('leadsAtRisk').textContent = data.leadsAtRisk;
         if ($('fastSales')) $('fastSales').textContent = data.fastSales;

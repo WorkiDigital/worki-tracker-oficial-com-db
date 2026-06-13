@@ -5,6 +5,16 @@ import { getCachedMetrics, setCachedMetrics } from './_cache.js';
 import { getClientAccountId } from './_validate.js';
 import { fetchMeta } from './_meta-client.js';
 
+// Formata o ciclo médio na unidade adequada à escala (vendas rápidas dão fração de dia).
+// Retorna { value, unit } para o front exibir, ex: "42" / "min", "5.2" / "h", "3.1" / "dias".
+function formatCycle(days, totalSales) {
+  if (!totalSales || totalSales < 1 || !days) return { value: '—', unit: 'sem vendas' };
+  const hours = days * 24;
+  if (hours < 1)  return { value: Math.round(hours * 60).toString(), unit: 'min até venda' };
+  if (days < 1)   return { value: hours.toFixed(1), unit: 'horas até venda' };
+  return { value: days.toFixed(1), unit: 'dias até venda' };
+}
+
 export default async function handler(req, res) {
   if (cors(req, res, ['GET'])) return;
 
@@ -46,8 +56,10 @@ export default async function handler(req, res) {
     `, params);
 
     const row = result.rows[0];
+    const cycleDaysRaw = parseFloat(row.avg_cycle_days || 0); // valor cru em dias (pode ser fracionário)
     const dbMetrics = {
-      avgCycleDays: parseFloat(row.avg_cycle_days || 0).toFixed(1),
+      avgCycleDays: cycleDaysRaw.toFixed(1),                 // mantido p/ compatibilidade
+      avgCycleLabel: formatCycle(cycleDaysRaw, row.total_sales), // rótulo já formatado (h/dias)
       avgResponseMin: Math.round(parseFloat(row.avg_response_min || 0)),
       leadsAtRisk: parseInt(row.leads_at_risk || 0),
       fastSales: parseInt(row.fast_sales || 0),
