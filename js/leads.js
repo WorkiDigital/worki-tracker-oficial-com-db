@@ -400,12 +400,16 @@ function renderHeatmap(tipo) {
         for (let h=0; h<24; h++) {
             const val = matrix[d][h];
             let bg = 'var(--tag)';
+            let num = '';
             if (val > 0) {
                 const intensity = maxVal > 1 ? 0.2 + (0.8 * (val / maxVal)) : 1.0;
                 bg = `rgba(14, 165, 233, ${intensity.toFixed(2)})`;
+                // Texto branco em célula mais escura, escuro (tema) em célula clara.
+                const txtColor = intensity >= 0.55 ? '#fff' : 'var(--text)';
+                num = `<span class="heatmap-num" style="color:${txtColor};">${val}</span>`;
             }
             const tooltip = val === 1 ? `1 ${tipo.slice(0,-1)} às ${h}h (${dias[d]})` : `${val} ${tipo} às ${h}h (${dias[d]})`;
-            html += `<div class="heatmap-cell" style="background:${bg};" data-tooltip="${tooltip}"></div>`;
+            html += `<div class="heatmap-cell" style="background:${bg};" data-tooltip="${tooltip}">${num}</div>`;
         }
     }
     
