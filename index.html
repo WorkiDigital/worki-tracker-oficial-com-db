@@ -876,7 +876,7 @@
                             <select id="bestAdsCampFilter" class="bare pad-sm" onchange="renderMelhoresAnuncios()">
                                 <option value="">Todas as campanhas</option>
                             </select>
-                            <select id="bestAdsStatusFilter" class="bare pad-sm" onchange="renderMelhoresAnuncios()">
+                            <select id="bestAdsStatusFilter" class="bare pad-sm" onchange="onBestAdsStatusChange()">
                                 <option value="ACTIVE">Apenas Ativos</option>
                                 <option value="">Todos</option>
                             </select>
@@ -909,7 +909,7 @@
                                 <i data-lucide="building" style="width:16px;color:var(--blue);"></i>
                                 Gestão de Clientes (SaaS)
                             </div>
-                            <p style="font-size:12px;color:var(--muted);margin-top:4px;">Crie ambientes isolados, gere acessos e defina Pixels e Tokens Meta de forma padronizada para o N8N.</p>
+                            <p style="font-size:12px;color:var(--muted);margin-top:4px;">Crie ambientes isolados, gere acessos e defina Pixels e Tokens Meta de forma padronizada.</p>
                         </div>
                         <button class="btn btn-primary" onclick="abrirModalAddCliente()"><i data-lucide="plus" style="width:14px;"></i> Novo Cliente</button>
                     </div>
@@ -1525,6 +1525,8 @@ let bestAdsPagina   = 0;
 let bestAdsSortKey  = 'leads';
 const adBestMap     = {}; // { adId: adItem }
 const BEST_ADS_POR_PAGINA = 15;
+const BEST_ADS_TIMEOUT_MS = 35000;
+let _bestAdsRequestId = 0;
 
 const BEST_ADS_SORT = [
     { key:'leads',   label:'Mais Leads',     fn:(a,b) => getLeadsAd(b) - getLeadsAd(a) },
@@ -1565,10 +1567,26 @@ async function authFetch(url, opts = {}) {
     return r;
 }
 
+async function authFetchJsonTimeout(url, ms = 30000) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), ms);
+    try {
+        const r = await authFetch(url, { signal: ctrl.signal });
+        const data = await r.json().catch(() => ({ error: `Resposta invalida (${r.status})` }));
+        if (!r.ok && !data.error) data.error = `HTTP ${r.status}`;
+        return data;
+    } catch (e) {
+        if (e.name === 'AbortError') throw new Error('A busca demorou demais. Tente novamente ou reduza o periodo.');
+        throw e;
+    } finally {
+        clearTimeout(timer);
+    }
+}
+
 function toast(msg, type='info') {
     const el = document.createElement('div');
     el.className = `toast ${type}`;
-    const icons = { success:'check-circle', error:'x-circle', info:'info' };
+    const icons = { success:'check-circle', error:'x-circle', warning:'alert-triangle', info:'info' };
     el.innerHTML = `<i data-lucide="${icons[type]||'info'}" style="width:16px;height:16px;flex-shrink:0;"></i> ${esc(msg)}`;
     $('toast-area').appendChild(el);
     lucide.createIcons({ nodes: [el] });
@@ -3269,7 +3287,7 @@ function getCreativeKey(ad) {
         || ad.id;
 }
 
-async function carregarMelhoresAnuncios() {
+async function carregarMelhoresAnunciosLegacy() {
     const accountId = $('adsAccountSelect').value;
     if (!accountId) return;
     // Mostra área de conteúdo e spinner, esconde estado vazio
@@ -3311,6 +3329,89 @@ async function carregarMelhoresAnuncios() {
     setTimeout(() => $('bestAdsGrid').scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
 }
 
+async function carregarMelhoresAnuncios() {
+    const accountId = $('adsAccountSelect').value;
+    if (!accountId) return;
+
+    const btn = $('btnCarregarBestAds');
+    const reqId = ++_bestAdsRequestId;
+
+    $('bestAdsEmpty').style.display = 'none';
+    $('bestAdsLoaded').style.display = '';
+    $('bestAdsLoading').style.display = '';
+    $('bestAdsGrid').innerHTML = '';
+    $('btnMaisAds').style.display = 'none';
+    btn.disabled = true;
+    btn.innerHTML = '<i data-lucide="loader-2" class="spinner" style="width:13px;"></i> Carregando...';
+    lucide.createIcons({ nodes: [btn] });
+
+    try {
+        const dateQs = _getDateQs() || `datePreset=last_30d`;
+        const params = new URLSearchParams(dateQs);
+        const statusFiltro = $('bestAdsStatusFilter')?.value || '';
+        const campaignIds = _filteredCampIds ? Array.from(_filteredCampIds) : [];
+
+        if (_filteredCampIds && campaignIds.length === 0) {
+            bestAdsRaw = [];
+            Object.keys(adBestMap).forEach(k => delete adBestMap[k]);
+            $('bestAdsLoading').style.display = 'none';
+            renderBestAdsSortPills();
+            renderMelhoresAnuncios();
+            return;
+        }
+
+        if (statusFiltro) params.set('status', statusFiltro);
+        if (campaignIds.length) params.set('campaignIds', campaignIds.slice(0, 100).join(','));
+
+        const data = await authFetchJsonTimeout(
+            `/api/ads-best?accountId=${encodeURIComponent(accountId)}&${params.toString()}`,
+            BEST_ADS_TIMEOUT_MS
+        );
+        if (reqId !== _bestAdsRequestId) return;
+        if (data.error) throw new Error(data.error);
+
+        const seen = new Map();
+        for (const ad of (data.data || [])) {
+            const key  = getCreativeKey(ad);
+            const prev = seen.get(key);
+            if (!prev || getSpendAd(ad) > getSpendAd(prev)) seen.set(key, ad);
+        }
+        bestAdsRaw = [...seen.values()];
+        Object.keys(adBestMap).forEach(k => delete adBestMap[k]);
+        bestAdsRaw.forEach(ad => { adBestMap[ad.id] = ad; });
+
+        const camps = [...new Set(bestAdsRaw.map(a => a.campaign?.name).filter(Boolean))].sort();
+        $('bestAdsCampFilter').innerHTML = '<option value="">Todas as campanhas</option>' +
+            camps.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+        bestAdsPagina = 0;
+        renderBestAdsSortPills();
+        renderMelhoresAnuncios();
+        if (data.truncated) toast('Mostrando os primeiros resultados. Refine campanha ou periodo para ver menos dados.', 'warning');
+
+        setTimeout(() => $('bestAdsGrid').scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+    } catch(e) {
+        if (reqId !== _bestAdsRequestId) return;
+        bestAdsRaw = [];
+        Object.keys(adBestMap).forEach(k => delete adBestMap[k]);
+        $('bestAdsCount').textContent = '';
+        $('bestAdsGrid').innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:32px;color:var(--muted);font-size:13px;">Nao foi possivel carregar os criativos. ${esc(e.message || 'Tente novamente.')}</div>`;
+        toast(e.message || 'Erro ao carregar criativos', 'error');
+    } finally {
+        if (reqId !== _bestAdsRequestId) return;
+        $('bestAdsLoading').style.display = 'none';
+        btn.disabled = false;
+        btn.innerHTML = bestAdsRaw.length
+            ? '<i data-lucide="refresh-cw" style="width:13px;"></i> Atualizar'
+            : '<i data-lucide="play-circle" style="width:13px;"></i> Carregar Criativos';
+        lucide.createIcons({ nodes: [$('bestAdsSection')] });
+    }
+}
+
+function onBestAdsStatusChange() {
+    if (bestAdsRaw.length) carregarMelhoresAnuncios();
+    else renderMelhoresAnuncios();
+}
+
 function renderMelhoresAnuncios() {
     const campFiltro   = $('bestAdsCampFilter').value;
     const statusFiltro = $('bestAdsStatusFilter').value;
@@ -3328,6 +3429,16 @@ function renderMelhoresAnuncios() {
     const vistos    = (bestAdsPagina + 1) * BEST_ADS_POR_PAGINA;
     const pagina    = filtered.slice(0, vistos);
     const restantes = filtered.length - pagina.length;
+
+    if (!filtered.length) {
+        const msg = bestAdsRaw.length
+            ? 'Nenhum criativo encontrado com os filtros atuais.'
+            : 'Nenhum criativo encontrado para este periodo.';
+        $('bestAdsGrid').innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:32px;color:var(--muted);font-size:13px;">${msg}</div>`;
+        $('btnMaisAds').style.display = 'none';
+        $('bestAdsRestantes').textContent = 0;
+        return;
+    }
 
     $('bestAdsGrid').innerHTML = pagina.map((ad, i) => renderAdCard(ad, i + 1, sortObj)).join('');
     $('btnMaisAds').style.display = restantes > 0 ? '' : 'none';

@@ -16,6 +16,27 @@ async function fetchWithTimeout(url, opts = {}, ms = 8000) {
   }
 }
 
+// Grava o resultado de um envio CAPI em webhook_logs para aparecer na aba "Logs do Sistema".
+// Best-effort: nunca derruba o fluxo principal se o log falhar.
+async function gravarLogCapi(pool, lead, tag, level, message, data) {
+  try {
+    await pool.query(
+      `INSERT INTO webhook_logs (cliente_id, instance_name, tag, level, message, data)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [lead.cliente_id || null, lead.instancia || null, tag, level, message, JSON.stringify(data || {})]
+    );
+  } catch (e) {
+    console.error('Falha ao gravar log CAPI em webhook_logs:', e.message);
+  }
+}
+
+// user_data base compartilhado: campos exigidos pela Meta no canal business_messaging/CTWA.
+// O LeadSubmitted (webhook-evo.js) que é aceito envia estes dois — alinhamos aqui.
+const CAPI_CLIENT_HINTS = {
+  client_ip_address: '0.0.0.0',
+  client_user_agent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36',
+};
+
 export default async function handler(req, res) {
   if (cors(req, res, ['PATCH'])) return;
 
@@ -119,6 +140,7 @@ async function sendCapiPurchase(lead, value, pool) {
   if (!pixel || !token) {
     const motivo = !pixel ? 'Pixel não configurado para este cliente/lead' : 'Token da Meta não configurado';
     console.warn('CAPI Purchase não enviada:', motivo, '— lead ID', lead.id);
+    await gravarLogCapi(pool, lead, 'capi-purchase', 'error', `Purchase não enviada: ${motivo}`, { lead_id: lead.id });
     return { sent: false, error: motivo };
   }
 
@@ -129,7 +151,7 @@ async function sendCapiPurchase(lead, value, pool) {
   const ph = (telefone || '').replace(/\D/g, '');
   const nomeParts = (lead.nome || '').trim().split(/\s+/);
 
-  const userData = { ctwa_clid: ctw_aci_id || undefined };
+  const userData = { ...CAPI_CLIENT_HINTS, ctwa_clid: ctw_aci_id || undefined };
   if (ph)           userData.ph          = hash(ph);
   if (nomeParts[0]) userData.fn          = hash(nomeParts[0]);
   if (nomeParts[1]) userData.ln          = hash(nomeParts.slice(1).join(' '));
@@ -161,14 +183,17 @@ async function sendCapiPurchase(lead, value, pool) {
     const resp = await r.json();
     if (resp.events_received) {
       console.log('✅ CAPI Purchase (manual) aceita pela Meta:', resp.fbtrace_id);
+      await gravarLogCapi(pool, lead, 'capi-purchase', 'info', `Purchase enviada (R$ ${customData.value})`, { lead_id: lead.id, fbtrace_id: resp.fbtrace_id });
       return { sent: true, fbtrace_id: resp.fbtrace_id };
     }
     const msg = resp.error?.message || 'Evento rejeitado pela Meta';
-    console.warn('❌ CAPI Purchase (manual) rejeitada:', resp.error || resp);
+    console.warn('❌ CAPI Purchase (manual) rejeitada:', JSON.stringify(resp.error || resp));
+    await gravarLogCapi(pool, lead, 'capi-purchase', 'error', `Purchase rejeitada: ${msg}`, { lead_id: lead.id, meta_error: resp.error || resp });
     return { sent: false, error: msg };
   } catch (err) {
     const msg = err.name === 'AbortError' ? 'Timeout ao contatar a Meta' : err.message;
     console.error('CAPI Purchase error:', msg);
+    await gravarLogCapi(pool, lead, 'capi-purchase', 'error', `Purchase erro: ${msg}`, { lead_id: lead.id });
     return { sent: false, error: msg };
   }
 }
@@ -203,6 +228,7 @@ async function sendCapiQualifiedLead(lead, pool) {
   if (!pixel || !token) {
     const motivo = !pixel ? 'Pixel não configurado para este cliente/lead' : 'Token da Meta não configurado';
     console.warn('CAPI QualifiedLead não enviada:', motivo, '— lead ID', lead.id);
+    await gravarLogCapi(pool, lead, 'capi-qualified', 'error', `QualifiedLead não enviada: ${motivo}`, { lead_id: lead.id });
     return { sent: false, error: motivo };
   }
 
@@ -213,7 +239,7 @@ async function sendCapiQualifiedLead(lead, pool) {
   const ph = (telefone || '').replace(/\D/g, '');
   const nomeParts = (lead.nome || '').trim().split(/\s+/);
 
-  const userData = { ctwa_clid: ctw_aci_id || undefined };
+  const userData = { ...CAPI_CLIENT_HINTS, ctwa_clid: ctw_aci_id || undefined };
   if (ph)           userData.ph          = hash(ph);
   if (nomeParts[0]) userData.fn          = hash(nomeParts[0]);
   if (nomeParts[1]) userData.ln          = hash(nomeParts.slice(1).join(' '));
@@ -241,14 +267,17 @@ async function sendCapiQualifiedLead(lead, pool) {
     const resp = await r.json();
     if (resp.events_received) {
       console.log('✅ CAPI QualifiedLead aceita pela Meta:', resp.fbtrace_id);
+      await gravarLogCapi(pool, lead, 'capi-qualified', 'info', 'QualifiedLead enviada', { lead_id: lead.id, fbtrace_id: resp.fbtrace_id });
       return { sent: true, fbtrace_id: resp.fbtrace_id };
     }
     const msg = resp.error?.message || 'Evento rejeitado pela Meta';
-    console.warn('❌ CAPI QualifiedLead rejeitada:', resp.error || resp);
+    console.warn('❌ CAPI QualifiedLead rejeitada:', JSON.stringify(resp.error || resp));
+    await gravarLogCapi(pool, lead, 'capi-qualified', 'error', `QualifiedLead rejeitada: ${msg}`, { lead_id: lead.id, meta_error: resp.error || resp });
     return { sent: false, error: msg };
   } catch (err) {
     const msg = err.name === 'AbortError' ? 'Timeout ao contatar a Meta' : err.message;
     console.error('CAPI QualifiedLead error:', msg);
+    await gravarLogCapi(pool, lead, 'capi-qualified', 'error', `QualifiedLead erro: ${msg}`, { lead_id: lead.id });
     return { sent: false, error: msg };
   }
 }

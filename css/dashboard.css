@@ -98,6 +98,7 @@ html.light ::-webkit-scrollbar-thumb:hover { background:rgba(100,116,139,0.35); 
 .toast { pointer-events:all; background:rgba(31,41,55,0.92); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); color:#fff; padding:12px 18px; border-radius:12px; font-size:13px; font-weight:500; border-left:4px solid var(--blue); box-shadow:0 8px 32px rgba(0,0,0,.5); display:flex; align-items:center; gap:10px; animation:fadeUp .3s ease; max-width:340px; }
 .toast.success { border-color:var(--green); }
 .toast.error   { border-color:var(--red); }
+.toast.warning { border-color:#f59e0b; }
 html.light .toast { background:rgba(255,255,255,0.92); color:#111; box-shadow:0 8px 32px rgba(0,0,0,.1); }
 
 /* ── Skeleton ───────────────────────────── */

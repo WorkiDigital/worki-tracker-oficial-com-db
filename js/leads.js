@@ -626,9 +626,12 @@ async function confirmarVenda() {
         if (idx !== -1) { rawData[idx].status = 'Vendido'; rawData[idx].valor_venda = valor; }
         aplicarFiltros();
 
-        // O lead foi salvo como Vendido no banco — para o cliente, a venda está sempre registrada.
-        // Se o CAPI falhar à Meta, isso fica só no log do servidor (problema interno), sem alarmar o cliente.
-        toast('Venda registrada com sucesso!', 'success');
+        // O lead foi salvo como Vendido no banco. O toast reflete o resultado real do envio à Meta.
+        if (result.capi && result.capi.sent === false) {
+            toast('Não foi enviado para a Meta, mas foi salvo no banco', 'warning');
+        } else {
+            toast('Venda registrada e CAPI enviado para a Meta!', 'success');
+        }
         fecharModal();
     } catch(e) {
         toast('Erro: ' + e.message, 'error');
@@ -637,21 +640,23 @@ async function confirmarVenda() {
     }
 }
 
-let chumboQualificarIdx = null;
+let chumboQualificarId = null;
 
 // ── Qualificação Rápida ────────────────────────────────────────
+// idx é índice em dadosFiltrados (mesma base usada na renderização da tabela e em abrirModal).
+// Guardamos o id do lead (estável) em vez do índice, que muda quando a tabela re-renderiza.
 function qualificarLead(idx) {
-    const lead = rawData[idx];
+    const lead = dadosFiltrados[idx];
     if (!lead) return;
-    
-    chumboQualificarIdx = idx;
+
+    chumboQualificarId = lead.id;
     $('modalQualificarNome').textContent = lead.nome || 'desconhecido';
     $('qualificarModal').classList.add('open');
 }
 
 async function confirmarQualificacao() {
-    if (chumboQualificarIdx === null) return;
-    const lead = rawData[chumboQualificarIdx];
+    if (chumboQualificarId === null) return;
+    const lead = rawData.find(l => l.id === chumboQualificarId);
     if (!lead) return;
 
     const btn = $('btnConfirmarQualificacao');
@@ -674,15 +679,19 @@ async function confirmarQualificacao() {
         lead.status = 'Qualificado';
         aplicarFiltros();
 
-        // Lead salvo como Qualificado no banco. Se o CAPI falhar à Meta, fica só no log do servidor.
-        toast('Lead Qualificado!', 'success');
+        // Lead salvo como Qualificado no banco. O toast reflete o resultado real do envio à Meta.
+        if (result.capi && result.capi.sent === false) {
+            toast('Não foi possível enviar para a Meta', 'error');
+        } else {
+            toast('Lead Qualificado! Evento enviado.', 'success');
+        }
         $('qualificarModal').classList.remove('open');
     } catch(e) {
         toast('Erro: ' + e.message, 'error');
     } finally {
         btn.innerHTML = prevHtml;
         btn.disabled = false;
-        chumboQualificarIdx = null;
+        chumboQualificarId = null;
     }
 }
 
