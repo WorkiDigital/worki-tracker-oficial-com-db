@@ -463,11 +463,21 @@ async function exportarRelatorioPDF() {
     const labelOriginal = btn?.innerHTML;
     if (btn) { btn.disabled = true; btn.textContent = 'Gerando PDF...'; }
 
+    // Força o tema CLARO durante a captura para o texto ficar legível (escuro sobre branco).
+    // Sem isso, o dark mode gera texto claro sobre fundo branco = ilegível.
+    const eraDark = !document.documentElement.classList.contains('light');
+    if (eraDark) {
+        document.documentElement.classList.add('light');
+        // Redesenha gráficos/heatmap no tema claro (Chart.js fixa cores na criação).
+        if (typeof renderRelatorios === 'function') renderRelatorios();
+    }
+    // Aguarda o repaint do tema + os gráficos do Chart.js reagirem.
+    await new Promise(r => setTimeout(r, 400));
+
     try {
-        // Fundo branco para o PDF ficar legível independente do tema.
         const canvas = await html2canvas(alvo, {
             scale: 2,
-            backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() || '#ffffff',
+            backgroundColor: '#ffffff',
             useCORS: true
         });
 
@@ -520,6 +530,11 @@ async function exportarRelatorioPDF() {
         console.error('Erro ao exportar PDF:', e);
         toast('Erro ao gerar PDF: ' + e.message, 'error');
     } finally {
+        // Restaura o tema escuro se ele estava ativo antes da exportação.
+        if (eraDark) {
+            document.documentElement.classList.remove('light');
+            if (typeof renderRelatorios === 'function') renderRelatorios(); // re-renderiza gráficos no tema original
+        }
         if (btn) { btn.disabled = false; btn.innerHTML = labelOriginal; lucide.createIcons({ nodes:[btn] }); }
     }
 }
