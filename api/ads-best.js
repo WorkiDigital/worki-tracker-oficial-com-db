@@ -4,17 +4,19 @@ import { cacheGet, cacheSet, cacheKey } from './_cache.js';
 import { fetchMeta } from './_meta-client.js';
 import { cors } from './_cors.js';
 import { rateLimit } from './_rate-limit.js';
+import { log } from './_logger.js';
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const VALID_PRESETS = new Set(['today', 'yesterday', 'last_3d', 'last_7d', 'last_14d', 'last_28d', 'last_30d', 'last_90d', 'this_month', 'last_month', 'this_quarter', 'maximum']);
 const VALID_STATUSES = new Set(['ACTIVE', 'PAUSED', 'DELETED', 'ARCHIVED', 'IN_PROCESS', 'WITH_ISSUES']);
 const MAX_CAMPAIGN_IDS = 100;
-const MAX_BEST_PAGES = 5;
-const META_BEST_TIMEOUT_MS = 12000;
-const META_BEST_RETRIES = 1;
+const MAX_BEST_PAGES = 4;
+const META_BEST_TIMEOUT_MS = 8000;
+const META_BEST_RETRIES = 0;
 
 export default async function handler(req, res) {
   if (cors(req, res, ['GET'])) return;
+  const t0 = Date.now();
 
   const user = await verifyAuth(req, res);
   if (!user) return;
@@ -40,7 +42,23 @@ export default async function handler(req, res) {
   // ── Cache hit? ────────────────────────────────────────────────
   const ck = cacheKey('best', accountId, datePreset, dateFrom, dateTo, status || '', scopedCampaignIds.join('|'));
   const cached = await cacheGet(ck);
-  if (cached) return res.status(200).json(cached);
+  if (cached) {
+    log('info', 'ads_best_request', {
+      userId: user.id,
+      accountId,
+      durationMs: Date.now() - t0,
+      status: 200,
+      cacheHit: true,
+      adsCount: cached.data?.length || 0,
+      truncated: !!cached.truncated,
+      campaignFilterCount: scopedCampaignIds.length,
+      statusFilter: status || null,
+      datePreset,
+      dateFrom: dateFrom || null,
+      dateTo: dateTo || null,
+    });
+    return res.status(200).json(cached);
+  }
 
   const insightFields = 'spend,impressions,clicks,outbound_clicks,ctr,reach,cpm,cpc,frequency,inline_link_clicks,actions,action_values,cost_per_action_type,purchase_roas';
   const insightsParam = (dateFrom && dateTo)
@@ -73,7 +91,24 @@ export default async function handler(req, res) {
     while (next && pages < MAX_BEST_PAGES) {
       const r    = await fetchMeta(next, { timeoutMs: META_BEST_TIMEOUT_MS, maxRetries: META_BEST_RETRIES });
       const data = await r.json();
-      if (data.error) return res.status(400).json({ error: data.error.message });
+      if (data.error) {
+        log('warn', 'ads_best_request', {
+          userId: user.id,
+          accountId,
+          durationMs: Date.now() - t0,
+          status: 400,
+          cacheHit: false,
+          pages,
+          adsCount: todos.length,
+          error: data.error.message,
+          campaignFilterCount: scopedCampaignIds.length,
+          statusFilter: status || null,
+          datePreset,
+          dateFrom: dateFrom || null,
+          dateTo: dateTo || null,
+        });
+        return res.status(400).json({ error: data.error.message });
+      }
       todos.push(...(data.data || []));
       next = data.paging?.next || null;
       pages++;
@@ -81,8 +116,37 @@ export default async function handler(req, res) {
 
     const result = { data: todos, truncated: !!next };
     await cacheSet(ck, result, 90000); // 90s TTL
+    log('info', 'ads_best_request', {
+      userId: user.id,
+      accountId,
+      durationMs: Date.now() - t0,
+      status: 200,
+      cacheHit: false,
+      pages,
+      adsCount: todos.length,
+      videoAdsCount: todos.filter(ad => ad.creative?.video_id).length,
+      truncated: !!next,
+      campaignFilterCount: scopedCampaignIds.length,
+      statusFilter: status || null,
+      datePreset,
+      dateFrom: dateFrom || null,
+      dateTo: dateTo || null,
+    });
     return res.status(200).json(result);
   } catch (e) {
+    log('error', 'ads_best_request', {
+      userId: user.id,
+      accountId,
+      durationMs: Date.now() - t0,
+      status: 500,
+      cacheHit: false,
+      error: e.message,
+      campaignFilterCount: scopedCampaignIds.length,
+      statusFilter: status || null,
+      datePreset,
+      dateFrom: dateFrom || null,
+      dateTo: dateTo || null,
+    });
     return res.status(500).json({ error: e.message });
   }
 }
