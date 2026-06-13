@@ -6,13 +6,18 @@ const MAX_RETRIES = 3;
 const REQUEST_TIMEOUT_MS = 30000;
 
 export async function fetchMeta(url, opts = {}) {
+  const {
+    timeoutMs = REQUEST_TIMEOUT_MS,
+    maxRetries = MAX_RETRIES,
+    ...fetchOpts
+  } = opts;
   let lastError;
   const t0 = Date.now();
-  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
-      const r = await fetch(url, { ...opts, signal: controller.signal }).finally(() => clearTimeout(timeout));
+      const timeout = setTimeout(() => controller.abort(), timeoutMs);
+      const r = await fetch(url, { ...fetchOpts, signal: controller.signal }).finally(() => clearTimeout(timeout));
 
       // Success or client error (4xx except 429) — return immediately
       if (r.ok || (r.status >= 400 && r.status < 500 && r.status !== 429)) {
@@ -23,7 +28,7 @@ export async function fetchMeta(url, opts = {}) {
       // Rate limit (429) or server error (5xx) — retry with backoff
       if (r.status === 429 || r.status >= 500) {
         lastError = new Error(`Meta API ${r.status}`);
-        if (attempt < MAX_RETRIES) {
+        if (attempt < maxRetries) {
           const waitMs = Math.min(1000 * Math.pow(2, attempt), 10000);
           await new Promise(resolve => setTimeout(resolve, waitMs));
           continue;
@@ -36,7 +41,7 @@ export async function fetchMeta(url, opts = {}) {
     } catch (e) {
       // Network error — retry
       lastError = e;
-      if (attempt < MAX_RETRIES) {
+      if (attempt < maxRetries) {
         const waitMs = Math.min(1000 * Math.pow(2, attempt), 10000);
         await new Promise(resolve => setTimeout(resolve, waitMs));
         continue;

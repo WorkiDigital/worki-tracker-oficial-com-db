@@ -5,6 +5,14 @@ import { fetchMeta } from './_meta-client.js';
 import { cors } from './_cors.js';
 import { rateLimit } from './_rate-limit.js';
 
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const VALID_PRESETS = new Set(['today', 'yesterday', 'last_3d', 'last_7d', 'last_14d', 'last_28d', 'last_30d', 'last_90d', 'this_month', 'last_month', 'this_quarter', 'maximum']);
+const VALID_STATUSES = new Set(['ACTIVE', 'PAUSED', 'DELETED', 'ARCHIVED', 'IN_PROCESS', 'WITH_ISSUES']);
+const MAX_CAMPAIGN_IDS = 100;
+const MAX_BEST_PAGES = 5;
+const META_BEST_TIMEOUT_MS = 12000;
+const META_BEST_RETRIES = 1;
+
 export default async function handler(req, res) {
   if (cors(req, res, ['GET'])) return;
 
@@ -12,14 +20,25 @@ export default async function handler(req, res) {
   if (!user) return;
   if (await rateLimit(req, res, user)) return;
 
-  const { accountId, datePreset = 'last_30d', dateFrom, dateTo } = req.query;
+  const { accountId, datePreset = 'last_30d', dateFrom, dateTo, campaignIds, status } = req.query;
+  if (dateFrom && !DATE_RE.test(dateFrom)) return res.status(400).json({ error: 'dateFrom invalido. Use formato YYYY-MM-DD.' });
+  if (dateTo && !DATE_RE.test(dateTo)) return res.status(400).json({ error: 'dateTo invalido. Use formato YYYY-MM-DD.' });
+  if (!VALID_PRESETS.has(datePreset)) return res.status(400).json({ error: 'datePreset invalido.' });
+  if (status && !VALID_STATUSES.has(status)) return res.status(400).json({ error: 'status invalido.' });
+
+  const campaignIdList = typeof campaignIds === 'string' && campaignIds.trim()
+    ? campaignIds.split(',').map(id => id.trim()).filter(Boolean)
+    : [];
+  if (campaignIdList.some(id => !/^\d+$/.test(id))) return res.status(400).json({ error: 'campaignIds invalido.' });
+  const scopedCampaignIds = campaignIdList.slice(0, MAX_CAMPAIGN_IDS);
+
   const token = await getTokenForUser(user);
   if (!token) return res.status(403).json({ error: 'Token Meta não configurado para sua conta. Solicite ao administrador da plataforma.' });
   if (!accountId) return res.status(400).json({ error: 'accountId is required' });
   if (!(await verifyAccountAccess(user, accountId))) return res.status(403).json({ error: 'Acesso negado a esta conta de anúncios.' });
 
   // ── Cache hit? ────────────────────────────────────────────────
-  const ck = cacheKey('best', accountId, datePreset, dateFrom, dateTo);
+  const ck = cacheKey('best', accountId, datePreset, dateFrom, dateTo, status || '', scopedCampaignIds.join('|'));
   const cached = await cacheGet(ck);
   if (cached) return res.status(200).json(cached);
 
@@ -35,37 +54,32 @@ export default async function handler(req, res) {
     `${insightsParam}{${insightFields}}`,
   ].join(',');
 
-  const url = `https://graph.facebook.com/v20.0/${accountId}/ads?fields=${encodeURIComponent(fields)}&limit=200&access_token=${token}`;
+  const filtering = [];
+  if (status) {
+    filtering.push({ field: 'effective_status', operator: 'IN', value: [status] });
+  }
+  if (scopedCampaignIds.length) {
+    filtering.push({ field: 'campaign.id', operator: 'IN', value: scopedCampaignIds });
+  }
+  const filteringQs = filtering.length
+    ? `&filtering=${encodeURIComponent(JSON.stringify(filtering))}`
+    : '';
+  const url = `https://graph.facebook.com/v20.0/${accountId}/ads?fields=${encodeURIComponent(fields)}&limit=100${filteringQs}&access_token=${token}`;
 
   try {
     const todos = [];
     let next = url;
-    while (next) {
-      const r    = await fetchMeta(next);
+    let pages = 0;
+    while (next && pages < MAX_BEST_PAGES) {
+      const r    = await fetchMeta(next, { timeoutMs: META_BEST_TIMEOUT_MS, maxRetries: META_BEST_RETRIES });
       const data = await r.json();
       if (data.error) return res.status(400).json({ error: data.error.message });
       todos.push(...(data.data || []));
       next = data.paging?.next || null;
+      pages++;
     }
 
-    // Enriquecer criativos de vídeo com thumbnail HD + source
-    const videoAds = todos.filter(ad => ad.creative?.video_id);
-    for (let i = 0; i < videoAds.length; i += 10) {
-      await Promise.all(videoAds.slice(i, i + 10).map(async ad => {
-        try {
-          const vUrl = `https://graph.facebook.com/v20.0/${ad.creative.video_id}?fields=source,thumbnails{uri,height,width}&access_token=${token}`;
-          const vr = await fetchMeta(vUrl);
-          const vd = await vr.json();
-          if (vd.error) return;
-          const thumbs = vd.thumbnails?.data || [];
-          const best = thumbs.reduce((b, t) => (!b || t.height > b.height) ? t : b, null);
-          if (best?.uri) ad.creative._hd_thumbnail = best.uri;
-          if (vd.source)  ad.creative._video_source = vd.source;
-        } catch { /* ignora */ }
-      }));
-    }
-
-    const result = { data: todos };
+    const result = { data: todos, truncated: !!next };
     await cacheSet(ck, result, 90000); // 90s TTL
     return res.status(200).json(result);
   } catch (e) {
