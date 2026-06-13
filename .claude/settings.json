@@ -18,7 +18,6 @@
       "Bash(video-source)",
       "Bash(ad-preview \")",
       "Bash(find c:UsersSamsungTracking-aTTwhatsapp-traking-oficialapi -name *relatorio* -o -name *report*)",
-      "Bash(curl -s -X POST \"https://n8n-worki-tracker-oficial-2.ubufeb.easypanel.host/api/webhook-n8n\" -H \"Content-Type: application/json\" -d '{:*)",
       "Bash(curl -s -X POST https://n8n-worki-tracker-oficial-2.ubufeb.easypanel.host/api/webhook-evo -H \"Content-Type: application/json\" -d '{:*)",
       "Bash(find c:UsersSamsungTracking-aTTwhatsapp-traking-oficialapi -type f -name *.js -o -name *.ts -o -name *.py -o -name *.java -o -name *.php)",
       "Bash(for file:*)",

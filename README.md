@@ -428,7 +428,6 @@ Admins podem gerar links públicos para clientes visualizarem métricas sem logi
 |--------|------|-----------|
 | GET/POST/DELETE | `/api/evo-manager` | Gerenciamento de instâncias WhatsApp |
 | POST | `/api/webhook-evo` | Webhook da Evolution API (entrada de leads) |
-| POST | `/api/webhook-n8n` | Webhook para integrações N8N |
 
 ### Compartilhamento
 
@@ -510,7 +509,6 @@ Admins podem gerar links públicos para clientes visualizarem métricas sem logi
 │   │
 │   ├── evo-manager.js     # Gerenciamento de instâncias WhatsApp
 │   ├── webhook-evo.js     # Webhook Evolution → Lead/Purchase
-│   ├── webhook-n8n.js     # Webhook N8N
 │   │
 │   ├── share-ads.js       # Dashboard público — campanhas
 │   ├── share-best.js      # Dashboard público — criativos

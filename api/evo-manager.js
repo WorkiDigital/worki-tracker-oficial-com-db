@@ -117,9 +117,9 @@ export default async function handler(req, res) {
             [instanceName, cid]
         );
 
-        // Configura webhook N8N na instância existente
-        if (process.env.N8N_WEBHOOK_URL) {
-            let webhookUrl = process.env.N8N_WEBHOOK_URL;
+        // Configura o webhook nativo (api/webhook-evo) na instância existente
+        if (process.env.WEBHOOK_URL) {
+            let webhookUrl = process.env.WEBHOOK_URL;
             if (process.env.WEBHOOK_SECRET && process.env.WEBHOOK_SECRET_IN_URL === 'true') {
                 const sep = webhookUrl.includes('?') ? '&' : '?';
                 webhookUrl += `${sep}secret=${process.env.WEBHOOK_SECRET}`;
@@ -168,9 +168,9 @@ export default async function handler(req, res) {
          return res.status(400).json({ error: data.message || 'Erro ao criar instância' });
       }
 
-      // Auto-configura webhook do N8N na instância criada
-      if (process.env.N8N_WEBHOOK_URL) {
-        let webhookUrl = process.env.N8N_WEBHOOK_URL;
+      // Auto-configura o webhook nativo (api/webhook-evo) na instância criada
+      if (process.env.WEBHOOK_URL) {
+        let webhookUrl = process.env.WEBHOOK_URL;
         if (process.env.WEBHOOK_SECRET && process.env.WEBHOOK_SECRET_IN_URL === 'true') {
             const sep = webhookUrl.includes('?') ? '&' : '?';
             webhookUrl += `${sep}secret=${process.env.WEBHOOK_SECRET}`;
@@ -193,7 +193,7 @@ export default async function handler(req, res) {
         const wData = wRes.headers.get('content-type')?.includes('json') ? await wRes.json() : {};
         console.log(`[evo-manager] Webhook set para ${finalInstanceName} (${wRes.status}):`, JSON.stringify(wData));
       } else {
-        console.warn('[evo-manager] N8N_WEBHOOK_URL não definida — webhook não configurado');
+        console.warn('[evo-manager] WEBHOOK_URL não definida — webhook não configurado');
       }
 
       const rQR = await fetch(`${EVO_URL}/instance/connect/${finalInstanceName}`, { headers });
