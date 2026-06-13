@@ -92,7 +92,9 @@ function renderSkeleton() {
 function onPeriodoChange() {
     const v = $('periodoSelect').value;
     $('areaPersonalizada').style.display = v === 'personalizado' ? 'flex' : 'none';
-    if (v !== 'personalizado') aplicarFiltros();
+    // Leads são carregados sob demanda do backend por período — rebusca em vez de só refiltrar a memória.
+    // Para 'personalizado', só recarrega quando o usuário confirma (botão OK chama recarregarLeads()).
+    if (v !== 'personalizado') recarregarLeads();
 }
 
 function calcRange(periodo) {

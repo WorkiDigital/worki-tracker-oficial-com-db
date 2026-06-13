@@ -1725,8 +1725,8 @@ async function popularSeletorAdmin() {
 
 function trocarClienteAdmin(id) {
     clienteAdminSelecionado = id ? parseInt(id) : null;
-    if (typeof popularFiltroInstancias === 'function') popularFiltroInstancias();
-    aplicarFiltros();
+    // Leads são carregados sob demanda do backend por cliente — rebusca em vez de só refiltrar a memória.
+    recarregarLeads();
 }
 
 // ── Anúncios — Account picker ──────────────────────────────────
