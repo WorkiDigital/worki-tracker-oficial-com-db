@@ -1523,6 +1523,7 @@ const expandState = {}; // { 'adsets_<id>': true/false }
 let bestAdsRaw      = [];
 let bestAdsPagina   = 0;
 let bestAdsSortKey  = 'leads';
+let bestAdsLoadedOnce = false;
 const adBestMap     = {}; // { adId: adItem }
 const BEST_ADS_POR_PAGINA = 15;
 const BEST_ADS_TIMEOUT_MS = 35000;
@@ -1615,6 +1616,9 @@ async function init() {
     if (typeof Chart !== 'undefined' && typeof ChartDataLabels !== 'undefined') {
         Chart.register(ChartDataLabels);
     }
+
+    // Render inicial dos ícones (lucide deferred já carregou neste ponto).
+    if (typeof lucide !== 'undefined') lucide.createIcons();
 
     // Theme
     if (ls('theme') === 'light') document.documentElement.classList.add('light');
@@ -2243,9 +2247,12 @@ async function carregarAnuncios() {
     Object.keys(expandCache).forEach(k => delete expandCache[k]);
     Object.keys(expandState).forEach(k => delete expandState[k]);
     Object.keys(adBestMap).forEach(k => delete adBestMap[k]);
+    _bestAdsRequestId++;
     bestAdsRaw = []; bestAdsPagina = 0;
+    bestAdsLoadedOnce = false;
     $('bestAdsEmpty').style.display = '';
     $('bestAdsLoaded').style.display = 'none';
+    $('btnCarregarBestAds').disabled = false;
     $('btnCarregarBestAds').innerHTML = '<i data-lucide="play-circle" style="width:13px;"></i> Carregar Criativos';
     lucide.createIcons({ nodes: [$('btnCarregarBestAds')] });
     focoStack = [];
@@ -3293,6 +3300,7 @@ async function carregarMelhoresAnuncios() {
 
     const btn = $('btnCarregarBestAds');
     const reqId = ++_bestAdsRequestId;
+    bestAdsLoadedOnce = true;
 
     $('bestAdsEmpty').style.display = 'none';
     $('bestAdsLoaded').style.display = '';
@@ -3366,7 +3374,7 @@ async function carregarMelhoresAnuncios() {
 }
 
 function onBestAdsStatusChange() {
-    if (bestAdsRaw.length) carregarMelhoresAnuncios();
+    if (bestAdsLoadedOnce) carregarMelhoresAnuncios();
     else renderMelhoresAnuncios();
 }
 
@@ -4245,7 +4253,8 @@ function toggleTheme() {
 }
 
 // ── Start ──────────────────────────────────────────────────────
-lucide.createIcons();
+// lucide.createIcons() roda dentro de init() (no DOMContentLoaded), após os
+// scripts deferred (lucide.js) terem carregado — chamar aqui no topo dá ReferenceError.
 document.addEventListener('DOMContentLoaded', () => { init(); initFunilPills(); });
 </script>
 <script defer src="js/leads.js"></script>
