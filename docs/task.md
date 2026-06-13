@@ -50,14 +50,15 @@ O índice `idx_leads_cliente_data (cliente_id, created_at DESC)` já existe (`se
 - `[x]` **Causa raiz:** descasamento de índice. A tabela renderiza com índice de `dadosFiltrados`, e `abrirModal(idx)` usava `dadosFiltrados[idx]` (correto), mas `qualificarLead(idx)`/`confirmarQualificacao` usavam `rawData[idx]`. Quando havia filtro/busca/recarga, `rawData` e `dadosFiltrados` divergiam → pegava o lead errado ou `undefined` (botão "não pega").
 - `[x]` **Correção:** `qualificarLead` agora lê de `dadosFiltrados[idx]` e guarda o **id do lead** (estável), não o índice. `confirmarQualificacao` resolve o lead via `rawData.find(l => l.id === ...)`. (`js/leads.js`)
 
-### Bug 2 — QualifiedLead rejeitado pela Meta ✅ (parcial — depende de validação em produção)
-- `[x]` **Alinhado o payload:** adicionados `client_ip_address` e `client_user_agent` ao `user_data` do QualifiedLead **e** do Purchase, via constante compartilhada `CAPI_CLIENT_HINTS` (igual ao `LeadSubmitted` que é aceito).
-- `[x]` **Erro completo logado:** o `resp.error` inteiro da Meta agora é gravado em `webhook_logs` (campo `data.meta_error`) e no console via `JSON.stringify`. Antes só o `.message` era guardado, escondendo `error_subcode`/`error_user_title`.
-- Nota: `event_name: 'QualifiedLead'` **é** um standard event válido da Meta — não foi alterado (mudar às cegas quebraria atribuição já configurada). Se ainda for rejeitado, o motivo real agora aparece na aba Logs para diagnóstico.
+### Bug 2 — QualifiedLead rejeitado pela Meta ✅ (causa raiz confirmada pela Meta)
+- `[x]` **Causa raiz real:** a Meta retornou `error_subcode 2804064` — *"Remove todos os argumentos inválidos... QualifiedLead com business_messaging: client_ip_address client_user_agent"*. Ou seja, esses campos são **proibidos** nesse canal/evento (o oposto da suspeita inicial). O page_id nunca foi o problema.
+- `[x]` **Correção:** removidos `client_ip_address`/`client_user_agent` do `user_data` de QualifiedLead **e** Purchase (constante `CAPI_CLIENT_HINTS` excluída). `event_name` mantido (é válido).
+- `[x]` O `resp.error` completo logado foi o que revelou o subcode — manter esse log ajuda em diagnósticos futuros.
 
 ### Bug 3 — Logs de CAPI não aparecem na aba "Logs do Sistema" ✅
 - `[x]` **Causa confirmada:** a aba Logs lê de `webhook_logs`; o `api/leads-update.js` só fazia `console.log`/`console.warn`, nunca inseria nessa tabela.
-- `[x]` **Correção:** novo helper `gravarLogCapi(pool, lead, tag, level, message, data)` insere em `webhook_logs` (tags `capi-purchase`/`capi-qualified`, level `info`/`error`) após cada envio — sucesso, rejeição, timeout e falta de pixel/token. Best-effort (não derruba o fluxo). Reusa o padrão do `webhook-evo.js`.
+- `[x]` **Correção:** novo helper `gravarLogCapi(pool, lead, tag, level, message, data)` insere em `webhook_logs` (tags `capi-purchase`/`capi-qualified`, level `info`/`error`) após cada envio — sucesso, rejeição, timeout e falta de pixel/token. Best-effort (não derruba o fluxo).
+- `[x]` **Correção de coluna:** o INSERT usava `instance_name`, mas a coluna real de `webhook_logs` é `instance` (`setup-db.js:266`). Corrigido no helper **e** no `webhook-evo.js` (que tinha o mesmo erro, silenciado por um `catch` vazio — nunca gravava log de lead).
 
 ---
 

@@ -21,7 +21,7 @@ async function fetchWithTimeout(url, opts = {}, ms = 8000) {
 async function gravarLogCapi(pool, lead, tag, level, message, data) {
   try {
     await pool.query(
-      `INSERT INTO webhook_logs (cliente_id, instance_name, tag, level, message, data)
+      `INSERT INTO webhook_logs (cliente_id, instance, tag, level, message, data)
        VALUES ($1, $2, $3, $4, $5, $6)`,
       [lead.cliente_id || null, lead.instancia || null, tag, level, message, JSON.stringify(data || {})]
     );
@@ -30,12 +30,9 @@ async function gravarLogCapi(pool, lead, tag, level, message, data) {
   }
 }
 
-// user_data base compartilhado: campos exigidos pela Meta no canal business_messaging/CTWA.
-// O LeadSubmitted (webhook-evo.js) que é aceito envia estes dois — alinhamos aqui.
-const CAPI_CLIENT_HINTS = {
-  client_ip_address: '0.0.0.0',
-  client_user_agent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36',
-};
+// IMPORTANTE: no canal business_messaging a Meta REJEITA client_ip_address e
+// client_user_agent em eventos como Purchase/QualifiedLead (error_subcode 2804064).
+// Não inclua esses campos no user_data desses eventos.
 
 export default async function handler(req, res) {
   if (cors(req, res, ['PATCH'])) return;
@@ -151,7 +148,7 @@ async function sendCapiPurchase(lead, value, pool) {
   const ph = (telefone || '').replace(/\D/g, '');
   const nomeParts = (lead.nome || '').trim().split(/\s+/);
 
-  const userData = { ...CAPI_CLIENT_HINTS, ctwa_clid: ctw_aci_id || undefined };
+  const userData = { ctwa_clid: ctw_aci_id || undefined };
   if (ph)           userData.ph          = hash(ph);
   if (nomeParts[0]) userData.fn          = hash(nomeParts[0]);
   if (nomeParts[1]) userData.ln          = hash(nomeParts.slice(1).join(' '));
@@ -239,7 +236,7 @@ async function sendCapiQualifiedLead(lead, pool) {
   const ph = (telefone || '').replace(/\D/g, '');
   const nomeParts = (lead.nome || '').trim().split(/\s+/);
 
-  const userData = { ...CAPI_CLIENT_HINTS, ctwa_clid: ctw_aci_id || undefined };
+  const userData = { ctwa_clid: ctw_aci_id || undefined };
   if (ph)           userData.ph          = hash(ph);
   if (nomeParts[0]) userData.fn          = hash(nomeParts[0]);
   if (nomeParts[1]) userData.ln          = hash(nomeParts.slice(1).join(' '));

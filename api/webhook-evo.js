@@ -201,7 +201,7 @@ export default async function handler(req, res) {
     // ── 14. Gravar log no webhook_logs ──
     try {
       await pool.query(
-        `INSERT INTO webhook_logs (cliente_id, instance_name, tag, level, message, data)
+        `INSERT INTO webhook_logs (cliente_id, instance, tag, level, message, data)
          VALUES ($1, $2, 'lead', 'info', $3, $4)`,
         [
           cliente_id,
