@@ -123,6 +123,15 @@ function calcRange(periodo) {
     return null;
 }
 
+// Range do período ANTERIOR com a mesma duração do range atual (deslocado para trás).
+// Ex: período de 7 dias → os 7 dias imediatamente anteriores.
+function calcRangePrevio(range) {
+    if (!range) return null;
+    const [ini, fim] = range;
+    const duracao = fim.getTime() - ini.getTime();
+    return [new Date(ini.getTime() - duracao), new Date(ini.getTime())];
+}
+
 function aplicarFiltros() {
     const busca   = ($('inputBusca').value||'').toLowerCase().trim();
     const periodo = $('periodoSelect')?.value || 'hojeOntem';
@@ -324,6 +333,18 @@ function exportarCSV() {
 }
 
 // ── Relatórios ─────────────────────────────────────────────────
+// Calcula as métricas-chave de um conjunto de leads (reutilizado no período atual e no anterior).
+function calcMetricasRelatorio(leads) {
+    const total  = leads.length;
+    const vendas = leads.filter(l => (l.status||'').toLowerCase() === 'vendido');
+    const qualificados = leads.filter(l =>
+        (l.status||'').toLowerCase() === 'qualificado' || l.qualified_at
+    );
+    const receita = vendas.reduce((s,l) => s + parseFloat(l.valor_venda||0), 0);
+    const conv    = total ? (vendas.length/total)*100 : 0;
+    return { total, vendas: vendas.length, qualificados: qualificados.length, receita, conv };
+}
+
 function renderRelatorios() {
     const total  = dadosFiltrados.length;
     const vendas = dadosFiltrados.filter(l => (l.status||'').toLowerCase() === 'vendido');
@@ -340,6 +361,9 @@ function renderRelatorios() {
     $('val-conv').textContent    = conv + '%';
     $('val-receita').textContent = brl(receita);
 
+    // Comparação vs período anterior (busca leve, não bloqueia o render principal).
+    renderComparativoPeriodo();
+
     const mapA  = agrupar(dadosFiltrados, 'utm_content');
     const mapP  = agrupar(dadosFiltrados, 'plataforma');
     const mapAV = agrupar(vendas, 'utm_content');
@@ -355,6 +379,135 @@ function renderRelatorios() {
     
     // NOVO: Heatmap de Horários
     renderHeatmap(window.currentHeatmapTipo || 'leads');
+}
+
+// Busca os leads do período anterior e renderiza a variação (+/-%) em cada card.
+async function renderComparativoPeriodo() {
+    const periodo = $('periodoSelect')?.value || 'hojeOntem';
+    const range = (periodo && periodo !== 'todos') ? calcRange(periodo) : null;
+    const prev = calcRangePrevio(range);
+    if (!prev) { limparComparativo(); return; } // "Todos" não tem período anterior definido
+
+    try {
+        const params = new URLSearchParams();
+        if (typeof clienteAdminSelecionado !== 'undefined' && clienteAdminSelecionado) {
+            params.append('cliente_id', clienteAdminSelecionado);
+        }
+        params.append('start', prev[0].toISOString());
+        params.append('end', prev[1].toISOString());
+
+        const resp = await authFetch('/api/leads?' + params.toString());
+        if (!resp.ok) { limparComparativo(); return; }
+        const leadsPrev = await resp.json();
+        if (!Array.isArray(leadsPrev)) { limparComparativo(); return; }
+
+        const atual = calcMetricasRelatorio(dadosFiltrados);
+        const ant   = calcMetricasRelatorio(leadsPrev);
+
+        setDelta('delta-total',        atual.total,        ant.total);
+        setDelta('delta-vendas',       atual.vendas,       ant.vendas);
+        setDelta('delta-qualificados', atual.qualificados, ant.qualificados);
+        setDelta('delta-conv',         atual.conv,         ant.conv);
+        setDelta('delta-receita',      atual.receita,      ant.receita);
+    } catch (e) {
+        console.error('Comparativo de período falhou:', e);
+        limparComparativo();
+    }
+}
+
+// Renderiza a seta + percentual de variação num elemento de delta.
+function setDelta(elId, atual, anterior) {
+    const el = $(elId);
+    if (!el) return;
+    if (anterior === 0) {
+        // Sem base de comparação: mostra "novo" se há valor agora, senão nada.
+        el.innerHTML = atual > 0 ? '<span style="color:var(--green);">novo</span>' : '';
+        return;
+    }
+    const variacao = ((atual - anterior) / anterior) * 100;
+    const subiu = variacao >= 0;
+    const cor = variacao === 0 ? 'var(--muted)' : (subiu ? 'var(--green)' : 'var(--red)');
+    const seta = variacao === 0 ? '→' : (subiu ? '▲' : '▼');
+    el.innerHTML = `<span style="color:${cor};font-size:11px;font-weight:600;">${seta} ${Math.abs(variacao).toFixed(0)}%</span>`;
+}
+
+function limparComparativo() {
+    ['delta-total','delta-vendas','delta-qualificados','delta-conv','delta-receita']
+        .forEach(id => { if ($(id)) $(id).innerHTML = ''; });
+}
+
+// Exporta a aba Relatórios como PDF (html2canvas + jsPDF, ambos via CDN deferida).
+async function exportarRelatorioPDF() {
+    const alvo = $('relatorioConteudo');
+    const btn  = $('btnExportRelatorio');
+    if (!alvo) return;
+    if (typeof html2canvas === 'undefined' || !window.jspdf) {
+        toast('Bibliotecas de exportação ainda carregando, tente novamente', 'error');
+        return;
+    }
+
+    const labelOriginal = btn?.innerHTML;
+    if (btn) { btn.disabled = true; btn.textContent = 'Gerando PDF...'; }
+
+    try {
+        // Fundo branco para o PDF ficar legível independente do tema.
+        const canvas = await html2canvas(alvo, {
+            scale: 2,
+            backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() || '#ffffff',
+            useCORS: true
+        });
+
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pageW = pdf.internal.pageSize.getWidth();
+        const pageH = pdf.internal.pageSize.getHeight();
+        const imgW = pageW;
+
+        // Cabeçalho com nome do projeto e período.
+        const periodoLabel = $('periodoSelect')?.options[$('periodoSelect').selectedIndex]?.text || '';
+        const projeto = $('nome-projeto')?.textContent || 'Relatório';
+        pdf.setFontSize(14);
+        pdf.text(`${projeto} — Relatório`, 10, 12);
+        pdf.setFontSize(10);
+        pdf.text(`Período: ${periodoLabel}  ·  Gerado em ${new Date().toLocaleDateString('pt-BR')}`, 10, 18);
+
+        const topo = 24;
+        const dispW = imgW - 20;            // margem lateral de 10mm
+        const dispH = (canvas.height * dispW) / canvas.width;
+
+        // Se couber numa página, insere direto; senão, fatia em múltiplas páginas.
+        if (dispH <= pageH - topo - 10) {
+            pdf.addImage(canvas, 'PNG', 10, topo, dispW, dispH);
+        } else {
+            let restante = dispH;
+            let posY = topo;
+            let sliceTop = 0;
+            const ratio = canvas.width / dispW; // px por mm
+            while (restante > 0) {
+                const espaco = pageH - posY - 10;
+                const sliceH = Math.min(espaco, restante);
+                const sliceCanvas = document.createElement('canvas');
+                sliceCanvas.width = canvas.width;
+                sliceCanvas.height = sliceH * ratio;
+                sliceCanvas.getContext('2d').drawImage(
+                    canvas, 0, sliceTop * ratio, canvas.width, sliceH * ratio,
+                    0, 0, canvas.width, sliceH * ratio
+                );
+                pdf.addImage(sliceCanvas, 'PNG', 10, posY, dispW, sliceH);
+                restante -= sliceH;
+                sliceTop += sliceH;
+                if (restante > 0) { pdf.addPage(); posY = 10; }
+            }
+        }
+
+        pdf.save(`relatorio-${new Date().toISOString().slice(0,10)}.pdf`);
+        toast('Relatório exportado em PDF', 'success');
+    } catch (e) {
+        console.error('Erro ao exportar PDF:', e);
+        toast('Erro ao gerar PDF: ' + e.message, 'error');
+    } finally {
+        if (btn) { btn.disabled = false; btn.innerHTML = labelOriginal; lucide.createIcons({ nodes:[btn] }); }
+    }
 }
 
 window.currentHeatmapTipo = 'leads';

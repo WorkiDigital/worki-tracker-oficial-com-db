@@ -11,6 +11,9 @@
     <script defer src="https://cdn.jsdelivr.net/npm/lucide@0.469.0/dist/umd/lucide.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <!-- Exportação de relatório em PDF -->
+    <script defer src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
     <link rel="stylesheet" href="css/dashboard.css">
     <link rel="stylesheet" href="css/splash.css">
     <script defer src="js/utils.js"></script>
@@ -1108,12 +1111,18 @@
 
         <!-- ABA: RELATÓRIOS -->
         <div id="aba-relatorios" class="aba-oculta">
+            <div style="display:flex;justify-content:flex-end;margin-bottom:12px;">
+                <button class="btn btn-ghost btn-sm" id="btnExportRelatorio" onclick="exportarRelatorioPDF()">
+                    <i data-lucide="file-down" style="width:14px;"></i> Exportar PDF
+                </button>
+            </div>
+            <div id="relatorioConteudo">
             <div class="metrics-grid">
-                <div class="metric-card"><div class="metric-value" id="val-total">0</div><div class="metric-label">Total de Leads</div></div>
-                <div class="metric-card"><div class="metric-value" id="val-vendas">0</div><div class="metric-label">Vendas</div></div>
-                <div class="metric-card"><div class="metric-value" id="val-qualificados">0</div><div class="metric-label">Qualificados</div></div>
-                <div class="metric-card"><div class="metric-value" id="val-conv">0%</div><div class="metric-label">Conversão</div></div>
-                <div class="metric-card"><div class="metric-value" id="val-receita">R$ 0</div><div class="metric-label">Receita Total</div></div>
+                <div class="metric-card"><div class="metric-value" id="val-total">0</div><div class="metric-label">Total de Leads <span id="delta-total"></span></div></div>
+                <div class="metric-card"><div class="metric-value" id="val-vendas">0</div><div class="metric-label">Vendas <span id="delta-vendas"></span></div></div>
+                <div class="metric-card"><div class="metric-value" id="val-qualificados">0</div><div class="metric-label">Qualificados <span id="delta-qualificados"></span></div></div>
+                <div class="metric-card"><div class="metric-value" id="val-conv">0%</div><div class="metric-label">Conversão <span id="delta-conv"></span></div></div>
+                <div class="metric-card"><div class="metric-value" id="val-receita">R$ 0</div><div class="metric-label">Receita Total <span id="delta-receita"></span></div></div>
             </div>
             <div class="chart-card" style="margin-bottom: 20px; align-items: stretch;">
                 <h3><i data-lucide="trending-up" style="width:14px;color:var(--blue);"></i> Evolução Diária (Leads vs Vendas)</h3>
@@ -1177,6 +1186,7 @@
                     <div class="legend" id="l4"></div>
                 </div>
             </div>
+            </div><!-- /relatorioConteudo -->
         </div>
 
         <!-- ABA: WHATSAPP -->
