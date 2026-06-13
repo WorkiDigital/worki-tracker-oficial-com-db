@@ -34,6 +34,27 @@ async function gravarLogCapi(pool, lead, tag, level, message, data) {
 // client_user_agent em eventos como Purchase/QualifiedLead (error_subcode 2804064).
 // Não inclua esses campos no user_data desses eventos.
 
+// A Meta exige page_id (ou whatsapp_business_account_id) no user_data de eventos
+// business_messaging (error_subcode 2804116 quando falta). Alguns leads ficam sem
+// page_id (URL do anúncio em formato que extrairPageId não reconheceu). Como
+// fallback, usamos o page_id mais frequente dos outros leads do mesmo cliente.
+async function resolvePageId(pool, lead) {
+  if (lead.page_id) return lead.page_id;
+  if (!lead.cliente_id) return null;
+  try {
+    const r = await pool.query(
+      `SELECT page_id FROM leads_tracking
+       WHERE cliente_id = $1 AND page_id IS NOT NULL AND page_id <> ''
+       GROUP BY page_id ORDER BY COUNT(*) DESC LIMIT 1`,
+      [lead.cliente_id]
+    );
+    return r.rows[0]?.page_id || null;
+  } catch (e) {
+    console.error('resolvePageId falhou:', e.message);
+    return null;
+  }
+}
+
 export default async function handler(req, res) {
   if (cors(req, res, ['PATCH'])) return;
 
@@ -109,7 +130,7 @@ export default async function handler(req, res) {
 
 async function sendCapiPurchase(lead, value, pool) {
   let token;
-  let { pixel, ctw_aci_id, telefone, cidade, estado, cliente_id, page_id } = lead;
+  let { pixel, ctw_aci_id, telefone, cidade, estado, cliente_id } = lead;
 
   if (!pixel && cliente_id) {
     const clientRes = await pool.query('SELECT pixel_padrao, token_meta, token_meta_enc FROM clientes WHERE id = $1', [cliente_id]);
@@ -148,13 +169,21 @@ async function sendCapiPurchase(lead, value, pool) {
   const ph = (telefone || '').replace(/\D/g, '');
   const nomeParts = (lead.nome || '').trim().split(/\s+/);
 
+  // page_id é obrigatório p/ business_messaging; usa fallback do cliente se o lead não tiver.
+  const finalPageId = await resolvePageId(pool, lead);
+  if (!finalPageId) {
+    console.warn('CAPI não enviada: page_id ausente e sem fallback — lead ID', lead.id);
+    await gravarLogCapi(pool, lead, 'capi', 'error', 'page_id ausente (sem fallback do cliente)', { lead_id: lead.id });
+    return { sent: false, error: 'page_id ausente — anúncio sem página identificada' };
+  }
+
   // Base que a Meta ACEITA (idêntica ao LeadSubmitted do webhook-evo):
   // ctwa_clid (cru) + ph (array hasheado) + page_id (cru).
   // Advanced matching adicionado por cima (tudo hasheado, conforme doc de
   // Customer Information Parameters). ctwa_clid e page_id NÃO são hasheados.
   const userData = { ctwa_clid: ctw_aci_id || undefined };
   if (ph)           userData.ph          = [hash(ph)];
-  if (page_id)      userData.page_id     = page_id;
+  userData.page_id = finalPageId;
   if (lead.email)   userData.em          = [hash(lead.email.toLowerCase().trim())];
   if (nomeParts[0]) userData.fn          = [hash(nomeParts[0])];
   if (nomeParts[1]) userData.ln          = [hash(nomeParts.slice(1).join(' '))];
@@ -201,7 +230,7 @@ async function sendCapiPurchase(lead, value, pool) {
 
 async function sendCapiQualifiedLead(lead, pool) {
   let token;
-  let { pixel, ctw_aci_id, telefone, cidade, estado, cliente_id, page_id } = lead;
+  let { pixel, ctw_aci_id, telefone, cidade, estado, cliente_id } = lead;
 
   if (!pixel && cliente_id) {
     const clientRes = await pool.query('SELECT pixel_padrao, token_meta, token_meta_enc FROM clientes WHERE id = $1', [cliente_id]);
@@ -240,13 +269,21 @@ async function sendCapiQualifiedLead(lead, pool) {
   const ph = (telefone || '').replace(/\D/g, '');
   const nomeParts = (lead.nome || '').trim().split(/\s+/);
 
+  // page_id é obrigatório p/ business_messaging; usa fallback do cliente se o lead não tiver.
+  const finalPageId = await resolvePageId(pool, lead);
+  if (!finalPageId) {
+    console.warn('CAPI não enviada: page_id ausente e sem fallback — lead ID', lead.id);
+    await gravarLogCapi(pool, lead, 'capi', 'error', 'page_id ausente (sem fallback do cliente)', { lead_id: lead.id });
+    return { sent: false, error: 'page_id ausente — anúncio sem página identificada' };
+  }
+
   // Base que a Meta ACEITA (idêntica ao LeadSubmitted do webhook-evo):
   // ctwa_clid (cru) + ph (array hasheado) + page_id (cru).
   // Advanced matching adicionado por cima (tudo hasheado, conforme doc de
   // Customer Information Parameters). ctwa_clid e page_id NÃO são hasheados.
   const userData = { ctwa_clid: ctw_aci_id || undefined };
   if (ph)           userData.ph          = [hash(ph)];
-  if (page_id)      userData.page_id     = page_id;
+  userData.page_id = finalPageId;
   if (lead.email)   userData.em          = [hash(lead.email.toLowerCase().trim())];
   if (nomeParts[0]) userData.fn          = [hash(nomeParts[0])];
   if (nomeParts[1]) userData.ln          = [hash(nomeParts.slice(1).join(' '))];

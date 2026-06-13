@@ -72,7 +72,11 @@ export default async function handler(req, res) {
     '';
 
   // ── 7. Extrair dados CTWA (Click-to-WhatsApp Ads) ──
-  const contextInfo = message.contextInfo
+  // A Evolution manda o contextInfo em locais diferentes conforme a versão.
+  // Em algumas versões vem direto em body.data.contextInfo (msgData.contextInfo),
+  // em outras dentro de message.* — por isso checamos todos.
+  const contextInfo = msgData.contextInfo
+    || message.contextInfo
     || message.extendedTextMessage?.contextInfo
     || message.imageMessage?.contextInfo
     || message.videoMessage?.contextInfo
@@ -153,10 +157,24 @@ export default async function handler(req, res) {
 
   // ── 11. Extrair metadados adicionais ──
   const plataforma = detectarPlataforma(event_source_url, externalAdReply);
-  const page_id = extrairPageId(event_source_url);
+  let page_id = extrairPageId(event_source_url);
 
   try {
     const pool = getPool();
+
+    // ── 11b. Fallback do page_id via Graph API ──
+    // A URL do anúncio costuma vir encurtada (fb.me/...) sem page_id. Se a regex
+    // não achou, consultamos a Meta pelo sourceId (ID do anúncio) usando o token do cliente.
+    if (!page_id && sourceId) {
+      const cliRes = await pool.query('SELECT token_meta, token_meta_enc FROM clientes WHERE id = $1', [cliente_id]);
+      const cli = cliRes.rows[0];
+      let token = cli?.token_meta || process.env.META_ADS_TOKEN || null;
+      if (cli?.token_meta_enc) {
+        try { token = decryptToken(cli.token_meta_enc); } catch (e) { console.error('Fallback page_id: erro descriptografia', e.message); }
+      }
+      page_id = await buscarPageIdViaApi(sourceId, token);
+      if (page_id) console.log(`[webhook-evo] page_id ${page_id} obtido via Graph API (sourceId ${sourceId})`);
+    }
 
     // ── 12. Deduplicação — evitar leads duplicados nas últimas 24h ──
     const dupeCheck = await pool.query(
@@ -310,4 +328,30 @@ function extrairPageId(sourceUrl) {
   // Tenta extrair page_id de URLs como https://www.facebook.com/1234567890/posts/...
   const match = sourceUrl.match(/facebook\.com\/(\d{10,})/);
   return match ? match[1] : null;
+}
+
+// Busca o page_id real na Graph API a partir do sourceId (ID do anúncio CTWA).
+// Muitos anúncios chegam com sourceUrl encurtada (fb.me/...) sem page_id na URL,
+// mas o sourceId permite consultar creative.object_story_spec.page_id na Meta.
+// Retorna null em qualquer falha (best-effort — não derruba o webhook).
+async function buscarPageIdViaApi(sourceId, token) {
+  if (!sourceId || !token) return null;
+  try {
+    const url = `https://graph.facebook.com/v25.0/${sourceId}`
+      + `?fields=effective_object_story_id,creative{effective_object_story_id,object_story_spec{page_id}}`
+      + `&access_token=${token}`;
+    const r = await fetch(url);
+    const data = await r.json();
+    if (data.error) {
+      console.warn('buscarPageIdViaApi: Meta retornou erro:', data.error.message);
+      return null;
+    }
+    // object_story_spec.page_id é o caminho direto; effective_object_story_id vem como "<page_id>_<post_id>".
+    const pid = data.creative?.object_story_spec?.page_id
+      || (data.effective_object_story_id || data.creative?.effective_object_story_id || '').split('_')[0];
+    return pid || null;
+  } catch (e) {
+    console.warn('buscarPageIdViaApi: falha na requisição:', e.message);
+    return null;
+  }
 }
