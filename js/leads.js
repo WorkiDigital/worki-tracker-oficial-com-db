@@ -327,11 +327,16 @@ function exportarCSV() {
 function renderRelatorios() {
     const total  = dadosFiltrados.length;
     const vendas = dadosFiltrados.filter(l => (l.status||'').toLowerCase() === 'vendido');
+    // Qualificados: status "Qualificado" OU que já passaram pela qualificação (qualified_at).
+    const qualificados = dadosFiltrados.filter(l =>
+        (l.status||'').toLowerCase() === 'qualificado' || l.qualified_at
+    );
     const receita = vendas.reduce((s,l) => s + parseFloat(l.valor_venda||0), 0);
     const conv   = total ? ((vendas.length/total)*100).toFixed(1) : 0;
 
     $('val-total').textContent   = total;
     $('val-vendas').textContent  = vendas.length;
+    if ($('val-qualificados')) $('val-qualificados').textContent = qualificados.length;
     $('val-conv').textContent    = conv + '%';
     $('val-receita').textContent = brl(receita);
 
