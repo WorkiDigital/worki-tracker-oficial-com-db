@@ -148,16 +148,20 @@ async function sendCapiPurchase(lead, value, pool) {
   const ph = (telefone || '').replace(/\D/g, '');
   const nomeParts = (lead.nome || '').trim().split(/\s+/);
 
+  // Base que a Meta ACEITA (idêntica ao LeadSubmitted do webhook-evo):
+  // ctwa_clid (cru) + ph (array hasheado) + page_id (cru).
+  // Advanced matching adicionado por cima (tudo hasheado, conforme doc de
+  // Customer Information Parameters). ctwa_clid e page_id NÃO são hasheados.
   const userData = { ctwa_clid: ctw_aci_id || undefined };
-  if (ph)           userData.ph          = hash(ph);
-  if (nomeParts[0]) userData.fn          = hash(nomeParts[0]);
-  if (nomeParts[1]) userData.ln          = hash(nomeParts.slice(1).join(' '));
-  if (estado)       userData.st          = hash(estado);
-  if (cidade)       userData.ct          = hash(cidade);
-  if (lead.email)   userData.em          = hash(lead.email.toLowerCase().trim());
-  if (lead.cpf)     userData.external_id = hash(lead.cpf.replace(/\D/g, ''));
+  if (ph)           userData.ph          = [hash(ph)];
   if (page_id)      userData.page_id     = page_id;
-  userData.country = hash('br');
+  if (lead.email)   userData.em          = [hash(lead.email.toLowerCase().trim())];
+  if (nomeParts[0]) userData.fn          = [hash(nomeParts[0])];
+  if (nomeParts[1]) userData.ln          = [hash(nomeParts.slice(1).join(' '))];
+  if (lead.cpf)     userData.external_id = [hash(lead.cpf.replace(/\D/g, ''))];
+  if (cidade)       userData.ct          = [hash(cidade)];
+  if (estado)       userData.st          = [hash(estado)];
+  userData.country = [hash('br')];
 
   const customData = { currency: 'BRL', value: parseFloat(value || 0) };
   if (lead.produto) customData.content_name = lead.produto;
@@ -236,16 +240,20 @@ async function sendCapiQualifiedLead(lead, pool) {
   const ph = (telefone || '').replace(/\D/g, '');
   const nomeParts = (lead.nome || '').trim().split(/\s+/);
 
+  // Base que a Meta ACEITA (idêntica ao LeadSubmitted do webhook-evo):
+  // ctwa_clid (cru) + ph (array hasheado) + page_id (cru).
+  // Advanced matching adicionado por cima (tudo hasheado, conforme doc de
+  // Customer Information Parameters). ctwa_clid e page_id NÃO são hasheados.
   const userData = { ctwa_clid: ctw_aci_id || undefined };
-  if (ph)           userData.ph          = hash(ph);
-  if (nomeParts[0]) userData.fn          = hash(nomeParts[0]);
-  if (nomeParts[1]) userData.ln          = hash(nomeParts.slice(1).join(' '));
-  if (estado)       userData.st          = hash(estado);
-  if (cidade)       userData.ct          = hash(cidade);
-  if (lead.email)   userData.em          = hash(lead.email.toLowerCase().trim());
-  if (lead.cpf)     userData.external_id = hash(lead.cpf.replace(/\D/g, ''));
+  if (ph)           userData.ph          = [hash(ph)];
   if (page_id)      userData.page_id     = page_id;
-  userData.country = hash('br');
+  if (lead.email)   userData.em          = [hash(lead.email.toLowerCase().trim())];
+  if (nomeParts[0]) userData.fn          = [hash(nomeParts[0])];
+  if (nomeParts[1]) userData.ln          = [hash(nomeParts.slice(1).join(' '))];
+  if (lead.cpf)     userData.external_id = [hash(lead.cpf.replace(/\D/g, ''))];
+  if (cidade)       userData.ct          = [hash(cidade)];
+  if (estado)       userData.st          = [hash(estado)];
+  userData.country = [hash('br')];
 
   const payload = {
     data: [{
