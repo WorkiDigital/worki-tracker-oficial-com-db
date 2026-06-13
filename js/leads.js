@@ -247,7 +247,7 @@ function renderTabela() {
         const stColor  = purchase ? '#10b981' : '';
         const stBorder = purchase ? '1px solid rgba(16,185,129,.3)' : 'transparent';
         const msg      = (lead.mensagem_recebida||'Sem mensagem').substring(0,35);
-        const temCapi  = !!lead.pixel; 
+        const temCapi  = true; // O backend busca o pixel do cliente via banco de dados 
         const data     = tempoRelativo(lead.event_time||lead.created_at);
         
         // FASE 2: Lead Score
