@@ -623,10 +623,14 @@ async function confirmarVenda() {
         const idx = rawData.findIndex(l => l.id === chumboAtivo.id);
         if (idx !== -1) { rawData[idx].status = 'Vendido'; rawData[idx].valor_venda = valor; }
         aplicarFiltros();
-        toast('Venda registrada e CAPI enviado para a Meta!', 'success');
+
+        // O lead foi salvo como Vendido no banco — para o cliente, a venda está sempre registrada.
+        // Se o CAPI falhar à Meta, isso fica só no log do servidor (problema interno), sem alarmar o cliente.
+        toast('Venda registrada com sucesso!', 'success');
         fecharModal();
     } catch(e) {
         toast('Erro: ' + e.message, 'error');
+    } finally {
         btn.textContent = originalLabel; btn.disabled = false;
     }
 }
@@ -667,7 +671,9 @@ async function confirmarQualificacao() {
 
         lead.status = 'Qualificado';
         aplicarFiltros();
-        toast('Lead Qualificado! Evento enviado.', 'success');
+
+        // Lead salvo como Qualificado no banco. Se o CAPI falhar à Meta, fica só no log do servidor.
+        toast('Lead Qualificado!', 'success');
         $('qualificarModal').classList.remove('open');
     } catch(e) {
         toast('Erro: ' + e.message, 'error');

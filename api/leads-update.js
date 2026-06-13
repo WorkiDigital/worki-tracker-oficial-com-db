@@ -5,6 +5,17 @@ import { cors } from './_cors.js';
 import { rateLimit } from './_rate-limit.js';
 import { decryptToken } from './_crypto.js';
 
+// fetch com timeout para nunca pendurar o request (botão travado no painel)
+async function fetchWithTimeout(url, opts = {}, ms = 8000) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), ms);
+  try {
+    return await fetch(url, { ...opts, signal: ctrl.signal });
+  } finally {
+    clearTimeout(t);
+  }
+}
+
 export default async function handler(req, res) {
   if (cors(req, res, ['PATCH'])) return;
 
@@ -58,13 +69,17 @@ export default async function handler(req, res) {
         return res.status(404).json({ error: 'Lead não encontrado ou não pertence ao seu cliente.' });
       }
 
+      let capi = null;
       if (status === 'Vendido' || status === 'Venda') {
         const lead = updateResult.rows[0];
-        await sendCapiPurchase(lead, valor_venda, pool);
+        capi = await sendCapiPurchase(lead, valor_venda, pool);
       } else if (status === 'Qualificado') {
         const lead = updateResult.rows[0];
-        await sendCapiQualifiedLead(lead, pool);
+        capi = await sendCapiQualifiedLead(lead, pool);
       }
+
+      // O status do lead já foi salvo no banco. capi informa o resultado real do envio à Meta.
+      return res.status(200).json({ ok: true, capi });
     }
 
     return res.status(200).json({ ok: true });
@@ -102,8 +117,9 @@ async function sendCapiPurchase(lead, value, pool) {
   }
 
   if (!pixel || !token) {
-    console.warn('CAPI não enviada: falta Pixel ou Token para o lead ID', lead.id);
-    return;
+    const motivo = !pixel ? 'Pixel não configurado para este cliente/lead' : 'Token da Meta não configurado';
+    console.warn('CAPI Purchase não enviada:', motivo, '— lead ID', lead.id);
+    return { sent: false, error: motivo };
   }
 
   const hash = str => /^[a-f0-9]{64}$/.test(str)
@@ -139,17 +155,21 @@ async function sendCapiPurchase(lead, value, pool) {
   };
 
   try {
-    const r    = await fetch(`https://graph.facebook.com/v25.0/${pixel}/events?access_token=${token}`, {
+    const r    = await fetchWithTimeout(`https://graph.facebook.com/v25.0/${pixel}/events?access_token=${token}`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
     });
     const resp = await r.json();
     if (resp.events_received) {
       console.log('✅ CAPI Purchase (manual) aceita pela Meta:', resp.fbtrace_id);
-    } else {
-      console.warn('❌ CAPI Purchase (manual) rejeitada:', resp.error || resp);
+      return { sent: true, fbtrace_id: resp.fbtrace_id };
     }
+    const msg = resp.error?.message || 'Evento rejeitado pela Meta';
+    console.warn('❌ CAPI Purchase (manual) rejeitada:', resp.error || resp);
+    return { sent: false, error: msg };
   } catch (err) {
-    console.error('CAPI error:', err);
+    const msg = err.name === 'AbortError' ? 'Timeout ao contatar a Meta' : err.message;
+    console.error('CAPI Purchase error:', msg);
+    return { sent: false, error: msg };
   }
 }
 
@@ -181,8 +201,9 @@ async function sendCapiQualifiedLead(lead, pool) {
   }
 
   if (!pixel || !token) {
-    console.warn('CAPI QualifiedLead não enviada: falta Pixel ou Token para o lead ID', lead.id);
-    return;
+    const motivo = !pixel ? 'Pixel não configurado para este cliente/lead' : 'Token da Meta não configurado';
+    console.warn('CAPI QualifiedLead não enviada:', motivo, '— lead ID', lead.id);
+    return { sent: false, error: motivo };
   }
 
   const hash = str => /^[a-f0-9]{64}$/.test(str)
@@ -214,16 +235,20 @@ async function sendCapiQualifiedLead(lead, pool) {
   };
 
   try {
-    const r    = await fetch(`https://graph.facebook.com/v25.0/${pixel}/events?access_token=${token}`, {
+    const r    = await fetchWithTimeout(`https://graph.facebook.com/v25.0/${pixel}/events?access_token=${token}`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
     });
     const resp = await r.json();
     if (resp.events_received) {
       console.log('✅ CAPI QualifiedLead aceita pela Meta:', resp.fbtrace_id);
-    } else {
-      console.warn('❌ CAPI QualifiedLead rejeitada:', resp.error || resp);
+      return { sent: true, fbtrace_id: resp.fbtrace_id };
     }
+    const msg = resp.error?.message || 'Evento rejeitado pela Meta';
+    console.warn('❌ CAPI QualifiedLead rejeitada:', resp.error || resp);
+    return { sent: false, error: msg };
   } catch (err) {
-    console.error('CAPI QualifiedLead error:', err);
+    const msg = err.name === 'AbortError' ? 'Timeout ao contatar a Meta' : err.message;
+    console.error('CAPI QualifiedLead error:', msg);
+    return { sent: false, error: msg };
   }
 }
