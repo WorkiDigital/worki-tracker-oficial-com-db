@@ -46,6 +46,29 @@ function getActVal(ins, keys) {
         .reduce((s, a) => s + parseFloat(a.value||0), 0);
 }
 
+// Meta API — pega o valor do PRIMEIRO action_type presente, na ordem de preferência (NÃO soma).
+// Evita double-counting: a Meta retorna variantes (omni_purchase, purchase,
+// offsite_conversion.fb_pixel_purchase...) que carregam o MESMO valor. omni_* é o roll-up
+// deduplicado. Somar as variantes contaria a mesma compra 2-3 vezes.
+function getActFirst(ins, keysOrdenadas) {
+    if (!ins?.actions) return 0;
+    for (const k of keysOrdenadas) {
+        const a = ins.actions.find(x => x.action_type === k);
+        if (a) return parseFloat(a.value || 0);
+    }
+    return 0;
+}
+
+// Idem para action_values (valor monetário).
+function getActValFirst(ins, keysOrdenadas) {
+    if (!ins?.action_values) return 0;
+    for (const k of keysOrdenadas) {
+        const a = ins.action_values.find(x => x.action_type === k);
+        if (a) return parseFloat(a.value || 0);
+    }
+    return 0;
+}
+
 // Meta API — ROAS de purchase_roas
 function getRoas(ins) {
     if (!ins?.purchase_roas) return 0;

@@ -220,9 +220,10 @@ function campaignMetrics(campaigns) {
         const pv   = parseInt(ins.instagram_profile_visits || 0);
         profileVisits += pv || getAct(ins, ['instagram_profile_visit']);
         seguidores += getAct(ins, ['like','onsite_conversion.follow_button_click', 'instagram_follows']);
-        purchases     += getAct(ins, ['purchase','offsite_conversion.fb_pixel_purchase','omni_purchase']);
-        purchaseValue += getActVal(ins, ['purchase','offsite_conversion.fb_pixel_purchase','omni_purchase']);
-        initCheckout  += getAct(ins, ['initiate_checkout','offsite_conversion.fb_pixel_initiate_checkout','omni_initiate_checkout']);
+        // omni_* é o roll-up deduplicado da Meta — usar só o canônico (NÃO somar variantes).
+        purchases     += getActFirst(ins, ['omni_purchase','purchase']);
+        purchaseValue += getActValFirst(ins, ['omni_purchase','purchase']);
+        initCheckout  += getActFirst(ins, ['omni_initiate_checkout','initiate_checkout']);
         const roasVal = getRoas(ins);
         if (roasVal && sp) { roasSum += roasVal * sp; roasCount += sp; }
         const cpmV = parseFloat(ins.cpm||0);      if (cpmV && imp) { cpmSum += cpmV*imp;  cpmCount += imp; }
@@ -372,9 +373,10 @@ function renderTable() {
         const totalVisits = lpv + pv;
         const seg    = getAct(ins, ['like','onsite_conversion.follow_button_click', 'instagram_follows']);
         const clicks = getAct(ins, ['link_click']);
-        const purchases  = getAct(ins, ['purchase','offsite_conversion.fb_pixel_purchase','omni_purchase']);
-        const purchaseVal= getActVal(ins, ['purchase','offsite_conversion.fb_pixel_purchase','omni_purchase']);
-        const initCk     = getAct(ins, ['initiate_checkout','offsite_conversion.fb_pixel_initiate_checkout','omni_initiate_checkout']);
+        // omni_* deduplicado — usar só o canônico (NÃO somar variantes que repetem o valor).
+        const purchases  = getActFirst(ins, ['omni_purchase','purchase']);
+        const purchaseVal= getActValFirst(ins, ['omni_purchase','purchase']);
+        const initCk     = getActFirst(ins, ['omni_initiate_checkout','initiate_checkout']);
         const roas       = getRoas(ins);
         const cells = COL_DEFS.map(col => {
             switch(col.key) {

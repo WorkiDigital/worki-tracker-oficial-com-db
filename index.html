@@ -2719,14 +2719,15 @@ function calcMetricasAds(camps) {
         // Seguidores / curtidas de página originados do anúncio
         seguidores += getAct(ins, ['like', 'onsite_conversion.follow_button_click', 'instagram_follows']);
 
-        // Compras (purchase) via Pixel/CAPI
-        purchases += getAct(ins, ['purchase','offsite_conversion.fb_pixel_purchase','omni_purchase']);
+        // Compras — omni_purchase é o roll-up deduplicado da Meta (fallback: purchase).
+        // NÃO somar variantes: elas carregam o mesmo valor e dobrariam/triplicariam.
+        purchases += getActFirst(ins, ['omni_purchase','purchase']);
 
-        // Valor em compras (action_values)
-        purchaseValue += getActVal(ins, ['purchase','offsite_conversion.fb_pixel_purchase','omni_purchase']);
+        // Valor em compras (action_values) — mesma regra.
+        purchaseValue += getActValFirst(ins, ['omni_purchase','purchase']);
 
-        // Inícios de checkout
-        initCheckout += getAct(ins, ['initiate_checkout','offsite_conversion.fb_pixel_initiate_checkout','omni_initiate_checkout']);
+        // Inícios de checkout — omni_initiate_checkout deduplicado (fallback: initiate_checkout).
+        initCheckout += getActFirst(ins, ['omni_initiate_checkout','initiate_checkout']);
 
         // ROAS ponderado por gasto
         const roasVal = getRoas(ins);
@@ -3050,9 +3051,9 @@ function renderTabelaCampanhas(camps) {
         const lpv        = getAct(ins,['landing_page_view']);
         const pv         = parseInt(ins.instagram_profile_visits || 0) || getAct(ins,['instagram_profile_visit']);
         const seguidores = getAct(ins,['like', 'onsite_conversion.follow_button_click', 'instagram_follows']);
-        const purchases  = getAct(ins,['purchase','offsite_conversion.fb_pixel_purchase','omni_purchase']);
-        const purchaseVal= getActVal(ins,['purchase','offsite_conversion.fb_pixel_purchase','omni_purchase']);
-        const initCk     = getAct(ins,['initiate_checkout','offsite_conversion.fb_pixel_initiate_checkout','omni_initiate_checkout']);
+        const purchases  = getActFirst(ins,['omni_purchase','purchase']);
+        const purchaseVal= getActValFirst(ins,['omni_purchase','purchase']);
+        const initCk     = getActFirst(ins,['omni_initiate_checkout','initiate_checkout']);
         const roas       = getRoas(ins);
 
         const getVal = key => {
@@ -3253,9 +3254,9 @@ async function toggleExpand(level, parentId, btn, e) {
         const pv    = parseInt(ins.instagram_profile_visits || 0) || getAct(ins,['instagram_profile_visit']);
         const totalVisits = lpv + pv;
         const seg    = getAct(ins, ['like','onsite_conversion.follow_button_click', 'instagram_follows']);
-        const purchases  = getAct(ins,['purchase','offsite_conversion.fb_pixel_purchase','omni_purchase']);
-        const purchaseVal= getActVal(ins,['purchase','offsite_conversion.fb_pixel_purchase','omni_purchase']);
-        const initCk     = getAct(ins,['initiate_checkout','offsite_conversion.fb_pixel_initiate_checkout','omni_initiate_checkout']);
+        const purchases  = getActFirst(ins,['omni_purchase','purchase']);
+        const purchaseVal= getActValFirst(ins,['omni_purchase','purchase']);
+        const initCk     = getActFirst(ins,['omni_initiate_checkout','initiate_checkout']);
         const roas       = getRoas(ins);
         const getVal = k => {
             switch(k) {
