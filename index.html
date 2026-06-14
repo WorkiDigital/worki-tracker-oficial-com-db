@@ -448,13 +448,10 @@
             <i data-lucide="send" style="width:17px;flex-shrink:0;"></i><span>Relatórios Automáticos</span>
         </a>
 
-        <!-- ── CONFIGURAÇÃO ── -->
-        <div class="nav-sep"><span>Configuração</span></div>
+        <!-- ── CONTA ── -->
+        <div class="nav-sep"><span>Conta</span></div>
         <a id="btn-conta" class="nav-item" onclick="mudarAba('conta')">
             <i data-lucide="user-cog" style="width:17px;flex-shrink:0;"></i><span>Minha Conta</span>
-        </a>
-        <a id="btn-config" class="nav-item" onclick="mudarAba('config')">
-            <i data-lucide="megaphone" style="width:17px;flex-shrink:0;"></i><span>Contas de Anúncio</span>
         </a>
         <a id="btn-clientes" class="nav-item" onclick="mudarAba('clientes')">
             <i data-lucide="share-2" style="width:17px;flex-shrink:0;"></i><span>Compartilhar Dash</span>
@@ -673,6 +670,35 @@
                     <button class="btn btn-primary" id="btnAtualizarAds" onclick="carregarAnuncios()">
                         <i data-lucide="refresh-cw" style="width:13px;"></i> Atualizar
                     </button>
+                    <button class="btn btn-ghost btn-sm" onclick="abrirModalGerenciarContas()" title="Selecionar contas visíveis" style="margin-left:auto;">
+                        <i data-lucide="settings-2" style="width:13px;"></i> <span class="sidebar-text">Gerenciar contas</span>
+                    </button>
+                </div>
+
+                <!-- Modal inline: Gerenciar contas de anúncio -->
+                <div id="modalGerenciarContas" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0.45);align-items:center;justify-content:center;" onclick="if(event.target===this)fecharModalGerenciarContas()">
+                    <div class="modal-box" style="width:420px;max-width:95vw;max-height:80vh;display:flex;flex-direction:column;">
+                        <div class="modal-head">
+                            <span><i data-lucide="building-2" style="width:15px;color:var(--blue);"></i> Contas de Anúncio</span>
+                            <button class="btn-icon" onclick="fecharModalGerenciarContas()"><i data-lucide="x" style="width:16px;"></i></button>
+                        </div>
+                        <div style="padding:16px 20px 0;overflow-y:auto;flex:1;">
+                            <p style="font-size:13px;color:var(--muted);margin-bottom:14px;">Selecione as contas que aparecem no seletor acima.</p>
+                            <div class="acct-search-box" style="margin-bottom:10px;">
+                                <i data-lucide="search" style="width:13px;color:var(--muted);flex-shrink:0;"></i>
+                                <input id="cfgContasSearch" type="text" placeholder="Pesquisar conta..." oninput="filtrarCfgContas()" autocomplete="off">
+                            </div>
+                            <div id="cfgContasList" style="max-height:280px;overflow-y:auto;"></div>
+                        </div>
+                        <div style="padding:16px 20px;border-top:1px solid var(--border);display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+                            <button class="btn btn-primary" onclick="salvarConfigContas()">
+                                <i data-lucide="save" style="width:13px;"></i> Salvar
+                            </button>
+                            <button class="btn btn-ghost btn-sm" onclick="selecionarTodasContas()">Selecionar todas</button>
+                            <button class="btn btn-ghost btn-sm" onclick="desmarcarTodasContas()">Desmarcar todas</button>
+                            <span id="cfgContasSalvo" style="font-size:12px;color:var(--blue);display:none;">✓ Salvo</span>
+                        </div>
+                    </div>
                 </div>
 
                 <div id="ads-loading" style="display:none;">
@@ -2046,14 +2072,26 @@ function aplicarFiltroContas() {
 const _cfgChecked = new Set();
 let _cfgInicializado = false; // impede re-popula do saved quando usuário desmarcou tudo
 
+async function abrirModalGerenciarContas() {
+    const modal = $('modalGerenciarContas');
+    modal.style.display = 'flex';
+    // carrega contas se ainda não carregadas
+    if (!_todasContas.length) await carregarContasAds();
+    _cfgChecked.clear();
+    _cfgInicializado = false;
+    $('cfgContasSearch').value = '';
+    _renderCfgLista('');
+    lucide.createIcons({ nodes: [modal] });
+}
+
+function fecharModalGerenciarContas() {
+    $('modalGerenciarContas').style.display = 'none';
+}
+
 async function renderConfigContas() {
     if (!_todasContas.length) {
-        $('cfgContasBtnLabel').textContent = 'Carregando...';
         await carregarContasAds();
-        if (!_todasContas.length) {
-            $('cfgContasBtnLabel').textContent = 'Nenhuma conta encontrada';
-            return;
-        }
+        if (!_todasContas.length) return;
     }
     // Inicializa estado de seleção a partir do salvo
     _cfgChecked.clear();
@@ -2062,11 +2100,6 @@ async function renderConfigContas() {
     _renderCfgLista('');
     atualizarLabelCfg();
     lucide.createIcons({ nodes: [$('aba-config')] });
-
-    // Fecha ao clicar fora
-    setTimeout(() => {
-        document.addEventListener('click', _fecharCfgFora);
-    }, 10);
 }
 
 function _fecharCfgFora(e) {
@@ -2143,9 +2176,9 @@ function salvarConfigContas() {
     ls(ACCOUNTS_FILTER_KEY, JSON.stringify(valor));
     aplicarFiltroContas();
     fecharCfgDropdown();
+    fecharModalGerenciarContas();
     const badge = $('cfgContasSalvo');
-    badge.style.display = 'inline';
-    setTimeout(() => badge.style.display = 'none', 2000);
+    if (badge) { badge.style.display = 'inline'; setTimeout(() => badge.style.display = 'none', 2000); }
     toast('Contas salvas', 'success');
     renderShareLinks();
 }

@@ -276,8 +276,6 @@ async function sendCapiLead(lead, pool) {
   const ph = (telefone || '').replace(/\D/g, '');
 
   const userData = {
-    client_ip_address: "0.0.0.0",
-    client_user_agent: "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36",
     ctwa_clid: ctw_aci_id,
   };
 
