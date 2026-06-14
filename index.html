@@ -450,6 +450,9 @@
 
         <!-- ── CONFIGURAÇÃO ── -->
         <div class="nav-sep"><span>Configuração</span></div>
+        <a id="btn-conta" class="nav-item" onclick="mudarAba('conta')">
+            <i data-lucide="user-cog" style="width:17px;flex-shrink:0;"></i><span>Minha Conta</span>
+        </a>
         <a id="btn-config" class="nav-item" onclick="mudarAba('config')">
             <i data-lucide="megaphone" style="width:17px;flex-shrink:0;"></i><span>Contas de Anúncio</span>
         </a>
@@ -463,7 +466,7 @@
             <i data-lucide="building" style="width:17px;flex-shrink:0;"></i><span>Gestão de Clientes</span>
         </a>
         <a id="btn-ajustes" class="nav-item" onclick="mudarAba('ajustes')" style="display:none;">
-            <i data-lucide="settings" style="width:17px;flex-shrink:0;"></i><span>Configurações</span>
+            <i data-lucide="palette" style="width:17px;flex-shrink:0;"></i><span>Marca</span>
         </a>
         <a id="btn-logs" class="nav-item" onclick="mudarAba('logs')" style="display:none;">
             <i data-lucide="terminal" style="width:17px;flex-shrink:0;"></i><span>Logs do Sistema</span>
@@ -1047,6 +1050,49 @@
                 </div>
             </div>
         </div><!-- /aba-clientes -->
+
+        <!-- ABA: MINHA CONTA -->
+        <div id="aba-conta" class="aba-oculta">
+            <div class="content">
+                <div style="max-width:560px;">
+                    <!-- Dados da conta -->
+                    <div class="card" style="padding:24px;margin-bottom:20px;">
+                        <div style="font-size:15px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:8px;">
+                            <i data-lucide="user" style="width:16px;color:var(--blue);"></i>
+                            Dados da Conta
+                        </div>
+                        <p style="font-size:13px;color:var(--muted);margin-bottom:18px;">Seu e-mail de acesso ao painel.</p>
+                        <label style="display:block;font-size:13px;font-weight:600;margin-bottom:8px;">E-mail</label>
+                        <input type="email" id="contaEmail" class="form-control" placeholder="seu@email.com"
+                               style="width:100%;padding:10px 14px;font-size:14px;border-radius:10px;border:1px solid var(--border);background:var(--bg);color:var(--text);margin-bottom:14px;">
+                        <button class="btn btn-primary" onclick="salvarEmailConta()">
+                            <i data-lucide="save" style="width:13px;"></i> Salvar e-mail
+                        </button>
+                    </div>
+
+                    <!-- Trocar senha -->
+                    <div class="card" style="padding:24px;">
+                        <div style="font-size:15px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:8px;">
+                            <i data-lucide="lock" style="width:16px;color:var(--blue);"></i>
+                            Trocar Senha
+                        </div>
+                        <p style="font-size:13px;color:var(--muted);margin-bottom:18px;">Para alterar, confirme sua senha atual.</p>
+                        <label style="display:block;font-size:13px;font-weight:600;margin-bottom:8px;">Senha atual</label>
+                        <input type="password" id="contaSenhaAtual" class="form-control" placeholder="••••••••"
+                               style="width:100%;padding:10px 14px;font-size:14px;border-radius:10px;border:1px solid var(--border);background:var(--bg);color:var(--text);margin-bottom:14px;">
+                        <label style="display:block;font-size:13px;font-weight:600;margin-bottom:8px;">Nova senha</label>
+                        <input type="password" id="contaSenhaNova" class="form-control" placeholder="Mínimo 6 caracteres"
+                               style="width:100%;padding:10px 14px;font-size:14px;border-radius:10px;border:1px solid var(--border);background:var(--bg);color:var(--text);margin-bottom:14px;">
+                        <label style="display:block;font-size:13px;font-weight:600;margin-bottom:8px;">Confirmar nova senha</label>
+                        <input type="password" id="contaSenhaConfirma" class="form-control" placeholder="Repita a nova senha"
+                               style="width:100%;padding:10px 14px;font-size:14px;border-radius:10px;border:1px solid var(--border);background:var(--bg);color:var(--text);margin-bottom:16px;">
+                        <button class="btn btn-primary" onclick="salvarSenhaConta()">
+                            <i data-lucide="key" style="width:13px;"></i> Trocar senha
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div><!-- /aba-conta -->
 
         <!-- ABA: CONFIGURAÇÕES -->
         <div id="aba-config" class="aba-oculta">
@@ -4002,14 +4048,15 @@ document.addEventListener('keydown', e => {
 });
 
 // ── Abas ───────────────────────────────────────────────────────
-const ABAS = ['leads','relatorios','anuncios','clientes','config','ajustes','agencia','whatsapp','zaprelatorios','logs'];
+const ABAS = ['leads','relatorios','anuncios','clientes','conta','config','ajustes','agencia','whatsapp','zaprelatorios','logs'];
 const TITULOS = {
     leads:          '<i data-lucide="users" style="color:var(--blue);"></i> Leads',
     relatorios:     '<i data-lucide="bar-chart-2" style="color:var(--blue);"></i> Relatórios',
     anuncios:       '<img src="https://cdn.simpleicons.org/meta/0082FB" style="width:16px;height:16px;display:inline;vertical-align:-2px;margin-right:6px;" alt="Meta"> Meta Ads',
     clientes:       '<i data-lucide="share-2" style="color:var(--blue);"></i> Compartilhar Dash',
+    conta:          '<i data-lucide="user-cog" style="color:var(--blue);"></i> Minha Conta',
     config:         '<i data-lucide="megaphone" style="color:var(--blue);"></i> Contas de Anúncio',
-    ajustes:        '<i data-lucide="settings" style="color:var(--blue);"></i> Configurações',
+    ajustes:        '<i data-lucide="palette" style="color:var(--blue);"></i> Marca',
     agencia:        '<i data-lucide="building" style="color:var(--blue);"></i> Gestão de Clientes',
     whatsapp:       '<i data-lucide="smartphone" style="color:#25D366;"></i> Conexão WhatsApp',
     zaprelatorios:  '<i data-lucide="send" style="color:#25D366;"></i> Relatórios Automáticos',
@@ -4028,6 +4075,7 @@ function mudarAba(aba) {
     $('leadsControls').style.display = ['leads','relatorios'].includes(aba) ? 'flex' : 'none';
     lucide.createIcons({ nodes:[$('titulo-pagina')] });
     if (aba === 'anuncios' && !adsCarregado) carregarAnuncios();
+    if (aba === 'conta')    { carregarMinhaConta(); }
     if (aba === 'config')   { renderConfigContas(); }
     if (aba === 'clientes') { renderShareLinks(); }
     if (aba === 'agencia')  { carregarClientesAdmin(); }
@@ -4037,6 +4085,50 @@ function mudarAba(aba) {
     // Fecha sidebar mobile ao trocar de aba
     $('sidebar').classList.remove('mobile-open');
     $('sidebarOverlay').classList.remove('open');
+}
+
+// ── Minha Conta ────────────────────────────────────────────────
+function carregarMinhaConta() {
+    const user = JSON.parse(localStorage.getItem('adlytics_user') || '{}');
+    if ($('contaEmail')) $('contaEmail').value = user.email || '';
+}
+
+async function salvarEmailConta() {
+    const email = ($('contaEmail').value || '').trim();
+    if (!email) { toast('Informe o e-mail', 'error'); return; }
+    try {
+        const r = await authFetch('/api/me-update', {
+            method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+        });
+        const data = await r.json();
+        if (!r.ok || data.error) throw new Error(data.error || 'Erro ao salvar');
+        // Atualiza o user no localStorage para refletir o novo email.
+        const user = JSON.parse(localStorage.getItem('adlytics_user') || '{}');
+        user.email = data.email || email;
+        localStorage.setItem('adlytics_user', JSON.stringify(user));
+        if ($('userEmail')) $('userEmail').textContent = user.email;
+        toast('E-mail atualizado!', 'success');
+    } catch(e) { toast('Erro: ' + e.message, 'error'); }
+}
+
+async function salvarSenhaConta() {
+    const atual = $('contaSenhaAtual').value;
+    const nova = $('contaSenhaNova').value;
+    const conf = $('contaSenhaConfirma').value;
+    if (!atual || !nova) { toast('Preencha a senha atual e a nova', 'error'); return; }
+    if (nova.length < 6) { toast('A nova senha precisa de ao menos 6 caracteres', 'error'); return; }
+    if (nova !== conf) { toast('A confirmação não bate com a nova senha', 'error'); return; }
+    try {
+        const r = await authFetch('/api/me-update', {
+            method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ senhaAtual: atual, novaSenha: nova })
+        });
+        const data = await r.json();
+        if (!r.ok || data.error) throw new Error(data.error || 'Erro ao trocar senha');
+        $('contaSenhaAtual').value = ''; $('contaSenhaNova').value = ''; $('contaSenhaConfirma').value = '';
+        toast('Senha alterada com sucesso!', 'success');
+    } catch(e) { toast('Erro: ' + e.message, 'error'); }
 }
 
 // ── Relatórios Zap ─────────────────────────────────────────────
