@@ -29,29 +29,47 @@ export default async function handler(req, res) {
 
   // Campos de insight: spend, impressions, clicks (todos), outbound_clicks (cliques em links),
   // ctr, reach, actions (conversões, leads, mensagens, seguidores)
-  const insightFields = 'spend,impressions,clicks,outbound_clicks,ctr,reach,cpm,cpc,frequency,inline_link_clicks,actions,action_values,cost_per_action_type,purchase_roas,instagram_profile_visits,video_p25_watched_actions,video_p50_watched_actions,video_p75_watched_actions,video_p100_watched_actions,video_play_actions,inline_post_engagement';
+  // video_3_sec_watched_actions é o numerador da Taxa de Gancho (Meta: 3s ÷ reproduções).
+  // Algumas versões/contas rejeitam esse campo (#100); por isso ele fica separado e há
+  // fallback automático que refaz a query sem ele caso a Meta recuse.
+  const baseFields = 'spend,impressions,clicks,outbound_clicks,ctr,reach,cpm,cpc,frequency,inline_link_clicks,actions,action_values,cost_per_action_type,purchase_roas,instagram_profile_visits,video_p25_watched_actions,video_p50_watched_actions,video_p75_watched_actions,video_p100_watched_actions,video_play_actions,inline_post_engagement';
+  const insightFields = `${baseFields},video_3_sec_watched_actions`;
   const insightsParam = (dateFrom && dateTo)
     ? `insights.time_range({"since":"${dateFrom}","until":"${dateTo}"})`
     : `insights.date_preset(${datePreset})`;
-  const fields = `name,status,objective,${insightsParam}{${insightFields}}`;
+  const mkFields = (flds) => `name,status,objective,${insightsParam}{${flds}}`;
+  const fields = mkFields(insightFields);
 
   // ── Cache hit? ────────────────────────────────────────────────
   const ck = cacheKey('ads', accountId, datePreset, dateFrom, dateTo);
   const cached = await cacheGet(ck);
   if (cached) return res.status(200).json(cached);
 
-  try {
-    // ── Paginação completa ──────────────────────────────────────
-    const allCampaigns = [];
-    let url = `https://graph.facebook.com/v20.0/${accountId}/campaigns?fields=${encodeURIComponent(fields)}&limit=200&access_token=${token}`;
+  // Busca as campanhas com paginação. Recebe a string de fields a usar.
+  const buscarCampanhas = async (flds) => {
+    const all = [];
+    let url = `https://graph.facebook.com/v20.0/${accountId}/campaigns?fields=${encodeURIComponent(mkFields(flds))}&limit=200&access_token=${token}`;
     while (url) {
       const r = await fetchMeta(url);
       const data = await r.json();
-      if (data.error) return res.status(400).json({ error: data.error.message });
-      allCampaigns.push(...(data.data || []));
+      if (data.error) return { error: data.error };
+      all.push(...(data.data || []));
       url = data.paging?.next || null;
     }
-    const result = { data: allCampaigns };
+    return { data: all };
+  };
+
+  try {
+    let resp = await buscarCampanhas(insightFields);
+
+    // Fallback: se a Meta recusou o campo video_3_sec_watched_actions (#100), refaz sem ele.
+    if (resp.error && /video_3_sec_watched_actions/i.test(resp.error.message || '')) {
+      console.warn('[ads] video_3_sec_watched_actions inválido nesta conta/versão — refazendo sem ele.');
+      resp = await buscarCampanhas(baseFields);
+    }
+    if (resp.error) return res.status(400).json({ error: resp.error.message });
+
+    const result = { data: resp.data };
     await cacheSet(ck, result, 60000); // 60s TTL
     return res.status(200).json(result);
   } catch (e) {
