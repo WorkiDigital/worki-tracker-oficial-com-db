@@ -48,7 +48,7 @@ export default async function handler(req, res) {
   // Busca as campanhas com paginação. Recebe a string de fields a usar.
   const buscarCampanhas = async (flds) => {
     const all = [];
-    let url = `https://graph.facebook.com/v20.0/${accountId}/campaigns?fields=${encodeURIComponent(mkFields(flds))}&limit=200&access_token=${token}`;
+    let url = `https://graph.facebook.com/v23.0/${accountId}/campaigns?fields=${encodeURIComponent(mkFields(flds))}&limit=200&access_token=${token}`;
     while (url) {
       const r = await fetchMeta(url);
       const data = await r.json();
