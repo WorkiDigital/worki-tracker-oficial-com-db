@@ -679,13 +679,15 @@
                 </div>
 
                 <div id="ads-data" style="display:none;">
-                <div class="cfg-bar">
-                    <button class="btn btn-ghost btn-sm" onclick="toggleCardsCfg()" id="btnCardsCfg">
-                        <i data-lucide="settings-2" style="width:13px;"></i> Configurar cards
+                <div class="metrics-toolbar">
+                    <div class="metrics-view-control">
+                        <span>Visão</span>
+                        <select id="metricsPresetSelect" class="bare" onchange="applyMetricsPreset(this.value, true)"></select>
+                    </div>
+                    <div class="metrics-toolbar-summary" id="metricsSelectionSummary">0 cards ativos</div>
+                    <button class="btn btn-ghost btn-sm" onclick="openMetricsModal('cards')" id="btnCardsCfg">
+                        <i data-lucide="settings-2" style="width:13px;"></i> Personalizar métricas
                     </button>
-                </div>
-                <div class="metrics-cfg-panel" id="cardsCfgPanel">
-                    <div class="metrics-cfg-grid" id="cfgCardsGrid"></div>
                 </div>
                 <div class="ads-metrics" id="adsMetricsGrid">
                     <div class="ads-metric" data-card="spend"><div class="ads-metric-val" id="ads-spend">R$ 0</div><div class="ads-metric-lbl">Gasto Total</div></div>
@@ -738,6 +740,59 @@
                     <div class="ads-metric" data-card="comment_rate"><div class="ads-metric-val" id="ads-comment-rate">—</div><div class="ads-metric-lbl">Taxa de Comentário</div></div>
                     <div class="ads-metric" data-card="comment_reach"><div class="ads-metric-val" id="ads-comment-reach">—</div><div class="ads-metric-lbl">Comentário/Alcance</div></div>
                     <div class="ads-metric" data-card="cpcomment"><div class="ads-metric-val" id="ads-cpcomment">—</div><div class="ads-metric-lbl">Custo/Comentário</div></div>
+                </div>
+
+                <div id="metricsCfgModal" class="modal-overlay" role="dialog" aria-modal="true" onclick="if(event.target===this)closeMetricsModal()">
+                    <div class="modal-box metrics-modal">
+                        <div class="modal-head">
+                            <span style="display:flex;align-items:center;justify-content:center;width:34px;height:34px;background:rgba(59,130,246,.12);border-radius:8px;flex-shrink:0;">
+                                <i data-lucide="sliders-horizontal" style="color:var(--blue);width:17px;height:17px;"></i>
+                            </span>
+                            <div>
+                                <h3 style="margin:0;font-size:16px;font-weight:700;">Personalizar métricas</h3>
+                                <p id="metricsModalSubtitle" style="margin:2px 0 0;color:var(--muted);font-size:12px;"></p>
+                            </div>
+                            <button class="btn-icon" onclick="closeMetricsModal()" style="margin-left:auto;" aria-label="Fechar">
+                                <i data-lucide="x" style="width:14px;"></i>
+                            </button>
+                        </div>
+
+                        <div class="metrics-modal-top">
+                            <div class="metrics-tabs">
+                                <button id="metricsTabCards" class="metrics-tab active" onclick="setMetricsModalTab('cards')">Cards</button>
+                                <button id="metricsTabCols" class="metrics-tab" onclick="setMetricsModalTab('cols')">Tabela</button>
+                            </div>
+                            <div class="metrics-search">
+                                <i data-lucide="search" style="width:13px;color:var(--muted);"></i>
+                                <input id="metricsSearch" type="text" placeholder="Buscar métrica..." oninput="renderMetricsModal()">
+                            </div>
+                        </div>
+
+                        <div class="metrics-preset-row" id="metricsPresetChips"></div>
+
+                        <div class="metrics-modal-grid">
+                            <div class="metrics-category-list" id="metricsCategoryList"></div>
+                            <div class="metrics-selected-panel">
+                                <div class="metrics-selected-head">
+                                    <span>Selecionadas</span>
+                                    <strong id="metricsSelectedCount">0</strong>
+                                </div>
+                                <div class="metrics-selected-list" id="metricsSelectedList"></div>
+                            </div>
+                        </div>
+
+                        <div class="metrics-modal-actions">
+                            <button class="btn btn-ghost btn-sm" onclick="restoreDefaultMetrics()">
+                                <i data-lucide="rotate-ccw" style="width:13px;"></i> Restaurar padrão
+                            </button>
+                            <button class="btn btn-ghost btn-sm" onclick="clearCurrentMetricSelection()">
+                                <i data-lucide="eraser" style="width:13px;"></i> Limpar
+                            </button>
+                            <button class="btn btn-primary btn-sm" onclick="closeMetricsModal()">
+                                <i data-lucide="check" style="width:13px;"></i> Aplicar
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Funil de Conversão -->
@@ -855,12 +910,9 @@
                     <div style="margin-left:auto;font-size:12px;color:var(--muted);align-self:flex-end;padding-bottom:2px;">
                         <span id="ads-count" style="color:var(--text);font-weight:700;">0</span> campanhas
                     </div>
-                    <button class="btn btn-ghost btn-sm" onclick="toggleColsCfg()" id="btnColsCfg" style="align-self:flex-end;">
+                    <button class="btn btn-ghost btn-sm" onclick="openMetricsModal('cols')" id="btnColsCfg" style="align-self:flex-end;">
                         <i data-lucide="columns" style="width:13px;"></i> Colunas tabela
                     </button>
-                </div>
-                <div class="metrics-cfg-panel" id="colsCfgPanel">
-                    <div id="cfgColsGrid" style="display:flex;flex-direction:column;gap:4px;"></div>
                 </div>
 
                 <!-- Breadcrumb de foco -->
@@ -2440,34 +2492,86 @@ const CARDS_DEF = [
     { key:'comment_reach',label:'Comentário/Alcance',          on:false },
     { key:'cpcomment',   label:'Custo/Comentário',             on:false },
 ];
-const COLS_DEF = [
-    { key:'spend',      label:'Gasto Total',          on:true  },
-    { key:'imps',       label:'Impressões',           on:true  },
-    { key:'reach',      label:'Alcance',              on:true  },
-    { key:'freq',       label:'Frequência',           on:true  },
-    { key:'cpm',        label:'CPM',                  on:true  },
-    { key:'clicks',     label:'Cliques (Links)',       on:true  },
-    { key:'cpc',        label:'CPC',                  on:true  },
-    { key:'ctr',        label:'CTR Médio',            on:true  },
-    { key:'lpv',        label:'Visitas (Site)',       on:true  },
-    { key:'cplpv',      label:'CPLPV (Site)',         on:true  },
-    { key:'profile_visits', label:'Visitas Perfil (IG)',  on:true  },
-    { key:'cppv',       label:'Custo/Visita Perfil',  on:true  },
-    { key:'leads',      label:'Leads',                on:true  },
-    { key:'cpl',        label:'CPL',                  on:true  },
-    { key:'msgs',       label:'Conversas',            on:true  },
-    { key:'cpr',        label:'CPR',                  on:true  },
-    { key:'seguidores', label:'Seguidores (IG)',      on:true },
-    { key:'cps',        label:'Custo/Seguidor',       on:true },
-    { key:'purchases',      label:'Compras',              on:false },
-    { key:'purchase_value', label:'Valor em Compras',     on:false },
-    { key:'roas',           label:'ROAS',                 on:false },
-    { key:'init_checkout',  label:'Inícios de Checkout',  on:false },
-    { key:'cpp',            label:'Custo/compra',         on:false },
+const METRIC_CATEGORY_LABELS = {
+    investment: 'Investimento',
+    delivery: 'Entrega',
+    traffic: 'Tráfego',
+    leads: 'Leads / WhatsApp',
+    instagram: 'Instagram',
+    sales: 'Vendas',
+    video: 'Vídeo',
+    engagement: 'Engajamento',
+    social: 'Social',
+};
+
+const METRIC_META = {
+    spend:{category:'investment'}, cpm:{category:'investment'}, cpc:{category:'investment'},
+    cplpv:{category:'investment'}, cppv:{category:'investment'}, cpl:{category:'investment'},
+    cpr:{category:'investment'}, cps:{category:'investment'}, cpp:{category:'investment'},
+    imps:{category:'delivery'}, reach:{category:'delivery'}, freq:{category:'delivery'}, ctr:{category:'delivery'},
+    clicks:{category:'traffic'}, lpv:{category:'traffic'},
+    leads:{category:'leads'}, msgs:{category:'leads'}, connect_rate:{category:'leads'},
+    profile_visits:{category:'instagram'}, seguidores:{category:'instagram'},
+    purchases:{category:'sales'}, purchase_value:{category:'sales'}, roas:{category:'sales'}, init_checkout:{category:'sales'},
+    vv25:{category:'video'}, cpv25:{category:'video'}, vv50:{category:'video'}, cpv50:{category:'video'},
+    vv75:{category:'video'}, cpv75:{category:'video'}, vv100:{category:'video'}, cpv100:{category:'video'},
+    hook:{category:'video'}, cphook:{category:'video'},
+    eng_imp:{category:'engagement'}, eng_reach:{category:'engagement'}, cpeng:{category:'engagement'},
+    save_rate:{category:'social'}, save_reach:{category:'social'}, cpsave:{category:'social'},
+    share_rate:{category:'social'}, share_reach:{category:'social'}, cpshare:{category:'social'},
+    comment_rate:{category:'social'}, comment_reach:{category:'social'}, cpcomment:{category:'social'},
+};
+
+CARDS_DEF.forEach(m => {
+    m.category = METRIC_META[m.key]?.category || 'delivery';
+    m.search = `${m.label} ${METRIC_CATEGORY_LABELS[m.category] || ''}`.toLowerCase();
+});
+
+const COLS_DEF = CARDS_DEF.map(m => ({
+    key: m.key,
+    label: m.label,
+    on: m.on,
+    category: m.category,
+    search: m.search,
+}));
+
+const METRIC_PRESETS = [
+    { key:'overview', label:'Visão Geral', cards:['spend','imps','reach','clicks','ctr','msgs','cpr','leads','cpl','purchases','roas','purchase_value'] },
+    { key:'whatsapp', label:'WhatsApp / Leads', cards:['spend','clicks','ctr','msgs','cpr','connect_rate','leads','cpl','lpv','cplpv'] },
+    { key:'traffic', label:'Tráfego', cards:['spend','imps','reach','freq','clicks','cpc','ctr','lpv','cplpv','profile_visits','cppv'] },
+    { key:'instagram', label:'Instagram', cards:['spend','profile_visits','cppv','seguidores','cps','eng_imp','eng_reach','save_rate','share_rate','comment_rate'] },
+    { key:'sales', label:'Vendas', cards:['spend','purchases','purchase_value','roas','init_checkout','cpp','clicks','cpc','ctr','lpv','cplpv'] },
+    { key:'video', label:'Vídeo', cards:['spend','imps','hook','cphook','vv25','cpv25','vv50','cpv50','vv75','vv100'] },
+    { key:'engagement', label:'Engajamento', cards:['spend','imps','reach','eng_imp','eng_reach','cpeng','save_rate','share_rate','comment_rate','cpsave'] },
+    { key:'social', label:'Social', cards:['spend','save_rate','save_reach','cpsave','share_rate','share_reach','cpshare','comment_rate','comment_reach','cpcomment'] },
+    { key:'efficiency', label:'Eficiência', cards:['spend','cpm','cpc','ctr','cplpv','cppv','cpl','cpr','cps','cpp','roas'] },
 ];
 
 const CFG_KEY = 'wt_metrics_cfg';
-let metricsCfg = { cards:{}, colsOrder:[] };
+let metricsCfg = { cards:{}, colsOrder:[], preset:'custom' };
+let metricsModalTab = 'cards';
+
+function createDefaultMetricsCfg() {
+    const cards = {};
+    CARDS_DEF.forEach(m => cards[m.key] = m.on);
+    return {
+        cards,
+        colsOrder: COLS_DEF.filter(m => m.on).map(m => m.key),
+        preset: 'custom',
+    };
+}
+
+function normalizeMetricsCfg() {
+    const base = createDefaultMetricsCfg();
+    metricsCfg = {
+        ...base,
+        ...(metricsCfg || {}),
+        cards: { ...base.cards, ...((metricsCfg && metricsCfg.cards) || {}) },
+        colsOrder: Array.isArray(metricsCfg?.colsOrder)
+            ? metricsCfg.colsOrder.filter(key => COLS_DEF.some(m => m.key === key))
+            : base.colsOrder,
+    };
+}
 
 function getDynamicKey(baseKey, accountId) {
     const user = JSON.parse(localStorage.getItem('adlytics_user') || '{}');
@@ -2508,9 +2612,7 @@ async function carregarDashboardSettings(accountId) {
         metricsCfg = savedM;
     } else {
         // Reset para padrão se não houver salvo
-        metricsCfg.cards = {};
-        CARDS_DEF.forEach(m => metricsCfg.cards[m.key] = m.on);
-        metricsCfg.colsOrder = COLS_DEF.filter(m => m.on).map(m => m.key);
+        metricsCfg = createDefaultMetricsCfg();
     }
 
     if (savedD) {
@@ -2523,6 +2625,7 @@ async function carregarDashboardSettings(accountId) {
 }
 
 function aplicarTudo() {
+    normalizeMetricsCfg();
     renderCardsCfgPanel();
     renderColsCfgPanel();
     aplicarMetricsCfg();
@@ -2566,8 +2669,7 @@ function carregarMetricsCfg() {
         carregarDashboardSettings(accountId);
     } else {
         // Padrão inicial caso não haja conta selecionada
-        CARDS_DEF.forEach(m => metricsCfg.cards[m.key] = m.on);
-        metricsCfg.colsOrder = COLS_DEF.filter(m => m.on).map(m => m.key);
+        metricsCfg = createDefaultMetricsCfg();
         renderCardsCfgPanel();
         renderColsCfgPanel();
         aplicarMetricsCfg();
@@ -2628,44 +2730,59 @@ function toggleDemoCfg() {
     lucide.createIcons({ nodes:[$('btnDemoCfg')] });
 }
 
-function toggleCardsCfg() {
-    $('cardsCfgPanel').classList.toggle('open');
-    lucide.createIcons({ nodes:[$('btnCardsCfg')] });
+function openMetricsModal(tab = 'cards') {
+    metricsModalTab = tab;
+    $('metricsCfgModal').classList.add('open');
+    const search = $('metricsSearch');
+    if (search) search.value = '';
+    renderMetricsModal();
+    lucide.createIcons({ nodes: [$('metricsCfgModal')] });
 }
 
-function toggleColsCfg() {
-    $('colsCfgPanel').classList.toggle('open');
-    lucide.createIcons({ nodes:[$('btnColsCfg')] });
+function closeMetricsModal() {
+    $('metricsCfgModal').classList.remove('open');
+}
+
+function setMetricsModalTab(tab) {
+    metricsModalTab = tab;
+    renderMetricsModal();
+}
+
+function getMetricDefsForTab() {
+    return metricsModalTab === 'cols' ? COLS_DEF : CARDS_DEF;
+}
+
+function isMetricSelected(metric) {
+    return metricsModalTab === 'cols'
+        ? metricsCfg.colsOrder.includes(metric.key)
+        : !!metricsCfg.cards[metric.key];
+}
+
+function syncMetricsToolbar() {
+    const select = $('metricsPresetSelect');
+    if (select) {
+        select.innerHTML = [
+            ...METRIC_PRESETS.map(p => `<option value="${p.key}">${p.label}</option>`),
+            '<option value="custom">Personalizado</option>'
+        ].join('');
+        select.value = metricsCfg.preset || 'custom';
+    }
+    const summary = $('metricsSelectionSummary');
+    if (summary) {
+        const cards = CARDS_DEF.filter(m => metricsCfg.cards[m.key]).length;
+        const cols = metricsCfg.colsOrder.length;
+        summary.textContent = `${cards} cards ativos · ${cols} colunas`;
+    }
 }
 
 function renderCardsCfgPanel() {
-    $('cfgCardsGrid').innerHTML = CARDS_DEF.map(m => `
-        <label class="metrics-cfg-item">
-            <input type="checkbox" ${metricsCfg.cards[m.key] ? 'checked' : ''}
-                   onchange="toggleCard('${m.key}',this.checked)">
-            ${m.label}
-        </label>`).join('');
+    syncMetricsToolbar();
+    renderMetricsModal();
 }
 
 function renderColsCfgPanel() {
-    const checked = metricsCfg.colsOrder.map((key, i) => {
-        const m = COLS_DEF.find(d => d.key === key);
-        if (!m) return '';
-        return `<label class="metrics-cfg-item">
-            <span class="col-order-badge">${i + 1}</span>
-            <input type="checkbox" checked onchange="toggleCol('${m.key}',this.checked)">
-            ${m.label}
-        </label>`;
-    });
-    const unchecked = COLS_DEF
-        .filter(m => !metricsCfg.colsOrder.includes(m.key))
-        .map(m => `
-        <label class="metrics-cfg-item metrics-cfg-item--off">
-            <span class="col-order-badge col-order-badge--empty"></span>
-            <input type="checkbox" onchange="toggleCol('${m.key}',this.checked)">
-            ${m.label}
-        </label>`);
-    $('cfgColsGrid').innerHTML = [...checked, ...unchecked].join('');
+    syncMetricsToolbar();
+    renderMetricsModal();
 }
 
 function renderMetricsCfgPanel() {
@@ -2673,10 +2790,74 @@ function renderMetricsCfgPanel() {
     renderColsCfgPanel();
 }
 
+function renderMetricsModal() {
+    normalizeMetricsCfg();
+    syncMetricsToolbar();
+    const modal = $('metricsCfgModal');
+    if (!modal || !modal.classList.contains('open')) return;
+
+    $('metricsTabCards').classList.toggle('active', metricsModalTab === 'cards');
+    $('metricsTabCols').classList.toggle('active', metricsModalTab === 'cols');
+    $('metricsModalSubtitle').textContent = metricsModalTab === 'cards'
+        ? 'Cards principais'
+        : 'Colunas da tabela';
+
+    const search = ($('metricsSearch')?.value || '').trim().toLowerCase();
+    const defs = getMetricDefsForTab();
+    const selected = metricsModalTab === 'cols'
+        ? metricsCfg.colsOrder.map(key => COLS_DEF.find(m => m.key === key)).filter(Boolean)
+        : defs.filter(isMetricSelected);
+    $('metricsSelectedCount').textContent = selected.length;
+
+    $('metricsPresetChips').innerHTML = METRIC_PRESETS.map(p =>
+        `<button class="metrics-preset-chip ${metricsCfg.preset === p.key ? 'active' : ''}" onclick="applyMetricsPreset('${p.key}', true)">${p.label}</button>`
+    ).join('');
+
+    const categories = Object.keys(METRIC_CATEGORY_LABELS).map(cat => {
+        const items = defs.filter(m => m.category === cat && (!search || m.search.includes(search)));
+        if (!items.length) return '';
+        return `<div class="metrics-category-block">
+            <div class="metrics-category-title">${METRIC_CATEGORY_LABELS[cat]}</div>
+            <div class="metrics-category-items">
+                ${items.map(m => {
+                    const checked = isMetricSelected(m);
+                    const handler = metricsModalTab === 'cols' ? 'toggleCol' : 'toggleCard';
+                    return `<label class="metrics-cfg-item ${checked ? '' : 'metrics-cfg-item--off'}">
+                        <input type="checkbox" ${checked ? 'checked' : ''} onchange="${handler}('${m.key}',this.checked)">
+                        <span>${m.label}</span>
+                    </label>`;
+                }).join('')}
+            </div>
+        </div>`;
+    }).join('');
+    $('metricsCategoryList').innerHTML = categories || '<div class="metrics-empty">Nenhuma métrica encontrada.</div>';
+
+    $('metricsSelectedList').innerHTML = selected.length
+        ? selected.map((m, i) => {
+            const order = metricsModalTab === 'cols'
+                ? `<span class="col-order-badge">${i + 1}</span>`
+                : '<span class="col-order-badge col-order-badge--empty"></span>';
+            const move = metricsModalTab === 'cols'
+                ? `<button class="metrics-mini-btn" onclick="moveMetricCol('${m.key}',-1)" title="Subir"><i data-lucide="chevron-up"></i></button>
+                   <button class="metrics-mini-btn" onclick="moveMetricCol('${m.key}',1)" title="Descer"><i data-lucide="chevron-down"></i></button>`
+                : '';
+            const remove = metricsModalTab === 'cols' ? 'toggleCol' : 'toggleCard';
+            return `<div class="metrics-selected-item">
+                ${order}<span>${m.label}</span><em>${METRIC_CATEGORY_LABELS[m.category]}</em>
+                <div class="metrics-selected-actions">${move}<button class="metrics-mini-btn" onclick="${remove}('${m.key}',false)" title="Remover"><i data-lucide="x"></i></button></div>
+            </div>`;
+        }).join('')
+        : '<div class="metrics-empty">Nenhuma métrica selecionada.</div>';
+
+    lucide.createIcons({ nodes: [modal] });
+}
+
 function toggleCard(key, on) {
     metricsCfg.cards[key] = on;
+    metricsCfg.preset = 'custom';
     salvarDashboardSettings();
     aplicarMetricsCfg();
+    renderMetricsModal();
 }
 
 function toggleCol(key, on) {
@@ -2685,12 +2866,66 @@ function toggleCol(key, on) {
     } else {
         metricsCfg.colsOrder = metricsCfg.colsOrder.filter(k => k !== key);
     }
+    metricsCfg.preset = 'custom';
     salvarDashboardSettings();
     renderColsCfgPanel();
     if (campanhasRaw.length) filtrarCampanhas();
 }
 
+function applyMetricsPreset(key, save = true) {
+    if (key === 'custom') {
+        metricsCfg.preset = 'custom';
+        if (save) salvarDashboardSettings();
+        syncMetricsToolbar();
+        return;
+    }
+    const preset = METRIC_PRESETS.find(p => p.key === key);
+    if (!preset) return;
+    CARDS_DEF.forEach(m => metricsCfg.cards[m.key] = preset.cards.includes(m.key));
+    metricsCfg.colsOrder = preset.cards.filter(key => COLS_DEF.some(m => m.key === key));
+    metricsCfg.preset = key;
+    if (save) salvarDashboardSettings();
+    aplicarMetricsCfg();
+    renderMetricsModal();
+    if (campanhasRaw.length) filtrarCampanhas();
+}
+
+function clearCurrentMetricSelection() {
+    if (metricsModalTab === 'cols') {
+        metricsCfg.colsOrder = [];
+    } else {
+        CARDS_DEF.forEach(m => metricsCfg.cards[m.key] = false);
+    }
+    metricsCfg.preset = 'custom';
+    salvarDashboardSettings();
+    aplicarMetricsCfg();
+    renderMetricsModal();
+    if (campanhasRaw.length) filtrarCampanhas();
+}
+
+function restoreDefaultMetrics() {
+    metricsCfg = createDefaultMetricsCfg();
+    salvarDashboardSettings();
+    aplicarMetricsCfg();
+    renderMetricsModal();
+    if (campanhasRaw.length) filtrarCampanhas();
+}
+
+function moveMetricCol(key, dir) {
+    const idx = metricsCfg.colsOrder.indexOf(key);
+    const next = idx + dir;
+    if (idx < 0 || next < 0 || next >= metricsCfg.colsOrder.length) return;
+    const copy = [...metricsCfg.colsOrder];
+    [copy[idx], copy[next]] = [copy[next], copy[idx]];
+    metricsCfg.colsOrder = copy;
+    metricsCfg.preset = 'custom';
+    salvarDashboardSettings();
+    renderMetricsModal();
+    if (campanhasRaw.length) filtrarCampanhas();
+}
+
 function aplicarMetricsCfg() {
+    syncMetricsToolbar();
     // Cards: mostra/esconde cada .ads-metric[data-card]
     document.querySelectorAll('.ads-metric[data-card]').forEach(el => {
         el.style.display = metricsCfg.cards[el.dataset.card] ? '' : 'none';
@@ -3133,6 +3368,77 @@ function renderDemoGraficos({ age, gender, plat, dev, pos }) {
     lucide.createIcons({ nodes: [$('demo-section')] });
 }
 
+function getAdsMetricCellValue(key, ins) {
+    const spend = parseFloat(ins?.spend || 0);
+    const imps = parseInt(ins?.impressions || 0);
+    const reach = parseInt(ins?.reach || 0);
+    const clicks = getAct(ins, ['link_click']);
+    const leads = getAct(ins, ['lead','offsite_conversion.lead']);
+    const msgs = getAct(ins, ['onsite_conversion.messaging_conversation_started_7d']);
+    const lpv = getAct(ins, ['landing_page_view']);
+    const pv = parseInt(ins?.instagram_profile_visits || 0) || getAct(ins, ['instagram_profile_visit']);
+    const seguidores = getAct(ins, ['like', 'onsite_conversion.follow_button_click', 'instagram_follows']);
+    const purchases = getActFirst(ins, ['omni_purchase','purchase']);
+    const purchaseVal = getActValFirst(ins, ['omni_purchase','purchase']);
+    const initCk = getActFirst(ins, ['omni_initiate_checkout','initiate_checkout']);
+    const roas = getRoas(ins);
+    const postEng = parseInt(ins?.inline_post_engagement || 0);
+    const saves = getActFirst(ins, ['onsite_conversion.post_save','post_save']);
+    const shares = getActFirst(ins, ['post','share']);
+    const comments = getActFirst(ins, ['comment']);
+    const pct = (num, den) => den ? (num / den * 100).toFixed(2) + '%' : '—';
+    const cost = den => den ? brl(spend / den) : '—';
+    switch(key) {
+        case 'spend': return spend ? brl(spend) : '—';
+        case 'imps': return fmtN(imps);
+        case 'reach': return reach ? fmtN(reach) : '—';
+        case 'freq': { const v = parseFloat(ins?.frequency || 0); return v ? v.toFixed(2) : '—'; }
+        case 'cpm': { const v = parseFloat(ins?.cpm || 0); return v ? brl(v) : '—'; }
+        case 'clicks': return clicks ? fmtN(clicks) : '—';
+        case 'cpc': { const v = parseFloat(ins?.cpc || 0); return v ? brl(v) : '—'; }
+        case 'ctr': { const v = parseFloat(ins?.ctr || 0); return v ? v.toFixed(2) + '%' : '—'; }
+        case 'lpv': return lpv ? fmtN(lpv) : '—';
+        case 'cplpv': return lpv ? brl(spend / lpv) : '—';
+        case 'profile_visits': return pv ? fmtN(pv) : '—';
+        case 'cppv': return pv ? brl(spend / pv) : '—';
+        case 'leads': return leads ? fmtN(leads) : '—';
+        case 'cpl': return leads ? brl(spend / leads) : '—';
+        case 'msgs': return msgs ? fmtN(msgs) : '—';
+        case 'cpr': return msgs ? brl(spend / msgs) : '—';
+        case 'seguidores': return seguidores ? fmtN(seguidores) : '—';
+        case 'cps': return seguidores ? brl(spend / seguidores) : '—';
+        case 'purchases': return purchases ? fmtN(purchases) : '—';
+        case 'purchase_value': return purchaseVal ? brl(purchaseVal) : '—';
+        case 'roas': return roas ? roas.toFixed(2) + 'x' : '—';
+        case 'init_checkout': return initCk ? fmtN(initCk) : '—';
+        case 'cpp': return purchases ? brl(spend / purchases) : '—';
+        case 'vv25': return pct(getVideoVal(ins, 'video_p25_watched_actions'), imps);
+        case 'cpv25': return cost(getVideoVal(ins, 'video_p25_watched_actions'));
+        case 'vv50': return pct(getVideoVal(ins, 'video_p50_watched_actions'), imps);
+        case 'cpv50': return cost(getVideoVal(ins, 'video_p50_watched_actions'));
+        case 'vv75': return pct(getVideoVal(ins, 'video_p75_watched_actions'), imps);
+        case 'cpv75': return cost(getVideoVal(ins, 'video_p75_watched_actions'));
+        case 'vv100': return pct(getVideoVal(ins, 'video_p100_watched_actions'), imps);
+        case 'cpv100': return cost(getVideoVal(ins, 'video_p100_watched_actions'));
+        case 'hook': return pct(getVideoVal(ins, 'video_3_sec_watched_actions'), imps);
+        case 'cphook': return cost(getVideoVal(ins, 'video_3_sec_watched_actions'));
+        case 'connect_rate': return pct(msgs, clicks);
+        case 'eng_imp': return pct(postEng, imps);
+        case 'eng_reach': return pct(postEng, reach);
+        case 'cpeng': return cost(postEng);
+        case 'save_rate': return pct(saves, imps);
+        case 'save_reach': return pct(saves, reach);
+        case 'cpsave': return cost(saves);
+        case 'share_rate': return pct(shares, imps);
+        case 'share_reach': return pct(shares, reach);
+        case 'cpshare': return cost(shares);
+        case 'comment_rate': return pct(comments, imps);
+        case 'comment_reach': return pct(comments, reach);
+        case 'cpcomment': return cost(comments);
+        default: return '—';
+    }
+}
+
 function renderTabelaCampanhas(camps) {
     const cols  = getColsAtivas();
     const thead = $('tabela-campanhas-head');
@@ -3160,34 +3466,7 @@ function renderTabelaCampanhas(camps) {
         const initCk     = getActFirst(ins,['omni_initiate_checkout','initiate_checkout']);
         const roas       = getRoas(ins);
 
-        const getVal = key => {
-            switch(key) {
-                case 'spend':      return spend ? brl(spend) : '—';
-                case 'imps':       return fmtN(parseInt(ins?.impressions||0));
-                case 'reach':      return fmtN(parseInt(ins?.reach||0));
-                case 'freq':       { const v=parseFloat(ins?.frequency||0); return v?v.toFixed(2):'—'; }
-                case 'cpm':        { const v=parseFloat(ins?.cpm||0); return v?brl(v):'—'; }
-                case 'clicks':     return fmtN(getAct(ins,['link_click']));
-                case 'cpc':        { const v=parseFloat(ins?.cpc||0); return v?brl(v):'—'; }
-                case 'ctr':        { const v=parseFloat(ins?.ctr||0); return v?v.toFixed(2)+'%':'—'; }
-                case 'lpv':            return lpv ? fmtN(lpv) : '—';
-                case 'cplpv':          return lpv ? brl(spend/lpv) : '—';
-                case 'profile_visits': return pv ? fmtN(pv) : '—';
-                case 'cppv':           return pv ? brl(spend/pv) : '—';
-                case 'leads':      return fmtN(leads);
-                case 'cpl':        return leads ? brl(spend/leads) : '—';
-                case 'msgs':       return fmtN(msgs);
-                case 'cpr':        return msgs ? brl(spend/msgs) : '—';
-                case 'seguidores': return fmtN(seguidores);
-                case 'cps':        return seguidores ? brl(spend/seguidores) : '—';
-                case 'purchases':      return purchases ? fmtN(purchases) : '—';
-                case 'purchase_value': return purchaseVal ? brl(purchaseVal) : '—';
-                case 'roas':           return roas ? roas.toFixed(2)+'x' : '—';
-                case 'init_checkout':  return initCk ? fmtN(initCk) : '—';
-                case 'cpp':            return purchases ? brl(spend/purchases) : '—';
-                default:           return '—';
-            }
-        };
+        const getVal = key => getAdsMetricCellValue(key, ins);
         const isAct = c.status==='ACTIVE';
         const bs    = isAct ? 'background:rgba(16,185,129,.15);color:#10b981;border:1px solid rgba(16,185,129,.3)' : 'background:rgba(156,163,175,.1);color:#9ca3af;border:1px solid rgba(156,163,175,.2)';
         return `<tr data-row-id="${esc(c.id)}" data-nome="${esc(c.name)}">
@@ -3362,32 +3641,7 @@ async function toggleExpand(level, parentId, btn, e) {
         const purchaseVal= getActValFirst(ins,['omni_purchase','purchase']);
         const initCk     = getActFirst(ins,['omni_initiate_checkout','initiate_checkout']);
         const roas       = getRoas(ins);
-        const getVal = k => {
-            switch(k) {
-                case 'spend':      return spend ? brl(spend) : '—';
-                case 'imps':       return fmtN(parseInt(ins?.impressions||0));
-                case 'reach':      return fmtN(parseInt(ins?.reach||0));
-                case 'freq':       { const v=parseFloat(ins?.frequency||0); return v?v.toFixed(2):'—'; }
-                case 'cpm':        { const v=parseFloat(ins?.cpm||0); return v?brl(v):'—'; }
-                case 'clicks':     return fmtN(getAct(ins,['link_click']));
-                case 'cpc':        { const v=parseFloat(ins?.cpc||0); return v?brl(v):'—'; }
-                case 'ctr':        { const v=parseFloat(ins?.ctr||0); return v?v.toFixed(2)+'%':'—'; }
-                case 'lpv':        return fmtN(lpv);
-                case 'cplpv':      return lpv ? brl(spend/lpv) : '—';
-                case 'leads':      return fmtN(leads);
-                case 'cpl':        return leads ? brl(spend/leads) : '—';
-                case 'msgs':       return fmtN(msgs);
-                case 'cpr':        return msgs ? brl(spend/msgs) : '—';
-                case 'seguidores': return fmtN(seg);
-                case 'cps':        return seg ? brl(spend/seg) : '—';
-                case 'purchases':      return purchases ? fmtN(purchases) : '—';
-                case 'purchase_value': return purchaseVal ? brl(purchaseVal) : '—';
-                case 'roas':           return roas ? roas.toFixed(2)+'x' : '—';
-                case 'init_checkout':  return initCk ? fmtN(initCk) : '—';
-                case 'cpp':            return purchases ? brl(spend/purchases) : '—';
-                default:           return '—';
-            }
-        };
+        const getVal = key => getAdsMetricCellValue(key, ins);
         const expandBtn = hasChild
             ? `<button class="expand-btn" onclick="toggleExpand('ads','${esc(item.id)}',this,event)">▶</button>`
             : '';
