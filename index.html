@@ -711,6 +711,33 @@
                     <div class="ads-metric" data-card="roas"><div class="ads-metric-val" id="ads-roas">—</div><div class="ads-metric-lbl">ROAS</div></div>
                     <div class="ads-metric" data-card="init_checkout"><div class="ads-metric-val" id="ads-init-checkout">—</div><div class="ads-metric-lbl">Inícios de Checkout</div></div>
                     <div class="ads-metric" data-card="cpp"><div class="ads-metric-val" id="ads-cpp">—</div><div class="ads-metric-lbl">Custo/compra</div></div>
+                    <!-- Vídeo -->
+                    <div class="ads-metric" data-card="vv25"><div class="ads-metric-val" id="ads-vv25">—</div><div class="ads-metric-lbl">Visualização 25%</div></div>
+                    <div class="ads-metric" data-card="cpv25"><div class="ads-metric-val" id="ads-cpv25">—</div><div class="ads-metric-lbl">Custo/Visualização 25%</div></div>
+                    <div class="ads-metric" data-card="vv50"><div class="ads-metric-val" id="ads-vv50">—</div><div class="ads-metric-lbl">Visualização 50%</div></div>
+                    <div class="ads-metric" data-card="cpv50"><div class="ads-metric-val" id="ads-cpv50">—</div><div class="ads-metric-lbl">Custo/Visualização 50%</div></div>
+                    <div class="ads-metric" data-card="vv75"><div class="ads-metric-val" id="ads-vv75">—</div><div class="ads-metric-lbl">Visualização 75%</div></div>
+                    <div class="ads-metric" data-card="cpv75"><div class="ads-metric-val" id="ads-cpv75">—</div><div class="ads-metric-lbl">Custo/Visualização 75%</div></div>
+                    <div class="ads-metric" data-card="vv100"><div class="ads-metric-val" id="ads-vv100">—</div><div class="ads-metric-lbl">Visualização 100%</div></div>
+                    <div class="ads-metric" data-card="cpv100"><div class="ads-metric-val" id="ads-cpv100">—</div><div class="ads-metric-lbl">Custo/Visualização 100%</div></div>
+                    <div class="ads-metric" data-card="hook"><div class="ads-metric-val" id="ads-hook">—</div><div class="ads-metric-lbl">Hook Rate (3s)</div></div>
+                    <div class="ads-metric" data-card="cphook"><div class="ads-metric-val" id="ads-cphook">—</div><div class="ads-metric-lbl">Custo/Hook</div></div>
+                    <!-- Mensagens -->
+                    <div class="ads-metric" data-card="connect_rate"><div class="ads-metric-val" id="ads-connect-rate">—</div><div class="ads-metric-lbl">Connect Rate</div></div>
+                    <!-- Engajamento -->
+                    <div class="ads-metric" data-card="eng_imp"><div class="ads-metric-val" id="ads-eng-imp">—</div><div class="ads-metric-lbl">Engajamento/Impressão</div></div>
+                    <div class="ads-metric" data-card="eng_reach"><div class="ads-metric-val" id="ads-eng-reach">—</div><div class="ads-metric-lbl">Engajamento/Alcance</div></div>
+                    <div class="ads-metric" data-card="cpeng"><div class="ads-metric-val" id="ads-cpeng">—</div><div class="ads-metric-lbl">Custo/Engajamento</div></div>
+                    <!-- Social -->
+                    <div class="ads-metric" data-card="save_rate"><div class="ads-metric-val" id="ads-save-rate">—</div><div class="ads-metric-lbl">Taxa de Salvamento</div></div>
+                    <div class="ads-metric" data-card="save_reach"><div class="ads-metric-val" id="ads-save-reach">—</div><div class="ads-metric-lbl">Salvamento/Alcance</div></div>
+                    <div class="ads-metric" data-card="cpsave"><div class="ads-metric-val" id="ads-cpsave">—</div><div class="ads-metric-lbl">Custo/Salvamento</div></div>
+                    <div class="ads-metric" data-card="share_rate"><div class="ads-metric-val" id="ads-share-rate">—</div><div class="ads-metric-lbl">Taxa de Compartilhamento</div></div>
+                    <div class="ads-metric" data-card="share_reach"><div class="ads-metric-val" id="ads-share-reach">—</div><div class="ads-metric-lbl">Compartilhamento/Alcance</div></div>
+                    <div class="ads-metric" data-card="cpshare"><div class="ads-metric-val" id="ads-cpshare">—</div><div class="ads-metric-lbl">Custo/Compartilhamento</div></div>
+                    <div class="ads-metric" data-card="comment_rate"><div class="ads-metric-val" id="ads-comment-rate">—</div><div class="ads-metric-lbl">Taxa de Comentário</div></div>
+                    <div class="ads-metric" data-card="comment_reach"><div class="ads-metric-val" id="ads-comment-reach">—</div><div class="ads-metric-lbl">Comentário/Alcance</div></div>
+                    <div class="ads-metric" data-card="cpcomment"><div class="ads-metric-val" id="ads-cpcomment">—</div><div class="ads-metric-lbl">Custo/Comentário</div></div>
                 </div>
 
                 <!-- Funil de Conversão -->
@@ -2385,6 +2412,33 @@ const CARDS_DEF = [
     { key:'roas',          label:'ROAS',                 on:false },
     { key:'init_checkout', label:'Inícios de Checkout',  on:false },
     { key:'cpp',           label:'Custo/compra',         on:false },
+    // ── Vídeo ──
+    { key:'vv25',     label:'Visualização 25%',         on:false },
+    { key:'cpv25',    label:'Custo/Visualização 25%',   on:false },
+    { key:'vv50',     label:'Visualização 50%',         on:false },
+    { key:'cpv50',    label:'Custo/Visualização 50%',   on:false },
+    { key:'vv75',     label:'Visualização 75%',         on:false },
+    { key:'cpv75',    label:'Custo/Visualização 75%',   on:false },
+    { key:'vv100',    label:'Visualização 100%',        on:false },
+    { key:'cpv100',   label:'Custo/Visualização 100%',  on:false },
+    { key:'hook',     label:'Hook Rate (3s)',           on:false },
+    { key:'cphook',   label:'Custo/Hook',               on:false },
+    // ── Mensagens (reusa msgs) ──
+    { key:'connect_rate', label:'Connect Rate',         on:false },
+    // ── Engajamento ──
+    { key:'eng_imp',  label:'Engajamento/Impressão',    on:false },
+    { key:'eng_reach',label:'Engajamento/Alcance',      on:false },
+    { key:'cpeng',    label:'Custo/Engajamento',        on:false },
+    // ── Social ──
+    { key:'save_rate',   label:'Taxa de Salvamento',           on:false },
+    { key:'save_reach',  label:'Salvamento/Alcance',           on:false },
+    { key:'cpsave',      label:'Custo/Salvamento',             on:false },
+    { key:'share_rate',  label:'Taxa de Compartilhamento',     on:false },
+    { key:'share_reach', label:'Compartilhamento/Alcance',     on:false },
+    { key:'cpshare',     label:'Custo/Compartilhamento',       on:false },
+    { key:'comment_rate',label:'Taxa de Comentário',           on:false },
+    { key:'comment_reach',label:'Comentário/Alcance',          on:false },
+    { key:'cpcomment',   label:'Custo/Comentário',             on:false },
 ];
 const COLS_DEF = [
     { key:'spend',      label:'Gasto Total',          on:true  },
@@ -2674,6 +2728,9 @@ function calcMetricasAds(camps) {
     let purchaseValue=0;        // action_values purchase (valor em compras)
     let initCheckout=0;         // initiate_checkout
     let roasSum=0, roasCount=0; // ROAS ponderado por gasto
+    // Vídeo, engajamento e social (métricas novas)
+    let vp25=0, vp50=0, vp75=0, vp100=0, v3s=0;
+    let postEng=0, saves=0, shares=0, comments=0;
 
     camps.forEach(c => {
         const ins = getIns(c); if (!ins) return;
@@ -2732,6 +2789,21 @@ function calcMetricasAds(camps) {
         // ROAS ponderado por gasto
         const roasVal = getRoas(ins);
         if (roasVal && sp) { roasSum += roasVal * sp; roasCount += sp; }
+
+        // Vídeo — campos top-level (arrays). p25/50/75/100 e 3s (hook).
+        vp25  += getVideoVal(ins, 'video_p25_watched_actions');
+        vp50  += getVideoVal(ins, 'video_p50_watched_actions');
+        vp75  += getVideoVal(ins, 'video_p75_watched_actions');
+        vp100 += getVideoVal(ins, 'video_p100_watched_actions');
+        v3s   += getVideoVal(ins, 'video_3_sec_watched_actions');
+
+        // Engajamento total (campo direto inline_post_engagement)
+        postEng += parseInt(ins.inline_post_engagement || 0);
+
+        // Social (actions) — action_types variam por conta; first-match com fallback.
+        saves    += getActFirst(ins, ['onsite_conversion.post_save','post_save']);
+        shares   += getActFirst(ins, ['post','share']);
+        comments += getActFirst(ins, ['comment']);
     });
 
     const fmt = (n, fallback='—') => n ? brl(n) : fallback;
@@ -2769,6 +2841,38 @@ function calcMetricasAds(camps) {
     $('ads-roas').textContent          = roasCount     ? (roasSum/roasCount).toFixed(2)+'x' : '—';
     $('ads-init-checkout').textContent = initCheckout  ? fmtN(initCheckout) : '—';
     $('ads-cpp').textContent           = purchases     ? brl(spend/purchases) : '—';
+
+    // ── Métricas de vídeo, engajamento e social ──
+    // Taxa (%) só quando o denominador existe; custo só quando o evento existe (evita NaN/Infinity).
+    const setEl = (id, v) => { const e = $(id); if (e) e.textContent = v; };
+    const pct  = (num, den) => den ? (num/den*100).toFixed(2)+'%' : '—';
+    const cost = (den) => den ? brl(spend/den) : '—';
+
+    // Vídeo
+    setEl('ads-vv25',  pct(vp25, imps));   setEl('ads-cpv25',  cost(vp25));
+    setEl('ads-vv50',  pct(vp50, imps));   setEl('ads-cpv50',  cost(vp50));
+    setEl('ads-vv75',  pct(vp75, imps));   setEl('ads-cpv75',  cost(vp75));
+    setEl('ads-vv100', pct(vp100, imps));  setEl('ads-cpv100', cost(vp100));
+    setEl('ads-hook',  pct(v3s, imps));    setEl('ads-cphook', cost(v3s));
+
+    // Mensagens (reusa msgs e linkClicks já calculados)
+    setEl('ads-connect-rate', pct(msgs, linkClicks));
+
+    // Engajamento
+    setEl('ads-eng-imp',   pct(postEng, imps));
+    setEl('ads-eng-reach', pct(postEng, reach));
+    setEl('ads-cpeng',     cost(postEng));
+
+    // Social
+    setEl('ads-save-rate',    pct(saves, imps));
+    setEl('ads-save-reach',   pct(saves, reach));
+    setEl('ads-cpsave',       cost(saves));
+    setEl('ads-share-rate',   pct(shares, imps));
+    setEl('ads-share-reach',  pct(shares, reach));
+    setEl('ads-cpshare',      cost(shares));
+    setEl('ads-comment-rate', pct(comments, imps));
+    setEl('ads-comment-reach',pct(comments, reach));
+    setEl('ads-cpcomment',    cost(comments));
 
     _funilData = { spend, imps, reach, clicks: linkClicks, lpv, leads, msgs, purchases };
     renderFunil();

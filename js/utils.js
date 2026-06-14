@@ -69,6 +69,14 @@ function getActValFirst(ins, keysOrdenadas) {
     return 0;
 }
 
+// Meta API — extrai o valor de um campo de vídeo (video_p25_watched_actions, etc.),
+// que vem como array [{action_type:'video_view', value:'N'}]. Soma os values do array.
+function getVideoVal(ins, campo) {
+    const arr = ins?.[campo];
+    if (!Array.isArray(arr)) return 0;
+    return arr.reduce((s, a) => s + parseFloat(a.value || 0), 0);
+}
+
 // Meta API — ROAS de purchase_roas
 function getRoas(ins) {
     if (!ins?.purchase_roas) return 0;
