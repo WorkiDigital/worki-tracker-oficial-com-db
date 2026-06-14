@@ -320,7 +320,7 @@
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
                 <label class="pad-md" style="display:flex;align-items:center;gap:10px;background:var(--tag);border-radius:8px;cursor:pointer;">
                     <input type="checkbox" id="permLeads" style="width:16px;height:16px;accent-color:var(--blue);">
-                    <span style="font-size:13px;">Leads Reais</span>
+                    <span style="font-size:13px;">Leads</span>
                 </label>
                 <label class="pad-md" style="display:flex;align-items:center;gap:10px;background:var(--tag);border-radius:8px;cursor:pointer;">
                     <input type="checkbox" id="permAnuncios" style="width:16px;height:16px;accent-color:var(--blue);">
@@ -431,7 +431,7 @@
     </div>
     <nav>
         <a id="btn-leads"      class="nav-item active"  onclick="mudarAba('leads')">
-            <i data-lucide="users"       style="width:17px;flex-shrink:0;"></i><span>Leads Reais</span>
+            <i data-lucide="users"       style="width:17px;flex-shrink:0;"></i><span>Leads</span>
         </a>
         <a id="btn-relatorios" class="nav-item"          onclick="mudarAba('relatorios')">
             <i data-lucide="bar-chart-2" style="width:17px;flex-shrink:0;"></i><span>Relatórios</span>
@@ -456,7 +456,7 @@
             <i data-lucide="smartphone" style="width:17px;flex-shrink:0;"></i><span>Conexão WhatsApp</span>
         </a>
         <a id="btn-zaprelatorios" class="nav-item" onclick="mudarAba('zaprelatorios')">
-            <i data-lucide="send" style="width:17px;flex-shrink:0;"></i><span>Relatórios Zap</span>
+            <i data-lucide="send" style="width:17px;flex-shrink:0;"></i><span>Relatórios Automáticos</span>
         </a>
         <a id="btn-logs" class="nav-item" onclick="mudarAba('logs')">
             <i data-lucide="terminal" style="width:17px;flex-shrink:0;"></i><span>Logs do Sistema</span>
@@ -488,7 +488,7 @@
                 <i data-lucide="menu" style="width:20px;height:20px;"></i>
             </button>
             <div class="title-area">
-                <h1 id="titulo-pagina"><i data-lucide="users" style="color:var(--blue);"></i> Leads Reais</h1>
+                <h1 id="titulo-pagina"><i data-lucide="users" style="color:var(--blue);"></i> Leads</h1>
                 <p>Projeto: <strong id="nome-projeto">...</strong></p>
             </div>
         </div>
@@ -1131,7 +1131,7 @@
                                     <div style="display:flex;flex-direction:column;gap:4px;">
                                         <div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:rgba(59,130,246,0.1);border-radius:8px;">
                                             <div style="width:14px;height:14px;border-radius:3px;background:var(--blue);opacity:0.7;"></div>
-                                            <span style="font-size:11px;font-weight:600;color:var(--blue);">Leads Reais</span>
+                                            <span style="font-size:11px;font-weight:600;color:var(--blue);">Leads</span>
                                         </div>
                                         <div style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;">
                                             <div style="width:14px;height:14px;border-radius:3px;background:var(--muted);opacity:0.3;"></div>
@@ -1343,7 +1343,7 @@
                     <div>
                         <h3 style="margin:0 0 4px;font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px;">
                             <i data-lucide="send" style="width:16px;color:#25D366;flex-shrink:0;"></i>
-                            Relatórios Zap
+                            Relatórios Automáticos
                         </h3>
                         <p style="color:var(--muted);font-size:12px;margin:0;">Envie métricas automaticamente para grupos ou contatos do WhatsApp.</p>
                     </div>
@@ -4004,7 +4004,7 @@ document.addEventListener('keydown', e => {
 // ── Abas ───────────────────────────────────────────────────────
 const ABAS = ['leads','relatorios','anuncios','clientes','config','ajustes','agencia','whatsapp','zaprelatorios','logs'];
 const TITULOS = {
-    leads:          '<i data-lucide="users" style="color:var(--blue);"></i> Leads Reais',
+    leads:          '<i data-lucide="users" style="color:var(--blue);"></i> Leads',
     relatorios:     '<i data-lucide="bar-chart-2" style="color:var(--blue);"></i> Relatórios',
     anuncios:       '<img src="https://cdn.simpleicons.org/meta/0082FB" style="width:16px;height:16px;display:inline;vertical-align:-2px;margin-right:6px;" alt="Meta"> Meta Ads',
     clientes:       '<i data-lucide="share-2" style="color:var(--blue);"></i> Compartilhar Dash',
@@ -4012,7 +4012,7 @@ const TITULOS = {
     ajustes:        '<i data-lucide="settings" style="color:var(--blue);"></i> Configurações',
     agencia:        '<i data-lucide="building" style="color:var(--blue);"></i> Gestão de Clientes',
     whatsapp:       '<i data-lucide="smartphone" style="color:#25D366;"></i> Conexão WhatsApp',
-    zaprelatorios:  '<i data-lucide="send" style="color:#25D366;"></i> Relatórios Zap',
+    zaprelatorios:  '<i data-lucide="send" style="color:#25D366;"></i> Relatórios Automáticos',
     logs:           '<i data-lucide="terminal" style="color:var(--blue);"></i> Logs do Sistema',
 };
 
