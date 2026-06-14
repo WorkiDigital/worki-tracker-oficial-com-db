@@ -27,10 +27,10 @@ export default async function handler(req, res) {
   if (!accountId) return res.status(400).json({ error: 'accountId is required' });
   if (!(await verifyAccountAccess(user, accountId))) return res.status(403).json({ error: 'Acesso negado a esta conta de anúncios.' });
 
-  // Campos de insight. video_play_actions = "reproduções de vídeo" = reproduções de 3s+
-  // (definição da Meta). NÃO existe video_3_sec_watched_actions na API (causa erro #100) —
-  // o campo de 3s É o video_play_actions. Hook Rate = video_play_actions / impressões.
-  const insightFields = 'spend,impressions,clicks,outbound_clicks,ctr,reach,cpm,cpc,frequency,inline_link_clicks,actions,action_values,cost_per_action_type,purchase_roas,instagram_profile_visits,video_p25_watched_actions,video_p50_watched_actions,video_p75_watched_actions,video_p100_watched_actions,video_play_actions,inline_post_engagement,video_thruplay_watched_actions,video_6_sec_watched_actions,video_p95_watched_actions,video_continuous_2_sec_watched_actions';
+  // Campos de insight. Hook Rate foi REMOVIDO: a API não expõe "reproduções de 3s"
+  // (o numerador que o Gerenciador usa) — confirmado por debug, todos os campos
+  // candidatos vinham 0. Mantemos só os percentis de vídeo (p25/50/75/100) que batem.
+  const insightFields = 'spend,impressions,clicks,outbound_clicks,ctr,reach,cpm,cpc,frequency,inline_link_clicks,actions,action_values,cost_per_action_type,purchase_roas,instagram_profile_visits,video_p25_watched_actions,video_p50_watched_actions,video_p75_watched_actions,video_p100_watched_actions,inline_post_engagement';
   const insightsParam = (dateFrom && dateTo)
     ? `insights.time_range({"since":"${dateFrom}","until":"${dateTo}"})`
     : `insights.date_preset(${datePreset})`;

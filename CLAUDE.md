@@ -96,7 +96,7 @@ Helpers `getActFirst`/`getActValFirst` (first-match, sem somar) estão em `js/ut
 - Campos de vídeo vêm como **arrays** `[{action_type, value}]` — extrair com `getVideoVal(ins, campo)` (`js/utils.js`).
 - **NÃO existe `video_3_sec_watched_actions`** na API (causa erro #100). O campo de "3 segundos" É o **`video_play_actions`** — a Meta define "reprodução de vídeo" como reprodução de ≥3s. Confirmado no SDK oficial python-business-sdk.
 - Campos de vídeo válidos: `video_p25/p50/p75/p100_watched_actions`, `video_play_actions`, `video_thruplay_watched_actions` (15s+), `video_6_sec_watched_actions`, `video_15/30_sec_watched_actions`, `video_avg_time_watched_actions`.
-- **Hook Rate (Taxa de Gancho)** = `video_play_actions / impressões × 100` (reproduções 3s+ ÷ impressões). Custo/Hook = `spend / video_play_actions`.
+- **Hook Rate / Taxa de Gancho: REMOVIDO.** A API NÃO expõe "reproduções de 3 segundos" (o numerador que o Gerenciador usa). Debug com dados reais confirmou: `video_play_actions` não é o de 3s (112 plays mas só 4 chegaram a p25), e `video_3_sec_watched_actions` não existe (#100). Qualquer fórmula seria aproximação enganosa → card removido. Se precisar no futuro, validar o numerador real no Gerenciador vs. campos da API antes.
 - **Connect Rate** = `landing_page_view / inline_link_clicks × 100` (visualizações da página ÷ cliques no link).
 - **Visualizações 25/50/75/100%** = **número absoluto** (`video_pXX` direto via `fmtN`), NÃO taxa — é contagem de reproduções como no Gerenciador. Custo = `spend / video_pXX`.
 
