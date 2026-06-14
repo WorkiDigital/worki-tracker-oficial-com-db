@@ -698,8 +698,8 @@
                     <div class="ads-metric" data-card="clicks"><div class="ads-metric-val" id="ads-clicks">0</div><div class="ads-metric-lbl">Cliques (Links)</div></div>
                     <div class="ads-metric" data-card="cpc"><div class="ads-metric-val" id="ads-cpc-val">—</div><div class="ads-metric-lbl">CPC (custo/clique)</div></div>
                     <div class="ads-metric" data-card="ctr"><div class="ads-metric-val" id="ads-ctr">—</div><div class="ads-metric-lbl">CTR Médio</div></div>
-                    <div class="ads-metric" data-card="lpv"><div class="ads-metric-val" id="ads-lpv">—</div><div class="ads-metric-lbl">Visitas (Site)</div></div>
-                    <div class="ads-metric" data-card="cplpv"><div class="ads-metric-val" id="ads-cplpv">—</div><div class="ads-metric-lbl">CPLPV (Site)</div></div>
+                    <div class="ads-metric" data-card="lpv"><div class="ads-metric-val" id="ads-lpv">—</div><div class="ads-metric-lbl">Visualizações da Página</div></div>
+                    <div class="ads-metric" data-card="cplpv"><div class="ads-metric-val" id="ads-cplpv">—</div><div class="ads-metric-lbl">Custo/Visualização da Página</div></div>
                     <div class="ads-metric" data-card="profile_visits"><div class="ads-metric-val" id="ads-profile-visits">—</div><div class="ads-metric-lbl">Visitas Perfil (IG)</div></div>
                     <div class="ads-metric" data-card="cppv"><div class="ads-metric-val" id="ads-cppv">—</div><div class="ads-metric-lbl">Custo/Visita Perfil</div></div>
                     <div class="ads-metric" data-card="leads"><div class="ads-metric-val" id="ads-leads">0</div><div class="ads-metric-lbl">Leads (formulário)</div></div>
@@ -2449,8 +2449,8 @@ const CARDS_DEF = [
     { key:'clicks',    label:'Cliques (Links)',      on:true  },
     { key:'cpc',       label:'CPC',                 on:true  },
     { key:'ctr',       label:'CTR Médio',           on:true  },
-    { key:'lpv',       label:'Visitas (Site)',      on:true  },
-    { key:'cplpv',     label:'CPLPV (Site)',        on:true  },
+    { key:'lpv',       label:'Visualizações da Página',       on:true  },
+    { key:'cplpv',     label:'Custo/Visualização da Página',  on:true  },
     { key:'profile_visits', label:'Visitas Perfil (IG)', on:true },
     { key:'cppv',      label:'Custo/Visita Perfil',  on:true },
     { key:'leads',     label:'Leads',               on:true  },
@@ -3090,8 +3090,9 @@ function calcMetricasAds(camps) {
     setEl('ads-vv100', pct(vp100, imps));  setEl('ads-cpv100', cost(vp100));
     setEl('ads-hook',  pct(v3s, imps));    setEl('ads-cphook', cost(v3s));
 
-    // Mensagens (reusa msgs e linkClicks já calculados)
-    setEl('ads-connect-rate', pct(msgs, linkClicks));
+    // Connect Rate = visualizações da página de destino / cliques no link.
+    // Mede: dos que clicaram, em quantos a landing page carregou de fato.
+    setEl('ads-connect-rate', pct(lpv, linkClicks));
 
     // Engajamento
     setEl('ads-eng-imp',   pct(postEng, imps));
@@ -3118,7 +3119,7 @@ const FUNIL_DEF = [
     { key:'imps',   label:'Impressões',     cost:'por impressão', color:'#3b82f6', on:true  },
     { key:'reach',  label:'Alcance',         cost:'por pessoa',    color:'#0ea5e9', on:false },
     { key:'clicks', label:'Cliques',         cost:'por clique',    color:'#8b5cf6', on:true  },
-    { key:'lpv',    label:'Visitas destino', cost:'por visita',    color:'#ec4899', on:false },
+    { key:'lpv',    label:'Visualizações da Página', cost:'por visualização',    color:'#ec4899', on:false },
     { key:'leads',  label:'Leads',           cost:'por lead',      color:'#10b981', on:true  },
     { key:'msgs',   label:'Conversas WA',    cost:'por conversa',  color:'#f59e0b', on:true  },
     { key:'purchases', label:'Compras',      cost:'por compra',    color:'#ec4899', on:false },
@@ -3422,7 +3423,7 @@ function getAdsMetricCellValue(key, ins) {
         case 'cpv100': return cost(getVideoVal(ins, 'video_p100_watched_actions'));
         case 'hook': return pct(getVideoVal(ins, 'video_play_actions'), imps);
         case 'cphook': return cost(getVideoVal(ins, 'video_play_actions'));
-        case 'connect_rate': return pct(msgs, clicks);
+        case 'connect_rate': return pct(lpv, clicks); // visualizações da página / cliques no link
         case 'eng_imp': return pct(postEng, imps);
         case 'eng_reach': return pct(postEng, reach);
         case 'cpeng': return cost(postEng);
