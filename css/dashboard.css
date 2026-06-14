@@ -125,6 +125,11 @@ input[type="checkbox"] { position:relative; min-width:18px; min-height:18px; pad
 .sidebar.collapsed .sidebar-text { display:none; }
 .nav-item:hover { background:var(--hover); color:var(--text); transform:translateX(2px); }
 .nav-item.active { background:var(--glow-blue); color:var(--blue); border-color:rgba(59,130,246,.15); box-shadow:inset 3px 0 0 var(--blue); }
+/* Separador de seção no menu lateral */
+.nav-sep { padding:14px 12px 6px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--muted); opacity:0.65; white-space:nowrap; overflow:hidden; }
+.sidebar.collapsed .nav-sep { padding:10px 0; text-align:center; }
+.sidebar.collapsed .nav-sep span { display:none; }
+.sidebar.collapsed .nav-sep::before { content:"•••"; opacity:0.4; }
 .sidebar-bottom { margin-top:auto; padding-top:16px; border-top:1px solid var(--border); }
 .btn-icon { background:none; border:none; color:var(--muted); cursor:pointer; padding:8px; border-radius:8px; display:flex; align-items:center; justify-content:center; transition:all .2s ease; width:100%; }
 .btn-icon:hover { background:var(--hover); color:var(--text); transform:scale(1.05); }
