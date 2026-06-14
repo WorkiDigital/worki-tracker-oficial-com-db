@@ -27,13 +27,10 @@ export default async function handler(req, res) {
   if (!accountId) return res.status(400).json({ error: 'accountId is required' });
   if (!(await verifyAccountAccess(user, accountId))) return res.status(403).json({ error: 'Acesso negado a esta conta de anúncios.' });
 
-  // Campos de insight: spend, impressions, clicks (todos), outbound_clicks (cliques em links),
-  // ctr, reach, actions (conversões, leads, mensagens, seguidores)
-  // video_3_sec_watched_actions é o numerador da Taxa de Gancho (Meta: 3s ÷ reproduções).
-  // Algumas versões/contas rejeitam esse campo (#100); por isso ele fica separado e há
-  // fallback automático que refaz a query sem ele caso a Meta recuse.
-  const baseFields = 'spend,impressions,clicks,outbound_clicks,ctr,reach,cpm,cpc,frequency,inline_link_clicks,actions,action_values,cost_per_action_type,purchase_roas,instagram_profile_visits,video_p25_watched_actions,video_p50_watched_actions,video_p75_watched_actions,video_p100_watched_actions,video_play_actions,inline_post_engagement';
-  const insightFields = `${baseFields},video_3_sec_watched_actions`;
+  // Campos de insight. video_play_actions = "reproduções de vídeo" = reproduções de 3s+
+  // (definição da Meta). NÃO existe video_3_sec_watched_actions na API (causa erro #100) —
+  // o campo de 3s É o video_play_actions. Hook Rate = video_play_actions / impressões.
+  const insightFields = 'spend,impressions,clicks,outbound_clicks,ctr,reach,cpm,cpc,frequency,inline_link_clicks,actions,action_values,cost_per_action_type,purchase_roas,instagram_profile_visits,video_p25_watched_actions,video_p50_watched_actions,video_p75_watched_actions,video_p100_watched_actions,video_play_actions,inline_post_engagement';
   const insightsParam = (dateFrom && dateTo)
     ? `insights.time_range({"since":"${dateFrom}","until":"${dateTo}"})`
     : `insights.date_preset(${datePreset})`;
@@ -60,13 +57,7 @@ export default async function handler(req, res) {
   };
 
   try {
-    let resp = await buscarCampanhas(insightFields);
-
-    // Fallback: se a Meta recusou o campo video_3_sec_watched_actions (#100), refaz sem ele.
-    if (resp.error && /video_3_sec_watched_actions/i.test(resp.error.message || '')) {
-      console.warn('[ads] video_3_sec_watched_actions inválido nesta conta/versão — refazendo sem ele.');
-      resp = await buscarCampanhas(baseFields);
-    }
+    const resp = await buscarCampanhas(insightFields);
     if (resp.error) return res.status(400).json({ error: resp.error.message });
 
     const result = { data: resp.data };

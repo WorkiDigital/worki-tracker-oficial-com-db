@@ -2964,7 +2964,7 @@ function calcMetricasAds(camps) {
     let initCheckout=0;         // initiate_checkout
     let roasSum=0, roasCount=0; // ROAS ponderado por gasto
     // Vídeo, engajamento e social (métricas novas)
-    let vp25=0, vp50=0, vp75=0, vp100=0, v3s=0, vplays=0;
+    let vp25=0, vp50=0, vp75=0, vp100=0, vplays=0;
     let postEng=0, saves=0, shares=0, comments=0;
 
     camps.forEach(c => {
@@ -3030,8 +3030,8 @@ function calcMetricasAds(camps) {
         vp50  += getVideoVal(ins, 'video_p50_watched_actions');
         vp75  += getVideoVal(ins, 'video_p75_watched_actions');
         vp100 += getVideoVal(ins, 'video_p100_watched_actions');
-        v3s    += getVideoVal(ins, 'video_3_sec_watched_actions'); // reproduções de 3s (numerador do hook)
-        vplays += getVideoVal(ins, 'video_play_actions');          // reproduções de vídeo (denominador)
+        // video_play_actions = reproduções de vídeo (=3s+, definição da Meta). É o numerador do Hook.
+        vplays += getVideoVal(ins, 'video_play_actions');
 
         // Engajamento total (campo direto inline_post_engagement)
         postEng += parseInt(ins.inline_post_engagement || 0);
@@ -3090,8 +3090,8 @@ function calcMetricasAds(camps) {
     setEl('ads-vv50',  vp50  ? fmtN(vp50)  : '—');  setEl('ads-cpv50',  cost(vp50));
     setEl('ads-vv75',  vp75  ? fmtN(vp75)  : '—');  setEl('ads-cpv75',  cost(vp75));
     setEl('ads-vv100', vp100 ? fmtN(vp100) : '—');  setEl('ads-cpv100', cost(vp100));
-    // Hook Rate (Taxa de Gancho da Meta) = reproduções 3s / reproduções de vídeo × 100.
-    setEl('ads-hook',  pct(v3s, vplays));  setEl('ads-cphook', cost(v3s));
+    // Hook Rate = reproduções de vídeo (3s+) / impressões × 100. video_play_actions já é o "3s".
+    setEl('ads-hook',  pct(vplays, imps));  setEl('ads-cphook', cost(vplays));
 
     // Connect Rate = visualizações da página de destino / cliques no link.
     // Mede: dos que clicaram, em quantos a landing page carregou de fato.
@@ -3424,8 +3424,8 @@ function getAdsMetricCellValue(key, ins) {
         case 'cpv75': return cost(getVideoVal(ins, 'video_p75_watched_actions'));
         case 'vv100': { const v = getVideoVal(ins, 'video_p100_watched_actions'); return v ? fmtN(v) : '—'; }
         case 'cpv100': return cost(getVideoVal(ins, 'video_p100_watched_actions'));
-        case 'hook': return pct(getVideoVal(ins, 'video_3_sec_watched_actions'), getVideoVal(ins, 'video_play_actions'));
-        case 'cphook': return cost(getVideoVal(ins, 'video_3_sec_watched_actions'));
+        case 'hook': return pct(getVideoVal(ins, 'video_play_actions'), imps);
+        case 'cphook': return cost(getVideoVal(ins, 'video_play_actions'));
         case 'connect_rate': return pct(lpv, clicks); // visualizações da página / cliques no link
         case 'eng_imp': return pct(postEng, imps);
         case 'eng_reach': return pct(postEng, reach);

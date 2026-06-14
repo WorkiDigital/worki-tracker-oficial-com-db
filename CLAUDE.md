@@ -92,17 +92,16 @@ A coluna `leads_tracking.status` **não é padronizada** — há grafias mistura
 
 Helpers `getActFirst`/`getActValFirst` (first-match, sem somar) estão em `js/utils.js`. As métricas de Ads são calculadas em **`index.html`** (painel admin), **`js/share-dash.js`** (dashboard público do cliente) e no backend (`api/cron/send-reports.js`, `api/zap-preview-metrics.js`) — ao mexer numa, alinhe as outras para o número bater nos dois lugares. **Sempre valide contra o Gerenciador de Anúncios da Meta** (a verdade oficial).
 
-### Métricas de vídeo e fórmulas oficiais (validadas na Meta)
-- Campos de vídeo vêm como **arrays** `[{action_type, value}]` — extrair com `getVideoVal(ins, campo)` (`js/utils.js`). Campos válidos: `video_p25/p50/p75/p100_watched_actions`, `video_play_actions` (reproduções), `video_3_sec_watched_actions` (3s).
-- **Hook Rate (Taxa de Gancho)** = `video_3_sec_watched_actions / video_play_actions × 100` (reproduções 3s ÷ reproduções de vídeo). NÃO é `/ impressões`. Custo/Hook = `spend / 3s`.
-- **Connect Rate** = `landing_page_view / inline_link_clicks × 100` (visualizações da página ÷ cliques no link). NÃO é conversas/cliques.
-- **Visualizações 25/50/75/100%** = `video_pXX / impressões × 100`. Custo = `spend / video_pXX`.
+### Métricas de vídeo e fórmulas (validadas no SDK oficial da Meta)
+- Campos de vídeo vêm como **arrays** `[{action_type, value}]` — extrair com `getVideoVal(ins, campo)` (`js/utils.js`).
+- **NÃO existe `video_3_sec_watched_actions`** na API (causa erro #100). O campo de "3 segundos" É o **`video_play_actions`** — a Meta define "reprodução de vídeo" como reprodução de ≥3s. Confirmado no SDK oficial python-business-sdk.
+- Campos de vídeo válidos: `video_p25/p50/p75/p100_watched_actions`, `video_play_actions`, `video_thruplay_watched_actions` (15s+), `video_6_sec_watched_actions`, `video_15/30_sec_watched_actions`, `video_avg_time_watched_actions`.
+- **Hook Rate (Taxa de Gancho)** = `video_play_actions / impressões × 100` (reproduções 3s+ ÷ impressões). Custo/Hook = `spend / video_play_actions`.
+- **Connect Rate** = `landing_page_view / inline_link_clicks × 100` (visualizações da página ÷ cliques no link).
+- **Visualizações 25/50/75/100%** = **número absoluto** (`video_pXX` direto via `fmtN`), NÃO taxa — é contagem de reproduções como no Gerenciador. Custo = `spend / video_pXX`.
 
-### ⚠️ Campos que a Meta pode rejeitar (#100) — usar fallback
-A Graph API de Ads usa **v20.0** (CAPI usa v25). Alguns campos (ex: `video_3_sec_watched_actions`) podem dar `error #100 ... is not valid for fields param` dependendo da versão/conta. Como a Meta rejeita a **query inteira** se um campo for inválido:
-- `api/ads.js` pede `video_3_sec_watched_actions` separado e tem **fallback automático**: se a resposta vier com erro mencionando o campo, refaz a query SEM ele (`buscarCampanhas(baseFields)`). O painel nunca quebra; a métrica fica `—`.
-- Ao adicionar QUALQUER campo novo ao `insightFields`, teste antes ou use o mesmo padrão de fallback. NUNCA adicione um campo não testado direto na string principal — quebra todo o painel de Ads.
-- Endpoint de diagnóstico (temporário): `api/_test-video-field.js` testa quais campos a conta aceita em v20/v23/v25. Remover quando não precisar mais.
+### ⚠️ Campos que a Meta pode rejeitar (#100)
+A Meta rejeita a **query inteira** se um único campo do `insightFields` for inválido. Antes de adicionar campo novo, confira a lista válida no SDK oficial (`facebook-python-business-sdk/.../adsinsights.py`) — não confie em blogs (dão nomes errados). O `ads.js` usa Graph API **v23.0** (CAPI usa v25; demais endpoints de Ads ainda v20). NUNCA adicione um campo não verificado direto na string — quebra todo o painel de Ads.
 
 ## Atualizacao recente - Organizacao das metricas de Ads
 
