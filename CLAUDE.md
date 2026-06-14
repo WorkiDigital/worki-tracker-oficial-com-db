@@ -77,3 +77,17 @@ A coluna `leads_tracking.status` **não é padronizada** — há grafias mistura
 - Venda = status `Vendido`; Qualificado = status `Qualificado` OU `qualified_at` preenchido.
 - Ao criar métricas novas por status, considere TODAS as grafias possíveis. Um `COUNT` que assume uma única grafia vai dar número errado.
 - Métricas zeradas (0 vendas) podem ser **reais** (cliente sem vendas no período) — confirme no banco com `SELECT status, COUNT(*) ... GROUP BY status` antes de assumir bug.
+
+## 📈 Métricas de Meta Ads — action_types (NÃO SOMAR VARIANTES)
+
+> **A Meta retorna o MESMO evento de compra sob várias variantes de `action_type`** (`omni_purchase`, `purchase`, `offsite_conversion.fb_pixel_purchase`, `onsite_web_purchase`...) que carregam **valor numérico idêntico**. **`omni_purchase` é o roll-up deduplicado** (cobre web+app+loja+offsite). Somar as variantes conta a mesma compra 2-3× → infla Compras/Receita/Checkout e subestima o CPA. Já foi um bug real corrigido.
+
+**Regra:** use **um único action_type canônico** por métrica (o `omni_*`, com fallback no básico). NUNCA some variantes do mesmo evento.
+
+- **Compras (contagem):** `getActFirst(ins, ['omni_purchase','purchase'])`
+- **Purchase Value (receita):** `getActValFirst(ins, ['omni_purchase','purchase'])`
+- **Initiate Checkout:** `getActFirst(ins, ['omni_initiate_checkout','initiate_checkout'])`
+- **ROAS:** ler o campo nativo `purchase_roas` (`action_type === 'omni_purchase'`), ponderado por gasto (`Σ roas×spend / Σ spend`). **Não** calcular manualmente.
+- **CPA / custo-por-X:** `spend / metrica` — fica correto automaticamente se a métrica base não estiver inflada.
+
+Helpers `getActFirst`/`getActValFirst` (first-match, sem somar) estão em `js/utils.js`. As métricas de Ads são calculadas em **`index.html`** (painel admin), **`js/share-dash.js`** (dashboard público do cliente) e no backend (`api/cron/send-reports.js`, `api/zap-preview-metrics.js`) — ao mexer numa, alinhe as outras para o número bater nos dois lugares. **Sempre valide contra o Gerenciador de Anúncios da Meta** (a verdade oficial).
