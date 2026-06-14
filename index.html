@@ -527,7 +527,7 @@
                 <!-- Search -->
                 <div class="ctrl-box">
                     <i data-lucide="search" style="width:14px;color:var(--muted);flex-shrink:0;"></i>
-                    <input type="text" id="inputBusca" name="lead_search" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Buscar nome ou telefone...">
+                    <input type="search" id="inputBusca" name="wt_leads_query_no_autofill" autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false" inputmode="search" placeholder="Buscar nome ou telefone...">
                 </div>
                 <!-- Period -->
                 <div class="ctrl-box">
@@ -1773,6 +1773,8 @@ function fmtN(n) { return parseInt(n||0).toLocaleString('pt-BR'); }
 
 // ── Init ───────────────────────────────────────────────────────
 async function init() {
+    resetLeadSearchAutofill();
+
     // Registra o plugin de datalabels agora que chart.js (deferred) já carregou.
     if (typeof Chart !== 'undefined' && typeof ChartDataLabels !== 'undefined') {
         Chart.register(ChartDataLabels);
@@ -4771,6 +4773,14 @@ function toggleTheme() {
 // lucide.createIcons() roda dentro de init() (no DOMContentLoaded), após os
 // scripts deferred (lucide.js) terem carregado — chamar aqui no topo dá ReferenceError.
 document.addEventListener('DOMContentLoaded', () => { init(); initFunilPills(); });
+window.addEventListener('pageshow', resetLeadSearchAutofill);
+
+function resetLeadSearchAutofill() {
+    const input = document.getElementById('inputBusca');
+    if (!input) return;
+    input.value = '';
+    input.defaultValue = '';
+}
 </script>
 <script defer src="js/leads.js"></script>
 <script defer src="js/admin.js"></script>
