@@ -724,6 +724,8 @@
                     <div class="ads-metric" data-card="cpv100"><div class="ads-metric-val" id="ads-cpv100">—</div><div class="ads-metric-lbl">Custo/Visualização 100%</div></div>
                     <div class="ads-metric" data-card="hook"><div class="ads-metric-val" id="ads-hook">—</div><div class="ads-metric-lbl">Hook Rate</div></div>
                     <div class="ads-metric" data-card="cphook"><div class="ads-metric-val" id="ads-cphook">—</div><div class="ads-metric-lbl">Custo/Hook</div></div>
+                    <!-- DEBUG TEMPORÁRIO — remover depois -->
+                    <div class="ads-metric" data-card="debug_video" style="grid-column:1/-1;text-align:left;"><div class="ads-metric-val" id="ads-debug-video" style="font-size:12px;font-weight:500;white-space:pre-line;">DEBUG vídeo: —</div><div class="ads-metric-lbl">🔧 DEBUG Vídeo (campos crus)</div></div>
                     <!-- Mensagens -->
                     <div class="ads-metric" data-card="connect_rate"><div class="ads-metric-val" id="ads-connect-rate">—</div><div class="ads-metric-lbl">Connect Rate</div></div>
                     <!-- Engajamento -->
@@ -2475,6 +2477,7 @@ const CARDS_DEF = [
     { key:'cpv100',   label:'Custo/Visualização 100%',  on:false },
     { key:'hook',     label:'Hook Rate',                on:false },
     { key:'cphook',   label:'Custo/Hook',               on:false },
+    { key:'debug_video', label:'🔧 DEBUG Vídeo',        on:true  }, // TEMPORÁRIO — remover
     // ── Mensagens (reusa msgs) ──
     { key:'connect_rate', label:'Connect Rate',         on:false },
     // ── Engajamento ──
@@ -2965,6 +2968,7 @@ function calcMetricasAds(camps) {
     let roasSum=0, roasCount=0; // ROAS ponderado por gasto
     // Vídeo, engajamento e social (métricas novas)
     let vp25=0, vp50=0, vp75=0, vp100=0, vplays=0;
+    let vThru=0, v6s=0, vp95=0, v2cont=0; // DEBUG — campos extras de vídeo
     let postEng=0, saves=0, shares=0, comments=0;
 
     camps.forEach(c => {
@@ -3032,6 +3036,11 @@ function calcMetricasAds(camps) {
         vp100 += getVideoVal(ins, 'video_p100_watched_actions');
         // video_play_actions = reproduções de vídeo (=3s+, definição da Meta). É o numerador do Hook.
         vplays += getVideoVal(ins, 'video_play_actions');
+        // DEBUG — campos extras para descobrir a fórmula da Taxa de Gancho
+        vThru  += getVideoVal(ins, 'video_thruplay_watched_actions');
+        v6s    += getVideoVal(ins, 'video_6_sec_watched_actions');
+        vp95   += getVideoVal(ins, 'video_p95_watched_actions');
+        v2cont += getVideoVal(ins, 'video_continuous_2_sec_watched_actions');
 
         // Engajamento total (campo direto inline_post_engagement)
         postEng += parseInt(ins.inline_post_engagement || 0);
@@ -3092,6 +3101,19 @@ function calcMetricasAds(camps) {
     setEl('ads-vv100', vp100 ? fmtN(vp100) : '—');  setEl('ads-cpv100', cost(vp100));
     // Hook Rate = reproduções de vídeo (3s+) / impressões × 100. video_play_actions já é o "3s".
     setEl('ads-hook',  pct(vplays, imps));  setEl('ads-cphook', cost(vplays));
+
+    // DEBUG TEMPORÁRIO — mostra todos os campos crus para descobrir a fórmula da Taxa de Gancho.
+    const dbg = [
+        `impressões=${imps}  alcance=${reach}`,
+        `video_play_actions=${vplays}`,
+        `thruplay(15s)=${vThru}  6s=${v6s}  2s_cont=${v2cont}`,
+        `p25=${vp25}  p50=${vp50}  p75=${vp75}  p95=${vp95}  p100=${vp100}`,
+        `--- testes de razão (×100) ---`,
+        `play/imps=${imps?(vplays/imps*100).toFixed(2):'-'}%  thru/play=${vplays?(vThru/vplays*100).toFixed(2):'-'}%`,
+        `p25/play=${vplays?(vp25/vplays*100).toFixed(2):'-'}%  6s/play=${vplays?(v6s/vplays*100).toFixed(2):'-'}%`,
+        `2s/play=${vplays?(v2cont/vplays*100).toFixed(2):'-'}%  thru/imps=${imps?(vThru/imps*100).toFixed(2):'-'}%`,
+    ].join('\n');
+    setEl('ads-debug-video', dbg);
 
     // Connect Rate = visualizações da página de destino / cliques no link.
     // Mede: dos que clicaram, em quantos a landing page carregou de fato.
