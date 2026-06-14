@@ -3420,8 +3420,8 @@ function getAdsMetricCellValue(key, ins) {
         case 'cpv75': return cost(getVideoVal(ins, 'video_p75_watched_actions'));
         case 'vv100': return pct(getVideoVal(ins, 'video_p100_watched_actions'), imps);
         case 'cpv100': return cost(getVideoVal(ins, 'video_p100_watched_actions'));
-        case 'hook': return pct(getVideoVal(ins, 'video_3_sec_watched_actions'), imps);
-        case 'cphook': return cost(getVideoVal(ins, 'video_3_sec_watched_actions'));
+        case 'hook': return pct(getVideoVal(ins, 'video_play_actions'), imps);
+        case 'cphook': return cost(getVideoVal(ins, 'video_play_actions'));
         case 'connect_rate': return pct(msgs, clicks);
         case 'eng_imp': return pct(postEng, imps);
         case 'eng_reach': return pct(postEng, reach);
@@ -3479,6 +3479,27 @@ function renderTabelaCampanhas(camps) {
 }
 
 // ── Foco hierárquico (clique no nome para filtrar) ──────────────
+// Recalcula SÓ os cards do topo conforme o foco atual (não mexe na tabela):
+// campanha focada → só ela; sem foco → o conjunto filtrado atual.
+function recalcMetricasFoco() {
+    if (focoStack.length && focoStack[0].level === 'campanha' && focoStack[0].id) {
+        const camp = campanhasRaw.find(c => c.id === focoStack[0].id);
+        if (camp) { calcMetricasAds([camp]); $('ads-count').textContent = 1; return; }
+    }
+    // Sem foco: reaplica os filtros de status/objetivo/busca ao conjunto e recalcula os cards.
+    const sf = $('filtroStatusAds').value, of = $('filtroObjetivoAds').value;
+    const bf = ($('filtroCriativoAds').value||'').toLowerCase();
+    const filtradas = campanhasRaw.filter(c => {
+        if (sf && c.status !== sf) return false;
+        if (of && c.objective !== of) return false;
+        if (bf && !(c.name||'').toLowerCase().includes(bf)) return false;
+        if (sf === 'ACTIVE' && parseFloat(c.insights?.data?.[0]?.spend || 0) === 0) return false;
+        return true;
+    });
+    calcMetricasAds(filtradas);
+    $('ads-count').textContent = filtradas.length;
+}
+
 function focarLinha(level, id, e) {
     e.stopPropagation();
     const row = document.querySelector(`#tabela-campanhas-corpo tr[data-row-id="${id}"]`);
@@ -3532,6 +3553,7 @@ function focarLinha(level, id, e) {
         }
     }
     renderBreadcrumb();
+    recalcMetricasFoco(); // cards do topo seguem a campanha focada
 }
 
 function voltarFoco(toLevel) {
@@ -3550,6 +3572,7 @@ function voltarFoco(toLevel) {
         document.querySelectorAll('#tabela-campanhas-corpo .row-depth-1 .expand-btn').forEach(b => b.textContent = '▶');
     }
     renderBreadcrumb();
+    recalcMetricasFoco(); // recalcula cards: total (voltou p/ Todas) ou campanha (voltou 1 nível)
 }
 
 function renderBreadcrumb() {
