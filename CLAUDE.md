@@ -103,6 +103,13 @@ Helpers `getActFirst`/`getActValFirst` (first-match, sem somar) estão em `js/ut
 ### ⚠️ Campos que a Meta pode rejeitar (#100)
 A Meta rejeita a **query inteira** se um único campo do `insightFields` for inválido. Antes de adicionar campo novo, confira a lista válida no SDK oficial (`facebook-python-business-sdk/.../adsinsights.py`) — não confie em blogs (dão nomes errados). O `ads.js` usa Graph API **v23.0** (CAPI usa v25; demais endpoints de Ads ainda v20). NUNCA adicione um campo não verificado direto na string — quebra todo o painel de Ads.
 
+### 🎯 Metodologia para validar QUALQUER métrica nova de Ads (lição da saga do Hook Rate)
+Doc oficial, blogs e SDK deram informações **conflitantes** sobre o campo de 3s — e todos estavam parcialmente errados. O que resolveu foi **testar com dados reais da conta**:
+1. **Nunca confie só na doc/blog para o nome do campo nem para a fórmula.** Eles divergem.
+2. **Use um card de DEBUG temporário** que mostra os campos crus + várias razões calculadas, e **compare com o número exato do Gerenciador de Anúncios** (a única verdade). Foi assim que descobrimos que `video_play_actions` ≠ "3 segundos".
+3. **Se a API não entrega o dado que o Gerenciador usa, NÃO invente uma fórmula aproximada** — remova a métrica (como fizemos com o Hook Rate). Métrica errada para o cliente é pior que métrica ausente.
+4. Sempre validar o número final do painel contra o Gerenciador antes de considerar a métrica pronta.
+
 ## Atualizacao recente - Organizacao das metricas de Ads
 
 Foi implementada uma organizacao estilo Meta/Facebook para o painel de metricas de Ads no dashboard principal.
