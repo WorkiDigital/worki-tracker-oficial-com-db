@@ -110,6 +110,24 @@ Doc oficial, blogs e SDK deram informações **conflitantes** sobre o campo de 3
 3. **Se a API não entrega o dado que o Gerenciador usa, NÃO invente uma fórmula aproximada** — remova a métrica (como fizemos com o Hook Rate). Métrica errada para o cliente é pior que métrica ausente.
 4. Sempre validar o número final do painel contra o Gerenciador antes de considerar a métrica pronta.
 
+### Drill-down de campanhas (cards seguem o foco)
+No painel de Ads, focar numa campanha (`focarLinha`) recalcula os **cards do topo** só para ela, via `recalcMetricasFoco()` (`index.html`). Voltar para "Todas" (`voltarFoco`) recalcula o total filtrado. Só mexe nos cards, não na tabela. Ao mexer no drill-down, manter essa chamada nos dois pontos.
+
+## 📑 Relatórios — comparativo, PDF e métricas
+
+- **Comparativo vs período anterior:** cada card de métrica mostra a variação +/-% contra o período anterior de mesma duração (`renderComparativoPeriodo` em `js/leads.js`). Busca leve via `/api/leads` com range deslocado; `calcMetricasRelatorio` é reusado para os dois períodos. Herda o limite do endpoint — é tendência, não número exato absoluto.
+- **Export PDF** (`exportarRelatorioPDF`): html2canvas + jsPDF (CDN com `defer`). **Força tema light** durante a captura (senão o dark mode dá texto ilegível) e restaura depois; fatia em múltiplas páginas se preciso.
+- **Card "Qualificados":** conta `status === 'qualificado'` OU `qualified_at` preenchido (estava hardcoded em 0 antes).
+- **Ciclo médio** (`metrics-temporal.js` → `formatCycle`): unidade adaptável — min (<1h), horas (<1 dia), dias. Vendas no mesmo dia davam "0.0 dias"; agora mostra "42 min".
+- **Heatmap** (`renderHeatmap` em `js/leads.js`): cada célula com leads mostra o **número no centro** (cor do texto adapta ao fundo). É client-side sobre `dadosFiltrados`.
+
+## 🎨 Padrão visual e nomenclatura do menu (NÃO reverter)
+
+- **Sem banners/gradientes chamativos.** Headers de aba seguem o padrão: `<i data-lucide=icone style=color:var(--blue)> Título` + `<p style=color:var(--muted)>descrição`. O header gradiente da Personalização da Marca foi removido por destoar.
+- **Cards de métrica** usam sombra suave (`rgba(0,0,0,0.05)`), não a sombra preta forte do tema escuro.
+- **Nomes do menu (atuais):** "Leads" (era "Leads Reais"), "Contas de Anúncio" (era "Integrações" — só configura contas, não integrações genéricas), "Relatórios Automáticos" (era "Relatórios Zap"), "Conexão WhatsApp" (sem "SaaS"). Ao mexer, manter menu ↔ `TITULOS` ↔ permissões (`permX`) consistentes.
+- **Abas só-admin:** `btn-agencia` (Gestão de Clientes) e `btn-ajustes` (Configurações/white-label) têm `display:none` no HTML e só aparecem via JS para `is_admin` — **é intencional, não bug**.
+
 ## Atualizacao recente - Organizacao das metricas de Ads
 
 Foi implementada uma organizacao estilo Meta/Facebook para o painel de metricas de Ads no dashboard principal.
