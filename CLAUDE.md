@@ -91,3 +91,41 @@ A coluna `leads_tracking.status` **não é padronizada** — há grafias mistura
 - **CPA / custo-por-X:** `spend / metrica` — fica correto automaticamente se a métrica base não estiver inflada.
 
 Helpers `getActFirst`/`getActValFirst` (first-match, sem somar) estão em `js/utils.js`. As métricas de Ads são calculadas em **`index.html`** (painel admin), **`js/share-dash.js`** (dashboard público do cliente) e no backend (`api/cron/send-reports.js`, `api/zap-preview-metrics.js`) — ao mexer numa, alinhe as outras para o número bater nos dois lugares. **Sempre valide contra o Gerenciador de Anúncios da Meta** (a verdade oficial).
+
+## Atualizacao recente - Organizacao das metricas de Ads
+
+Foi implementada uma organizacao estilo Meta/Facebook para o painel de metricas de Ads no dashboard principal.
+
+Arquivos principais:
+- `index.html`: contem a definicao das metricas, categorias, presets, modal de personalizacao, estado salvo e renderizacao das colunas/cards.
+- `css/dashboard.css`: contem o acabamento visual do toolbar, modal, categorias, chips de presets e lista de metricas selecionadas.
+
+O que mudou:
+- O antigo painel aberto de checkboxes foi substituido por um botao **Personalizar metricas** e um seletor de **Visao**.
+- Existem presets prontos em `METRIC_PRESETS`: `overview`, `whatsapp`, `traffic`, `instagram`, `sales`, `video`, `engagement`, `social`, `efficiency`.
+- As metricas sao agrupadas por categorias em `METRIC_CATEGORY_LABELS`/`METRIC_META`: Investimento, Entrega, Trafego, Leads/WhatsApp, Instagram, Vendas, Video, Engajamento e Social.
+- `COLS_DEF` agora deriva de `CARDS_DEF`, entao as 46 metricas disponiveis nos cards tambem podem ser usadas na tabela.
+- A configuracao continua salva em `localStorage` pela chave `wt_metrics_cfg`, agora com `cards`, `colsOrder` e `preset`.
+- O modal tem abas para **Cards** e **Tabela**, busca, chips de presets, lista de selecionadas e ordenacao manual das colunas da tabela.
+- A tabela usa `getAdsMetricCellValue(key, ins)` para centralizar o valor de cada metrica, inclusive video, engajamento, social, compras, ROAS e custos.
+
+Cuidados ao mexer:
+- Nao voltar para listas separadas e divergentes de cards/colunas; a ideia agora e manter `COLS_DEF` sincronizado com `CARDS_DEF`.
+- Ao adicionar uma metrica nova, incluir em `CARDS_DEF`, mapear categoria em `METRIC_META` e implementar o retorno em `getAdsMetricCellValue`.
+- Para compras/valor/checkout, continuar usando `getActFirst`/`getActValFirst` com `omni_*` como canonico para nao duplicar eventos da Meta.
+- Para video, usar `getVideoVal` de `js/utils.js`.
+
+Validacoes feitas antes do deploy:
+- Parse dos scripts inline do `index.html` com `node/vm`: OK (`checked 11 inline script(s)`).
+- `node --check server.js`: OK.
+- `git diff --check`: OK.
+- App local respondeu `200` em `/` e `/health`; `/health` retornou `{"status":"ok"}`.
+
+Commits enviados para `main`:
+- `2f1cb4a feat: organizar metricas de ads`
+- `5193c05 chore: ignorar arquivos locais no deploy`
+
+Deploy:
+- Push para `origin/main` concluido; este e o fluxo esperado para o EasyPanel segundo o README.
+- Tentativa de deploy direto pela Vercel CLI falhou porque o projeto possui mais de 12 Serverless Functions, limite do plano Hobby. Este repo e mais adequado ao fluxo EasyPanel/Nixpacks rodando `node server.js`.
+- Foi criado `.vercelignore` para evitar enviar `.env`, `.claude`, `.git`, `node_modules` e `.vercel` caso alguem tente deploy direto pela Vercel novamente.
