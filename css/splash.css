@@ -1,212 +1,179 @@
-/* ─── Splash Screen Executiva ────────────────────────────────── */
+/* Premium SaaS Post-Login Splash Animation */
 .premium-splash {
     position: fixed;
-    inset: 0;
-    width: 100vw;
-    height: 100vh;
-    background: #0b1117;
+    top: 0; left: 0;
+    width: 100vw; height: 100vh;
+    background-color: #0a0f1a; /* Escuro moderno */
+    background-image: radial-gradient(circle at center, #111a2e 0%, #0a0f1a 100%);
     z-index: 99999;
     display: flex;
     align-items: center;
     justify-content: center;
-    overflow: hidden;
-    color: #f8fafc;
-    transition: opacity 0.45s ease;
-}
-
-/* Grade de fundo animada */
-.splash-grid {
-    position: absolute;
-    inset: 0;
-    background-image:
-        linear-gradient(rgba(148, 163, 184, 0.06) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(148, 163, 184, 0.06) 1px, transparent 1px);
-    background-size: 56px 56px;
-    mask-image: linear-gradient(to bottom, transparent 0%, #000 24%, #000 76%, transparent 100%);
-    animation: splashGridMove 2.6s linear both;
-}
-
-/* Container central */
-.splash-shell {
-    position: relative;
-    z-index: 2;
-    width: min(420px, calc(100vw - 48px));
-    display: flex;
     flex-direction: column;
-    align-items: center;
-    text-align: center;
-    gap: 16px;
-    animation: splashShellIn 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
+    overflow: hidden;
+    transition: opacity 0.5s ease-out;
 }
 
-/* ─── Logo com nome integrado ─── */
-.splash-brand {
+/* Partículas no fundo */
+.splash-particles {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-image: 
+        radial-gradient(rgba(37, 99, 235, 0.15) 1px, transparent 1px),
+        radial-gradient(rgba(74, 222, 128, 0.1) 1px, transparent 1px);
+    background-size: 40px 40px, 30px 30px;
+    background-position: 0 0, 15px 15px;
+    opacity: 0.6;
+    animation: splashDrift 20s linear infinite;
+    pointer-events: none;
+}
+
+@keyframes splashDrift {
+    0% { transform: translateY(0) }
+    100% { transform: translateY(-40px) }
+}
+
+/* Textos da animação */
+.splash-word {
+    position: absolute;
+    font-family: 'Outfit', 'Inter', sans-serif;
+    font-size: 3.8rem;
+    font-weight: 900;
+    letter-spacing: -2px;
+    color: #ffffff;
+    opacity: 0;
+    transform: scale(0.8) translateY(20px);
+}
+
+.glow-blue {
+    text-shadow: 0 0 20px rgba(37, 99, 235, 0.6), 0 0 40px rgba(37, 99, 235, 0.4);
+}
+
+.glow-green {
+    color: #4ade80;
+    text-shadow: 0 0 20px rgba(74, 222, 128, 0.6), 0 0 50px rgba(74, 222, 128, 0.4);
+    font-size: 4rem; /* Um pouco maior pra destacar */
+}
+
+/* Timings da sequência */
+/* Atribua: 0.5s ao 1.5s */
+.word-1 {
+    animation: popInOut 1s cubic-bezier(0.16, 1, 0.3, 1) 0.5s forwards;
+}
+
+/* Escale: 1.6s ao 2.6s */
+.word-2 {
+    animation: popInOut 1s cubic-bezier(0.16, 1, 0.3, 1) 1.6s forwards;
+}
+
+/* Venda mais: 2.7s ao 3.9s */
+.word-3 {
+    animation: popInOut 1.2s cubic-bezier(0.16, 1, 0.3, 1) 2.7s forwards;
+}
+
+@keyframes popInOut {
+    0% { opacity: 0; transform: scale(0.8) translateY(20px); filter: blur(4px); }
+    20% { opacity: 1; transform: scale(1) translateY(0); filter: blur(0px); }
+    80% { opacity: 1; transform: scale(1.05) translateY(0); filter: blur(0px); }
+    100% { opacity: 0; transform: scale(1.1) translateY(-20px); filter: blur(4px); }
+}
+
+/* Logo Final Adlytics Pro */
+.splash-logo {
+    position: absolute;
+    width: 800px;
+    opacity: 0;
+    transform: scale(0.9);
+    filter: brightness(0.5);
+    mix-blend-mode: screen;
+    animation: logoReveal 1.5s cubic-bezier(0.16, 1, 0.3, 1) 4.0s forwards;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 4px;
+    z-index: 3;
 }
 
-.splash-brand-img {
-    height: 64px;
-    width: auto;
-    max-width: 280px;
+.splash-logo img,
+.splash-logo svg {
+    width: 100%;
+    height: auto;
+    max-height: 400px;
     object-fit: contain;
-    filter: drop-shadow(0 8px 24px rgba(56, 189, 248, 0.2));
-    animation: splashLogoPulse 2.1s ease-in-out infinite;
 }
 
-/* Linha divisória */
-.splash-divider {
-    width: 48px;
-    height: 2px;
-    background: linear-gradient(90deg, transparent, #38bdf8, transparent);
-    border-radius: 999px;
-    margin: 0 auto;
-}
-
-/* Título e subtítulo */
-.splash-title {
-    color: #e2e8f0;
-    font-family: 'Outfit', 'Inter', sans-serif;
-    font-size: 18px;
-    font-weight: 600;
-    letter-spacing: -0.2px;
-    line-height: 1.2;
-}
-
-.splash-subtitle {
-    color: #64748b;
-    font-size: 13px;
-    font-weight: 400;
-    line-height: 1.5;
-    margin-top: -6px;
-}
-
-/* ─── Etapas sequenciais ─── */
-.splash-steps {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-top: 4px;
-}
-
-.splash-step {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 11px 16px;
-    border: 1px solid rgba(148, 163, 184, 0.1);
-    border-radius: 10px;
-    background: rgba(15, 23, 42, 0.5);
-    color: #475569;
-    font-size: 13px;
-    font-weight: 600;
-    /* começa invisível */
-    opacity: 0;
-    transform: translateY(8px);
-}
-
-/* Ponto indicador de status */
-.step-dot {
-    width: 7px;
-    height: 7px;
+/* ── Aura Gradient Glow (atrás da logo) ─────────────────────── */
+.splash-glow-aura {
+    position: absolute;
+    width: 700px;
+    height: 700px;
     border-radius: 50%;
-    background: #1e293b;
-    flex-shrink: 0;
-    transition: background 0.3s, box-shadow 0.3s;
+    background: radial-gradient(
+        circle,
+        rgba(37, 99, 235, 0.35) 0%,
+        rgba(74, 222, 128, 0.15) 40%,
+        transparent 70%
+    );
+    opacity: 0;
+    z-index: 1;
+    animation: auraFadeIn 1.8s ease-out 4.0s forwards,
+               auraPulse 2.5s ease-in-out 4.6s infinite;
+    pointer-events: none;
 }
 
-/* Cada etapa aparece em sequência */
-.splash-step.step-1 {
-    animation: splashStepAppear 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both;
-}
-.splash-step.step-2 {
-    animation: splashStepAppear 0.5s cubic-bezier(0.16, 1, 0.3, 1) 1.1s both;
-}
-.splash-step.step-3 {
-    animation: splashStepAppear 0.5s cubic-bezier(0.16, 1, 0.3, 1) 1.9s both;
+@keyframes auraFadeIn {
+    0%   { opacity: 0; transform: scale(0.4); }
+    100% { opacity: 1; transform: scale(1); }
 }
 
-/* Ponto de cada etapa acende no momento certo */
-.splash-step.step-1 .step-dot { animation: splashDotActive 0.4s ease 0.55s both; }
-.splash-step.step-2 .step-dot { animation: splashDotActive 0.4s ease 1.35s both; }
-.splash-step.step-3 .step-dot { animation: splashDotActive 0.4s ease 2.15s both; }
-
-/* Barra de progresso */
-.splash-progress {
-    width: 100%;
-    height: 3px;
-    margin-top: 4px;
-    overflow: hidden;
-    border-radius: 999px;
-    background: rgba(148, 163, 184, 0.12);
+@keyframes auraPulse {
+    0%, 100% { transform: scale(1);    opacity: 0.8; }
+    50%      { transform: scale(1.15); opacity: 1; }
 }
 
-.splash-progress div {
-    width: 100%;
-    height: 100%;
-    border-radius: inherit;
-    background: linear-gradient(90deg, #38bdf8, #22c55e);
-    transform-origin: left;
-    animation: splashProgress 2.35s cubic-bezier(0.65, 0, 0.35, 1) 0.15s both;
+/* ── Expanding Light Rings ──────────────────────────────────── */
+.splash-ring {
+    position: absolute;
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    border: 2px solid rgba(37, 99, 235, 0.5);
+    opacity: 0;
+    z-index: 2;
+    pointer-events: none;
 }
 
-/* ─── Keyframes ─── */
-@keyframes splashShellIn {
-    from { opacity: 0; transform: translateY(18px) scale(0.97); }
-    to   { opacity: 1; transform: translateY(0) scale(1); }
+.ring-1 {
+    animation: ringExpand 1.4s cubic-bezier(0.16, 1, 0.3, 1) 4.2s forwards;
+}
+.ring-2 {
+    border-color: rgba(74, 222, 128, 0.4);
+    animation: ringExpand 1.4s cubic-bezier(0.16, 1, 0.3, 1) 4.5s forwards;
+}
+.ring-3 {
+    border-color: rgba(37, 99, 235, 0.3);
+    animation: ringExpand 1.4s cubic-bezier(0.16, 1, 0.3, 1) 4.8s forwards;
 }
 
-@keyframes splashLogoPulse {
-    0%, 100% { transform: scale(1);     opacity: 0.92; }
-    50%      { transform: scale(1.04);  opacity: 1; }
+@keyframes ringExpand {
+    0%   { opacity: 0.8; transform: scale(0.5); }
+    100% { opacity: 0;   transform: scale(6); }
 }
 
-@keyframes splashStepAppear {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-        color: #475569;
-        border-color: rgba(148, 163, 184, 0.1);
-    }
-    40% {
-        opacity: 1;
-        transform: translateY(0);
-        color: #e2e8f0;
-        border-color: rgba(56, 189, 248, 0.35);
-        background: rgba(56, 189, 248, 0.06);
-    }
-    to {
-        opacity: 0.85;
-        transform: translateY(0);
-        color: #94a3b8;
-        border-color: rgba(34, 197, 94, 0.25);
-        background: rgba(15, 23, 42, 0.5);
-    }
+/* ── Logo Reveal + Breathing Glow ───────────────────────────── */
+@keyframes logoReveal {
+    0%   { opacity: 0; transform: scale(0.9); filter: brightness(0.5) drop-shadow(0 0 0px transparent); }
+    60%  { opacity: 1; transform: scale(1.08); filter: brightness(1.3) drop-shadow(0 0 30px rgba(37, 99, 235, 0.5)); }
+    100% { opacity: 1; transform: scale(1);   filter: brightness(1.1) drop-shadow(0 0 20px rgba(37, 99, 235, 0.3)); }
 }
 
-@keyframes splashDotActive {
-    0%   { background: #1e293b; box-shadow: none; }
-    50%  { background: #38bdf8; box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.2); }
-    100% { background: #22c55e; box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.15); }
-}
-
-@keyframes splashProgress {
-    from { transform: scaleX(0); }
-    to   { transform: scaleX(1); }
-}
-
-@keyframes splashGridMove {
-    from { transform: translateY(0); }
-    to   { transform: translateY(-28px); }
-}
-
-/* ─── Mobile ─── */
+/* Responsividade */
 @media (max-width: 600px) {
-    .splash-shell { width: min(340px, calc(100vw - 32px)); }
-    .splash-brand-img { height: 44px; }
-    .splash-brand-name { font-size: 26px; }
-    .splash-title { font-size: 16px; }
+    .splash-word { font-size: 2.6rem; letter-spacing: -1.5px; }
+    .glow-green { font-size: 3rem; }
+    .splash-logo { width: 95vw; }
+    .splash-logo img,
+    .splash-logo svg {
+        max-height: 250px;
+    }
+    .splash-glow-aura { width: 400px; height: 400px; }
 }

@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title id="page-title">Dashboard</title>
-    <link rel="icon" type="image/png" href="img/logo_menu.png">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;800;900&display=swap" rel="stylesheet">
 
     <!-- defer: scripts nao bloqueiam o render; executam em ordem antes do DOMContentLoaded (onde init() roda).
@@ -23,26 +22,18 @@
 
 <!-- Premium Splash Overlay -->
 <div id="premiumSplash" class="premium-splash" style="display: none;">
-    <div class="splash-grid"></div>
-    <div class="splash-shell">
-        <!-- Logo com nome integrado -->
-        <div class="splash-brand">
-            <img src="img/logo_adlytics.png" alt="Adlytics Pro" id="splashLogoImg" class="splash-brand-img">
-        </div>
-
-        <div class="splash-divider"></div>
-
-        <div class="splash-title">Preparando seu painel</div>
-        <div class="splash-subtitle">Aguarde enquanto sincronizamos seus dados.</div>
-
-        <!-- Etapas sequenciais -->
-        <div class="splash-steps">
-            <div class="splash-step step-1"><span class="step-dot"></span> Validando acesso</div>
-            <div class="splash-step step-2"><span class="step-dot"></span> Carregando contas</div>
-            <div class="splash-step step-3"><span class="step-dot"></span> Abrindo dashboard</div>
-        </div>
-
-        <div class="splash-progress"><div></div></div>
+    <div class="splash-particles"></div>
+    <div class="splash-word word-1 glow-blue">Rastreie</div>
+    <div class="splash-word word-2 glow-blue">Atribua</div>
+    <div class="splash-word word-3 glow-green">Venda mais</div>
+    <!-- Anéis de luz expandindo atrás da logo -->
+    <div class="splash-ring ring-1"></div>
+    <div class="splash-ring ring-2"></div>
+    <div class="splash-ring ring-3"></div>
+    <!-- Aura glow atrás da logo -->
+    <div class="splash-glow-aura"></div>
+    <div id="splashLogoContainer" class="splash-logo">
+        <img src="/img/logo-login-fundo-branco.png" alt="Adlytics Pro" id="splashLogoImg">
     </div>
 </div>
 
@@ -427,8 +418,16 @@
 <div class="sidebar" id="sidebar">
     <div class="logo">
         <div id="sidebar-logo" style="display:flex;align-items:center;">
-            <img src="img/logo_adlytics.png" alt="Adlytics Pro" style="height: 36px; width: auto; object-fit: contain; flex-shrink: 0;" />
+            <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0">
+                <rect width="32" height="32" rx="8" fill="#3b82f6"/>
+                <rect x="6" y="18" width="4" height="8" rx="1.5" fill="white" opacity="0.6"/>
+                <rect x="12" y="13" width="4" height="13" rx="1.5" fill="white" opacity="0.8"/>
+                <rect x="18" y="8" width="4" height="18" rx="1.5" fill="white"/>
+                <polyline points="21,6 25,6 25,10" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                <line x1="18" y1="9" x2="25" y2="6" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
         </div>
+        <div class="logo-text" id="sidebar-name" style="font-size:15px;font-weight:800;letter-spacing:-0.3px;line-height:1;">adlytics</div>
     </div>
     <nav>
         <style>.nav-img-icon{filter:grayscale(100%) opacity(50%);transition:.2s;}.nav-item.active .nav-img-icon,.nav-item:hover .nav-img-icon{filter:none;opacity:1;}</style>
@@ -1104,21 +1103,18 @@
                             Trocar Senha
                         </div>
                         <p style="font-size:13px;color:var(--muted);margin-bottom:18px;">Para alterar, confirme sua senha atual.</p>
-                        <form onsubmit="salvarSenhaConta(); return false;">
-                        <input type="text" id="contaUsernameHidden" autocomplete="username" style="display:none;" aria-hidden="true" tabindex="-1">
                         <label style="display:block;font-size:13px;font-weight:600;margin-bottom:8px;">Senha atual</label>
-                        <input type="password" id="contaSenhaAtual" class="form-control" placeholder="••••••••" autocomplete="current-password"
+                        <input type="password" id="contaSenhaAtual" class="form-control" placeholder="••••••••"
                                style="width:100%;padding:10px 14px;font-size:14px;border-radius:10px;border:1px solid var(--border);background:var(--bg);color:var(--text);margin-bottom:14px;">
                         <label style="display:block;font-size:13px;font-weight:600;margin-bottom:8px;">Nova senha</label>
-                        <input type="password" id="contaSenhaNova" class="form-control" placeholder="Mínimo 6 caracteres" autocomplete="new-password"
+                        <input type="password" id="contaSenhaNova" class="form-control" placeholder="Mínimo 6 caracteres"
                                style="width:100%;padding:10px 14px;font-size:14px;border-radius:10px;border:1px solid var(--border);background:var(--bg);color:var(--text);margin-bottom:14px;">
                         <label style="display:block;font-size:13px;font-weight:600;margin-bottom:8px;">Confirmar nova senha</label>
-                        <input type="password" id="contaSenhaConfirma" class="form-control" placeholder="Repita a nova senha" autocomplete="new-password"
+                        <input type="password" id="contaSenhaConfirma" class="form-control" placeholder="Repita a nova senha"
                                style="width:100%;padding:10px 14px;font-size:14px;border-radius:10px;border:1px solid var(--border);background:var(--bg);color:var(--text);margin-bottom:16px;">
-                        <button type="submit" class="btn btn-primary">
+                        <button class="btn btn-primary" onclick="salvarSenhaConta()">
                             <i data-lucide="key" style="width:13px;"></i> Trocar senha
                         </button>
-                        </form>
                     </div>
                 </div>
             </div>
@@ -4130,7 +4126,6 @@ function mudarAba(aba) {
 function carregarMinhaConta() {
     const user = JSON.parse(localStorage.getItem('adlytics_user') || '{}');
     if ($('contaEmail')) $('contaEmail').value = user.email || '';
-    if ($('contaUsernameHidden')) $('contaUsernameHidden').value = user.email || '';
 }
 
 async function salvarEmailConta() {
