@@ -25,17 +25,24 @@
 <div id="premiumSplash" class="premium-splash" style="display: none;">
     <div class="splash-grid"></div>
     <div class="splash-shell">
-        <div id="splashLogoContainer" class="splash-logo">
-            <img src="img/logo_menu.png" alt="Adlytics Pro" id="splashLogoImg">
+        <!-- Logo + Nome (igual à sidebar) -->
+        <div class="splash-brand">
+            <img src="img/logo_menu.png" alt="Adlytics Pro" id="splashLogoImg" class="splash-brand-img">
+            <span class="splash-brand-name">adlytics</span>
         </div>
-        <div class="splash-kicker">Painel de performance</div>
+
+        <div class="splash-divider"></div>
+
         <div class="splash-title">Preparando seu painel</div>
-        <div class="splash-subtitle">Leads, campanhas e relatórios sendo sincronizados.</div>
-        <div class="splash-steps" aria-hidden="true">
-            <div class="splash-step step-1"><span></span> Validando acesso</div>
-            <div class="splash-step step-2"><span></span> Carregando contas</div>
-            <div class="splash-step step-3"><span></span> Abrindo dashboard</div>
+        <div class="splash-subtitle">Aguarde enquanto sincronizamos seus dados.</div>
+
+        <!-- Etapas sequenciais -->
+        <div class="splash-steps">
+            <div class="splash-step step-1"><span class="step-dot"></span> Validando acesso</div>
+            <div class="splash-step step-2"><span class="step-dot"></span> Carregando contas</div>
+            <div class="splash-step step-3"><span class="step-dot"></span> Abrindo dashboard</div>
         </div>
+
         <div class="splash-progress"><div></div></div>
     </div>
 </div>
