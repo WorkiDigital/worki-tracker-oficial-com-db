@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title id="page-title">Dashboard</title>
+    <link rel="icon" type="image/png" href="img/logo_menu.png">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;800;900&display=swap" rel="stylesheet">
 
     <!-- defer: scripts nao bloqueiam o render; executam em ordem antes do DOMContentLoaded (onde init() roda).
@@ -1096,15 +1097,15 @@
                             Trocar Senha
                         </div>
                         <p style="font-size:13px;color:var(--muted);margin-bottom:18px;">Para alterar, confirme sua senha atual.</p>
-                        <form autocomplete="off" onsubmit="salvarSenhaConta(); return false;">
+                        <form onsubmit="salvarSenhaConta(); return false;">
                         <label style="display:block;font-size:13px;font-weight:600;margin-bottom:8px;">Senha atual</label>
-                        <input type="password" id="contaSenhaAtual" class="form-control" placeholder="••••••••"
+                        <input type="password" id="contaSenhaAtual" class="form-control" placeholder="••••••••" autocomplete="current-password"
                                style="width:100%;padding:10px 14px;font-size:14px;border-radius:10px;border:1px solid var(--border);background:var(--bg);color:var(--text);margin-bottom:14px;">
                         <label style="display:block;font-size:13px;font-weight:600;margin-bottom:8px;">Nova senha</label>
-                        <input type="password" id="contaSenhaNova" class="form-control" placeholder="Mínimo 6 caracteres"
+                        <input type="password" id="contaSenhaNova" class="form-control" placeholder="Mínimo 6 caracteres" autocomplete="new-password"
                                style="width:100%;padding:10px 14px;font-size:14px;border-radius:10px;border:1px solid var(--border);background:var(--bg);color:var(--text);margin-bottom:14px;">
                         <label style="display:block;font-size:13px;font-weight:600;margin-bottom:8px;">Confirmar nova senha</label>
-                        <input type="password" id="contaSenhaConfirma" class="form-control" placeholder="Repita a nova senha"
+                        <input type="password" id="contaSenhaConfirma" class="form-control" placeholder="Repita a nova senha" autocomplete="new-password"
                                style="width:100%;padding:10px 14px;font-size:14px;border-radius:10px;border:1px solid var(--border);background:var(--bg);color:var(--text);margin-bottom:16px;">
                         <button type="submit" class="btn btn-primary">
                             <i data-lucide="key" style="width:13px;"></i> Trocar senha
