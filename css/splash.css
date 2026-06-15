@@ -39,30 +39,21 @@
     animation: splashShellIn 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-/* ─── Logo + Nome (igual à sidebar) ─── */
+/* ─── Logo com nome integrado ─── */
 .splash-brand {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 14px;
     margin-bottom: 4px;
 }
 
 .splash-brand-img {
-    height: 56px;
+    height: 64px;
     width: auto;
+    max-width: 280px;
     object-fit: contain;
-    filter: drop-shadow(0 8px 24px rgba(56, 189, 248, 0.25));
+    filter: drop-shadow(0 8px 24px rgba(56, 189, 248, 0.2));
     animation: splashLogoPulse 2.1s ease-in-out infinite;
-}
-
-.splash-brand-name {
-    font-family: 'Outfit', 'Inter', sans-serif;
-    font-size: 32px;
-    font-weight: 800;
-    letter-spacing: -0.5px;
-    color: #ffffff;
-    line-height: 1;
 }
 
 /* Linha divisória */
