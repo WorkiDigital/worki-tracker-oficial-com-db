@@ -1,179 +1,203 @@
-/* Premium SaaS Post-Login Splash Animation */
+/* Executive post-login splash */
 .premium-splash {
     position: fixed;
-    top: 0; left: 0;
-    width: 100vw; height: 100vh;
-    background-color: #0a0f1a; /* Escuro moderno */
-    background-image: radial-gradient(circle at center, #111a2e 0%, #0a0f1a 100%);
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    background: #0b1117;
     z-index: 99999;
     display: flex;
     align-items: center;
     justify-content: center;
-    flex-direction: column;
     overflow: hidden;
-    transition: opacity 0.5s ease-out;
+    color: #f8fafc;
+    transition: opacity 0.45s ease;
 }
 
-/* Partículas no fundo */
-.splash-particles {
+.splash-grid {
     position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background-image: 
-        radial-gradient(rgba(37, 99, 235, 0.15) 1px, transparent 1px),
-        radial-gradient(rgba(74, 222, 128, 0.1) 1px, transparent 1px);
-    background-size: 40px 40px, 30px 30px;
-    background-position: 0 0, 15px 15px;
-    opacity: 0.6;
-    animation: splashDrift 20s linear infinite;
-    pointer-events: none;
+    inset: 0;
+    background-image:
+        linear-gradient(rgba(148, 163, 184, 0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(148, 163, 184, 0.06) 1px, transparent 1px);
+    background-size: 56px 56px;
+    mask-image: linear-gradient(to bottom, transparent 0%, #000 24%, #000 76%, transparent 100%);
+    opacity: 0.7;
+    transform: translateY(0);
+    animation: splashGridMove 2.6s linear both;
 }
 
-@keyframes splashDrift {
-    0% { transform: translateY(0) }
-    100% { transform: translateY(-40px) }
+.splash-shell {
+    position: relative;
+    z-index: 2;
+    width: min(420px, calc(100vw - 48px));
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 14px;
+    animation: splashShellIn 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-/* Textos da animação */
-.splash-word {
-    position: absolute;
-    font-family: 'Outfit', 'Inter', sans-serif;
-    font-size: 3.8rem;
-    font-weight: 900;
-    letter-spacing: -2px;
-    color: #ffffff;
-    opacity: 0;
-    transform: scale(0.8) translateY(20px);
-}
-
-.glow-blue {
-    text-shadow: 0 0 20px rgba(37, 99, 235, 0.6), 0 0 40px rgba(37, 99, 235, 0.4);
-}
-
-.glow-green {
-    color: #4ade80;
-    text-shadow: 0 0 20px rgba(74, 222, 128, 0.6), 0 0 50px rgba(74, 222, 128, 0.4);
-    font-size: 4rem; /* Um pouco maior pra destacar */
-}
-
-/* Timings da sequência */
-/* Atribua: 0.5s ao 1.5s */
-.word-1 {
-    animation: popInOut 1s cubic-bezier(0.16, 1, 0.3, 1) 0.5s forwards;
-}
-
-/* Escale: 1.6s ao 2.6s */
-.word-2 {
-    animation: popInOut 1s cubic-bezier(0.16, 1, 0.3, 1) 1.6s forwards;
-}
-
-/* Venda mais: 2.7s ao 3.9s */
-.word-3 {
-    animation: popInOut 1.2s cubic-bezier(0.16, 1, 0.3, 1) 2.7s forwards;
-}
-
-@keyframes popInOut {
-    0% { opacity: 0; transform: scale(0.8) translateY(20px); filter: blur(4px); }
-    20% { opacity: 1; transform: scale(1) translateY(0); filter: blur(0px); }
-    80% { opacity: 1; transform: scale(1.05) translateY(0); filter: blur(0px); }
-    100% { opacity: 0; transform: scale(1.1) translateY(-20px); filter: blur(4px); }
-}
-
-/* Logo Final Adlytics Pro */
 .splash-logo {
-    position: absolute;
-    width: 800px;
-    opacity: 0;
-    transform: scale(0.9);
-    filter: brightness(0.5);
-    mix-blend-mode: screen;
-    animation: logoReveal 1.5s cubic-bezier(0.16, 1, 0.3, 1) 4.0s forwards;
+    width: 82px;
+    height: 82px;
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 3;
+    margin-bottom: 4px;
+    filter: drop-shadow(0 18px 32px rgba(0, 0, 0, 0.32));
+    animation: splashLogoPulse 2.1s ease-in-out infinite;
 }
 
 .splash-logo img,
 .splash-logo svg {
     width: 100%;
-    height: auto;
-    max-height: 400px;
+    height: 100%;
     object-fit: contain;
 }
 
-/* ── Aura Gradient Glow (atrás da logo) ─────────────────────── */
-.splash-glow-aura {
-    position: absolute;
-    width: 700px;
-    height: 700px;
+.splash-kicker {
+    color: #38bdf8;
+    font-size: 11px;
+    line-height: 1;
+    font-weight: 800;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+}
+
+.splash-title {
+    color: #ffffff;
+    font-family: 'Outfit', 'Inter', sans-serif;
+    font-size: 28px;
+    line-height: 1.1;
+    font-weight: 800;
+    letter-spacing: 0;
+}
+
+.splash-subtitle {
+    max-width: 360px;
+    color: #94a3b8;
+    font-size: 14px;
+    line-height: 1.55;
+    font-weight: 500;
+}
+
+.splash-steps {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.splash-step {
+    min-height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 0 10px;
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    border-radius: 8px;
+    background: rgba(15, 23, 42, 0.64);
+    color: #94a3b8;
+    font-size: 11px;
+    font-weight: 700;
+    opacity: 0.58;
+    transform: translateY(4px);
+    animation: splashStepActive 0.85s ease both;
+}
+
+.splash-step span {
+    width: 6px;
+    height: 6px;
     border-radius: 50%;
-    background: radial-gradient(
-        circle,
-        rgba(37, 99, 235, 0.35) 0%,
-        rgba(74, 222, 128, 0.15) 40%,
-        transparent 70%
-    );
-    opacity: 0;
-    z-index: 1;
-    animation: auraFadeIn 1.8s ease-out 4.0s forwards,
-               auraPulse 2.5s ease-in-out 4.6s infinite;
-    pointer-events: none;
+    background: #334155;
 }
 
-@keyframes auraFadeIn {
-    0%   { opacity: 0; transform: scale(0.4); }
-    100% { opacity: 1; transform: scale(1); }
+.splash-step.step-1 { animation-delay: 0.25s; }
+.splash-step.step-2 { animation-delay: 0.95s; }
+.splash-step.step-3 { animation-delay: 1.65s; }
+
+.splash-progress {
+    width: 100%;
+    height: 3px;
+    margin-top: 4px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: rgba(148, 163, 184, 0.18);
 }
 
-@keyframes auraPulse {
-    0%, 100% { transform: scale(1);    opacity: 0.8; }
-    50%      { transform: scale(1.15); opacity: 1; }
+.splash-progress div {
+    width: 100%;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #38bdf8, #22c55e);
+    transform-origin: left;
+    animation: splashProgress 2.35s cubic-bezier(0.65, 0, 0.35, 1) 0.15s both;
 }
 
-/* ── Expanding Light Rings ──────────────────────────────────── */
-.splash-ring {
-    position: absolute;
-    width: 100px;
-    height: 100px;
-    border-radius: 50%;
-    border: 2px solid rgba(37, 99, 235, 0.5);
-    opacity: 0;
-    z-index: 2;
-    pointer-events: none;
+@keyframes splashShellIn {
+    from { opacity: 0; transform: translateY(14px) scale(0.98); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-.ring-1 {
-    animation: ringExpand 1.4s cubic-bezier(0.16, 1, 0.3, 1) 4.2s forwards;
-}
-.ring-2 {
-    border-color: rgba(74, 222, 128, 0.4);
-    animation: ringExpand 1.4s cubic-bezier(0.16, 1, 0.3, 1) 4.5s forwards;
-}
-.ring-3 {
-    border-color: rgba(37, 99, 235, 0.3);
-    animation: ringExpand 1.4s cubic-bezier(0.16, 1, 0.3, 1) 4.8s forwards;
+@keyframes splashLogoPulse {
+    0%, 100% { transform: scale(1); opacity: 0.94; }
+    50%      { transform: scale(1.035); opacity: 1; }
 }
 
-@keyframes ringExpand {
-    0%   { opacity: 0.8; transform: scale(0.5); }
-    100% { opacity: 0;   transform: scale(6); }
-}
-
-/* ── Logo Reveal + Breathing Glow ───────────────────────────── */
-@keyframes logoReveal {
-    0%   { opacity: 0; transform: scale(0.9); filter: brightness(0.5) drop-shadow(0 0 0px transparent); }
-    60%  { opacity: 1; transform: scale(1.08); filter: brightness(1.3) drop-shadow(0 0 30px rgba(37, 99, 235, 0.5)); }
-    100% { opacity: 1; transform: scale(1);   filter: brightness(1.1) drop-shadow(0 0 20px rgba(37, 99, 235, 0.3)); }
-}
-
-/* Responsividade */
-@media (max-width: 600px) {
-    .splash-word { font-size: 2.6rem; letter-spacing: -1.5px; }
-    .glow-green { font-size: 3rem; }
-    .splash-logo { width: 95vw; }
-    .splash-logo img,
-    .splash-logo svg {
-        max-height: 250px;
+@keyframes splashStepActive {
+    0% {
+        opacity: 0.48;
+        color: #94a3b8;
+        border-color: rgba(148, 163, 184, 0.18);
+        transform: translateY(4px);
     }
-    .splash-glow-aura { width: 400px; height: 400px; }
+    30%, 70% {
+        opacity: 1;
+        color: #e2e8f0;
+        border-color: rgba(56, 189, 248, 0.4);
+        transform: translateY(0);
+    }
+    100% {
+        opacity: 0.82;
+        color: #cbd5e1;
+        border-color: rgba(34, 197, 94, 0.35);
+        transform: translateY(0);
+    }
+}
+
+.splash-step.step-1 span,
+.splash-step.step-2 span,
+.splash-step.step-3 span {
+    animation: splashDot 0.85s ease both;
+}
+.splash-step.step-1 span { animation-delay: 0.25s; }
+.splash-step.step-2 span { animation-delay: 0.95s; }
+.splash-step.step-3 span { animation-delay: 1.65s; }
+
+@keyframes splashDot {
+    0%   { background: #334155; box-shadow: none; }
+    40%  { background: #38bdf8; box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.16); }
+    100% { background: #22c55e; box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.12); }
+}
+
+@keyframes splashProgress {
+    from { transform: scaleX(0); }
+    to   { transform: scaleX(1); }
+}
+
+@keyframes splashGridMove {
+    from { transform: translateY(0); }
+    to   { transform: translateY(-28px); }
+}
+
+@media (max-width: 600px) {
+    .splash-shell { width: min(340px, calc(100vw - 32px)); }
+    .splash-logo { width: 72px; height: 72px; }
+    .splash-title { font-size: 24px; }
+    .splash-subtitle { font-size: 13px; }
+    .splash-steps { grid-template-columns: 1fr; }
 }
