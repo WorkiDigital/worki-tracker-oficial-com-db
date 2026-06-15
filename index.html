@@ -1096,6 +1096,7 @@
                             Trocar Senha
                         </div>
                         <p style="font-size:13px;color:var(--muted);margin-bottom:18px;">Para alterar, confirme sua senha atual.</p>
+                        <form autocomplete="off" onsubmit="salvarSenhaConta(); return false;">
                         <label style="display:block;font-size:13px;font-weight:600;margin-bottom:8px;">Senha atual</label>
                         <input type="password" id="contaSenhaAtual" class="form-control" placeholder="••••••••"
                                style="width:100%;padding:10px 14px;font-size:14px;border-radius:10px;border:1px solid var(--border);background:var(--bg);color:var(--text);margin-bottom:14px;">
@@ -1105,9 +1106,10 @@
                         <label style="display:block;font-size:13px;font-weight:600;margin-bottom:8px;">Confirmar nova senha</label>
                         <input type="password" id="contaSenhaConfirma" class="form-control" placeholder="Repita a nova senha"
                                style="width:100%;padding:10px 14px;font-size:14px;border-radius:10px;border:1px solid var(--border);background:var(--bg);color:var(--text);margin-bottom:16px;">
-                        <button class="btn btn-primary" onclick="salvarSenhaConta()">
+                        <button type="submit" class="btn btn-primary">
                             <i data-lucide="key" style="width:13px;"></i> Trocar senha
                         </button>
+                        </form>
                     </div>
                 </div>
             </div>
