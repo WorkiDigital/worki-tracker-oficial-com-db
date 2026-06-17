@@ -286,19 +286,17 @@ function renderTabela() {
         const tempoFunil = tempoRelativo(lead.created_at || lead.event_time);
 
         // Campanha / Anúncio
-        const campanha = lead.utm_campaign ? lead.utm_campaign.substring(0, 28) + (lead.utm_campaign.length > 28 ? '…' : '') : '—';
-        const anuncio  = lead.utm_content  ? lead.utm_content.substring(0, 24)  + (lead.utm_content.length  > 24 ? '…' : '') : '';
-        const conjunto = lead.utm_medium   || '';
-        const tooltipCamp = [lead.utm_campaign, conjunto ? 'Conjunto: ' + conjunto : '', lead.utm_content ? 'Anúncio: ' + lead.utm_content : ''].filter(Boolean).join('\n');
+        const campanha = lead.utm_campaign || '—';
+        const anuncio  = lead.utm_content  || '';
 
         return `<tr>
             <td style="color:var(--text);font-weight:600;">${esc(lead.nome)||'N/A'}</td>
             <td>${esc(lead.telefone)||'N/A'}</td>
             <td><span class="tag" style="color:${stColor};border:${stBorder};">${esc(status)}</span></td>
             <td><span style="font-weight:700;color:${scoreColor};">${score}</span></td>
-            <td style="max-width:160px;" title="${esc(tooltipCamp)}">
-                <div style="font-size:11px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(campanha)}</div>
-                ${anuncio ? `<div style="font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(anuncio)}</div>` : ''}
+            <td style="max-width:220px;">
+                <div style="font-size:11px;font-weight:600;color:var(--text);white-space:normal;line-height:1.3;">${esc(campanha)}</div>
+                ${anuncio ? `<div style="font-size:10px;color:var(--muted);margin-top:2px;">${esc(anuncio)}</div>` : ''}
             </td>
             <td title="${esc(lead.mensagem_recebida)}" style="max-width:180px;overflow:hidden;text-overflow:ellipsis;">${esc(msg)}${lead.mensagem_recebida?.length>35?'…':''}</td>
             <td style="font-size:12px;color:var(--muted);">${esc(lead.instancia||'—')}</td>
@@ -770,7 +768,7 @@ function criarGrafico(canvasId, legendId, mapa, tipo) {
         legendEl.innerHTML = labels.slice(0,5).map((l,i) => {
             const pct = total ? Math.round((values[i]/total)*100) : 0;
             return `<div class="legend-row">
-                <div class="legend-left"><div class="legend-dot" style="background:${CORES[i%CORES.length]};"></div><span title="${esc(l)}">${esc(truncar(l, 30))}</span></div>
+                <div class="legend-left"><div class="legend-dot" style="background:${CORES[i%CORES.length]};"></div><span>${esc(l)}</span></div>
                 <div class="legend-right"><span class="legend-val">${values[i]}</span><span class="legend-pct">${pct}%</span></div>
             </div>`;
         }).join('');
