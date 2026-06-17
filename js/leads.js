@@ -743,12 +743,20 @@ function criarGrafico(canvasId, legendId, mapa, tipo) {
     const gridC  = isDark ? '#1f2937' : '#e5e7eb';
     const tickC  = isDark ? '#8a8f98' : '#6b7280';
 
+    // Trunca labels longos para o eixo X, mantém o nome completo no tooltip
+    const truncar = (s, n=22) => s.length > n ? s.substring(0, n) + '…' : s;
+    const labelsShort = labels.map(l => truncar(l));
+
     const cfg = tipo === 'bar' ? {
         type:'bar',
-        data:{ labels, datasets:[{ data:values, backgroundColor:CORES, borderRadius:6, borderSkipped:false }] },
+        data:{ labels: labelsShort, datasets:[{ data:values, backgroundColor:CORES, borderRadius:6, borderSkipped:false }] },
         options:{ responsive:true, maintainAspectRatio:false,
-            plugins:{ legend:{display:false}, datalabels:{display:false} },
-            scales:{ x:{ticks:{color:tickC,font:{size:9}},grid:{display:false}}, y:{ticks:{color:tickC},grid:{color:gridC}} } }
+            plugins:{
+                legend:{display:false},
+                datalabels:{display:false},
+                tooltip:{ callbacks:{ title: (items) => labels[items[0].dataIndex] } }
+            },
+            scales:{ x:{ticks:{color:tickC,font:{size:9},maxRotation:30,minRotation:0},grid:{display:false}}, y:{ticks:{color:tickC},grid:{color:gridC}} } }
     } : {
         type:'doughnut',
         data:{ labels, datasets:[{ data:values, backgroundColor:CORES, borderWidth:0, hoverOffset:6 }] },
@@ -762,7 +770,7 @@ function criarGrafico(canvasId, legendId, mapa, tipo) {
         legendEl.innerHTML = labels.slice(0,5).map((l,i) => {
             const pct = total ? Math.round((values[i]/total)*100) : 0;
             return `<div class="legend-row">
-                <div class="legend-left"><div class="legend-dot" style="background:${CORES[i%CORES.length]};"></div>${esc(l)}</div>
+                <div class="legend-left"><div class="legend-dot" style="background:${CORES[i%CORES.length]};"></div><span title="${esc(l)}">${esc(truncar(l, 30))}</span></div>
                 <div class="legend-right"><span class="legend-val">${values[i]}</span><span class="legend-pct">${pct}%</span></div>
             </div>`;
         }).join('');
