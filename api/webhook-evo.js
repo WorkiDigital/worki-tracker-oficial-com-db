@@ -44,9 +44,48 @@ export default async function handler(req, res) {
   const message = msgData.message || {};
   const pushName = msgData.pushName || msgData.pushname || '';
 
-  // ── 4. Ignorar mensagens enviadas pelo próprio número ──
+  // ── 4. Mensagens enviadas pelo próprio número (fromMe) ──
+  // Em vez de ignorar, aproveita para registrar a primeira resposta da empresa ao lead.
   if (key.fromMe === true) {
-    return res.status(200).json({ ignored: true, reason: 'Mensagem enviada (fromMe).' });
+    const remoteJidFm = key.remoteJid || '';
+    if (!remoteJidFm.includes('@g.us') && !remoteJidFm.includes('@broadcast')) {
+      const telefoneFm = remoteJidFm.replace(/@s\.whatsapp\.net$/, '').replace(/\D/g, '');
+      if (telefoneFm) {
+        try {
+          const pool = getPool();
+          // Resolve cliente_id pela instância
+          let clienteIdFm = null;
+          const matchFm = String(instance).match(/^cliente_(\d+)_/);
+          if (matchFm) clienteIdFm = parseInt(matchFm[1]);
+          if (!clienteIdFm && instance) {
+            const mapFm = await pool.query(
+              'SELECT cliente_id FROM instancias_mapeamento WHERE instance_name = $1', [instance]
+            );
+            if (mapFm.rows.length > 0) clienteIdFm = mapFm.rows[0].cliente_id;
+          }
+          if (clienteIdFm) {
+            // Preenche first_response_at apenas no lead mais recente sem resposta
+            const upd = await pool.query(`
+              UPDATE leads_tracking
+              SET first_response_at = NOW()
+              WHERE id = (
+                SELECT id FROM leads_tracking
+                WHERE telefone = $1 AND cliente_id = $2 AND first_response_at IS NULL
+                ORDER BY created_at DESC
+                LIMIT 1
+              )
+              RETURNING id
+            `, [telefoneFm, clienteIdFm]);
+            if (upd.rows.length > 0) {
+              log('info', 'webhook_evo_first_response', { lead_id: upd.rows[0].id, telefoneFm });
+            }
+          }
+        } catch (e) {
+          log('warn', 'webhook_evo_first_response_fail', { error: e.message });
+        }
+      }
+    }
+    return res.status(200).json({ ignored: true, reason: 'Mensagem enviada (fromMe) — first_response_at atualizado se aplicável.' });
   }
 
   // ── 5. Extrair telefone do remoteJid ──
