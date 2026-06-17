@@ -212,118 +212,6 @@
     </div>
 </div>
 
-<!-- Drawer Perfil do Lead (4 abas) -->
-<div id="leadProfileDrawer" style="position:fixed;inset:0;z-index:9999;display:none;align-items:stretch;justify-content:flex-end;background:rgba(0,0,0,0.5);" onclick="if(event.target===this)fecharPerfilLead()">
-  <div style="width:min(580px,100vw);height:100%;background:var(--bg-primary);box-shadow:-8px 0 40px rgba(0,0,0,0.25);display:flex;flex-direction:column;overflow:hidden;animation:slideInRight .25s ease;">
-
-    <!-- Header -->
-    <div style="padding:18px 22px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;flex-shrink:0;">
-      <div id="lpAvatar" style="width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#3b82f6);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:17px;color:#fff;flex-shrink:0;">?</div>
-      <div style="flex:1;min-width:0;">
-        <div id="lpNome" style="font-size:16px;font-weight:700;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">—</div>
-        <div id="lpTelefone" style="font-size:12px;color:var(--muted);margin-top:1px;">—</div>
-      </div>
-      <div id="lpStatusBadge" style="padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;background:var(--bg-secondary);color:var(--muted);border:1px solid var(--border);flex-shrink:0;white-space:nowrap;">—</div>
-      <button onclick="fecharPerfilLead()" style="background:none;border:none;cursor:pointer;color:var(--muted);padding:4px;border-radius:6px;display:flex;align-items:center;margin-left:4px;"><i data-lucide="x" style="width:18px;height:18px;"></i></button>
-    </div>
-
-    <!-- Tabs -->
-    <div style="display:flex;border-bottom:1px solid var(--border);flex-shrink:0;overflow-x:auto;">
-      <button id="lpTab-perfil"   onclick="lpMudarTab('perfil')"   style="flex:1;min-width:80px;padding:11px 6px;border:none;border-bottom:2px solid #3b82f6;background:none;cursor:pointer;font-size:12px;font-weight:600;color:#3b82f6;white-space:nowrap;">Perfil</button>
-      <button id="lpTab-anuncio"  onclick="lpMudarTab('anuncio')"  style="flex:1;min-width:80px;padding:11px 6px;border:none;border-bottom:2px solid transparent;background:none;cursor:pointer;font-size:12px;font-weight:600;color:var(--muted);white-space:nowrap;">Anúncio</button>
-      <button id="lpTab-jornada"  onclick="lpMudarTab('jornada')"  style="flex:1;min-width:80px;padding:11px 6px;border:none;border-bottom:2px solid transparent;background:none;cursor:pointer;font-size:12px;font-weight:600;color:var(--muted);white-space:nowrap;">Jornada</button>
-      <button id="lpTab-venda"    onclick="lpMudarTab('venda')"    style="flex:1;min-width:80px;padding:11px 6px;border:none;border-bottom:2px solid transparent;background:none;cursor:pointer;font-size:12px;font-weight:600;color:var(--muted);white-space:nowrap;">Venda</button>
-    </div>
-
-    <!-- Conteúdo rolável -->
-    <div style="flex:1;overflow-y:auto;padding:20px 22px;">
-
-      <!-- Loading -->
-      <div id="lpLoading" style="display:flex;align-items:center;justify-content:center;height:200px;color:var(--muted);">
-        <i data-lucide="loader-2" style="width:22px;height:22px;animation:spin 1s linear infinite;"></i>
-      </div>
-
-      <!-- ── ABA PERFIL ── -->
-      <div id="lpPainel-perfil" style="display:none;">
-        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">Dados Pessoais</div>
-        <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:10px;margin-bottom:18px;">
-          <div id="lpRowNome"></div>
-          <div id="lpRowTel"></div>
-          <div id="lpRowEmail"></div>
-          <div id="lpRowCpf"></div>
-          <div id="lpRowEndereco"></div>
-        </div>
-
-        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">Atendimento</div>
-        <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:10px;margin-bottom:18px;">
-          <div id="lpRowStatus"></div>
-          <div id="lpRowScore"></div>
-          <div id="lpRowInstancia"></div>
-          <div id="lpRowPlataforma"></div>
-          <div id="lpRowEntrada"></div>
-        </div>
-
-        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">Primeira Mensagem</div>
-        <div id="lpMensagem" style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;padding:14px;font-size:13px;color:var(--text-primary);line-height:1.6;white-space:pre-wrap;word-break:break-word;">—</div>
-      </div>
-
-      <!-- ── ABA ANÚNCIO ── -->
-      <div id="lpPainel-anuncio" style="display:none;">
-        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">Origem</div>
-        <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:10px;margin-bottom:18px;">
-          <div id="lpRowCampanha"></div>
-          <div id="lpRowConjunto"></div>
-          <div id="lpRowAnuncio"></div>
-          <div id="lpRowPlat"></div>
-        </div>
-
-        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">Rastreamento</div>
-        <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:10px;">
-          <div id="lpRowCtwa"></div>
-          <div id="lpRowSourceId"></div>
-          <div id="lpRowPageId"></div>
-        </div>
-      </div>
-
-      <!-- ── ABA JORNADA ── -->
-      <div id="lpPainel-jornada" style="display:none;">
-        <div id="lpJornadaResumo" style="margin-bottom:16px;padding:12px 14px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;font-size:13px;color:var(--muted);"></div>
-        <div id="lpTimeline"></div>
-      </div>
-
-      <!-- ── ABA VENDA ── -->
-      <div id="lpPainel-venda" style="display:none;">
-        <!-- Cards de tempo -->
-        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:18px;">
-          <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center;">
-            <div id="lpCardResposta" style="font-size:20px;font-weight:800;color:#3b82f6;">—</div>
-            <div style="font-size:11px;color:var(--muted);margin-top:3px;">Tempo até 1ª Resposta</div>
-          </div>
-          <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center;">
-            <div id="lpCardCiclo" style="font-size:20px;font-weight:800;color:#6366f1;">—</div>
-            <div style="font-size:11px;color:var(--muted);margin-top:3px;">Ciclo de Venda</div>
-          </div>
-        </div>
-
-        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">Resultado</div>
-        <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:10px;margin-bottom:18px;">
-          <div id="lpRowStatusVenda"></div>
-          <div id="lpRowValor"></div>
-          <div id="lpRowProduto"></div>
-          <div id="lpRowDataVenda"></div>
-          <div id="lpRowQualificado"></div>
-        </div>
-
-        <div id="lpSemVenda" style="display:none;text-align:center;padding:30px;color:var(--muted);font-size:13px;">
-          <i data-lucide="shopping-cart" style="width:32px;height:32px;opacity:.3;display:block;margin:0 auto 10px;"></i>
-          Nenhuma venda registrada ainda
-        </div>
-      </div>
-
-    </div>
-  </div>
-</div>
-
 <!-- Modal Novo Cliente -->
 <div id="modalAddCliente" class="modal-overlay" role="dialog" aria-modal="true" onclick="if(event.target===this) this.classList.remove('open')">
     <div class="modal">
@@ -4906,5 +4794,84 @@ function resetLeadSearchAutofill() {
 <script defer src="js/leads.js"></script>
 <script defer src="js/admin.js"></script>
 <script defer src="js/reports-auto.js"></script>
+
+<!-- Drawer Perfil do Lead (4 abas) — deve ficar no final do body para z-index funcionar -->
+<div id="leadProfileDrawer" style="position:fixed;inset:0;z-index:9999;display:none;align-items:stretch;justify-content:flex-end;background:rgba(0,0,0,0.55);" onclick="if(event.target===this)fecharPerfilLead()">
+  <div style="width:min(580px,100vw);height:100%;background:var(--bg-primary);box-shadow:-8px 0 40px rgba(0,0,0,0.3);display:flex;flex-direction:column;overflow:hidden;animation:slideInRight .25s ease;">
+    <!-- Header -->
+    <div style="padding:18px 22px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;flex-shrink:0;">
+      <div id="lpAvatar" style="width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#3b82f6);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:17px;color:#fff;flex-shrink:0;">?</div>
+      <div style="flex:1;min-width:0;">
+        <div id="lpNome" style="font-size:16px;font-weight:700;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">—</div>
+        <div id="lpTelefone" style="font-size:12px;color:var(--muted);margin-top:1px;">—</div>
+      </div>
+      <div id="lpStatusBadge" style="padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;background:var(--bg-secondary);color:var(--muted);border:1px solid var(--border);flex-shrink:0;white-space:nowrap;">—</div>
+      <button onclick="fecharPerfilLead()" style="background:none;border:none;cursor:pointer;color:var(--muted);padding:4px;border-radius:6px;display:flex;align-items:center;margin-left:4px;"><i data-lucide="x" style="width:18px;height:18px;"></i></button>
+    </div>
+    <!-- Tabs -->
+    <div style="display:flex;border-bottom:1px solid var(--border);flex-shrink:0;overflow-x:auto;">
+      <button id="lpTab-perfil"  onclick="lpMudarTab('perfil')"  style="flex:1;min-width:80px;padding:11px 6px;border:none;border-bottom:2px solid #3b82f6;background:none;cursor:pointer;font-size:12px;font-weight:600;color:#3b82f6;white-space:nowrap;">Perfil</button>
+      <button id="lpTab-anuncio" onclick="lpMudarTab('anuncio')" style="flex:1;min-width:80px;padding:11px 6px;border:none;border-bottom:2px solid transparent;background:none;cursor:pointer;font-size:12px;font-weight:600;color:var(--muted);white-space:nowrap;">Anúncio</button>
+      <button id="lpTab-jornada" onclick="lpMudarTab('jornada')" style="flex:1;min-width:80px;padding:11px 6px;border:none;border-bottom:2px solid transparent;background:none;cursor:pointer;font-size:12px;font-weight:600;color:var(--muted);white-space:nowrap;">Jornada</button>
+      <button id="lpTab-venda"   onclick="lpMudarTab('venda')"   style="flex:1;min-width:80px;padding:11px 6px;border:none;border-bottom:2px solid transparent;background:none;cursor:pointer;font-size:12px;font-weight:600;color:var(--muted);white-space:nowrap;">Venda</button>
+    </div>
+    <!-- Conteúdo -->
+    <div style="flex:1;overflow-y:auto;padding:20px 22px;">
+      <div id="lpLoading" style="display:flex;align-items:center;justify-content:center;height:200px;color:var(--muted);">
+        <i data-lucide="loader-2" style="width:22px;height:22px;animation:spin 1s linear infinite;"></i>
+      </div>
+      <!-- Perfil -->
+      <div id="lpPainel-perfil" style="display:none;">
+        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">Dados Pessoais</div>
+        <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:10px;margin-bottom:18px;">
+          <div id="lpRowNome"></div><div id="lpRowTel"></div><div id="lpRowEmail"></div><div id="lpRowCpf"></div><div id="lpRowEndereco"></div>
+        </div>
+        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">Atendimento</div>
+        <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:10px;margin-bottom:18px;">
+          <div id="lpRowStatus"></div><div id="lpRowScore"></div><div id="lpRowInstancia"></div><div id="lpRowPlataforma"></div><div id="lpRowEntrada"></div>
+        </div>
+        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">Primeira Mensagem</div>
+        <div id="lpMensagem" style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;padding:14px;font-size:13px;color:var(--text-primary);line-height:1.6;white-space:pre-wrap;word-break:break-word;">—</div>
+      </div>
+      <!-- Anúncio -->
+      <div id="lpPainel-anuncio" style="display:none;">
+        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">Origem</div>
+        <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:10px;margin-bottom:18px;">
+          <div id="lpRowCampanha"></div><div id="lpRowConjunto"></div><div id="lpRowAnuncio"></div><div id="lpRowPlat"></div>
+        </div>
+        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">Rastreamento</div>
+        <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:10px;">
+          <div id="lpRowCtwa"></div><div id="lpRowSourceId"></div><div id="lpRowPageId"></div>
+        </div>
+      </div>
+      <!-- Jornada -->
+      <div id="lpPainel-jornada" style="display:none;">
+        <div id="lpJornadaResumo" style="margin-bottom:16px;padding:12px 14px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;font-size:13px;color:var(--muted);"></div>
+        <div id="lpTimeline"></div>
+      </div>
+      <!-- Venda -->
+      <div id="lpPainel-venda" style="display:none;">
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:18px;">
+          <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center;">
+            <div id="lpCardResposta" style="font-size:20px;font-weight:800;color:#3b82f6;">—</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:3px;">Tempo até 1ª Resposta</div>
+          </div>
+          <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center;">
+            <div id="lpCardCiclo" style="font-size:20px;font-weight:800;color:#6366f1;">—</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:3px;">Ciclo de Venda</div>
+          </div>
+        </div>
+        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">Resultado</div>
+        <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:10px;margin-bottom:18px;">
+          <div id="lpRowStatusVenda"></div><div id="lpRowValor"></div><div id="lpRowProduto"></div><div id="lpRowDataVenda"></div><div id="lpRowQualificado"></div>
+        </div>
+        <div id="lpSemVenda" style="display:none;text-align:center;padding:30px;color:var(--muted);font-size:13px;">
+          <i data-lucide="shopping-cart" style="width:32px;height:32px;opacity:.3;display:block;margin:0 auto 10px;"></i>
+          Nenhuma venda registrada ainda
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 </body>
 </html>
