@@ -289,16 +289,18 @@ function renderTabela() {
         const campanha = lead.utm_campaign || '—';
         const conjunto = lead.utm_medium   || '';
         const anuncio  = lead.utm_content  || '';
+        const tooltipOrig = [
+          campanha !== '—' ? `📣 ${campanha}` : '',
+          conjunto ? `🗂 ${conjunto}` : '',
+        ].filter(Boolean).join('\n');
 
         return `<tr>
             <td style="color:var(--text);font-weight:600;">${esc(lead.nome)||'N/A'}</td>
             <td>${esc(lead.telefone)||'N/A'}</td>
             <td><span class="tag" style="color:${stColor};border:${stBorder};">${esc(status)}</span></td>
             <td><span style="font-weight:700;color:${scoreColor};">${score}</span></td>
-            <td style="max-width:220px;">
-                <div style="font-size:11px;font-weight:600;color:var(--text);white-space:normal;line-height:1.3;">${esc(campanha)}</div>
-                ${conjunto ? `<div style="font-size:10px;color:#6366f1;margin-top:2px;">${esc(conjunto)}</div>` : ''}
-                ${anuncio  ? `<div style="font-size:10px;color:var(--muted);margin-top:1px;">${esc(anuncio)}</div>` : ''}
+            <td style="max-width:160px;" title="${esc(tooltipOrig)}">
+                ${anuncio ? `<div style="font-size:11px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(anuncio)}</div>` : `<div style="font-size:11px;color:var(--muted);">—</div>`}
             </td>
             <td title="${esc(lead.mensagem_recebida)}" style="max-width:180px;overflow:hidden;text-overflow:ellipsis;">${esc(msg)}${lead.mensagem_recebida?.length>35?'…':''}</td>
             <td style="font-size:12px;color:var(--muted);">${esc(lead.instancia||'—')}</td>
