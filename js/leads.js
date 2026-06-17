@@ -285,8 +285,9 @@ function renderTabela() {
         // Tempo no Funil
         const tempoFunil = tempoRelativo(lead.created_at || lead.event_time);
 
-        // Campanha / Anúncio
+        // Campanha / Conjunto / Anúncio
         const campanha = lead.utm_campaign || '—';
+        const conjunto = lead.utm_medium   || '';
         const anuncio  = lead.utm_content  || '';
 
         return `<tr>
@@ -296,7 +297,8 @@ function renderTabela() {
             <td><span style="font-weight:700;color:${scoreColor};">${score}</span></td>
             <td style="max-width:220px;">
                 <div style="font-size:11px;font-weight:600;color:var(--text);white-space:normal;line-height:1.3;">${esc(campanha)}</div>
-                ${anuncio ? `<div style="font-size:10px;color:var(--muted);margin-top:2px;">${esc(anuncio)}</div>` : ''}
+                ${conjunto ? `<div style="font-size:10px;color:#6366f1;margin-top:2px;">${esc(conjunto)}</div>` : ''}
+                ${anuncio  ? `<div style="font-size:10px;color:var(--muted);margin-top:1px;">${esc(anuncio)}</div>` : ''}
             </td>
             <td title="${esc(lead.mensagem_recebida)}" style="max-width:180px;overflow:hidden;text-overflow:ellipsis;">${esc(msg)}${lead.mensagem_recebida?.length>35?'…':''}</td>
             <td style="font-size:12px;color:var(--muted);">${esc(lead.instancia||'—')}</td>
