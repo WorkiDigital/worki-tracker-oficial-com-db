@@ -159,21 +159,31 @@ export default async function handler(req, res) {
   const plataforma = detectarPlataforma(event_source_url, externalAdReply);
   let page_id = extrairPageId(event_source_url);
 
+  // Dados de campanha/anúncio a preencher via Graph API
+  let utm_campaign = null, utm_medium = null, utm_content = null;
+
   try {
     const pool = getPool();
 
-    // ── 11b. Fallback do page_id via Graph API ──
-    // A URL do anúncio costuma vir encurtada (fb.me/...) sem page_id. Se a regex
-    // não achou, consultamos a Meta pelo sourceId (ID do anúncio) usando o token do cliente.
-    if (!page_id && sourceId) {
+    // ── 11b. Busca page_id + campanha + conjunto + anúncio via Graph API ──
+    // Feita sempre que tiver sourceId e token disponível — uma única chamada traz tudo.
+    if (sourceId) {
       const cliRes = await pool.query('SELECT token_meta, token_meta_enc FROM clientes WHERE id = $1', [cliente_id]);
       const cli = cliRes.rows[0];
-      let token = cli?.token_meta || process.env.META_ADS_TOKEN || null;
+      let token = cli?.token_meta || null;
       if (cli?.token_meta_enc) {
-        try { token = decryptToken(cli.token_meta_enc); } catch (e) { console.error('Fallback page_id: erro descriptografia', e.message); }
+        try { token = decryptToken(cli.token_meta_enc); } catch (e) { console.error('Webhook: erro descriptografia token', e.message); }
       }
-      page_id = await buscarPageIdViaApi(sourceId, token);
-      if (page_id) console.log(`[webhook-evo] page_id ${page_id} obtido via Graph API (sourceId ${sourceId})`);
+      if (token) {
+        const adInfo = await buscarInfoAnuncio(sourceId, token);
+        if (adInfo) {
+          if (!page_id) page_id = adInfo.page_id;
+          utm_campaign = adInfo.campaign_name;
+          utm_medium   = adInfo.adset_name;
+          utm_content  = adInfo.ad_name;
+          console.log(`[webhook-evo] ad info obtida: ${utm_campaign} / ${utm_medium} / ${utm_content}`);
+        }
+      }
     }
 
     // ── 12. Deduplicação — evitar leads duplicados nas últimas 24h ──
@@ -197,8 +207,8 @@ export default async function handler(req, res) {
       INSERT INTO leads_tracking (
         cliente_id, nome, telefone, mensagem_recebida, ctw_aci_id, source_id,
         event_source_url, anuncio_thumbnail_url, instancia, status, event_time,
-        page_id, plataforma
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'Lead', NOW(), $10, $11)
+        page_id, plataforma, utm_campaign, utm_medium, utm_content
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'Lead', NOW(), $10, $11, $12, $13, $14)
       RETURNING *
     `, [
       cliente_id,
@@ -211,7 +221,10 @@ export default async function handler(req, res) {
       anuncio_thumbnail_url,
       instance,
       page_id,
-      plataforma
+      plataforma,
+      utm_campaign,
+      utm_medium,
+      utm_content
     ]);
 
     const lead = insertResult.rows[0];
@@ -328,28 +341,27 @@ function extrairPageId(sourceUrl) {
   return match ? match[1] : null;
 }
 
-// Busca o page_id real na Graph API a partir do sourceId (ID do anúncio CTWA).
-// Muitos anúncios chegam com sourceUrl encurtada (fb.me/...) sem page_id na URL,
-// mas o sourceId permite consultar creative.object_story_spec.page_id na Meta.
-// Retorna null em qualquer falha (best-effort — não derruba o webhook).
-async function buscarPageIdViaApi(sourceId, token) {
+// Busca page_id, campanha, conjunto e anúncio na Graph API a partir do sourceId.
+// Uma única chamada retorna tudo — best-effort, não derruba o webhook em caso de falha.
+async function buscarInfoAnuncio(sourceId, token) {
   if (!sourceId || !token) return null;
   try {
-    const url = `https://graph.facebook.com/v25.0/${sourceId}`
-      + `?fields=effective_object_story_id,creative{effective_object_story_id,object_story_spec{page_id}}`
-      + `&access_token=${token}`;
+    const fields = 'name,campaign_id,campaign{name},adset_id,adset{name},creative{id,name,object_story_spec{page_id}}';
+    const url = `https://graph.facebook.com/v25.0/${sourceId}?fields=${fields}&access_token=${token}`;
     const r = await fetch(url);
     const data = await r.json();
     if (data.error) {
-      console.warn('buscarPageIdViaApi: Meta retornou erro:', data.error.message);
+      console.warn('[webhook-evo] buscarInfoAnuncio erro:', data.error.message);
       return null;
     }
-    // object_story_spec.page_id é o caminho direto; effective_object_story_id vem como "<page_id>_<post_id>".
-    const pid = data.creative?.object_story_spec?.page_id
-      || (data.effective_object_story_id || data.creative?.effective_object_story_id || '').split('_')[0];
-    return pid || null;
+    return {
+      page_id:       data.creative?.object_story_spec?.page_id || null,
+      campaign_name: data.campaign?.name  || null,
+      adset_name:    data.adset?.name     || null,
+      ad_name:       data.name            || null,
+    };
   } catch (e) {
-    console.warn('buscarPageIdViaApi: falha na requisição:', e.message);
+    console.warn('[webhook-evo] buscarInfoAnuncio falha:', e.message);
     return null;
   }
 }
