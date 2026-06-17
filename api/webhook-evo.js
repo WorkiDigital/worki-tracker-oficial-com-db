@@ -53,13 +53,15 @@ export default async function handler(req, res) {
       if (telefoneFm) {
         try {
           const pool = getPool();
+          // Extrai instância aqui pois ainda não foi declarada no escopo principal
+          const instanceFm = body.instance || body.instanceName || body.sender?.instance || body.apiType || '';
           // Resolve cliente_id pela instância
           let clienteIdFm = null;
-          const matchFm = String(instance).match(/^cliente_(\d+)_/);
+          const matchFm = String(instanceFm).match(/^cliente_(\d+)_/);
           if (matchFm) clienteIdFm = parseInt(matchFm[1]);
-          if (!clienteIdFm && instance) {
+          if (!clienteIdFm && instanceFm) {
             const mapFm = await pool.query(
-              'SELECT cliente_id FROM instancias_mapeamento WHERE instance_name = $1', [instance]
+              'SELECT cliente_id FROM instancias_mapeamento WHERE instance_name = $1', [instanceFm]
             );
             if (mapFm.rows.length > 0) clienteIdFm = mapFm.rows[0].cliente_id;
           }
