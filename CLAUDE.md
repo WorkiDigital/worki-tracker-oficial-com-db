@@ -165,3 +165,61 @@ Deploy:
 - Push para `origin/main` concluido; este e o fluxo esperado para o EasyPanel segundo o README.
 - Tentativa de deploy direto pela Vercel CLI falhou porque o projeto possui mais de 12 Serverless Functions, limite do plano Hobby. Este repo e mais adequado ao fluxo EasyPanel/Nixpacks rodando `node server.js`.
 - Foi criado `.vercelignore` para evitar enviar `.env`, `.claude`, `.git`, `node_modules` e `.vercel` caso alguem tente deploy direto pela Vercel novamente.
+
+## Atualizacao recente - Menu, CAPI, ciclo e busca de leads
+
+Esta secao prevalece sobre qualquer nota antiga de menu neste arquivo.
+
+Mudancas recentes ja enviadas para `main`:
+- `57ecf6c refactor: reorganiza menu, move Contas de Anuncio p/ modal em Meta Ads, corrige CAPI e ciclo`
+- `8dba315 fix: desativa autofill na busca de leads`
+
+O que ficou definido:
+- O separador "Configuracao" foi renomeado para "Conta"; ele abriga "Minha Conta" e "Compartilhar Dash".
+- A antiga aba lateral "Contas de Anuncio" foi removida do menu; a gestao de contas agora abre pelo botao "Gerenciar contas" na barra de Meta Ads, mantendo o usuario no contexto dos anuncios.
+- `api/webhook-evo.js`: `LeadSubmitted` nao deve enviar `client_ip_address` nem `client_user_agent` quando `action_source` for `business_messaging`; esses campos sao proibidos pela Meta nesse canal.
+- `api/metrics-temporal.js`: metricas de ciclo medio e vendas rapidas usam `sale_closed_at` como filtro do periodo. Metricas de lead, como leads esquecidos e resposta media, continuam usando `created_at`.
+- `index.html`: o campo `inputBusca` da barra de leads deve manter `autocomplete="off"` e `name="lead_search"` para evitar que Chrome/Edge preencham automaticamente e-mail salvo no campo de busca.
+
+## 🎯 Enriquecimento de UTMs e Origem dos Leads (2026-06-17)
+
+### Como os dados de campanha chegam
+Os leads CTWA chegam pelo webhook com `source_id` (ID do anúncio na Meta) mas **sem** campanha/conjunto/anúncio. O sistema faz uma requisição à Graph API para buscar esses dados.
+
+### Implementação atual (`api/webhook-evo.js`)
+A função `buscarInfoAnuncio(sourceId, token)` faz uma única chamada:
+```
+GET /v25.0/{sourceId}?fields=name,campaign_id,campaign{name},adset_id,adset{name},creative{id,name,object_story_spec{page_id}}
+```
+Retorna e salva no INSERT: `utm_campaign` (campanha), `utm_medium` (conjunto), `utm_content` (anúncio), `page_id`.
+
+**ATENÇÃO:** o campo `effective_object_story_id` é INVÁLIDO na v25 (erro #100) — nunca usar.
+
+### Token necessário
+O token do **cliente** (`token_meta_enc`) é obrigatório — o token global do `.env` (`META_ADS_TOKEN`) é da agência e não tem acesso ao pixel/anúncios de cada cliente para CAPI e Graph API de anúncios específicos.
+
+### Criptografia dos tokens
+- Algoritmo: **AES-256-GCM** (não CBC). Formato do buffer: `[IV(12b) + Tag(16b) + Cifra]`
+- Implementação canônica em `api/_crypto.js` — sempre usar `encryptToken`/`decryptToken` deste arquivo
+- Scripts em `scripts/` devem replicar o mesmo algoritmo GCM, nunca CBC
+
+### Script retroativo de enriquecimento
+`scripts/enrich-leads-utm.js` — popula UTMs em leads antigos via Graph API.
+```bash
+ENRICH_INSTANCIA=nome-instancia ENRICH_DAYS=365 ENRICH_DRY_RUN=true node -r dotenv/config scripts/enrich-leads-utm.js
+```
+- Filtra por instância e período
+- Dry run mostra o que faria sem gravar
+- Leads sem `source_id` ou onde a Meta retorna "Unsupported get request" ficam sem UTM (sem solução)
+
+### Migração de tokens legados
+`scripts/migrate-tokens.js` — migra `token_meta` (texto puro) para `token_meta_enc` (criptografado).
+```bash
+node -r dotenv/config scripts/migrate-tokens.js
+```
+Após migrar, limpar o campo legado: `UPDATE clientes SET token_meta = NULL;`
+
+### Exibição no painel
+- **Tabela de Leads**: coluna "Campanha / Anúncio" mostra campanha (negrito), conjunto (roxo `#6366f1`) e anúncio (cinza)
+- **Relatórios**: gráficos "Campanhas / Leads" e "Conjuntos / Leads" agrupam por `utm_campaign` e `utm_medium`
+- `api/leads.js` COLS deve incluir `utm_campaign`, `utm_medium`, `utm_content` — se faltar algum, o front não recebe o dado mesmo que esteja no banco
