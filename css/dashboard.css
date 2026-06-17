@@ -62,6 +62,10 @@
     --glow-blue: rgba(37,99,235,0.25); --glow-green: rgba(74,222,128,0.2);
     --shadow-card: 0 1px 4px rgba(0,0,0,0.4), 0 4px 16px rgba(0,0,0,0.25);
     --shadow-card-hover: 0 4px 24px rgba(37,99,235,0.15), 0 1px 8px rgba(0,0,0,0.4);
+    --bg-primary: #0a0f1a;
+    --bg-secondary: #111827;
+    --text-primary: #e2e8f0;
+    --drawer-backdrop: rgba(2,6,23,0.72);
     --scheme: dark;
 }
 html.light {
@@ -74,6 +78,10 @@ html.light {
     --glow-blue: rgba(37,99,235,0.12); --glow-green: rgba(22,163,74,0.1);
     --shadow-card: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
     --shadow-card-hover: 0 4px 24px rgba(37,99,235,0.1), 0 1px 6px rgba(0,0,0,0.06);
+    --bg-primary: #ffffff;
+    --bg-secondary: #f8fafc;
+    --text-primary: #0f172a;
+    --drawer-backdrop: rgba(15,23,42,0.42);
     --scheme: light;
 }
 
@@ -437,6 +445,17 @@ html.light .modal { background:#fff; border-color:var(--border); }
 .modal-box { background:var(--card,#0d1117); border-radius:14px; padding:20px 22px 22px; border:1px solid var(--border); box-shadow:0 25px 50px -12px rgba(0,0,0,.6); transform:translateY(16px); transition:.25s; width:100%; }
 .modal-overlay.open .modal-box { transform:none; }
 html.light .modal-box { background:#fff; }
+
+/* Lead profile drawer */
+#leadProfileDrawer { background:var(--drawer-backdrop) !important; }
+#leadProfileDrawer > div {
+    background:var(--bg-primary) !important;
+    color:var(--text-primary);
+    border-left:1px solid var(--border);
+}
+html.light #leadProfileDrawer > div {
+    box-shadow:-12px 0 36px rgba(15,23,42,0.18) !important;
+}
 
 /* ── Zap tag chips ───────────────────────── */
 .zap-tag-chip { background:rgba(255,255,255,.05); border:1px solid var(--border); border-radius:4px; padding:2px 7px; font-size:10px; font-family:monospace; color:var(--muted); cursor:pointer; transition:background .12s, color .12s, border-color .12s; }
