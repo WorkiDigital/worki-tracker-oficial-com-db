@@ -260,7 +260,7 @@ function renderTabela() {
 
     const tbody = $('tabela-corpo');
     if (!pagina.length) {
-        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--muted);">Nenhum lead encontrado.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:40px;color:var(--muted);">Nenhum lead encontrado.</td></tr>`;
         $('paginacao').innerHTML = '';
         return;
     }
@@ -285,11 +285,21 @@ function renderTabela() {
         // Tempo no Funil
         const tempoFunil = tempoRelativo(lead.created_at || lead.event_time);
 
+        // Campanha / Anúncio
+        const campanha = lead.utm_campaign ? lead.utm_campaign.substring(0, 28) + (lead.utm_campaign.length > 28 ? '…' : '') : '—';
+        const anuncio  = lead.utm_content  ? lead.utm_content.substring(0, 24)  + (lead.utm_content.length  > 24 ? '…' : '') : '';
+        const conjunto = lead.utm_medium   || '';
+        const tooltipCamp = [lead.utm_campaign, conjunto ? 'Conjunto: ' + conjunto : '', lead.utm_content ? 'Anúncio: ' + lead.utm_content : ''].filter(Boolean).join('\n');
+
         return `<tr>
             <td style="color:var(--text);font-weight:600;">${esc(lead.nome)||'N/A'}</td>
             <td>${esc(lead.telefone)||'N/A'}</td>
             <td><span class="tag" style="color:${stColor};border:${stBorder};">${esc(status)}</span></td>
             <td><span style="font-weight:700;color:${scoreColor};">${score}</span></td>
+            <td style="max-width:160px;" title="${esc(tooltipCamp)}">
+                <div style="font-size:11px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(campanha)}</div>
+                ${anuncio ? `<div style="font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(anuncio)}</div>` : ''}
+            </td>
             <td title="${esc(lead.mensagem_recebida)}" style="max-width:180px;overflow:hidden;text-overflow:ellipsis;">${esc(msg)}${lead.mensagem_recebida?.length>35?'…':''}</td>
             <td style="font-size:12px;color:var(--muted);">${esc(lead.instancia||'—')}</td>
             <td><div class="platform-icon ${platCls}">${esc(lead.plataforma||'instagram')}</div></td>
@@ -378,11 +388,15 @@ function renderRelatorios() {
     // Comparação vs período anterior (busca leve, não bloqueia o render principal).
     renderComparativoPeriodo();
 
+    const mapCamp = agrupar(dadosFiltrados, 'utm_campaign');
+    const mapAdset = agrupar(dadosFiltrados, 'utm_medium');
     const mapA  = agrupar(dadosFiltrados, 'utm_content');
     const mapP  = agrupar(dadosFiltrados, 'plataforma');
     const mapAV = agrupar(vendas, 'utm_content');
     const mapPV = agrupar(vendas, 'plataforma');
 
+    criarGrafico('cCampLeads','lCampLeads', mapCamp, 'bar');
+    criarGrafico('cAdsetLeads','lAdsetLeads', mapAdset, 'bar');
     criarGrafico('c1','l1',mapA,'doughnut');
     criarGrafico('c2','l2',mapP,'doughnut');
     criarGrafico('c3','l3',mapAV,'bar');
