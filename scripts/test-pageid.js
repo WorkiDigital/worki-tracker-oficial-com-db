@@ -14,11 +14,13 @@ const pool = new Pool({
 
 function decryptToken(enc) {
   const key = Buffer.from(process.env.TOKEN_ENCRYPTION_KEY, 'hex');
-  const buf  = Buffer.isBuffer(enc) ? enc : Buffer.from(enc, 'hex');
-  const iv   = buf.slice(0, 16);
-  const data = buf.slice(16);
-  const dc   = createDecipheriv('aes-256-cbc', key, iv);
-  return Buffer.concat([dc.update(data), dc.final()]).toString('utf8');
+  const buf  = Buffer.isBuffer(enc) ? enc : Buffer.from(enc);
+  const iv        = buf.slice(0, 12);
+  const tag       = buf.slice(12, 28);
+  const encrypted = buf.slice(28);
+  const dc = createDecipheriv('aes-256-gcm', key, iv);
+  dc.setAuthTag(tag);
+  return Buffer.concat([dc.update(encrypted), dc.final()]).toString('utf8');
 }
 
 async function main() {
