@@ -307,7 +307,10 @@ function renderTabela() {
             <td><div class="platform-icon ${platCls}">${esc(lead.plataforma||'instagram')}</div></td>
             <td title="${esc(lead.event_time)}" style="white-space:nowrap;">${data}</td>
             <td style="font-size:11px;font-weight:600;">${tempoFunil}</td>
-            <td style="white-space:nowrap;">${temCapi ? `<div style="display:inline-flex;gap:4px;align-items:center;"><button class="btn btn-sm" style="background:rgba(59, 130, 246, 0.1);color:#3b82f6;border:1px solid rgba(59,130,246,0.3);padding:2px 8px;display:inline-flex;align-items:center;justify-content:center;" onclick="qualificarLead(${idx})" title="Marcar como Qualificado e enviar para CAPI"><i data-lucide="check-circle" style="width:12px;"></i></button><button class="btn btn-green btn-sm" onclick="abrirModal(${idx})" title="Registrar Venda e CAPI" style="margin:0;"><i data-lucide="zap" style="width:11px;"></i> Venda</button></div>` : '<span style="color:var(--muted);font-size:12px;">—</span>'}</td>
+            <td style="white-space:nowrap;"><div style="display:inline-flex;gap:4px;align-items:center;">
+                <button class="btn btn-sm" onclick="abrirPerfilLead(${lead.id})" title="Ver perfil completo do lead" style="background:rgba(99,102,241,0.1);color:#6366f1;border:1px solid rgba(99,102,241,0.3);padding:2px 8px;display:inline-flex;align-items:center;justify-content:center;"><i data-lucide="user" style="width:12px;"></i></button>
+                ${temCapi ? `<button class="btn btn-sm" style="background:rgba(59, 130, 246, 0.1);color:#3b82f6;border:1px solid rgba(59,130,246,0.3);padding:2px 8px;display:inline-flex;align-items:center;justify-content:center;" onclick="qualificarLead(${idx})" title="Marcar como Qualificado e enviar para CAPI"><i data-lucide="check-circle" style="width:12px;"></i></button><button class="btn btn-green btn-sm" onclick="abrirModal(${idx})" title="Registrar Venda e CAPI" style="margin:0;"><i data-lucide="zap" style="width:11px;"></i> Venda</button>` : ''}
+            </div></td>
         </tr>`;
     }).join('');
 
@@ -910,5 +913,168 @@ async function confirmarQualificacao() {
         btn.disabled = false;
         chumboQualificarId = null;
     }
+}
+
+// ── Perfil do Lead (Drawer 4 abas) ────────────────────────────────────────────
+
+let _lpTabAtual = 'perfil';
+let _lpDados = null;
+
+async function abrirPerfilLead(leadId) {
+    const drawer = $('leadProfileDrawer');
+    drawer.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+
+    // Reset visual
+    $('lpLoading').style.display = 'flex';
+    ['perfil','anuncio','jornada','venda'].forEach(t => {
+        $(`lpPainel-${t}`).style.display = 'none';
+    });
+    lpMudarTab('perfil', false);
+
+    try {
+        const r = await authFetch(`/api/lead-profile?id=${leadId}`);
+        if (!r.ok) throw new Error('Erro ao buscar perfil');
+        _lpDados = await r.json();
+        $('lpLoading').style.display = 'none';
+        lpPreencherDados(_lpDados);
+        $(`lpPainel-perfil`).style.display = 'block';
+        lucide.createIcons({ nodes: [drawer] });
+    } catch(e) {
+        $('lpLoading').innerHTML = `<span style="color:var(--muted)">Erro ao carregar: ${e.message}</span>`;
+    }
+}
+
+function fecharPerfilLead() {
+    $('leadProfileDrawer').style.display = 'none';
+    document.body.style.overflow = '';
+    _lpDados = null;
+}
+
+function lpMudarTab(tab, renderizar = true) {
+    const abas = ['perfil','anuncio','jornada','venda'];
+    abas.forEach(t => {
+        const btn = $(`lpTab-${t}`);
+        if (!btn) return;
+        if (t === tab) {
+            btn.style.color = '#3b82f6';
+            btn.style.borderBottom = '2px solid #3b82f6';
+        } else {
+            btn.style.color = 'var(--muted)';
+            btn.style.borderBottom = '2px solid transparent';
+        }
+        if (renderizar) $(`lpPainel-${t}`).style.display = t === tab ? 'block' : 'none';
+    });
+    _lpTabAtual = tab;
+    if (renderizar && _lpDados) lucide.createIcons({ nodes: [$('leadProfileDrawer')] });
+}
+
+function lpRow(label, valor, cor) {
+    if (!valor || valor === '—') return `<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;"><span style="font-size:12px;color:var(--muted);flex-shrink:0;">${label}</span><span style="font-size:13px;color:var(--muted);font-style:italic;">—</span></div>`;
+    return `<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;"><span style="font-size:12px;color:var(--muted);flex-shrink:0;">${label}</span><span style="font-size:13px;color:${cor||'var(--text-primary)'};font-weight:500;text-align:right;word-break:break-word;">${valor}</span></div>`;
+}
+
+function lpFormatDuracao(minutos) {
+    if (!minutos || minutos <= 0) return null;
+    if (minutos < 60) return `${Math.round(minutos)} min`;
+    if (minutos < 1440) return `${(minutos/60).toFixed(1)} h`;
+    return `${(minutos/1440).toFixed(1)} dias`;
+}
+
+function lpFormatData(iso) {
+    if (!iso) return null;
+    const d = new Date(iso);
+    return d.toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+}
+
+function lpPreencherDados({ lead, jornada }) {
+    // ── Header ──
+    const inicial = (lead.nome || '?')[0].toUpperCase();
+    $('lpAvatar').textContent = inicial;
+    $('lpNome').textContent = lead.nome || 'Sem nome';
+    $('lpTelefone').textContent = lead.telefone || '—';
+    const status = (lead.status || 'lead');
+    const isVendido = status.toLowerCase() === 'vendido' || status.toLowerCase() === 'venda_fechada';
+    const isQualif = status.toLowerCase() === 'qualificado';
+    const badgeColor = isVendido ? '#10b981' : isQualif ? '#6366f1' : 'var(--muted)';
+    const badgeBg = isVendido ? 'rgba(16,185,129,.12)' : isQualif ? 'rgba(99,102,241,.12)' : 'var(--bg-secondary)';
+    $('lpStatusBadge').textContent = status;
+    $('lpStatusBadge').style.color = badgeColor;
+    $('lpStatusBadge').style.background = badgeBg;
+    $('lpStatusBadge').style.borderColor = isVendido ? 'rgba(16,185,129,.3)' : isQualif ? 'rgba(99,102,241,.3)' : 'var(--border)';
+
+    // ── Aba Perfil ──
+    $('lpRowNome').innerHTML     = lpRow('Nome completo', lead.nome);
+    $('lpRowTel').innerHTML      = lpRow('Telefone', lead.telefone);
+    $('lpRowEmail').innerHTML    = lpRow('E-mail', lead.email);
+    $('lpRowCpf').innerHTML      = lpRow('CPF', lead.cpf);
+    $('lpRowEndereco').innerHTML = lpRow('Endereço', [lead.endereco, lead.cidade, lead.estado].filter(Boolean).join(', ') || null);
+    $('lpRowStatus').innerHTML   = lpRow('Status', status, badgeColor);
+    const scoreVal = lead.lead_score || 0;
+    const scoreCor = scoreVal >= 70 ? '#ef4444' : scoreVal >= 40 ? '#f59e0b' : '#6b7280';
+    $('lpRowScore').innerHTML    = lpRow('Lead Score', scoreVal ? `${scoreVal} pts` : null, scoreCor);
+    $('lpRowInstancia').innerHTML = lpRow('Instância', lead.instancia);
+    $('lpRowPlataforma').innerHTML = lpRow('Plataforma', lead.plataforma);
+    $('lpRowEntrada').innerHTML  = lpRow('Data de entrada', lpFormatData(lead.created_at));
+    $('lpMensagem').textContent  = lead.mensagem_recebida || '—';
+
+    // ── Aba Anúncio ──
+    $('lpRowCampanha').innerHTML  = lpRow('Campanha', lead.utm_campaign, '#3b82f6');
+    $('lpRowConjunto').innerHTML  = lpRow('Conjunto', lead.utm_medium, '#6366f1');
+    $('lpRowAnuncio').innerHTML   = lpRow('Anúncio', lead.utm_content);
+    $('lpRowPlat').innerHTML      = lpRow('Plataforma', lead.plataforma);
+    $('lpRowCtwa').innerHTML      = lpRow('CTWA Click ID', lead.ctw_aci_id ? lead.ctw_aci_id.substring(0,24)+'…' : null);
+    $('lpRowSourceId').innerHTML  = lpRow('Source ID (Anúncio)', lead.source_id);
+    $('lpRowPageId').innerHTML    = lpRow('Page ID', lead.page_id);
+
+    // ── Aba Jornada ──
+    const total = jornada.length;
+    $('lpJornadaResumo').innerHTML = `<strong style="color:var(--text-primary);">${total} contato${total !== 1 ? 's' : ''}</strong> registrado${total !== 1 ? 's' : ''} via anúncio para este número.`;
+    $('lpTimeline').innerHTML = jornada.map((j, i) => {
+        const isCurrent = j.id === lead.id;
+        const isV = (j.status||'').toLowerCase() === 'vendido' || (j.status||'').toLowerCase() === 'venda_fechada';
+        const dotColor = isV ? '#10b981' : isCurrent ? '#3b82f6' : 'var(--muted)';
+        const linhaAds = [j.utm_content, j.utm_medium, j.utm_campaign].filter(Boolean);
+        return `<div style="display:flex;gap:14px;margin-bottom:${i < jornada.length-1 ? '0' : '0'};">
+            <div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0;">
+                <div style="width:12px;height:12px;border-radius:50%;background:${dotColor};border:2px solid ${dotColor};margin-top:3px;flex-shrink:0;${isCurrent?'box-shadow:0 0 0 3px rgba(59,130,246,.2)':''}"></div>
+                ${i < jornada.length-1 ? `<div style="width:2px;flex:1;background:var(--border);margin:4px 0;min-height:30px;"></div>` : ''}
+            </div>
+            <div style="padding-bottom:20px;flex:1;min-width:0;">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;">
+                    <span style="font-size:12px;font-weight:700;color:var(--text-primary);">${i+1}º contato</span>
+                    ${isCurrent ? `<span style="font-size:10px;background:rgba(59,130,246,.1);color:#3b82f6;padding:1px 7px;border-radius:10px;border:1px solid rgba(59,130,246,.2);">atual</span>` : ''}
+                    <span style="font-size:11px;color:var(--muted);margin-left:auto;">${lpFormatData(j.created_at)}</span>
+                </div>
+                <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:5px;">
+                    ${linhaAds.length ? `
+                        ${j.utm_content  ? `<div style="font-size:12px;"><span style="color:var(--muted);">🎯 Anúncio: </span><span style="color:var(--text-primary);font-weight:500;">${esc(j.utm_content)}</span></div>` : ''}
+                        ${j.utm_medium   ? `<div style="font-size:12px;"><span style="color:var(--muted);">🗂 Conjunto: </span><span style="color:#6366f1;font-weight:500;">${esc(j.utm_medium)}</span></div>` : ''}
+                        ${j.utm_campaign ? `<div style="font-size:12px;"><span style="color:var(--muted);">📣 Campanha: </span><span style="color:#3b82f6;font-weight:500;">${esc(j.utm_campaign)}</span></div>` : ''}
+                    ` : `<div style="font-size:12px;color:var(--muted);">Sem dados de anúncio</div>`}
+                    <div style="display:flex;gap:8px;margin-top:4px;flex-wrap:wrap;">
+                        <span style="font-size:11px;padding:2px 8px;border-radius:10px;background:var(--bg-primary);border:1px solid var(--border);color:${isV?'#10b981':'var(--muted)'};">${j.status||'Lead'}</span>
+                        ${j.valor_venda ? `<span style="font-size:11px;padding:2px 8px;border-radius:10px;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.2);color:#10b981;">💰 R$ ${parseFloat(j.valor_venda).toLocaleString('pt-BR',{minimumFractionDigits:2})}</span>` : ''}
+                        ${j.plataforma ? `<span style="font-size:11px;padding:2px 8px;border-radius:10px;background:var(--bg-primary);border:1px solid var(--border);color:var(--muted);">${j.plataforma}</span>` : ''}
+                    </div>
+                </div>
+            </div>
+        </div>`;
+    }).join('');
+
+    // ── Aba Venda ──
+    const diffResposta = lead.first_response_at && lead.created_at
+        ? (new Date(lead.first_response_at) - new Date(lead.created_at)) / 60000 : null;
+    const diffCiclo = lead.sale_closed_at && lead.created_at
+        ? (new Date(lead.sale_closed_at) - new Date(lead.created_at)) / 60000 : null;
+
+    $('lpCardResposta').textContent = lpFormatDuracao(diffResposta) || '—';
+    $('lpCardCiclo').textContent    = lpFormatDuracao(diffCiclo) || '—';
+    $('lpRowStatusVenda').innerHTML = lpRow('Status', status, badgeColor);
+    $('lpRowValor').innerHTML       = lpRow('Valor da venda', lead.valor_venda ? `R$ ${parseFloat(lead.valor_venda).toLocaleString('pt-BR',{minimumFractionDigits:2})}` : null, '#10b981');
+    $('lpRowProduto').innerHTML     = lpRow('Produto', lead.produto);
+    $('lpRowDataVenda').innerHTML   = lpRow('Data da venda', lpFormatData(lead.sale_closed_at));
+    $('lpRowQualificado').innerHTML = lpRow('Qualificado em', lpFormatData(lead.qualified_at));
+    $('lpSemVenda').style.display   = isVendido ? 'none' : 'block';
 }
 
