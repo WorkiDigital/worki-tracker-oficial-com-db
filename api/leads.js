@@ -41,7 +41,7 @@ export default async function handler(req, res) {
         // Colunas explícitas (evita SELECT * que puxava TEXT pesados como
         // event_source_url/anuncio_thumbnail_url). Inclui o que tabela, gráficos e CSV usam.
         const COLS = `id, nome, telefone, status, plataforma, instancia, event_time,
-            created_at, utm_campaign, utm_content, mensagem_recebida, valor_venda,
+            created_at, utm_campaign, utm_medium, utm_content, mensagem_recebida, valor_venda,
             lead_score, qualified_at, email, cpf, endereco, cidade, estado, produto,
             ctw_aci_id, cliente_id`;
 
