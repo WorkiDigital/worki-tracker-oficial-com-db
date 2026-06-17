@@ -29,7 +29,13 @@ async function main() {
   const row = rows[0];
   let token = row?.token_meta || null;
   if (row?.token_meta_enc) {
-    token = decryptToken(row.token_meta_enc);
+    try {
+      token = decryptToken(row.token_meta_enc);
+      console.log('✅ Token descriptografado com sucesso');
+    } catch (e) {
+      console.error('❌ Falha ao descriptografar token_meta_enc:', e.message);
+      console.log('⚠️  Usando token_meta como fallback:', token ? `...${token.slice(-6)}` : 'NULL');
+    }
   }
 
   console.log('Token encontrado:', token ? `...${token.slice(-6)}` : 'NULL');
