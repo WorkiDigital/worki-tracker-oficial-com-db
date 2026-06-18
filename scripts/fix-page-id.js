@@ -21,11 +21,14 @@ const pool = new Pool({
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
 });
 
-const INSTANCIA = process.env.FIX_INSTANCIA || null;
-const DAYS      = parseInt(process.env.FIX_DAYS || '10', 10);
-const DRY_RUN   = process.env.FIX_DRY_RUN === 'true';
-const GRAPH_VER = 'v25.0';
-const DELAY_MS  = 350;
+const INSTANCIA   = process.env.FIX_INSTANCIA || null;
+const DAYS        = parseInt(process.env.FIX_DAYS || '10', 10);
+const DRY_RUN     = process.env.FIX_DRY_RUN === 'true';
+// page_id forçado: usado quando a Graph API não retorna E não há page_id
+// dominante no banco (cliente novo). Descoberto via listar-pages-cliente.js.
+const FORCE_PAGEID = process.env.FIX_PAGEID || null;
+const GRAPH_VER   = 'v25.0';
+const DELAY_MS    = 350;
 
 function decryptToken(enc) {
   const key = Buffer.from(process.env.TOKEN_ENCRYPTION_KEY, 'hex');
@@ -163,6 +166,13 @@ async function main() {
         process.stdout.write(`[fallback] `);
         viaFallback++;
       }
+    }
+
+    // Passo 1c: page_id forçado via env (cliente sem nenhum page_id no banco)
+    if (!pageId && FORCE_PAGEID) {
+      pageId = FORCE_PAGEID;
+      process.stdout.write(`[forçado] `);
+      viaFallback++;
     }
 
     if (!pageId) {
