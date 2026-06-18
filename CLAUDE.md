@@ -223,3 +223,41 @@ Após migrar, limpar o campo legado: `UPDATE clientes SET token_meta = NULL;`
 - **Tabela de Leads**: coluna "Campanha / Anúncio" mostra campanha (negrito), conjunto (roxo `#6366f1`) e anúncio (cinza)
 - **Relatórios**: gráficos "Campanhas / Leads" e "Conjuntos / Leads" agrupam por `utm_campaign` e `utm_medium`
 - `api/leads.js` COLS deve incluir `utm_campaign`, `utm_medium`, `utm_content` — se faltar algum, o front não recebe o dado mesmo que esteja no banco
+
+## ⏱️ Primeira Resposta da Empresa (`first_response_at`) — fromMe
+
+O webhook (`api/webhook-evo.js`) **captura o momento em que a empresa responde** o lead. Antes, mensagens `fromMe: true` eram ignoradas e `first_response_at` ficava sempre NULL (card "Resposta Média" mostrava 0).
+
+### Como funciona agora
+Quando chega `key.fromMe === true`, o webhook NÃO cria lead — ele faz `UPDATE leads_tracking SET first_response_at = NOW()` no **lead mais recente daquele telefone que ainda está com `first_response_at` NULL**. A métrica "Resposta Média" = `AVG(first_response_at - created_at)` passa a funcionar.
+
+### ⚠️ ARMADILHA: a variável `instance` não existe no bloco fromMe
+O bloco `fromMe` roda **antes** da declaração de `instance` (que só acontece mais abaixo, na etapa 8). Por isso o bloco extrai a instância localmente como **`instanceFm`** (`body.instance || body.instanceName || ...`). NUNCA usar `instance` dentro do bloco fromMe — causa `ReferenceError` e derruba o webhook para toda mensagem enviada (bug já corrigido uma vez no commit `f017d31`).
+
+### ⚠️ PONTO DE ATENÇÃO: bot/saudação automática infla a métrica
+As instâncias têm **saudação automática/bot** antes do atendente humano. A Evolution **não fornece flag nativa** para distinguir bot de humano — ambos chegam como `fromMe: true`. Logo, `first_response_at` pode marcar o tempo do BOT (quase instantâneo), não do humano. Se a "Resposta Média" aparecer muito baixa (ex: segundos), é o bot. Refinamento futuro (não implementado): filtrar por texto fixo da saudação OU por heurística de tempo (ignorar respostas em < N segundos). Decisão pendente do cliente.
+
+## 🔧 Script `fix-page-id.js` — corrige page_id + reenvia CAPI
+
+`scripts/fix-page-id.js` — para leads com `page_id IS NULL` mas `source_id` preenchido:
+1. Busca `page_id` na Graph API (`/{sourceId}?fields=creative{object_story_spec{page_id}}`)
+2. Faz `UPDATE` no banco
+3. **Reenvia o evento `LeadSubmitted` para o CAPI** com o page_id correto (mesmo payload do `sendCapiLead`)
+
+```bash
+FIX_INSTANCIA=nome-instancia FIX_DAYS=10 FIX_DRY_RUN=true node -r dotenv/config scripts/fix-page-id.js
+```
+- Usa AES-256-GCM (igual `api/_crypto.js`), cache de token+pixel por cliente
+- "page_id não retornado" = anúncio deletado/sem permissão → sem solução
+- Já rodado: ~90 eventos LeadSubmitted reenviados (reidosofa, reidoscolchoes)
+
+### Log de page_id NULL no webhook
+O webhook agora grava em `webhook_logs` (tag `page_id_missing`) quando o page_id fica NULL — distingue "cliente sem token" de "Graph API não retornou". Visível na aba **Logs do Sistema**.
+
+## 👤 Drawer de Perfil do Lead (4 abas)
+
+Botão de perfil (ícone `user` roxo) em cada linha da tabela de leads abre um drawer lateral (`#leadProfileDrawer` no final do `<body>` do `index.html`). Endpoint: `api/lead-profile.js` (`GET /api/lead-profile?id=<leadId>`) retorna `{ lead, jornada }` — `jornada` = todos os registros do mesmo telefone+cliente ordenados por data.
+
+- **4 abas:** Perfil (dados pessoais + atendimento + 1ª mensagem), Anúncio (campanha/conjunto/anúncio + rastreamento), Jornada (timeline de todos os contatos via anúncio, com qual ad trouxe em cada vez), Venda (tempo até 1ª resposta, ciclo, valor, produto).
+- Lógica JS em `js/leads.js`: `abrirPerfilLead(leadId)`, `lpMudarTab(tab)`, `lpPreencherDados()`.
+- O drawer **deve ficar no final do `<body>`** (não dentro de container com `overflow:hidden`) senão o overlay escuro não cobre a tela.
