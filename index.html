@@ -1737,6 +1737,19 @@ async function authFetch(url, opts = {}) {
     return r;
 }
 
+async function readApiJson(response, fallbackMessage = 'Erro ao comunicar com o servidor') {
+    const contentType = response.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) {
+        throw new Error(`${fallbackMessage} (HTTP ${response.status})`);
+    }
+
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data?.error || `${fallbackMessage} (HTTP ${response.status})`);
+    }
+    return data;
+}
+
 async function authFetchJsonTimeout(url, ms = 30000) {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), ms);

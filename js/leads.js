@@ -29,8 +29,7 @@ async function recarregarLeads(silencioso = false) {
         }
 
         const resp = await authFetch(url + '?' + params.toString());
-        if (!resp.ok) throw new Error(`Falha ao buscar leads (HTTP ${resp.status})`);
-        const data = await resp.json();
+        const data = await readApiJson(resp, 'Falha ao buscar leads');
         if (!Array.isArray(data)) throw new Error(data.error || 'Resposta inesperada do servidor');
         rawData = data;
         // Registra qual período está de fato em rawData (usado por onPeriodoChange p/ decidir
@@ -67,8 +66,8 @@ async function carregarMetricasTemporais() {
             params.append('end', range[1].toISOString());
         }
 
-        const data = await authFetch(url + params.toString()).then(r => r.json());
-        if (data.error) return;
+        const response = await authFetch(url + params.toString());
+        const data = await readApiJson(response, 'Falha ao carregar métricas temporais');
 
         // Ciclo médio: usa o rótulo formatado pelo backend (h/min/dias conforme a escala).
         if ($('avgCycleDays')) $('avgCycleDays').textContent = data.avgCycleLabel?.value ?? data.avgCycleDays;
