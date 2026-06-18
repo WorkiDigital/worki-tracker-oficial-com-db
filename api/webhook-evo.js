@@ -223,14 +223,19 @@ export default async function handler(req, res) {
           utm_medium   = adInfo.adset_name;
           utm_content  = adInfo.ad_name;
           console.log(`[webhook-evo] ad info obtida: ${utm_campaign} / ${utm_medium} / ${utm_content}`);
-        } else if (!page_id) {
-          // Token OK mas Graph API não retornou dados
+        }
+        // Loga sempre que page_id continuar NULL — mesmo que adInfo tenha vindo
+        // com UTMs (anúncio sem object_story_spec.page_id acessível).
+        if (!page_id) {
+          const motivo = adInfo
+            ? 'page_id NULL — anúncio sem object_story_spec.page_id'
+            : 'page_id NULL — Graph API não retornou';
           try {
             await pool.query(
               `INSERT INTO webhook_logs (cliente_id, instance, tag, level, message, data)
                VALUES ($1, $2, 'page_id_missing', 'warn', $3, $4)`,
-              [cliente_id, instance, `page_id NULL — Graph API não retornou (sourceId: ${sourceId})`,
-               JSON.stringify({ sourceId, telefone })]
+              [cliente_id, instance, `${motivo} (sourceId: ${sourceId})`,
+               JSON.stringify({ sourceId, telefone, temUtm: !!(adInfo?.campaign_name) })]
             );
           } catch (_) {}
         }

@@ -67,6 +67,23 @@ async function fetchPageId(sourceId, token) {
   return data.creative?.object_story_spec?.page_id || null;
 }
 
+// Fallback: page_id mais frequente dos outros leads do mesmo cliente.
+// O page_id é o ID da página do FB/IG — normalmente o mesmo em todos os anúncios
+// de um cliente. Mesmo padrão do resolvePageId em api/leads-update.js.
+const pageIdDominanteCache = {};
+async function getPageIdDominante(clienteId) {
+  if (clienteId in pageIdDominanteCache) return pageIdDominanteCache[clienteId];
+  const r = await pool.query(
+    `SELECT page_id FROM leads_tracking
+     WHERE cliente_id = $1 AND page_id IS NOT NULL AND page_id <> ''
+     GROUP BY page_id ORDER BY COUNT(*) DESC LIMIT 1`,
+    [clienteId]
+  );
+  const val = r.rows[0]?.page_id || null;
+  pageIdDominanteCache[clienteId] = val;
+  return val;
+}
+
 const hash = str => crypto.createHash('sha256').update((str || '').toLowerCase().trim()).digest('hex');
 
 async function enviarCapiLead(lead, pixel, token, pageId) {
@@ -119,7 +136,7 @@ async function main() {
   console.log(`📋 ${leads.length} leads para corrigir\n`);
   if (!leads.length) { await pool.end(); return; }
 
-  let fixados = 0, capiOk = 0, capiErr = 0, semDados = 0, semToken = 0;
+  let fixados = 0, capiOk = 0, capiErr = 0, semDados = 0, semToken = 0, viaFallback = 0;
 
   for (const lead of leads) {
     process.stdout.write(`  Lead #${lead.id} (${lead.nome || '?'} — ${lead.instancia}) ... `);
@@ -136,10 +153,20 @@ async function main() {
       continue;
     }
 
-    // Passo 1: buscar page_id
-    const pageId = await fetchPageId(lead.source_id, cli.token);
+    // Passo 1: buscar page_id na Graph API
+    let pageId = await fetchPageId(lead.source_id, cli.token);
+
+    // Passo 1b: fallback — page_id dominante do cliente (é o mesmo em todos os anúncios)
     if (!pageId) {
-      console.log('— page_id não retornado');
+      pageId = await getPageIdDominante(lead.cliente_id);
+      if (pageId) {
+        process.stdout.write(`[fallback] `);
+        viaFallback++;
+      }
+    }
+
+    if (!pageId) {
+      console.log('— page_id não retornado (nem fallback)');
       semDados++;
       await sleep(DELAY_MS);
       continue;
@@ -174,7 +201,7 @@ async function main() {
   }
 
   console.log('\n── Resultado ──────────────────────────');
-  console.log(`✅ page_id corrigidos : ${fixados}`);
+  console.log(`✅ page_id corrigidos : ${fixados}  (${viaFallback} via fallback do cliente)`);
   console.log(`✅ CAPI aceitos       : ${capiOk}`);
   console.log(`❌ CAPI rejeitados    : ${capiErr}`);
   console.log(`⚠️  Sem dados (Meta)  : ${semDados}`);
