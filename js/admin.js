@@ -564,7 +564,7 @@ async function showLogDetail(id) {
                 <span style="font-weight:600;font-size:14px;color:var(--text);">Log ID #${id} - Detalhes Completos</span>
                 <button onclick="this.closest('[style*=fixed]').remove()" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:24px;">&times;</button>
             </div>
-            <div id="modal-log-content" style="overflow:auto;padding:20px;margin:0;font-size:12px;color:var(--text);white-space:pre-wrap;word-break:break-all;background:#0f172a;">
+            <div id="modal-log-content" style="overflow:auto;padding:20px;margin:0;font-size:12px;color:#e2e8f0;white-space:pre-wrap;word-break:break-all;background:#0f172a;">
                 <div style="text-align:center;padding:40px;color:var(--muted);">
                     <div class="spinner" style="margin-bottom:10px;"></div>
                     Buscando payload completo...
@@ -577,13 +577,48 @@ async function showLogDetail(id) {
         const r = await authFetch(`/api/logs/${id}`);
         const log = await r.json();
         const contentEl = document.getElementById('modal-log-content');
-        if (log && log.data) {
-            contentEl.innerHTML = `<pre style="margin:0;font-family:'Fira Code', monospace;line-height:1.5;">${esc(JSON.stringify(log.data, null, 2))}</pre>`;
-        } else {
-            contentEl.innerHTML = '<div style="text-align:center;padding:20px;color:#ef4444;">Erro ao recuperar dados originais do log.</div>';
+        if (!contentEl) return;
+
+        if (!r.ok || !log || log.error) {
+            contentEl.innerHTML = `<div style="text-align:center;padding:20px;color:#ef4444;">${esc(log?.error || 'Erro ao recuperar o log.')}</div>`;
+            return;
         }
+
+        // Cabeçalho com os campos do log. `data` pode vir NULL/vazio — nesse caso
+        // ainda mostramos os demais campos (antes a tela ficava preta/vazia).
+        const linhas = [];
+        if (log.created_at) linhas.push(`Data:      ${log.created_at}`);
+        if (log.instance)   linhas.push(`Instância: ${log.instance}`);
+        if (log.tag)        linhas.push(`Tag:       ${log.tag}`);
+        if (log.level)      linhas.push(`Nível:     ${log.level}`);
+        if (log.message)    linhas.push(`Mensagem:  ${log.message}`);
+
+        // Normaliza o `data`: pode ser objeto, string JSON ou NULL.
+        let dataStr = '';
+        if (log.data != null && log.data !== '') {
+            try {
+                const parsed = typeof log.data === 'string' ? JSON.parse(log.data) : log.data;
+                dataStr = JSON.stringify(parsed, null, 2);
+            } catch {
+                dataStr = String(log.data);
+            }
+        }
+
+        let html = '';
+        if (linhas.length) {
+            html += `<pre style="margin:0 0 14px;color:#94a3b8;font-family:'Fira Code',monospace;line-height:1.6;">${esc(linhas.join('\n'))}</pre>`;
+        }
+        if (dataStr) {
+            html += `<div style="color:#64748b;font-size:11px;margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em;">Payload</div>`;
+            html += `<pre style="margin:0;color:#e2e8f0;font-family:'Fira Code',monospace;line-height:1.5;">${esc(dataStr)}</pre>`;
+        } else if (!linhas.length) {
+            html = '<div style="text-align:center;padding:20px;color:var(--muted);">Este log não tem detalhes adicionais.</div>';
+        }
+        contentEl.innerHTML = html;
     } catch(e) {
-        toast('Erro ao carregar detalhes', 'error');
+        const contentEl = document.getElementById('modal-log-content');
+        if (contentEl) contentEl.innerHTML = `<div style="text-align:center;padding:20px;color:#ef4444;">Erro ao carregar: ${esc(e.message)}</div>`;
+        else toast('Erro ao carregar detalhes', 'error');
     }
 }
 
