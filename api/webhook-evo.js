@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import { cors } from './_cors.js';
 import { decryptToken } from './_crypto.js';
 import { decodeToken } from './_invisible-token.js';
+import { ensureTrackingSchema } from './_tracking-schema.js';
 import { log } from './_logger.js';
 
 // ── Handler principal — recebe payload bruto da Evolution API ──
@@ -192,6 +193,13 @@ export default async function handler(req, res) {
       error: 'Instância não reconhecida. Vincule-a a um cliente no painel.',
       instance
     });
+  }
+
+  try {
+    await ensureTrackingSchema();
+  } catch (e) {
+    log('error', 'webhook_evo_tracking_schema_fail', { error: e.message });
+    return res.status(500).json({ error: 'Falha ao preparar estrutura de captação.' });
   }
 
   // ── 10. Classificação de origem (captura configurável + link rastreável) ──

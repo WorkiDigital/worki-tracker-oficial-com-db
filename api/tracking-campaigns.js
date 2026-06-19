@@ -1,6 +1,7 @@
 import { verifyAuth } from './_auth.js';
 import { getPool } from './_db.js';
 import { cors } from './_cors.js';
+import { ensureTrackingSchema } from './_tracking-schema.js';
 
 // CRUD de campanhas/links rastreáveis + seus destinos (rotador).
 // Isolamento multi-tenant por cliente_id (admin pode passar cliente_id).
@@ -98,6 +99,7 @@ export default async function handler(req, res) {
   const user = await verifyAuth(req, res);
   if (!user) return;
 
+  await ensureTrackingSchema();
   const pool = getPool();
   const alvoCliente = (val) => user.is_admin ? (val ? parseInt(val, 10) : user.cliente_id) : user.cliente_id;
 

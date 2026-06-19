@@ -363,6 +363,17 @@ Depois confirmar nos logs as mensagens de criação das tabelas Fase 1/Fase 2.
 
 `api/leads.js` e `api/lead-profile.js` possuem fallback temporário para o formato anterior caso o código reinicie antes da migração. Isso evita derrubar a tela principal, mas a aba Captação e Links só funciona depois da criação das tabelas.
 
+### Bootstrap automático do schema
+Após um terminal do EasyPanel executar uma versão antiga de `setup-db.js`, as APIs novas retornaram `500` por ausência das tabelas. Para não depender mais da ordem manual deploy → terminal → migração:
+
+- `api/_tracking-schema.js` garante o schema na primeira chamada;
+- usa `pg_advisory_xact_lock` para impedir migrações concorrentes entre containers;
+- é idempotente (`IF NOT EXISTS`);
+- é chamado pelas APIs de campanhas, métricas, captura, redirecionamento e webhook;
+- se a primeira tentativa falhar, a promise é liberada para permitir nova tentativa.
+
+`node setup-db.js` continua válido para preparação explícita, mas não é mais obrigatório para recuperar um deploy novo.
+
 ### Validações concluídas
 - Sintaxe Node aprovada em backend, frontend e `setup-db.js`.
 - Round-trip do token através de `encodeURIComponent`/`decodeURIComponent` aprovado.

@@ -1,6 +1,7 @@
 import { verifyAuth } from './_auth.js';
 import { getPool } from './_db.js';
 import { cors } from './_cors.js';
+import { ensureTrackingSchema } from './_tracking-schema.js';
 
 // Config de captura de leads por instância (ctwa_only | all | keyword).
 // Padrão multi-tenant: usuário comum só mexe nas configs do próprio cliente_id;
@@ -11,6 +12,7 @@ export default async function handler(req, res) {
   const user = await verifyAuth(req, res);
   if (!user) return;
 
+  await ensureTrackingSchema();
   const pool = getPool();
   const method = req.method;
 

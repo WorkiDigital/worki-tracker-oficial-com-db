@@ -14,6 +14,7 @@
 import { getPool } from './_db.js';
 import { selecionarDestino } from './_rotator.js';
 import { encodeToken } from './_invisible-token.js';
+import { ensureTrackingSchema } from './_tracking-schema.js';
 import crypto from 'crypto';
 
 function gerarTrackingId() {
@@ -41,6 +42,7 @@ export default async function handler(req, res) {
     return res.end('Link inválido.');
   }
 
+  await ensureTrackingSchema();
   const pool = getPool();
   const client = await pool.connect();
   try {

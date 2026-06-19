@@ -1,6 +1,7 @@
 import { verifyAuth } from './_auth.js';
 import { getPool } from './_db.js';
 import { cors } from './_cors.js';
+import { ensureTrackingSchema } from './_tracking-schema.js';
 
 // Métricas dos links rastreáveis: cliques, conversões, taxa, distribuição por número.
 export default async function handler(req, res) {
@@ -8,6 +9,7 @@ export default async function handler(req, res) {
   const user = await verifyAuth(req, res);
   if (!user) return;
 
+  await ensureTrackingSchema();
   const pool = getPool();
   const cliente_id = user.is_admin ? (req.query.cliente_id || user.cliente_id) : user.cliente_id;
   const campaignId = req.query.campaign_id || null;
