@@ -5,6 +5,7 @@
 let _capCampanhas   = [];   // cache da listagem
 let _capEditId      = null; // id da campanha em edição (null = criação)
 let _capDestinos    = [];   // destinos no modal (array mutável)
+let _capInstancias  = [];   // instâncias Evolution vinculadas ao cliente
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 const baseUrl = () => window.location.origin;
@@ -258,6 +259,7 @@ async function abrirModalCampanha(id) {
   }
   _capEditId  = id || null;
   _capDestinos = [];
+  _capInstancias = [];
 
   // Reset form
   ['capNome','capSlug','capMensagem','capUtmSource','capUtmMedium','capUtmCampaign'].forEach(i => {
@@ -294,6 +296,7 @@ async function abrirModalCampanha(id) {
     $('btnSalvarCampanha').textContent = 'Criar link';
   }
 
+  await capCarregarInstancias();
   capRenderDestinos();
   capToggleModo();
   $('modalCampanha').classList.add('open');
@@ -350,6 +353,40 @@ function capToggleModo() {
 }
 
 // ── Destinos no Modal ──────────────────────────────────────────────────────────
+async function capCarregarInstancias() {
+  const select = $('capNovaInstancia');
+  if (!select) return;
+  select.disabled = true;
+  select.innerHTML = '<option value="">Carregando instâncias…</option>';
+  try {
+    const clienteId = capClienteId();
+    const params = capUsuario().is_admin && clienteId ? { target_cliente_id: clienteId } : {};
+    const r = await authFetch(capUrlApi('/api/evo-manager', { action: 'list', ...params }));
+    _capInstancias = await readApiJson(r, 'Falha ao carregar instâncias');
+    _capInstancias = (_capInstancias || []).filter(i => i.fullName);
+    select.innerHTML = '<option value="">Selecione a instância</option>' + _capInstancias.map(i => {
+      const estado = i.state === 'open' ? 'conectada' : (i.state || 'desconhecida');
+      const numero = i.whatsapp_number ? ` — ${i.whatsapp_number}` : '';
+      return `<option value="${esc(i.fullName)}">${esc(i.displayName || i.fullName)}${numero} (${esc(estado)})</option>`;
+    }).join('');
+    if (!_capInstancias.length) {
+      select.innerHTML = '<option value="">Nenhuma instância vinculada</option>';
+    }
+  } catch (e) {
+    select.innerHTML = '<option value="">Erro ao carregar instâncias</option>';
+    toast('Erro ao carregar instâncias: ' + e.message, 'error');
+  } finally {
+    select.disabled = false;
+  }
+}
+
+function capSelecionarInstancia() {
+  const nome = $('capNovaInstancia')?.value || '';
+  const instancia = _capInstancias.find(i => i.fullName === nome);
+  const numEl = $('capNovoNumero');
+  if (instancia?.whatsapp_number && numEl) numEl.value = instancia.whatsapp_number;
+}
+
 function capRenderDestinos() {
   const lista = $('capDestinosLista');
   if (!lista) return;
@@ -367,6 +404,7 @@ function capRenderDestinos() {
       <thead>
         <tr style="color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--border);">
           <th style="padding:6px 8px;text-align:left;">Número</th>
+          <th style="padding:6px 8px;text-align:left;">Instância</th>
           <th style="padding:6px 8px;text-align:left;">Nome</th>
           <th id="capPesoTh" style="padding:6px 8px;text-align:center;display:${modo === 'weighted' ? '' : 'none'};">Peso</th>
           <th style="padding:6px 8px;text-align:center;">Ativo</th>
@@ -377,6 +415,7 @@ function capRenderDestinos() {
         ${_capDestinos.map((d, i) => `
           <tr style="border-bottom:1px solid var(--border);">
             <td style="padding:6px 8px;font-family:monospace;font-size:12px;">${esc(d.whatsapp_number || '')}</td>
+            <td style="padding:6px 8px;color:${d.instance_name ? 'var(--text)' : 'var(--red)'};font-size:11px;">${esc(d.instance_name || 'Vínculo pendente')}</td>
             <td style="padding:6px 8px;color:var(--muted);">${esc(d.name || '—')}</td>
             <td class="cap-peso-cel" style="padding:6px 8px;text-align:center;display:${modo === 'weighted' ? '' : 'none'};">
               <input type="number" min="1" max="100" value="${d.weight || 1}"
@@ -400,9 +439,15 @@ function capRenderDestinos() {
 }
 
 function capAdicionarDestino() {
+  const instanciaEl = $('capNovaInstancia');
   const numEl = $('capNovoNumero');
   const nomeEl = $('capNovoNome');
+  const instance_name = instanciaEl?.value || '';
   const numero = (numEl?.value || '').replace(/\D/g, '').trim();
+  if (!instance_name) {
+    toast('Selecione a instância vinculada a este número.', 'error');
+    return;
+  }
   if (numero.length < 8 || numero.length > 15) {
     toast('Informe o número com país e DDD, usando de 8 a 15 dígitos.', 'error');
     return;
@@ -411,9 +456,14 @@ function capAdicionarDestino() {
     toast('Este número já foi adicionado.', 'error');
     return;
   }
+  if (_capDestinos.some(d => d.instance_name === instance_name)) {
+    toast('Esta instância já foi adicionada.', 'error');
+    return;
+  }
 
   _capDestinos.push({
     whatsapp_number: numero,
+    instance_name,
     name: nomeEl?.value.trim() || null,
     weight: 1,
     enabled: true,
@@ -421,6 +471,7 @@ function capAdicionarDestino() {
 
   if (numEl)  numEl.value  = '';
   if (nomeEl) nomeEl.value = '';
+  if (instanciaEl) instanciaEl.value = '';
   capRenderDestinos();
   capToggleModo();
   lucide.createIcons({ nodes: [$('modalCampanha')] });
@@ -439,6 +490,7 @@ async function salvarCampanha() {
   const slug = capNormalizarSlug($('capSlug')?.value);
   if (!slug) { toast('O identificador da URL é obrigatório.', 'error'); return; }
   if (!_capDestinos.length) { toast('Adicione pelo menos um número de destino.', 'error'); return; }
+  if (_capDestinos.some(d => !d.instance_name)) { toast('Todos os destinos precisam estar vinculados a uma instância.', 'error'); return; }
   if (!_capDestinos.some(d => d.enabled !== false)) { toast('Mantenha ao menos um destino ativo.', 'error'); return; }
   if (($('capModo')?.value || 'single') === 'single' && _capDestinos.filter(d => d.enabled !== false).length !== 1) {
     toast('No modo destino único, mantenha exatamente um número ativo.', 'error');

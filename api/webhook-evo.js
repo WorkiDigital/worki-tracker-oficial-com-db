@@ -215,15 +215,18 @@ export default async function handler(req, res) {
     if (clickTrackingId) {
       try {
         const tokenRes = await getPool().query(
-          `SELECT k.id, k.tracking_id, k.campaign_id, c.origin_type
+          `SELECT k.id, k.tracking_id, k.campaign_id, c.origin_type,
+                  COALESCE(k.instance_name, d.instance_name) AS instance_name
            FROM tracking_clicks k
            JOIN tracking_campaigns c ON c.id = k.campaign_id
+           LEFT JOIN tracking_destinations d ON d.id = k.destination_id
            WHERE k.tracking_id=$1 AND k.cliente_id=$2
+             AND COALESCE(k.instance_name, d.instance_name)=$3
              AND k.status='clicked' AND k.converted_at IS NULL
              AND c.enabled=true
              AND (k.expires_at IS NULL OR k.expires_at > NOW())
            LIMIT 1`,
-          [clickTrackingId, cliente_id]
+          [clickTrackingId, cliente_id, instance]
         );
         trackedClick = tokenRes.rows[0] || null;
       } catch (e) {
@@ -385,7 +388,7 @@ export default async function handler(req, res) {
     // ser salvo como orgânico conforme a configuração, mas não recebe campanha.
     if (trackedClick) {
       const atr = await atribuirClique(pool, {
-        cliente_id, lead_id: lead.id, clickTrackingId, tracking_method
+        cliente_id, lead_id: lead.id, clickTrackingId, tracking_method, instance
       });
       if (!atr) {
         await pool.query('DELETE FROM leads_tracking WHERE id=$1', [lead.id]);
@@ -534,16 +537,19 @@ function mensagemBateKeyword(mensagem, cfg) {
 
 // Atribui um lead a um clique de link rastreável pelo token exato.
 // Um clique só converte para UM lead (guard: status='clicked' AND converted_at IS NULL).
-async function atribuirClique(pool, { cliente_id, lead_id, clickTrackingId, tracking_method }) {
+async function atribuirClique(pool, { cliente_id, lead_id, clickTrackingId, tracking_method, instance }) {
   if (!clickTrackingId) return null;
   const r = await pool.query(
-    `UPDATE tracking_clicks
+    `UPDATE tracking_clicks k
      SET status='converted', converted_at=NOW(), lead_id=$1
      WHERE tracking_id=$2 AND cliente_id=$3
+       AND COALESCE(k.instance_name, (
+         SELECT d.instance_name FROM tracking_destinations d WHERE d.id=k.destination_id
+       ))=$4
        AND status='clicked' AND converted_at IS NULL
        AND (expires_at IS NULL OR expires_at > NOW())
      RETURNING id, campaign_id, utm_source, utm_campaign, utm_medium`,
-    [lead_id, clickTrackingId, cliente_id]
+    [lead_id, clickTrackingId, cliente_id, instance]
   );
   if (r.rows.length) {
     const c = r.rows[0];

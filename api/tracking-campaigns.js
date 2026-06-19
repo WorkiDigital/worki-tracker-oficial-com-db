@@ -15,20 +15,29 @@ const normalizarSlug = (s) => (s || '')
 function normalizarDestinos(destinations) {
   if (!Array.isArray(destinations)) return null;
   const vistos = new Set();
+  const instanciasVistas = new Set();
   const normalizados = destinations.map((d, position) => {
     const whatsapp_number = String(d.whatsapp_number || '').replace(/\D/g, '');
+    const instance_name = String(d.instance_name || '').trim().slice(0, 100);
     if (whatsapp_number.length < 8 || whatsapp_number.length > 15) {
       throw new Error(`Número de WhatsApp inválido na posição ${position + 1}.`);
     }
     if (vistos.has(whatsapp_number)) {
       throw new Error(`Número de WhatsApp duplicado: ${whatsapp_number}.`);
     }
+    if (!instance_name) {
+      throw new Error(`Selecione a instância do destino na posição ${position + 1}.`);
+    }
+    if (instanciasVistas.has(instance_name)) {
+      throw new Error(`Instância duplicada: ${instance_name}.`);
+    }
     vistos.add(whatsapp_number);
+    instanciasVistas.add(instance_name);
     return {
       id: Number.isInteger(Number(d.id)) ? Number(d.id) : null,
       name: String(d.name || '').trim().slice(0, 120) || null,
       whatsapp_number,
-      instance_name: String(d.instance_name || '').trim().slice(0, 100) || null,
+      instance_name,
       weight: Math.min(100, Math.max(1, parseInt(d.weight, 10) || 1)),
       position,
       enabled: d.enabled !== false,
@@ -45,9 +54,26 @@ function validarDestinosPorModo(destinations, rotationMode) {
   }
 }
 
+async function validarInstanciasDoCliente(client, clienteId, destinations) {
+  const nomes = [...new Set(destinations.map(d => d.instance_name))];
+  const prefix = `cliente_${clienteId}_`;
+  const mapeadas = await client.query(
+    `SELECT instance_name
+     FROM instancias_mapeamento
+     WHERE cliente_id=$1 AND instance_name = ANY($2::text[])`,
+    [clienteId, nomes]
+  );
+  const permitidas = new Set(mapeadas.rows.map(r => r.instance_name));
+  const invalidas = nomes.filter(nome => !permitidas.has(nome) && !nome.startsWith(prefix));
+  if (invalidas.length) {
+    throw new Error(`Instância não vinculada a este cliente: ${invalidas.join(', ')}.`);
+  }
+}
+
 async function sincronizarDestinos(client, campaignId, clienteId, destinations) {
   const normalizados = normalizarDestinos(destinations);
   if (!normalizados) return;
+  await validarInstanciasDoCliente(client, clienteId, normalizados);
 
   const existentes = await client.query(
     'SELECT id FROM tracking_destinations WHERE campaign_id=$1 AND cliente_id=$2 FOR UPDATE',

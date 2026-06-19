@@ -82,11 +82,11 @@ export default async function handler(req, res) {
       `INSERT INTO tracking_clicks
         (tracking_id, campaign_id, destination_id, cliente_id, status,
          utm_source, utm_medium, utm_campaign, referrer, ip_address, user_agent,
-         whatsapp_number, expires_at)
-       VALUES ($1,$2,$3,$4,'clicked',$5,$6,$7,$8,$9,$10,$11, NOW() + INTERVAL '72 hours')`,
+         whatsapp_number, instance_name, expires_at)
+       VALUES ($1,$2,$3,$4,'clicked',$5,$6,$7,$8,$9,$10,$11,$12, NOW() + INTERVAL '72 hours')`,
       [trackingId, campaign.id, destino.id, campaign.cliente_id,
        utm_source, utm_medium, utm_campaign, referrer, ip, userAgent,
-       destino.whatsapp_number]
+       destino.whatsapp_number, destino.instance_name]
     );
 
     await client.query('COMMIT');

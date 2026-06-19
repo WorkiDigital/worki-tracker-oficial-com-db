@@ -3,6 +3,18 @@ import { getPool } from './_db.js';
 import { cors } from './_cors.js';
 import { rateLimit } from './_rate-limit.js';
 
+function getInstanceName(i) {
+  return i?.instance?.instanceName || i?.instanceName || i?.name || '';
+}
+
+function getInstancePhone(i) {
+  const raw = i?.instance?.ownerJid || i?.ownerJid
+    || i?.instance?.number || i?.number
+    || i?.instance?.wuid || i?.wuid || '';
+  const digits = String(raw).split('@')[0].replace(/\D/g, '');
+  return digits.length >= 8 && digits.length <= 15 ? digits : null;
+}
+
 export default async function handler(req, res) {
   if (cors(req, res, ['POST', 'GET'])) return;
 
@@ -46,31 +58,33 @@ export default async function handler(req, res) {
 
         // Instâncias com prefixo do usuário
         const myInstances = instances.filter(i => {
-           const name = i.instance?.instanceName || i.instanceName || i.name;
+           const name = getInstanceName(i);
            return name && String(name).startsWith(prefix);
         }).map(i => {
-           const name = i.instance?.instanceName || i.instanceName || i.name;
+           const name = getInstanceName(i);
            const rawState = i.instance?.state || i.instance?.connectionStatus || i.instance?.status || i.state || i.connectionStatus || i.status || '';
            const state = CONNECTED.includes(rawState) ? 'open' : rawState;
            // Extrai cliente_id do prefixo cliente_N_
            const prefixMatch = name.match(/^cliente_(\d+)_/);
            const cliente_id = prefixMatch ? parseInt(prefixMatch[1]) : null;
-           return { fullName: name, displayName: name.replace(prefix, ''), state, linked: false, cliente_id };
+           return { fullName: name, displayName: name.replace(prefix, ''), state, linked: false, cliente_id, whatsapp_number: getInstancePhone(i) };
         });
 
         // Busca instâncias vinculadas via tabela de mapeamento (admin: todas; cliente: só as suas)
         try {
             const pool = getPool();
             const mapped = user.is_admin
-                ? await pool.query('SELECT instance_name, cliente_id FROM instancias_mapeamento')
+                ? (targetClienteId
+                    ? await pool.query('SELECT instance_name, cliente_id FROM instancias_mapeamento WHERE cliente_id = $1', [targetClienteId])
+                    : await pool.query('SELECT instance_name, cliente_id FROM instancias_mapeamento'))
                 : await pool.query('SELECT instance_name, cliente_id FROM instancias_mapeamento WHERE cliente_id = $1', [user.cliente_id]);
 
             for (const row of mapped.rows) {
                     if (myInstances.find(i => i.fullName === row.instance_name)) continue; // já listada
-                    const evoInst = instances.find(i => (i.instance?.instanceName || i.instanceName || i.name) === row.instance_name);
+                    const evoInst = instances.find(i => getInstanceName(i) === row.instance_name);
                     const rawState = evoInst ? (evoInst.instance?.state || evoInst.instance?.connectionStatus || evoInst.instance?.status || evoInst.state || evoInst.connectionStatus || '') : 'unknown';
                     const state = CONNECTED.includes(rawState) ? 'open' : rawState;
-                    myInstances.push({ fullName: row.instance_name, displayName: row.instance_name, state, linked: true, cliente_id: row.cliente_id });
+                    myInstances.push({ fullName: row.instance_name, displayName: row.instance_name, state, linked: true, cliente_id: row.cliente_id, whatsapp_number: getInstancePhone(evoInst) });
                 }
 
                 // Busca nomes dos clientes para agrupamento
@@ -194,6 +208,17 @@ export default async function handler(req, res) {
         console.log(`[evo-manager] Webhook set para ${finalInstanceName} (${wRes.status}):`, JSON.stringify(wData));
       } else {
         console.warn('[evo-manager] WEBHOOK_URL não definida — webhook não configurado');
+      }
+
+      const ownerClienteId = user.is_admin ? Number(targetClienteId) : Number(user.cliente_id);
+      if (ownerClienteId) {
+        const pool = getPool();
+        await pool.query(
+          `INSERT INTO instancias_mapeamento (instance_name, cliente_id)
+           VALUES ($1, $2)
+           ON CONFLICT (instance_name) DO UPDATE SET cliente_id=EXCLUDED.cliente_id`,
+          [finalInstanceName, ownerClienteId]
+        );
       }
 
       const rQR = await fetch(`${EVO_URL}/instance/connect/${finalInstanceName}`, { headers });

@@ -312,6 +312,7 @@ async function setup() {
           ip_address VARCHAR(64),
           user_agent TEXT,
           whatsapp_number VARCHAR(30),
+          instance_name VARCHAR(100),
           clicked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           expires_at TIMESTAMP,
           converted_at TIMESTAMP,
@@ -319,6 +320,9 @@ async function setup() {
       );
     `);
     await client.query(`
+      ALTER TABLE public.tracking_clicks
+      ADD COLUMN IF NOT EXISTS instance_name VARCHAR(100);
+
       CREATE INDEX IF NOT EXISTS idx_tracking_campaigns_cliente ON public.tracking_campaigns(cliente_id);
       CREATE INDEX IF NOT EXISTS idx_tracking_dest_campaign ON public.tracking_destinations(campaign_id);
       CREATE INDEX IF NOT EXISTS idx_tracking_clicks_campaign ON public.tracking_clicks(campaign_id, clicked_at DESC);

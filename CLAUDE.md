@@ -344,6 +344,9 @@ Botão de perfil (ícone `user` roxo) em cada linha da tabela de leads abre um d
 - Não existe atribuição automática por proximidade de horário. Sem token válido, o lead pode entrar como orgânico conforme a configuração da instância, mas não recebe campanha.
 - Origens possíveis: `ctwa`, `organic`, `bio`, `campaign_link` e `rotator`.
 - Um clique só pode ser associado a um lead, protegido por status transacional e índice único em `leads_tracking.tracking_click_id`.
+- Cada destino do rotador deve estar vinculado a uma instância Evolution do mesmo cliente.
+- O clique grava `instance_name`, e o webhook só aceita/converte o token quando a mensagem retorna pela mesma instância escolhida no redirecionamento.
+- Instâncias novas passam a ser registradas automaticamente em `instancias_mapeamento`.
 
 ### Banco e ativação em produção
 As novas tabelas/colunas são criadas por `setup-db.js`:

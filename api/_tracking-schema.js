@@ -73,6 +73,7 @@ async function createTrackingSchema() {
         ip_address VARCHAR(64),
         user_agent TEXT,
         whatsapp_number VARCHAR(30),
+        instance_name VARCHAR(100),
         clicked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         expires_at TIMESTAMP,
         converted_at TIMESTAMP,
@@ -83,6 +84,9 @@ async function createTrackingSchema() {
       ADD COLUMN IF NOT EXISTS tracking_click_id INTEGER REFERENCES public.tracking_clicks(id) ON DELETE SET NULL,
       ADD COLUMN IF NOT EXISTS tracking_campaign_id INTEGER REFERENCES public.tracking_campaigns(id) ON DELETE SET NULL,
       ADD COLUMN IF NOT EXISTS tracking_method VARCHAR(20);
+
+      ALTER TABLE public.tracking_clicks
+      ADD COLUMN IF NOT EXISTS instance_name VARCHAR(100);
 
       CREATE INDEX IF NOT EXISTS idx_capture_cliente_instance
         ON public.lead_capture_settings(cliente_id, instance_name);
