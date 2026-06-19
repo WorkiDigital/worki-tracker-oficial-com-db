@@ -109,6 +109,20 @@ async function setup() {
     `);
     console.log('✅ Colunas "permissoes" e "account_id" injetadas na tabela "clientes".');
 
+    // Pixel + Token de API CAPI dedicados ao canal WEB (redirecionador de link, Fase 2).
+    // Distintos de token_meta_enc/pixel_padrao (canal business_messaging/WhatsApp):
+    // o token aqui é o gerado em Eventos Manager > Conjuntos de Dados > Conversions API.
+    // Usado p/ eventos web (PageView, Contact) que exigem URL/IP/user-agent — proibidos
+    // no canal de mensagem. Criptografado em AES-256-GCM (igual api/_crypto.js).
+    await client.query(`
+      ALTER TABLE public.clientes
+      ADD COLUMN IF NOT EXISTS capi_pixel_id         VARCHAR(255),
+      ADD COLUMN IF NOT EXISTS capi_token_enc        BYTEA,
+      ADD COLUMN IF NOT EXISTS capi_token_last4      VARCHAR(6),
+      ADD COLUMN IF NOT EXISTS capi_token_updated_at TIMESTAMP;
+    `);
+    console.log('✅ Colunas CAPI web (capi_pixel_id, capi_token_enc, ...) injetadas na tabela "clientes".');
+
     // Criação da tabela de Tokens de Compartilhamento
     await client.query(`
       CREATE TABLE IF NOT EXISTS public.share_tokens (
