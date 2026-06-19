@@ -2,6 +2,7 @@ import { getPool } from './_db.js';
 import crypto from 'crypto';
 import { cors } from './_cors.js';
 import { decryptToken } from './_crypto.js';
+import { decodeToken } from './_invisible-token.js';
 import { log } from './_logger.js';
 
 // ── Handler principal — recebe payload bruto da Evolution API ──
@@ -102,7 +103,7 @@ export default async function handler(req, res) {
   }
 
   // ── 6. Extrair texto da mensagem ──
-  const mensagem_recebida =
+  const mensagem_bruta =
     message.conversation ||
     message.extendedTextMessage?.text ||
     message.imageMessage?.caption ||
@@ -111,6 +112,11 @@ export default async function handler(req, res) {
     message.buttonsResponseMessage?.selectedDisplayText ||
     message.listResponseMessage?.title ||
     '';
+
+  // ── 6b. Decodificar token invisível (link rastreável, Fase 2) ──
+  // Extrai o tracking_id (se houver) e limpa o bloco invisível da mensagem.
+  // A mensagem salva/exibida é a versão limpa.
+  const { trackingId: clickTrackingId, cleanMessage: mensagem_recebida } = decodeToken(mensagem_bruta);
 
   // ── 7. Extrair dados CTWA (Click-to-WhatsApp Ads) ──
   // A Evolution manda o contextInfo em locais diferentes conforme a versão.
@@ -188,34 +194,43 @@ export default async function handler(req, res) {
     });
   }
 
-  // ── 10. Classificação de origem (captura configurável por instância) ──
+  // ── 10. Classificação de origem (captura configurável + link rastreável) ──
   // Default: ctwa_only (preserva comportamento histórico). Captura orgânica
   // só ocorre se a instância tiver config explícita 'all' ou 'keyword'.
+  // Exceção: lead com token de link rastreável (clickTrackingId) é SEMPRE
+  // capturado — veio de um link nosso, independe do modo da instância.
   let lead_origin = 'ctwa';
+  let tracking_method = null;
   let captureCfg = null;
   if (!ctwaClid) {
-    try {
-      const poolCfg = getPool();
-      const cfgRes = await poolCfg.query(
-        'SELECT * FROM lead_capture_settings WHERE cliente_id = $1 AND instance_name = $2',
-        [cliente_id, instance]
-      );
-      captureCfg = cfgRes.rows[0] || null;
-    } catch (e) {
-      log('warn', 'webhook_evo_capture_cfg_fail', { instance, error: e.message });
-    }
-
-    const modo = (captureCfg && captureCfg.enabled !== false) ? captureCfg.capture_mode : 'ctwa_only';
-    if (modo === 'all') {
+    if (clickTrackingId) {
+      // Veio de link rastreável (token invisível chegou íntegro).
       lead_origin = 'organic';
-    } else if (modo === 'keyword' && mensagemBateKeyword(mensagem_recebida, captureCfg)) {
-      lead_origin = 'organic';
+      tracking_method = 'token';
     } else {
-      // ctwa_only (ou keyword sem match): mantém o filtro de só-anúncio.
-      return res.status(200).json({
-        ignored: true,
-        reason: 'Contato sem ctwaClid e fora do modo de captura — ignorado.'
-      });
+      try {
+        const poolCfg = getPool();
+        const cfgRes = await poolCfg.query(
+          'SELECT * FROM lead_capture_settings WHERE cliente_id = $1 AND instance_name = $2',
+          [cliente_id, instance]
+        );
+        captureCfg = cfgRes.rows[0] || null;
+      } catch (e) {
+        log('warn', 'webhook_evo_capture_cfg_fail', { instance, error: e.message });
+      }
+
+      const modo = (captureCfg && captureCfg.enabled !== false) ? captureCfg.capture_mode : 'ctwa_only';
+      if (modo === 'all') {
+        lead_origin = 'organic';
+      } else if (modo === 'keyword' && mensagemBateKeyword(mensagem_recebida, captureCfg)) {
+        lead_origin = 'organic';
+      } else {
+        // ctwa_only (ou keyword sem match): mantém o filtro de só-anúncio.
+        return res.status(200).json({
+          ignored: true,
+          reason: 'Contato sem ctwaClid e fora do modo de captura — ignorado.'
+        });
+      }
     }
   }
 
@@ -333,6 +348,32 @@ export default async function handler(req, res) {
     ]);
 
     const lead = insertResult.rows[0];
+
+    // ── 13b. Atribuição de link rastreável (token OU correlação por tempo) ──
+    // Token invisível é a fonte primária; se sumiu (WhatsApp normalizou),
+    // tenta casar por correlação: clique recente não-convertido do mesmo cliente.
+    try {
+      const atr = await atribuirClique(pool, {
+        cliente_id, lead_id: lead.id, clickTrackingId, tracking_method
+      });
+      if (atr) {
+        await pool.query(
+          `UPDATE leads_tracking
+           SET tracking_click_id = $1, tracking_campaign_id = $2,
+               tracking_method = $3, lead_origin = 'organic',
+               utm_source = COALESCE(utm_source, $4),
+               utm_campaign = COALESCE(utm_campaign, $5),
+               utm_medium = COALESCE(utm_medium, $6)
+           WHERE id = $7`,
+          [atr.click_id, atr.campaign_id, atr.method,
+           atr.utm_source, atr.utm_campaign, atr.utm_medium, lead.id]
+        );
+        lead.tracking_method = atr.method;
+        lead.tracking_campaign_id = atr.campaign_id;
+      }
+    } catch (e) {
+      log('warn', 'webhook_evo_attr_fail', { error: e.message });
+    }
 
     // ── 14. Gravar log no webhook_logs ──
     try {
@@ -453,6 +494,51 @@ function mensagemBateKeyword(mensagem, cfg) {
     if (!kw) return false;
     return exact ? msg === kw : msg.includes(kw);
   });
+}
+
+// Atribui um lead a um clique de link rastreável. Marca o clique como convertido
+// e devolve os dados para amarrar no lead. Duas estratégias, nessa ordem:
+//  1) token: o tracking_id chegou íntegro no token invisível (atribuição exata)
+//  2) time: fallback — clique recente não-convertido do mesmo cliente (correlação)
+// Um clique só converte para UM lead (guard: status='clicked' AND converted_at IS NULL).
+async function atribuirClique(pool, { cliente_id, lead_id, clickTrackingId, tracking_method }) {
+  // Estratégia 1: token exato
+  if (clickTrackingId) {
+    const r = await pool.query(
+      `UPDATE tracking_clicks
+       SET status='converted', converted_at=NOW(), lead_id=$1
+       WHERE tracking_id=$2 AND cliente_id=$3 AND status='clicked' AND converted_at IS NULL
+       RETURNING id, campaign_id, utm_source, utm_campaign, utm_medium`,
+      [lead_id, clickTrackingId, cliente_id]
+    );
+    if (r.rows.length) {
+      const c = r.rows[0];
+      return { click_id: c.id, campaign_id: c.campaign_id, method: tracking_method || 'token',
+               utm_source: c.utm_source, utm_campaign: c.utm_campaign, utm_medium: c.utm_medium };
+    }
+  }
+
+  // Estratégia 2: correlação por tempo (clique mais recente não-convertido, dentro da validade).
+  // É uma SUGESTÃO de atribuição, não exata — marcamos method='time'.
+  const r2 = await pool.query(
+    `UPDATE tracking_clicks
+     SET status='converted', converted_at=NOW(), lead_id=$1
+     WHERE id = (
+       SELECT id FROM tracking_clicks
+       WHERE cliente_id=$2 AND status='clicked' AND converted_at IS NULL
+         AND clicked_at > NOW() - INTERVAL '30 minutes'
+         AND (expires_at IS NULL OR expires_at > NOW())
+       ORDER BY clicked_at DESC LIMIT 1
+     )
+     RETURNING id, campaign_id, utm_source, utm_campaign, utm_medium`,
+    [lead_id, cliente_id]
+  );
+  if (r2.rows.length) {
+    const c = r2.rows[0];
+    return { click_id: c.id, campaign_id: c.campaign_id, method: 'time',
+             utm_source: c.utm_source, utm_campaign: c.utm_campaign, utm_medium: c.utm_medium };
+  }
+  return null;
 }
 
 function detectarPlataforma(sourceUrl, adReply) {

@@ -136,6 +136,22 @@ const server = http.createServer(async (req, res) => {
         return;
     }
 
+    // Redirecionador público de link rastreável: /r/<slug> (Fase 2)
+    // Rota pública sem auth, com rate limit por IP (mesma proteção dos webhooks).
+    if (pathname.startsWith('/r/')) {
+        const slug = decodeURIComponent(pathname.slice(3).replace(/\/$/, ''));
+        const wrappedReq = wrapReq(req);
+        const wrappedRes = wrapRes(res);
+        wrappedReq.query.slug = slug;
+        try {
+            const { checkRateLimit } = await import('./middleware/rateLimit.js');
+            const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '127.0.0.1';
+            if (checkRateLimit(ip, wrappedRes)) return;
+        } catch (_) { /* rate limit best-effort */ }
+        const redirectPath = path.join(__dirname, 'api', 'redirect.js');
+        return callApiHandler(pathToFileURL(redirectPath).href, wrappedReq, wrappedRes);
+    }
+
     // API routes
     if (pathname.startsWith('/api/')) {
         const route = pathname.slice(5).replace(/\/$/, '') || 'index';

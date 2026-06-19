@@ -260,6 +260,79 @@ async function setup() {
     `);
     console.log('✅ Tabela "lead_capture_settings" verificada/criada.');
 
+    // ── FASE 2: Links rastreáveis + redirecionador + rotador de WhatsApp ──
+    // Campanhas/links (bio, campanha ou rotador)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS public.tracking_campaigns (
+          id SERIAL PRIMARY KEY,
+          cliente_id INTEGER REFERENCES public.clientes(id) ON DELETE CASCADE,
+          name VARCHAR(255) NOT NULL,
+          slug VARCHAR(120) UNIQUE NOT NULL,
+          origin_type VARCHAR(20) DEFAULT 'bio',
+          rotation_mode VARCHAR(20) DEFAULT 'single',
+          default_message TEXT,
+          utm_source VARCHAR(255),
+          utm_medium VARCHAR(255),
+          utm_campaign VARCHAR(255),
+          enabled BOOLEAN DEFAULT true,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    // Destinos (números de WhatsApp) do rotador, com peso/ordem
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS public.tracking_destinations (
+          id SERIAL PRIMARY KEY,
+          campaign_id INTEGER REFERENCES public.tracking_campaigns(id) ON DELETE CASCADE,
+          cliente_id INTEGER REFERENCES public.clientes(id) ON DELETE CASCADE,
+          name VARCHAR(120),
+          whatsapp_number VARCHAR(30) NOT NULL,
+          instance_name VARCHAR(100),
+          weight INTEGER DEFAULT 1,
+          position INTEGER DEFAULT 0,
+          enabled BOOLEAN DEFAULT true,
+          total_redirects INTEGER DEFAULT 0,
+          last_selected_at TIMESTAMP,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    // Cliques registrados pelo redirecionador (atribuição + métricas)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS public.tracking_clicks (
+          id SERIAL PRIMARY KEY,
+          tracking_id VARCHAR(40) UNIQUE NOT NULL,
+          campaign_id INTEGER REFERENCES public.tracking_campaigns(id) ON DELETE CASCADE,
+          destination_id INTEGER REFERENCES public.tracking_destinations(id) ON DELETE SET NULL,
+          cliente_id INTEGER REFERENCES public.clientes(id) ON DELETE CASCADE,
+          status VARCHAR(20) DEFAULT 'clicked',
+          utm_source VARCHAR(255),
+          utm_medium VARCHAR(255),
+          utm_campaign VARCHAR(255),
+          referrer TEXT,
+          ip_address VARCHAR(64),
+          user_agent TEXT,
+          whatsapp_number VARCHAR(30),
+          clicked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          expires_at TIMESTAMP,
+          converted_at TIMESTAMP,
+          lead_id INTEGER REFERENCES public.leads_tracking(id) ON DELETE SET NULL
+      );
+    `);
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_tracking_campaigns_cliente ON public.tracking_campaigns(cliente_id);
+      CREATE INDEX IF NOT EXISTS idx_tracking_dest_campaign ON public.tracking_destinations(campaign_id);
+      CREATE INDEX IF NOT EXISTS idx_tracking_clicks_campaign ON public.tracking_clicks(campaign_id, clicked_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_tracking_clicks_status ON public.tracking_clicks(cliente_id, status, clicked_at DESC);
+    `);
+    // Campos no lead para amarrar a atribuição do clique
+    await client.query(`
+      ALTER TABLE public.leads_tracking
+      ADD COLUMN IF NOT EXISTS tracking_click_id INTEGER REFERENCES public.tracking_clicks(id) ON DELETE SET NULL,
+      ADD COLUMN IF NOT EXISTS tracking_campaign_id INTEGER REFERENCES public.tracking_campaigns(id) ON DELETE SET NULL,
+      ADD COLUMN IF NOT EXISTS tracking_method VARCHAR(20);
+    `);
+    console.log('✅ Tabelas Fase 2 (tracking_campaigns/destinations/clicks) verificadas/criadas.');
+
     // Configurações Globais do Sistema (White-label)
     await client.query(`
       CREATE TABLE IF NOT EXISTS public.configuracoes_sistema (
