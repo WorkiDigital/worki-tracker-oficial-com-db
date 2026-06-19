@@ -1726,15 +1726,28 @@ let debounceTimer = null;
 let autoRefreshTimer = null;
 let AUTH_TOKEN = '';
 
-// Fetch autenticado — adiciona Bearer token e faz logout automático se sessão expirar
+// Fetch autenticado — adiciona Bearer token e faz logout automático se sessão expirar.
+// Timeout padrão de 30s: sem ele, uma requisição que cai no meio (rede instável)
+// fica pendurada para sempre e o spinner de "Atualizar" gira eternamente.
 async function authFetch(url, opts = {}) {
-    const r = await fetch(url, { ...opts, headers: { ...(opts.headers||{}), 'Authorization': `Bearer ${AUTH_TOKEN}` } });
-    if (r.status === 401) {
-        localStorage.removeItem('adlytics_token');
-        localStorage.removeItem('adlytics_user');
-        window.location.href = '/login.html';
+    let signal = opts.signal;
+    let timer = null;
+    if (!signal) {
+        const ctrl = new AbortController();
+        signal = ctrl.signal;
+        timer = setTimeout(() => ctrl.abort(), opts.timeoutMs || 30000);
     }
-    return r;
+    try {
+        const r = await fetch(url, { ...opts, signal, headers: { ...(opts.headers||{}), 'Authorization': `Bearer ${AUTH_TOKEN}` } });
+        if (r.status === 401) {
+            localStorage.removeItem('adlytics_token');
+            localStorage.removeItem('adlytics_user');
+            window.location.href = '/login.html';
+        }
+        return r;
+    } finally {
+        if (timer) clearTimeout(timer);
+    }
 }
 
 async function readApiJson(response, fallbackMessage = 'Erro ao comunicar com o servidor') {
