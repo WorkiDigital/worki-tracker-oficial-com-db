@@ -1909,8 +1909,14 @@ async function init() {
     await carregarContasAds();
     popularSeletorAdmin();
 
-    // Auto-refresh leads a cada 30s
-    autoRefreshTimer = setInterval(() => recarregarLeads(true), 30000);
+    // Auto-refresh leads a cada 30s — só atualiza com a aba visível e online.
+    // Sem essas guardas, o refresh disparava mesmo offline e empilhava
+    // ERR_INTERNET_DISCONNECTED no console (e gastava requisições à toa).
+    autoRefreshTimer = setInterval(() => {
+        if (document.hidden) return;          // aba em background
+        if (navigator.onLine === false) return; // navegador offline
+        recarregarLeads(true);
+    }, 30000);
 }
 
 async function fazerLogout() {

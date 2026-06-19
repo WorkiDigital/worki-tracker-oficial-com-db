@@ -43,9 +43,17 @@ async function recarregarLeads(silencioso = false) {
         label.textContent = `atualizado ${agora}`;
     } catch(e) {
         dot.className   = 'refresh-dot';
-        dot.style.background = 'var(--red)';
-        label.textContent = 'erro ao carregar';
-        if (!silencioso) toast(e.message, 'error');
+        // Queda de rede (offline) num refresh silencioso: mostra "sem conexão"
+        // discreto e não dispara toast nem trata como erro grave do app.
+        const offline = navigator.onLine === false || /Failed to fetch|NetworkError|ERR_INTERNET/i.test(e.message || '');
+        if (offline) {
+            dot.style.background = 'var(--amber)';
+            label.textContent = 'sem conexão';
+        } else {
+            dot.style.background = 'var(--red)';
+            label.textContent = 'erro ao carregar';
+            if (!silencioso) toast(e.message, 'error');
+        }
     } finally {
         if (icon) icon.style.animation = '';
         lucide.createIcons({ nodes: [icon?.parentElement].filter(Boolean) });
