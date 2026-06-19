@@ -261,3 +261,35 @@ Botão de perfil (ícone `user` roxo) em cada linha da tabela de leads abre um d
 - **4 abas:** Perfil (dados pessoais + atendimento + 1ª mensagem), Anúncio (campanha/conjunto/anúncio + rastreamento), Jornada (timeline de todos os contatos via anúncio, com qual ad trouxe em cada vez), Venda (tempo até 1ª resposta, ciclo, valor, produto).
 - Lógica JS em `js/leads.js`: `abrirPerfilLead(leadId)`, `lpMudarTab(tab)`, `lpPreencherDados()`.
 - O drawer **deve ficar no final do `<body>`** (não dentro de container com `overflow:hidden`) senão o overlay escuro não cobre a tela.
+
+## Correção de 502 em Leads e Métricas Temporais (2026-06-18)
+
+### Sintoma observado
+- `/api/leads` e `/api/metrics-temporal` responderam `502 Bad Gateway`.
+- O proxy devolveu uma página HTML de erro, e `js/leads.js` tentou executar `response.json()`, gerando também `Unexpected token '<'`.
+
+### Diagnóstico realizado
+- As colunas `created_at`, `first_response_at`, `sale_closed_at`, `last_interaction_at` e `utm_medium` existem em `leads_tracking`.
+- Os índices principais existem, incluindo `idx_leads_cliente_data (cliente_id, created_at DESC)`.
+- O banco tinha cerca de 3,3 mil leads no total e somente 121 registros nos últimos dois dias; portanto, o 502 não foi causado por excesso de volume.
+- O endpoint `/health` voltou a responder `200`, indicando uma falha transitória do processo/container ou da conexão com o PostgreSQL.
+- Causa provável: uma conexão ociosa do pool sendo derrubada pelo banco/rede. Sem listener para o evento `error` do `pg.Pool`, esse cenário pode encerrar o processo Node e fazer o proxy responder 502.
+
+### Correção aplicada
+- `api/_db.js`:
+  - habilita TCP keepalive;
+  - registra `pool.on('error', ...)`, evitando que a perda de uma conexão ociosa derrube o processo Node.
+- `index.html`:
+  - adiciona `readApiJson()`, que valida status e `Content-Type` antes de interpretar a resposta como JSON.
+- `js/leads.js`:
+  - `/api/leads` e `/api/metrics-temporal` usam `readApiJson()`;
+  - uma página HTML de 502 agora gera uma mensagem HTTP legível, sem o erro enganoso `Unexpected token '<'`.
+
+### Validação e publicação
+- `node --check api/_db.js`: aprovado.
+- `node --check js/leads.js`: aprovado.
+- Scripts inline de `index.html`: sintaxe aprovada.
+- `git diff --check`: aprovado.
+- Commit publicado: `838bc33 fix: evita 502 ao perder conexão com banco`.
+- O commit foi enviado para `origin/main` e continua presente no histórico do remoto.
+- Na última verificação logo após o push, o domínio ainda servia o `index.html` anterior, embora `/health` respondesse `200`. Portanto, o push ao GitHub foi confirmado, mas a conclusão do redeploy automático do EasyPanel não foi comprovada naquele momento.
