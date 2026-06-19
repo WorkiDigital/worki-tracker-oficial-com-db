@@ -58,8 +58,21 @@ async function getCliente(clienteId) {
   return clienteCache[clienteId];
 }
 
+// Busca recursiva pela chave "page" em tracking_specs (método N8N).
+function extrairPageDeTrackingSpecs(specs) {
+  const pages = [];
+  (function walk(o) {
+    if (o && typeof o === 'object') {
+      if (o.page) pages.push(...(Array.isArray(o.page) ? o.page : [o.page]));
+      for (const k in o) if (typeof o[k] === 'object') walk(o[k]);
+    }
+  })(specs);
+  return pages[0] || null;
+}
+
 async function fetchPageId(sourceId, token) {
-  const fields = 'creative{object_story_spec{page_id}}';
+  // Pede object_story_spec E tracking_specs — alguns anúncios só têm um deles.
+  const fields = 'tracking_specs,creative{object_story_spec{page_id}}';
   const url = `https://graph.facebook.com/${GRAPH_VER}/${sourceId}?fields=${fields}&access_token=${token}`;
   const r = await fetch(url);
   const data = await r.json();
@@ -67,7 +80,9 @@ async function fetchPageId(sourceId, token) {
     process.stdout.write(`⚠️  ${data.error.message} `);
     return null;
   }
-  return data.creative?.object_story_spec?.page_id || null;
+  return data.creative?.object_story_spec?.page_id
+    || extrairPageDeTrackingSpecs(data.tracking_specs)
+    || null;
 }
 
 // Fallback: page_id mais frequente dos outros leads do mesmo cliente.

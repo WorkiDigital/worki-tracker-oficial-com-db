@@ -407,12 +407,28 @@ function extrairPageId(sourceUrl) {
   return match ? match[1] : null;
 }
 
+// Busca recursiva pela chave "page" em qualquer nível (usada em tracking_specs).
+// Vários anúncios não expõem creative.object_story_spec.page_id (erro #100), mas
+// trazem o page_id em tracking_specs[].page — método herdado do fluxo N8N.
+function extrairPageDeTrackingSpecs(specs) {
+  const pages = [];
+  (function walk(o) {
+    if (o && typeof o === 'object') {
+      if (o.page) pages.push(...(Array.isArray(o.page) ? o.page : [o.page]));
+      for (const k in o) if (typeof o[k] === 'object') walk(o[k]);
+    }
+  })(specs);
+  return pages[0] || null;
+}
+
 // Busca page_id, campanha, conjunto e anúncio na Graph API a partir do sourceId.
 // Uma única chamada retorna tudo — best-effort, não derruba o webhook em caso de falha.
+// page_id: tenta object_story_spec; se vazio, cai no tracking_specs (cobre anúncios
+// dynamic/catálogo que não têm story spec).
 async function buscarInfoAnuncio(sourceId, token) {
   if (!sourceId || !token) return null;
   try {
-    const fields = 'name,campaign_id,campaign{name},adset_id,adset{name},creative{id,name,object_story_spec{page_id}}';
+    const fields = 'name,campaign_id,campaign{name},adset_id,adset{name},tracking_specs,creative{id,name,object_story_spec{page_id}}';
     const url = `https://graph.facebook.com/v25.0/${sourceId}?fields=${fields}&access_token=${token}`;
     const r = await fetch(url);
     const data = await r.json();
@@ -420,8 +436,11 @@ async function buscarInfoAnuncio(sourceId, token) {
       console.warn('[webhook-evo] buscarInfoAnuncio erro:', data.error.message);
       return null;
     }
+    const page_id = data.creative?.object_story_spec?.page_id
+      || extrairPageDeTrackingSpecs(data.tracking_specs)
+      || null;
     return {
-      page_id:       data.creative?.object_story_spec?.page_id || null,
+      page_id,
       campaign_name: data.campaign?.name  || null,
       adset_name:    data.adset?.name     || null,
       ad_name:       data.name            || null,
