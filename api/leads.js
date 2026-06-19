@@ -27,12 +27,12 @@ export default async function handler(req, res) {
         let i = 1;
 
         if (user.is_admin) {
-            if (requestedClient) { where.push(`cliente_id = $${i++}`); params.push(requestedClient); }
+            if (requestedClient) { where.push(`l.cliente_id = $${i++}`); params.push(requestedClient); }
         } else {
-            where.push(`cliente_id = $${i++}`); params.push(user.cliente_id);
+            where.push(`l.cliente_id = $${i++}`); params.push(user.cliente_id);
         }
-        if (start) { where.push(`created_at >= $${i++}`); params.push(start); }
-        if (end)   { where.push(`created_at <  $${i++}`); params.push(end); }
+        if (start) { where.push(`l.created_at >= $${i++}`); params.push(start); }
+        if (end)   { where.push(`l.created_at <  $${i++}`); params.push(end); }
 
         const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
         params.push(limit); const limitIdx = i++;
@@ -40,18 +40,46 @@ export default async function handler(req, res) {
 
         // Colunas explícitas (evita SELECT * que puxava TEXT pesados como
         // event_source_url/anuncio_thumbnail_url). Inclui o que tabela, gráficos e CSV usam.
-        const COLS = `id, nome, telefone, status, plataforma, instancia, event_time,
-            created_at, utm_campaign, utm_medium, utm_content, mensagem_recebida, valor_venda,
-            lead_score, qualified_at, email, cpf, endereco, cidade, estado, produto,
-            ctw_aci_id, cliente_id, lead_origin, utm_source`;
+        const COLS = `l.id, l.nome, l.telefone, l.status, l.plataforma, l.instancia, l.event_time,
+            l.created_at, l.utm_campaign, l.utm_medium, l.utm_content, l.mensagem_recebida, l.valor_venda,
+            l.lead_score, l.qualified_at, l.email, l.cpf, l.endereco, l.cidade, l.estado, l.produto,
+            l.ctw_aci_id, l.cliente_id, l.lead_origin, l.utm_source,
+            l.tracking_click_id, l.tracking_campaign_id, l.tracking_method,
+            tc.name AS tracking_campaign_name`;
 
         const result = await pool.query(
-            `SELECT ${COLS} FROM leads_tracking ${whereSql} ORDER BY created_at DESC LIMIT $${limitIdx} OFFSET $${offsetIdx}`,
+            `SELECT ${COLS}
+             FROM leads_tracking l
+             LEFT JOIN tracking_campaigns tc ON tc.id = l.tracking_campaign_id
+             ${whereSql}
+             ORDER BY l.created_at DESC LIMIT $${limitIdx} OFFSET $${offsetIdx}`,
             params
         );
         return res.status(200).json(result.rows);
     } catch (dbError) {
         console.warn('DB Error, returning Mock Data:', dbError.message);
+        // Compatibilidade de deploy: o código pode subir antes de setup-db.js criar
+        // as colunas/tabelas da Fase 2. Nesse intervalo, mantém a listagem principal
+        // funcionando sem os campos de tracking.
+        if (dbError.code === '42P01' || dbError.code === '42703') {
+            try {
+                const legacyCols = `l.id, l.nome, l.telefone, l.status, l.plataforma, l.instancia, l.event_time,
+                    l.created_at, l.utm_campaign, l.utm_medium, l.utm_content, l.mensagem_recebida, l.valor_venda,
+                    l.lead_score, l.qualified_at, l.email, l.cpf, l.endereco, l.cidade, l.estado, l.produto,
+                    l.ctw_aci_id, l.cliente_id, l.lead_origin, l.utm_source`;
+                const fallback = await pool.query(
+                    `SELECT ${legacyCols}
+                     FROM leads_tracking l
+                     ${whereSql}
+                     ORDER BY l.created_at DESC LIMIT $${limitIdx} OFFSET $${offsetIdx}`,
+                    params
+                );
+                return res.status(200).json(fallback.rows);
+            } catch (fallbackError) {
+                console.warn('Leads fallback error:', fallbackError.message);
+                if (process.env.NODE_ENV === 'production') throw fallbackError;
+            }
+        }
         if (process.env.NODE_ENV === 'production') {
             throw dbError;
         }

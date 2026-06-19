@@ -11,6 +11,9 @@ export default async function handler(req, res) {
   const pool = getPool();
   const cliente_id = user.is_admin ? (req.query.cliente_id || user.cliente_id) : user.cliente_id;
   const campaignId = req.query.campaign_id || null;
+  if (!cliente_id) {
+    return res.status(400).json({ error: 'cliente_id é obrigatório para administrador.' });
+  }
 
   try {
     const where = ['cliente_id = $1'];

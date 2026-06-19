@@ -17,21 +17,26 @@ import { encodeToken } from './_invisible-token.js';
 import crypto from 'crypto';
 
 function gerarTrackingId() {
-  // 9 chars base62 — curto o suficiente para o token invisível não ficar gigante.
-  return crypto.randomBytes(7).toString('base64').replace(/[^a-zA-Z0-9]/g, '').slice(0, 9);
+  // 10 chars base64url (~60 bits), tamanho fixo e seguro para o índice UNIQUE.
+  return crypto.randomBytes(8).toString('base64url').slice(0, 10);
 }
 
 function htmlRedirect(url) {
   // Fallback HTML caso o 302 seja bloqueado; também evita preview de link quebrar.
+  const safeUrl = url.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
   return `<!DOCTYPE html><html><head><meta charset="utf-8">
-<meta http-equiv="refresh" content="0;url=${url.replace(/"/g, '&quot;')}">
+<meta http-equiv="refresh" content="0;url=${safeUrl}">
 <title>Redirecionando…</title></head>
-<body>Redirecionando para o WhatsApp… <a href="${url.replace(/"/g, '&quot;')}">clique aqui</a> se não for automático.</body></html>`;
+<body>Redirecionando para o WhatsApp… <a href="${safeUrl}">clique aqui</a> se não for automático.</body></html>`;
 }
 
 export default async function handler(req, res) {
   const slug = (req.query.slug || '').trim();
-  if (!slug) {
+  if (req.method !== 'GET' && req.method !== 'HEAD') {
+    res.writeHead(405, { 'Content-Type': 'text/plain; charset=utf-8', 'Allow': 'GET, HEAD' });
+    return res.end('Método não permitido.');
+  }
+  if (!slug || !/^[a-z0-9][a-z0-9-]{0,99}$/.test(slug)) {
     res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
     return res.end('Link inválido.');
   }
@@ -86,14 +91,21 @@ export default async function handler(req, res) {
 
     // 4. Mensagem + token invisível
     const baseMsg = campaign.default_message || 'Olá! Gostaria de mais informações.';
-    const mensagem = baseMsg + encodeToken(trackingId);
+    // Token no início: o cursor abre no final da mensagem e alterações comuns no
+    // texto visível tendem a preservar o bloco invisível.
+    const mensagem = encodeToken(trackingId) + baseMsg;
 
     // 5. Redireciona para o WhatsApp
     const numero = (destino.whatsapp_number || '').replace(/\D/g, '');
     const waUrl = `https://api.whatsapp.com/send?phone=${numero}&text=${encodeURIComponent(mensagem)}`;
 
-    res.writeHead(302, { 'Location': waUrl, 'Content-Type': 'text/html; charset=utf-8' });
-    return res.end(htmlRedirect(waUrl));
+    res.writeHead(302, {
+      'Location': waUrl,
+      'Content-Type': 'text/html; charset=utf-8',
+      'Cache-Control': 'no-store',
+      'Referrer-Policy': 'no-referrer',
+    });
+    return res.end(req.method === 'HEAD' ? '' : htmlRedirect(waUrl));
 
   } catch (err) {
     try { await client.query('ROLLBACK'); } catch (_) {}

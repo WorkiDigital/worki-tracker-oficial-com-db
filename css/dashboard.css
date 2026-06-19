@@ -441,6 +441,21 @@ html.light .modal { background:#fff; border-color:var(--border); }
 .btn-confirm:hover { filter:brightness(1.1); }
 .btn-confirm:disabled { background:var(--tag); color:var(--muted); cursor:not-allowed; filter:none; }
 
+/* ── Captação e links rastreáveis ───────── */
+#modalCampanha .modal { box-sizing:border-box; }
+#modalCampanha select,
+#modalCampanha input { box-sizing:border-box; }
+@media(max-width:720px) {
+    #modalCampanha { align-items:flex-end; }
+    #modalCampanha .modal { width:100vw !important; max-width:none !important; max-height:94vh !important; border-radius:16px 16px 0 0; padding:20px 16px; }
+    #modalCampanha .cap-grid-main,
+    #modalCampanha .cap-grid-message,
+    #modalCampanha .cap-grid-destination,
+    #modalCampanha .cap-grid-utms { grid-template-columns:1fr !important; }
+    #modalCampanha .cap-grid-destination > button { width:100%; }
+    .cap-overview-grid { grid-template-columns:1fr !important; }
+}
+
 /* ── Modal box (novo padrão) ─────────────── */
 .modal-box { background:var(--card,#0d1117); border-radius:14px; padding:20px 22px 22px; border:1px solid var(--border); box-shadow:0 25px 50px -12px rgba(0,0,0,.6); transform:translateY(16px); transition:.25s; width:100%; }
 .modal-overlay.open .modal-box { transform:none; }

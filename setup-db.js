@@ -330,6 +330,9 @@ async function setup() {
       ADD COLUMN IF NOT EXISTS tracking_click_id INTEGER REFERENCES public.tracking_clicks(id) ON DELETE SET NULL,
       ADD COLUMN IF NOT EXISTS tracking_campaign_id INTEGER REFERENCES public.tracking_campaigns(id) ON DELETE SET NULL,
       ADD COLUMN IF NOT EXISTS tracking_method VARCHAR(20);
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_leads_tracking_click_unique
+      ON public.leads_tracking(tracking_click_id)
+      WHERE tracking_click_id IS NOT NULL;
     `);
     console.log('✅ Tabelas Fase 2 (tracking_campaigns/destinations/clicks) verificadas/criadas.');
 

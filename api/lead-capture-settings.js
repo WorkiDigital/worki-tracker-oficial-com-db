@@ -23,6 +23,7 @@ export default async function handler(req, res) {
   try {
     if (method === 'GET') {
       const cliente_id = alvoCliente(req.query.cliente_id);
+      if (!cliente_id) return res.status(400).json({ error: 'cliente_id é obrigatório para administrador.' });
       const { instance_name } = req.query;
       if (instance_name) {
         const r = await pool.query(
@@ -41,6 +42,7 @@ export default async function handler(req, res) {
     // Upsert (POST/PATCH/PUT tratados igual — cria ou atualiza a config da instância)
     if (method === 'POST' || method === 'PATCH' || method === 'PUT') {
       const cliente_id = alvoCliente(req.body.cliente_id);
+      if (!cliente_id) return res.status(400).json({ error: 'cliente_id é obrigatório para administrador.' });
       const {
         instance_name,
         capture_mode = 'ctwa_only',
@@ -60,6 +62,10 @@ export default async function handler(req, res) {
       const kwArray = Array.isArray(keywords)
         ? keywords.map(k => String(k).trim()).filter(Boolean)
         : String(keywords).split(',').map(k => k.trim()).filter(Boolean);
+      if (capture_mode === 'keyword' && !kwArray.length) {
+        return res.status(400).json({ error: 'Informe pelo menos uma palavra-chave.' });
+      }
+      const dedupHours = Math.min(720, Math.max(1, parseInt(deduplication_hours, 10) || 24));
 
       const r = await pool.query(
         `INSERT INTO lead_capture_settings
@@ -75,7 +81,7 @@ export default async function handler(req, res) {
          RETURNING *`,
         [cliente_id, instance_name, capture_mode, kwArray,
          keyword_match === 'exact' ? 'exact' : 'partial',
-         parseInt(deduplication_hours, 10) || 24, enabled !== false]
+         dedupHours, enabled !== false]
       );
       return res.status(200).json(r.rows[0]);
     }

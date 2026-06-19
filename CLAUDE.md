@@ -310,3 +310,72 @@ Botão de perfil (ícone `user` roxo) em cada linha da tabela de leads abre um d
 - Commit publicado: `838bc33 fix: evita 502 ao perder conexão com banco`.
 - O commit foi enviado para `origin/main` e continua presente no histórico do remoto.
 - Na última verificação logo após o push, o domínio ainda servia o `index.html` anterior, embora `/health` respondesse `200`. Portanto, o push ao GitHub foi confirmado, mas a conclusão do redeploy automático do EasyPanel não foi comprovada naquele momento.
+
+## Captação Orgânica + Links Rastreáveis + Rotador (2026-06-19)
+
+### Fase 1 — captura configurável por instância
+- O webhook continua com `ctwa_only` como padrão seguro.
+- Cada instância pode usar:
+  - `ctwa_only`: somente leads com `ctwaClid`;
+  - `all`: todos os novos contatos;
+  - `keyword`: somente mensagens que correspondam às palavras configuradas.
+- A configuração fica em `lead_capture_settings` e é editada pelo botão **Captura** na aba Conexão WhatsApp.
+- Leads sem anúncio recebem `lead_origin = organic`.
+- CAPI `LeadSubmitted` continua exclusivo para CTWA; lead orgânico não é enviado à Meta.
+
+### Fase 2 — links, token invisível e rotador
+- Nova aba **Captação e Links**:
+  - cria links públicos `/r/<slug>`;
+  - suporta destino único, round-robin, peso e prioridade;
+  - registra cliques, UTMs, referrer, IP e User-Agent;
+  - mostra cliques, conversões, leads e taxa de conversão.
+- O redirecionador público está em `api/redirect.js`.
+- A seleção transacional dos números está em `api/_rotator.js`.
+- O protocolo zero-width com versão e checksum está em `api/_invisible-token.js`.
+- O token é colocado no início da mensagem pré-preenchida e removido antes de gravar a mensagem no CRM.
+
+### Regras de atribuição
+- O webhook só força a captura de um link quando o token invisível:
+  - decodifica corretamente;
+  - existe em `tracking_clicks`;
+  - pertence ao mesmo cliente;
+  - ainda está pendente e dentro da validade;
+  - pertence a uma campanha ativa.
+- Não existe atribuição automática por proximidade de horário. Sem token válido, o lead pode entrar como orgânico conforme a configuração da instância, mas não recebe campanha.
+- Origens possíveis: `ctwa`, `organic`, `bio`, `campaign_link` e `rotator`.
+- Um clique só pode ser associado a um lead, protegido por status transacional e índice único em `leads_tracking.tracking_click_id`.
+
+### Banco e ativação em produção
+As novas tabelas/colunas são criadas por `setup-db.js`:
+- `lead_capture_settings`
+- `tracking_campaigns`
+- `tracking_destinations`
+- `tracking_clicks`
+- campos de origem e tracking em `leads_tracking`
+
+O EasyPanel executa apenas `node server.js`. Portanto, antes de usar a funcionalidade em produção, executar uma vez no terminal do serviço:
+
+```bash
+node setup-db.js
+```
+
+Depois confirmar nos logs as mensagens de criação das tabelas Fase 1/Fase 2.
+
+`api/leads.js` e `api/lead-profile.js` possuem fallback temporário para o formato anterior caso o código reinicie antes da migração. Isso evita derrubar a tela principal, mas a aba Captação e Links só funciona depois da criação das tabelas.
+
+### Validações concluídas
+- Sintaxe Node aprovada em backend, frontend e `setup-db.js`.
+- Round-trip do token através de `encodeURIComponent`/`decodeURIComponent` aprovado.
+- Checksum rejeita token corrompido.
+- Rotador `single` e `round_robin` aprovados em teste isolado.
+- Página, CSS e `js/captacao.js` respondem `200` no servidor local.
+- Modal validado por DOM simulado: abertura, geração de slug e adição de destino.
+
+### Validações ainda obrigatórias
+- Rodar a migração no PostgreSQL de produção.
+- Criar um link real e testar o redirecionamento.
+- Confirmar chegada e decodificação do token em:
+  - WhatsApp Android;
+  - WhatsApp iOS;
+  - WhatsApp Web.
+- O navegador integrado não ficou disponível durante a implementação; a inspeção visual clicável do modal ainda precisa ser feita em navegador real.

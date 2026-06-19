@@ -3,9 +3,8 @@
  * embutidos na mensagem que o usuário envia no WhatsApp ao clicar no link.
  *
  * ⚠️ FRÁGIL POR NATUREZA: o WhatsApp/Baileys pode normalizar ou remover esses
- * caracteres dependendo do app (Android/iOS/Web). NUNCA dependa só do token —
- * o redirecionador também registra o clique no banco, e o webhook casa por
- * correlação (telefone + tempo) como fallback quando o token não chega.
+ * caracteres dependendo do app (Android/iOS/Web). O clique continua registrado
+ * no banco, mas a atribuição ao lead só é confirmada quando o token chega válido.
  *
  * Codificação:
  *   ​ = bit 0   |   ‌ = bit 1

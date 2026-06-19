@@ -468,7 +468,7 @@ async function abrirCaptura(instanceName, clienteId) {
         const q = new URLSearchParams({ instance_name: instanceName });
         if (_capturaClienteId) q.append('cliente_id', _capturaClienteId);
         const r = await authFetch('/api/lead-capture-settings?' + q.toString());
-        const cfg = await r.json();
+        const cfg = await readApiJson(r, 'Falha ao carregar configuração de captura');
         $('capturaModo').value      = cfg?.capture_mode || 'ctwa_only';
         $('capturaKeywords').value  = (cfg?.keywords || []).join(', ');
         $('capturaMatch').value     = cfg?.keyword_match || 'partial';
@@ -493,10 +493,14 @@ async function salvarCaptura() {
     const prev = btn.innerHTML;
     btn.disabled = true; btn.innerHTML = 'Salvando...';
     try {
+        const keywords = $('capturaKeywords').value.split(',').map(k => k.trim()).filter(Boolean);
+        if ($('capturaModo').value === 'keyword' && !keywords.length) {
+            throw new Error('Informe pelo menos uma palavra-chave.');
+        }
         const body = {
             instance_name: _capturaInstancia,
             capture_mode: $('capturaModo').value,
-            keywords: $('capturaKeywords').value.split(',').map(k => k.trim()).filter(Boolean),
+            keywords,
             keyword_match: $('capturaMatch').value,
             deduplication_hours: parseInt($('capturaDedup').value, 10) || 24,
         };
@@ -506,8 +510,7 @@ async function salvarCaptura() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(body),
         });
-        const data = await r.json();
-        if (!r.ok) throw new Error(data.error || 'Erro ao salvar');
+        await readApiJson(r, 'Falha ao salvar configuração de captura');
         toast('Captura configurada.', 'success');
         $('modalCaptura').classList.remove('open');
     } catch (e) {

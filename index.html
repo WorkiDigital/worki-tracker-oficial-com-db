@@ -318,6 +318,98 @@
     </div>
 </div>
 
+<!-- Modal: Link rastreável + rotador -->
+<div id="modalCampanha" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="capModalTitulo" onclick="if(event.target===this) fecharModalCampanha()">
+    <div class="modal" style="width:min(760px,94vw);max-width:760px;max-height:90vh;overflow-y:auto;">
+        <div class="modal-head">
+            <div class="modal-icon" style="background:rgba(59,130,246,.14);">
+                <i data-lucide="route" style="color:var(--blue);width:22px;height:22px;"></i>
+            </div>
+            <div>
+                <h3 id="capModalTitulo">Novo link rastreável</h3>
+                <p>Registre o clique, distribua o atendimento e atribua o lead pelo token invisível.</p>
+            </div>
+            <button class="modal-close" aria-label="Fechar" onclick="fecharModalCampanha()"><i data-lucide="x" style="width:16px;"></i></button>
+        </div>
+
+        <div class="cap-grid-main" style="display:grid;grid-template-columns:minmax(0,1.3fr) minmax(180px,.7fr);gap:12px;">
+            <div class="input-group">
+                <label>Nome do link <span style="color:var(--red)">*</span></label>
+                <input id="capNome" type="text" maxlength="255" placeholder="Ex: Bio do Instagram" oninput="capAutoSlug()">
+            </div>
+            <div class="input-group">
+                <label>Tipo de origem</label>
+                <select id="capOrigem" class="form-control">
+                    <option value="bio">Link da bio</option>
+                    <option value="campaign">Campanha rastreável</option>
+                    <option value="rotator">Rotador comercial</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="input-group">
+            <label>Identificador da URL <span style="color:var(--red)">*</span></label>
+            <input id="capSlug" type="text" maxlength="100" placeholder="bio-instagram" oninput="capAtualizarSlugHint(this.value)">
+            <p id="capSlugHint" style="font-size:11px;color:var(--muted);margin-top:6px;">Gerado automaticamente a partir do nome.</p>
+        </div>
+
+        <div class="cap-grid-message" style="display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:12px;">
+            <div class="input-group">
+                <label>Distribuição dos números</label>
+                <select id="capModo" class="form-control" onchange="capToggleModo()">
+                    <option value="single">Destino único</option>
+                    <option value="round_robin">Rotação equilibrada</option>
+                    <option value="weighted">Rotação por peso</option>
+                    <option value="priority">Prioridade fixa</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label>Mensagem pré-preenchida</label>
+                <input id="capMensagem" type="text" maxlength="1000" placeholder="Olá! Gostaria de mais informações.">
+                <p style="font-size:11px;color:var(--muted);margin-top:6px;">O token é anexado de forma invisível e removido antes de salvar a mensagem no CRM.</p>
+            </div>
+        </div>
+
+        <div style="background:var(--tag);border:1px solid var(--border);border-radius:10px;padding:14px;margin:4px 0 16px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;">
+                <div>
+                    <div style="font-size:13px;font-weight:700;color:var(--text);">Números de destino</div>
+                    <div style="font-size:11px;color:var(--muted);margin-top:2px;">Use código do país e DDD. Exemplo: 5511999999999.</div>
+                </div>
+                <span id="capDestinoCount" style="font-size:10px;color:var(--muted);white-space:nowrap;">0 destinos</span>
+            </div>
+            <div class="cap-grid-destination" style="display:grid;grid-template-columns:minmax(160px,.8fr) minmax(180px,1fr) auto;gap:8px;align-items:end;margin-bottom:10px;">
+                <div class="input-group" style="margin:0;">
+                    <label>Número</label>
+                    <input id="capNovoNumero" type="tel" inputmode="numeric" placeholder="5511999999999" onkeydown="if(event.key==='Enter'){event.preventDefault();capAdicionarDestino();}">
+                </div>
+                <div class="input-group" style="margin:0;">
+                    <label>Nome</label>
+                    <input id="capNovoNome" type="text" maxlength="120" placeholder="Ex: Comercial 1" onkeydown="if(event.key==='Enter'){event.preventDefault();capAdicionarDestino();}">
+                </div>
+                <button type="button" class="btn btn-primary btn-sm" onclick="capAdicionarDestino()" style="height:41px;padding:0 13px;display:inline-flex;align-items:center;gap:5px;">
+                    <i data-lucide="plus" style="width:13px;"></i> Adicionar
+                </button>
+            </div>
+            <div id="capDestinosLista"></div>
+        </div>
+
+        <details style="border:1px solid var(--border);border-radius:10px;padding:11px 13px;margin-bottom:16px;">
+            <summary style="cursor:pointer;font-size:12px;font-weight:700;color:var(--text);">Parâmetros de campanha (opcional)</summary>
+            <div class="cap-grid-utms" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:13px;">
+                <div class="input-group" style="margin:0;"><label>UTM Source</label><input id="capUtmSource" type="text" maxlength="255" placeholder="instagram"></div>
+                <div class="input-group" style="margin:0;"><label>UTM Medium</label><input id="capUtmMedium" type="text" maxlength="255" placeholder="bio"></div>
+                <div class="input-group" style="margin:0;"><label>UTM Campaign</label><input id="capUtmCampaign" type="text" maxlength="255" placeholder="campanha-junho"></div>
+            </div>
+        </details>
+
+        <div class="cap-grid-actions" style="display:grid;grid-template-columns:.55fr 1fr;gap:10px;">
+            <button type="button" class="btn btn-ghost" onclick="fecharModalCampanha()" style="justify-content:center;">Cancelar</button>
+            <button type="button" class="btn-confirm" id="btnSalvarCampanha" onclick="salvarCampanha()" style="margin:0;">Criar link</button>
+        </div>
+    </div>
+</div>
+
 <div id="modalEditCliente" class="modal-overlay" role="dialog" aria-modal="true" onclick="if(event.target===this) this.classList.remove('open')">
     <div class="modal" style="max-width:480px;">
         <div class="modal-head">
@@ -478,6 +570,9 @@
         <a id="btn-anuncios"   class="nav-item"          onclick="mudarAba('anuncios')">
             <img src="https://cdn.simpleicons.org/meta/0082FB" class="nav-img-icon" style="width:17px;height:17px;flex-shrink:0;" alt="Meta" loading="lazy"><span>Meta Ads</span>
         </a>
+        <a id="btn-captacao" class="nav-item" onclick="mudarAba('captacao')">
+            <i data-lucide="link" style="width:17px;flex-shrink:0;"></i><span>Captação e Links</span>
+        </a>
         <a id="btn-whatsapp" class="nav-item" onclick="mudarAba('whatsapp')">
             <i data-lucide="smartphone" style="width:17px;flex-shrink:0;"></i><span>Conexão WhatsApp</span>
         </a>
@@ -569,6 +664,9 @@
                         <option value="">Todas origens</option>
                         <option value="ctwa">Anúncio (CTWA)</option>
                         <option value="organic">Orgânico</option>
+                        <option value="bio">Link da bio</option>
+                        <option value="campaign_link">Link de campanha</option>
+                        <option value="rotator">Rotador</option>
                     </select>
                 </div>
                 <!-- Search -->
@@ -1402,6 +1500,46 @@
         </div>
 
         <!-- ABA: WHATSAPP -->
+        <!-- ── Aba Captação e Links (Fase 2) ── -->
+        <div id="aba-captacao" class="aba-oculta">
+            <div style="margin-bottom:18px;">
+                <h2 style="display:flex;align-items:center;gap:8px;font-size:16px;margin:0;"><i data-lucide="link" style="color:var(--blue);width:18px;"></i> Captação e Links</h2>
+                <p style="color:var(--muted);font-size:13px;margin:4px 0 0;">Links rastreáveis com rotação entre números de WhatsApp. Cada clique é registrado e atribuído ao lead.</p>
+            </div>
+
+            <div id="capClienteAviso" style="display:none;margin-bottom:14px;padding:11px 13px;border:1px solid rgba(245,158,11,.35);background:rgba(245,158,11,.08);border-radius:9px;color:#f59e0b;font-size:12px;"></div>
+
+            <div class="cap-overview-grid" style="display:grid;grid-template-columns:minmax(0,1.2fr) minmax(250px,.8fr);gap:12px;margin-bottom:18px;">
+                <div class="card" style="padding:15px 17px;">
+                    <div style="display:flex;align-items:flex-start;gap:10px;">
+                        <i data-lucide="scan-search" style="width:17px;color:var(--blue);margin-top:1px;flex-shrink:0;"></i>
+                        <div>
+                            <div style="font-size:13px;font-weight:700;color:var(--text);">Atribuição por token invisível</div>
+                            <p style="font-size:11px;color:var(--muted);line-height:1.55;margin:4px 0 0;">O clique recebe um identificador único dentro da mensagem. Quando ela chega pelo WhatsApp, o webhook valida o token, recupera as UTMs e salva somente o texto visível.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="card" style="padding:15px 17px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
+                    <div>
+                        <div style="font-size:13px;font-weight:700;color:var(--text);">Captura orgânica</div>
+                        <p style="font-size:11px;color:var(--muted);margin:4px 0 0;">Configure “todos” ou “palavra-chave” por conexão.</p>
+                    </div>
+                    <button class="btn btn-ghost btn-sm" onclick="mudarAba('whatsapp')" style="white-space:nowrap;">Configurar</button>
+                </div>
+            </div>
+
+            <!-- Métricas resumo -->
+            <div id="capMetricas" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:18px;"></div>
+
+            <div class="card" style="padding:18px 20px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+                    <span style="font-size:14px;font-weight:700;">Seus links</span>
+                    <button class="btn btn-primary btn-sm" onclick="abrirModalCampanha()" style="padding:5px 12px;font-size:12px;display:inline-flex;align-items:center;gap:5px;"><i data-lucide="plus" style="width:13px;"></i> Novo link</button>
+                </div>
+                <div id="capListaLinks"><div style="text-align:center;padding:30px;color:var(--muted);">Carregando…</div></div>
+            </div>
+        </div>
+
         <div id="aba-whatsapp" class="aba-oculta">
             <div class="card" style="padding:18px 20px;">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
@@ -1949,6 +2087,7 @@ async function init() {
             const p = user.permissoes || {};
             const tabMap = {
                 'btn-leads':      p.leads     !== false,
+                'btn-captacao':   p.leads     !== false,
                 'btn-anuncios':   p.anuncios  !== false,
                 'btn-relatorios': p.relatorios!== false,
                 'btn-whatsapp':   p.whatsapp  !== false,
@@ -2016,6 +2155,7 @@ function trocarClienteAdmin(id) {
     clienteAdminSelecionado = id ? parseInt(id) : null;
     // Leads são carregados sob demanda do backend por cliente — rebusca em vez de só refiltrar a memória.
     recarregarLeads();
+    if (!$('aba-captacao')?.classList.contains('aba-oculta')) carregarCampanhasLink();
 }
 
 // ── Anúncios — Account picker ──────────────────────────────────
@@ -4173,15 +4313,18 @@ async function abrirAdMedia(adId) {
 document.addEventListener('keydown', e => {
     if (e.key === 'Escape' && document.getElementById('adMediaOverlay')?.classList.contains('open')) {
         fecharAdMedia(null);
+    } else if (e.key === 'Escape' && document.getElementById('modalCampanha')?.classList.contains('open')) {
+        fecharModalCampanha();
     }
 });
 
 // ── Abas ───────────────────────────────────────────────────────
-const ABAS = ['leads','relatorios','anuncios','clientes','conta','config','ajustes','agencia','whatsapp','zaprelatorios','logs'];
+const ABAS = ['leads','relatorios','anuncios','captacao','clientes','conta','config','ajustes','agencia','whatsapp','zaprelatorios','logs'];
 const TITULOS = {
     leads:          '<i data-lucide="users" style="color:var(--blue);"></i> Leads',
     relatorios:     '<i data-lucide="bar-chart-2" style="color:var(--blue);"></i> Relatórios',
     anuncios:       '<img src="https://cdn.simpleicons.org/meta/0082FB" style="width:16px;height:16px;display:inline;vertical-align:-2px;margin-right:6px;" alt="Meta"> Meta Ads',
+    captacao:       '<i data-lucide="link" style="color:var(--blue);"></i> Captação e Links',
     clientes:       '<i data-lucide="share-2" style="color:var(--blue);"></i> Compartilhar Dash',
     conta:          '<i data-lucide="user-cog" style="color:var(--blue);"></i> Minha Conta',
     config:         '<i data-lucide="megaphone" style="color:var(--blue);"></i> Contas de Anúncio',
@@ -4204,6 +4347,7 @@ function mudarAba(aba) {
     $('leadsControls').style.display = ['leads','relatorios'].includes(aba) ? 'flex' : 'none';
     lucide.createIcons({ nodes:[$('titulo-pagina')] });
     if (aba === 'anuncios' && !adsCarregado) carregarAnuncios();
+    if (aba === 'captacao') { carregarCampanhasLink(); }
     if (aba === 'conta')    { carregarMinhaConta(); }
     if (aba === 'config')   { renderConfigContas(); }
     if (aba === 'clientes') { renderShareLinks(); }
@@ -4880,6 +5024,7 @@ function resetLeadSearchAutofill() {
 <script defer src="js/leads.js"></script>
 <script defer src="js/admin.js"></script>
 <script defer src="js/reports-auto.js"></script>
+<script defer src="js/captacao.js"></script>
 
 <!-- Drawer Perfil do Lead (4 abas) — deve ficar no final do body para z-index funcionar -->
 <div id="leadProfileDrawer" style="position:fixed;inset:0;z-index:9999;display:none;align-items:stretch;justify-content:flex-end;background:rgba(0,0,0,0.55);" onclick="if(event.target===this)fecharPerfilLead()">
@@ -4923,11 +5068,11 @@ function resetLeadSearchAutofill() {
       <div id="lpPainel-anuncio" style="display:none;">
         <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">Origem</div>
         <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:10px;margin-bottom:18px;">
-          <div id="lpRowCampanha"></div><div id="lpRowConjunto"></div><div id="lpRowAnuncio"></div><div id="lpRowPlat"></div>
+          <div id="lpRowOrigem"></div><div id="lpRowTrackingCampanha"></div><div id="lpRowCampanha"></div><div id="lpRowConjunto"></div><div id="lpRowAnuncio"></div><div id="lpRowPlat"></div>
         </div>
         <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">Rastreamento</div>
         <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:10px;">
-          <div id="lpRowCtwa"></div><div id="lpRowSourceId"></div><div id="lpRowPageId"></div>
+          <div id="lpRowTrackingMetodo"></div><div id="lpRowCtwa"></div><div id="lpRowSourceId"></div><div id="lpRowPageId"></div>
         </div>
       </div>
       <!-- Jornada -->

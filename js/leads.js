@@ -94,7 +94,7 @@ function renderSkeleton() {
     const tbody = $('tabela-corpo');
     tbody.innerHTML = Array.from({length:8}, () => `
         <tr class="sk-row">
-            ${Array.from({length:8}, () => `<td><div class="sk-line skeleton" style="width:${60+Math.random()*40}%"></div></td>`).join('')}
+            ${Array.from({length:12}, () => `<td><div class="sk-line skeleton" style="width:${60+Math.random()*40}%"></div></td>`).join('')}
         </tr>`).join('');
     $('leadsCount').textContent = '—';
     $('paginacao').innerHTML = '';
@@ -274,14 +274,15 @@ function renderTabela() {
 
     const tbody = $('tabela-corpo');
     if (!pagina.length) {
-        tbody.innerHTML = `<tr><td colspan="11" style="text-align:center;padding:40px;color:var(--muted);">Nenhum lead encontrado.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="12" style="text-align:center;padding:40px;color:var(--muted);">Nenhum lead encontrado.</td></tr>`;
         $('paginacao').innerHTML = '';
         return;
     }
 
     tbody.innerHTML = pagina.map((lead, i) => {
         const idx      = inicio + i;
-        const plat     = (lead.plataforma||'instagram').toLowerCase();
+        const plataformaLabel = lead.plataforma || ((lead.lead_origin && lead.lead_origin !== 'ctwa') ? 'whatsapp' : 'instagram');
+        const plat     = plataformaLabel.toLowerCase();
         const platCls  = plat.includes('face') ? 'facebook' : plat.includes('whats') ? 'whatsapp' : 'instagram';
         const status   = (lead.status||'Lead').toLowerCase();
         const purchase = status === 'venda_fechada' || status === 'vendido';
@@ -308,13 +309,8 @@ function renderTabela() {
           conjunto ? `🗂 ${conjunto}` : '',
         ].filter(Boolean).join('\n');
 
-        // Origem do lead (badge): CTWA = azul, orgânico = âmbar. Default trata
-        // leads antigos sem lead_origin como CTWA (histórico era só-anúncio).
-        const origem = (lead.lead_origin || 'ctwa').toLowerCase();
-        const ehOrganico = origem === 'organic';
-        const origemBadge = ehOrganico
-          ? `<span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;background:rgba(245,158,11,.12);color:var(--amber);border:1px solid rgba(245,158,11,.25);white-space:nowrap;">Orgânico</span>`
-          : `<span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;background:rgba(59,130,246,.12);color:#3b82f6;border:1px solid rgba(59,130,246,.25);white-space:nowrap;">Anúncio</span>`;
+        const origemInfo = obterOrigemLead(lead.lead_origin);
+        const origemBadge = `<span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;background:${origemInfo.bg};color:${origemInfo.color};border:1px solid ${origemInfo.border};white-space:nowrap;">${origemInfo.label}</span>`;
 
         return `<tr>
             <td style="color:var(--text);font-weight:600;">${esc(lead.nome)||'N/A'}</td>
@@ -327,7 +323,7 @@ function renderTabela() {
             <td>${origemBadge}</td>
             <td title="${esc(lead.mensagem_recebida)}" style="max-width:180px;overflow:hidden;text-overflow:ellipsis;">${esc(msg)}${lead.mensagem_recebida?.length>35?'…':''}</td>
             <td style="font-size:12px;color:var(--muted);">${esc(lead.instancia||'—')}</td>
-            <td><div class="platform-icon ${platCls}">${esc(lead.plataforma||'instagram')}</div></td>
+            <td><div class="platform-icon ${platCls}">${esc(plataformaLabel)}</div></td>
             <td title="${esc(lead.event_time)}" style="white-space:nowrap;">${data}</td>
             <td style="font-size:11px;font-weight:600;">${tempoFunil}</td>
             <td style="white-space:nowrap;"><div style="display:inline-flex;gap:4px;align-items:center;">
@@ -342,6 +338,18 @@ function renderTabela() {
     // Paginação
     const totalPags = Math.ceil(total / POR_PAGINA);
     renderPaginacao(totalPags, total, inicio);
+}
+
+function obterOrigemLead(origem) {
+    const key = String(origem || 'ctwa').toLowerCase();
+    const mapa = {
+        ctwa:          { label:'Anúncio',       color:'#3b82f6', bg:'rgba(59,130,246,.12)',  border:'rgba(59,130,246,.25)' },
+        organic:       { label:'Orgânico',      color:'#f59e0b', bg:'rgba(245,158,11,.12)',  border:'rgba(245,158,11,.25)' },
+        bio:           { label:'Link da bio',   color:'#a855f7', bg:'rgba(168,85,247,.12)',  border:'rgba(168,85,247,.25)' },
+        campaign_link: { label:'Link campanha', color:'#06b6d4', bg:'rgba(6,182,212,.12)',   border:'rgba(6,182,212,.25)' },
+        rotator:       { label:'Rotador',       color:'#10b981', bg:'rgba(16,185,129,.12)',  border:'rgba(16,185,129,.25)' },
+    };
+    return mapa[key] || mapa.organic;
 }
 
 function renderPaginacao(totalPags, total, inicio) {
@@ -1042,22 +1050,27 @@ function lpPreencherDados({ lead, jornada }) {
     $('lpMensagem').textContent  = lead.mensagem_recebida || '—';
 
     // ── Aba Anúncio ──
+    const origemInfo = obterOrigemLead(lead.lead_origin);
+    $('lpRowOrigem').innerHTML    = lpRow('Origem do lead', origemInfo.label, origemInfo.color);
+    $('lpRowTrackingCampanha').innerHTML = lpRow('Link rastreável', lead.tracking_campaign_name);
     $('lpRowCampanha').innerHTML  = lpRow('Campanha', lead.utm_campaign, '#3b82f6');
     $('lpRowConjunto').innerHTML  = lpRow('Conjunto', lead.utm_medium, '#6366f1');
     $('lpRowAnuncio').innerHTML   = lpRow('Anúncio', lead.utm_content);
     $('lpRowPlat').innerHTML      = lpRow('Plataforma', lead.plataforma);
+    $('lpRowTrackingMetodo').innerHTML = lpRow('Método de atribuição', lead.tracking_method === 'token' ? 'Token invisível validado' : lead.tracking_method);
     $('lpRowCtwa').innerHTML      = lpRow('CTWA Click ID', lead.ctw_aci_id ? lead.ctw_aci_id.substring(0,24)+'…' : null);
     $('lpRowSourceId').innerHTML  = lpRow('Source ID (Anúncio)', lead.source_id);
     $('lpRowPageId').innerHTML    = lpRow('Page ID', lead.page_id);
 
     // ── Aba Jornada ──
     const total = jornada.length;
-    $('lpJornadaResumo').innerHTML = `<strong style="color:var(--text-primary);">${total} contato${total !== 1 ? 's' : ''}</strong> registrado${total !== 1 ? 's' : ''} via anúncio para este número.`;
+    $('lpJornadaResumo').innerHTML = `<strong style="color:var(--text-primary);">${total} contato${total !== 1 ? 's' : ''}</strong> registrado${total !== 1 ? 's' : ''} para este número.`;
     $('lpTimeline').innerHTML = jornada.map((j, i) => {
         const isCurrent = j.id === lead.id;
         const isV = (j.status||'').toLowerCase() === 'vendido' || (j.status||'').toLowerCase() === 'venda_fechada';
         const dotColor = isV ? '#10b981' : isCurrent ? '#3b82f6' : 'var(--muted)';
         const linhaAds = [j.utm_content, j.utm_medium, j.utm_campaign].filter(Boolean);
+        const jornadaOrigem = obterOrigemLead(j.lead_origin);
         return `<div style="display:flex;gap:14px;margin-bottom:${i < jornada.length-1 ? '0' : '0'};">
             <div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0;">
                 <div style="width:12px;height:12px;border-radius:50%;background:${dotColor};border:2px solid ${dotColor};margin-top:3px;flex-shrink:0;${isCurrent?'box-shadow:0 0 0 3px rgba(59,130,246,.2)':''}"></div>
@@ -1076,6 +1089,8 @@ function lpPreencherDados({ lead, jornada }) {
                         ${j.utm_campaign ? `<div style="font-size:12px;"><span style="color:var(--muted);">📣 Campanha: </span><span style="color:#3b82f6;font-weight:500;">${esc(j.utm_campaign)}</span></div>` : ''}
                     ` : `<div style="font-size:12px;color:var(--muted);">Sem dados de anúncio</div>`}
                     <div style="display:flex;gap:8px;margin-top:4px;flex-wrap:wrap;">
+                        <span style="font-size:11px;padding:2px 8px;border-radius:10px;background:${jornadaOrigem.bg};border:1px solid ${jornadaOrigem.border};color:${jornadaOrigem.color};">${jornadaOrigem.label}</span>
+                        ${j.tracking_campaign_name ? `<span style="font-size:11px;padding:2px 8px;border-radius:10px;background:var(--bg-primary);border:1px solid var(--border);color:var(--muted);">${esc(j.tracking_campaign_name)}</span>` : ''}
                         <span style="font-size:11px;padding:2px 8px;border-radius:10px;background:var(--bg-primary);border:1px solid var(--border);color:${isV?'#10b981':'var(--muted)'};">${j.status||'Lead'}</span>
                         ${j.valor_venda ? `<span style="font-size:11px;padding:2px 8px;border-radius:10px;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.2);color:#10b981;">💰 R$ ${parseFloat(j.valor_venda).toLocaleString('pt-BR',{minimumFractionDigits:2})}</span>` : ''}
                         ${j.plataforma ? `<span style="font-size:11px;padding:2px 8px;border-radius:10px;background:var(--bg-primary);border:1px solid var(--border);color:var(--muted);">${j.plataforma}</span>` : ''}
