@@ -216,6 +216,36 @@ async function setup() {
     `);
     console.log('✅ Novos campos temporais e de score (Fase 1) injetados em "leads_tracking".');
 
+    // Captura configurável: origem do lead + utm_source (Fase 1 de captura ampliada)
+    await client.query(`
+      ALTER TABLE public.leads_tracking
+      ADD COLUMN IF NOT EXISTS lead_origin VARCHAR(20),
+      ADD COLUMN IF NOT EXISTS utm_source VARCHAR(255);
+    `);
+    console.log('✅ Campos "lead_origin" e "utm_source" injetados em "leads_tracking".');
+
+    // Config de captura por instância (ctwa_only | all | keyword)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS public.lead_capture_settings (
+          id SERIAL PRIMARY KEY,
+          cliente_id INTEGER REFERENCES public.clientes(id),
+          instance_name VARCHAR(100) NOT NULL,
+          capture_mode VARCHAR(20) DEFAULT 'ctwa_only',
+          keywords TEXT[] DEFAULT '{}',
+          keyword_match VARCHAR(10) DEFAULT 'partial',
+          deduplication_hours INTEGER DEFAULT 24,
+          enabled BOOLEAN DEFAULT true,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE (cliente_id, instance_name)
+      );
+    `);
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_capture_cliente_instance
+      ON public.lead_capture_settings(cliente_id, instance_name);
+    `);
+    console.log('✅ Tabela "lead_capture_settings" verificada/criada.');
+
     // Configurações Globais do Sistema (White-label)
     await client.query(`
       CREATE TABLE IF NOT EXISTS public.configuracoes_sistema (

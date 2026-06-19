@@ -188,12 +188,35 @@ export default async function handler(req, res) {
     });
   }
 
-  // ── 10. Filtro: só salvar leads de anúncio (com ctwaClid) ──
+  // ── 10. Classificação de origem (captura configurável por instância) ──
+  // Default: ctwa_only (preserva comportamento histórico). Captura orgânica
+  // só ocorre se a instância tiver config explícita 'all' ou 'keyword'.
+  let lead_origin = 'ctwa';
+  let captureCfg = null;
   if (!ctwaClid) {
-    return res.status(200).json({
-      ignored: true,
-      reason: 'Contato sem ctwaClid — não veio de anúncio, ignorado.'
-    });
+    try {
+      const poolCfg = getPool();
+      const cfgRes = await poolCfg.query(
+        'SELECT * FROM lead_capture_settings WHERE cliente_id = $1 AND instance_name = $2',
+        [cliente_id, instance]
+      );
+      captureCfg = cfgRes.rows[0] || null;
+    } catch (e) {
+      log('warn', 'webhook_evo_capture_cfg_fail', { instance, error: e.message });
+    }
+
+    const modo = (captureCfg && captureCfg.enabled !== false) ? captureCfg.capture_mode : 'ctwa_only';
+    if (modo === 'all') {
+      lead_origin = 'organic';
+    } else if (modo === 'keyword' && mensagemBateKeyword(mensagem_recebida, captureCfg)) {
+      lead_origin = 'organic';
+    } else {
+      // ctwa_only (ou keyword sem match): mantém o filtro de só-anúncio.
+      return res.status(200).json({
+        ignored: true,
+        reason: 'Contato sem ctwaClid e fora do modo de captura — ignorado.'
+      });
+    }
   }
 
   // ── 11. Extrair metadados adicionais ──
@@ -252,18 +275,33 @@ export default async function handler(req, res) {
       }
     }
 
-    // ── 12. Deduplicação — evitar leads duplicados nas últimas 24h ──
-    const dupeCheck = await pool.query(
-      `SELECT id FROM leads_tracking
-       WHERE telefone = $1 AND ctw_aci_id = $2 AND cliente_id = $3
-       AND event_time > NOW() - INTERVAL '24 hours'
-       LIMIT 1`,
-      [telefone, ctwaClid, cliente_id]
-    );
+    // ── 12. Deduplicação — regra varia por origem ──
+    // CTWA: telefone + ctwaClid + cliente em 24h.
+    // Orgânico: telefone + cliente + instância dentro da janela configurada
+    // (não há ctwaClid para distinguir; usa a janela de dedup da config).
+    let dupeCheck;
+    if (lead_origin === 'ctwa') {
+      dupeCheck = await pool.query(
+        `SELECT id FROM leads_tracking
+         WHERE telefone = $1 AND ctw_aci_id = $2 AND cliente_id = $3
+         AND event_time > NOW() - INTERVAL '24 hours'
+         LIMIT 1`,
+        [telefone, ctwaClid, cliente_id]
+      );
+    } else {
+      const dedupHoras = parseInt(captureCfg?.deduplication_hours, 10) || 24;
+      dupeCheck = await pool.query(
+        `SELECT id FROM leads_tracking
+         WHERE telefone = $1 AND cliente_id = $2 AND instancia = $3
+         AND event_time > NOW() - ($4 || ' hours')::interval
+         LIMIT 1`,
+        [telefone, cliente_id, instance, String(dedupHoras)]
+      );
+    }
     if (dupeCheck.rows.length > 0) {
       return res.status(200).json({
         ignored: true,
-        reason: 'Lead duplicado (mesmo telefone + ctwaClid nas últimas 24h).',
+        reason: `Lead duplicado (${lead_origin}).`,
         existing_id: dupeCheck.rows[0].id
       });
     }
@@ -273,8 +311,8 @@ export default async function handler(req, res) {
       INSERT INTO leads_tracking (
         cliente_id, nome, telefone, mensagem_recebida, ctw_aci_id, source_id,
         event_source_url, anuncio_thumbnail_url, instancia, status, event_time,
-        page_id, plataforma, utm_campaign, utm_medium, utm_content
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'Lead', NOW(), $10, $11, $12, $13, $14)
+        page_id, plataforma, utm_campaign, utm_medium, utm_content, lead_origin
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'Lead', NOW(), $10, $11, $12, $13, $14, $15)
       RETURNING *
     `, [
       cliente_id,
@@ -290,7 +328,8 @@ export default async function handler(req, res) {
       plataforma,
       utm_campaign,
       utm_medium,
-      utm_content
+      utm_content,
+      lead_origin
     ]);
 
     const lead = insertResult.rows[0];
@@ -303,14 +342,17 @@ export default async function handler(req, res) {
         [
           cliente_id,
           instance,
-          `Lead salvo: ${pushName || telefone} (CTWA)`,
-          JSON.stringify({ lead_id: lead.id, telefone, ctwaClid, plataforma })
+          `Lead salvo: ${pushName || telefone} (${lead_origin})`,
+          JSON.stringify({ lead_id: lead.id, telefone, ctwaClid, plataforma, lead_origin })
         ]
       );
     } catch (_) { /* log best-effort */ }
 
-    // ── 15. Disparar CAPI Lead ──
-    await sendCapiLead(lead, pool);
+    // ── 15. Disparar CAPI Lead — APENAS para origem CTWA ──
+    // Leads orgânicos entram no banco mas nunca vão para a Meta.
+    if (lead_origin === 'ctwa' && lead.ctw_aci_id) {
+      await sendCapiLead(lead, pool);
+    }
 
     log('info', 'webhook_evo_lead_saved', {
       lead_id: lead.id, cliente_id, telefone, instance, ctwaClid
@@ -389,6 +431,29 @@ async function sendCapiLead(lead, pool) {
 }
 
 // ── Helpers ──
+
+// Normaliza texto p/ comparação de palavra-chave: minúsculas, sem acento, sem
+// espaços extras. Usado na captura por keyword (modo configurável da instância).
+function normalizarTexto(s) {
+  return (s || '')
+    .toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '') // remove acentos
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+// Verifica se a mensagem casa com as keywords da config (exact | partial).
+function mensagemBateKeyword(mensagem, cfg) {
+  if (!cfg || !Array.isArray(cfg.keywords) || !cfg.keywords.length) return false;
+  const msg = normalizarTexto(mensagem);
+  if (!msg) return false;
+  const exact = cfg.keyword_match === 'exact';
+  return cfg.keywords.some(k => {
+    const kw = normalizarTexto(k);
+    if (!kw) return false;
+    return exact ? msg === kw : msg.includes(kw);
+  });
+}
 
 function detectarPlataforma(sourceUrl, adReply) {
   const url = (sourceUrl || '').toLowerCase();

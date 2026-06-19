@@ -257,6 +257,7 @@ function renderWaLista(data, isAdminView) {
                     ? `<button class="btn btn-ghost btn-sm" onclick="waDesvincular('${esc(inst.fullName)}')" style="font-size:11px;padding:4px 10px;color:var(--red);border-color:rgba(239,68,68,0.3);"><i data-lucide="link-2-off" style="width:11px;"></i> Desvincular</button>`
                     : `<button class="btn btn-green btn-sm" onclick="verConexao('${esc(inst.displayName)}')" style="font-size:11px;padding:4px 10px;"><i data-lucide="qr-code" style="width:11px;"></i> Conectar QR</button>`
                 }
+                <button class="btn btn-ghost btn-sm" onclick="abrirCaptura('${esc(inst.fullName)}', ${inst.cliente_id || 'null'})" title="Configurar captura de leads" style="font-size:11px;padding:4px 10px;"><i data-lucide="filter" style="width:11px;"></i> Captura</button>
                 <button class="btn btn-ghost btn-sm" onclick="deletarConexao('${esc(inst.displayName)}')" title="Excluir" style="padding:4px 8px;"><i data-lucide="trash-2" style="width:11px;color:var(--red);"></i></button>
             </div>
             <div style="padding-top:8px;border-top:1px solid var(--border);display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
@@ -449,6 +450,70 @@ async function waDesvincular(name) {
         carregarListaWa();
     } catch(e) {
         toast("Erro ao desvincular: " + esc(e.message), "error");
+    }
+}
+
+// ── Captura de leads por instância (ctwa_only | all | keyword) ──────────────
+let _capturaInstancia = null;
+let _capturaClienteId = null;
+
+async function abrirCaptura(instanceName, clienteId) {
+    _capturaInstancia = instanceName;
+    _capturaClienteId = clienteId || null;
+    $('capturaInstanciaNome').textContent = instanceName;
+    $('modalCaptura').classList.add('open');
+
+    // Carrega config existente (default ctwa_only)
+    try {
+        const q = new URLSearchParams({ instance_name: instanceName });
+        if (_capturaClienteId) q.append('cliente_id', _capturaClienteId);
+        const r = await authFetch('/api/lead-capture-settings?' + q.toString());
+        const cfg = await r.json();
+        $('capturaModo').value      = cfg?.capture_mode || 'ctwa_only';
+        $('capturaKeywords').value  = (cfg?.keywords || []).join(', ');
+        $('capturaMatch').value     = cfg?.keyword_match || 'partial';
+        $('capturaDedup').value     = cfg?.deduplication_hours ?? 24;
+    } catch {
+        $('capturaModo').value = 'ctwa_only';
+        $('capturaKeywords').value = '';
+        $('capturaMatch').value = 'partial';
+        $('capturaDedup').value = 24;
+    }
+    capturaToggleCampos();
+}
+
+// Mostra os campos de palavra-chave só no modo keyword.
+function capturaToggleCampos() {
+    const ehKeyword = $('capturaModo').value === 'keyword';
+    $('capturaKeywordBox').style.display = ehKeyword ? 'block' : 'none';
+}
+
+async function salvarCaptura() {
+    const btn = $('btnSalvarCaptura');
+    const prev = btn.innerHTML;
+    btn.disabled = true; btn.innerHTML = 'Salvando...';
+    try {
+        const body = {
+            instance_name: _capturaInstancia,
+            capture_mode: $('capturaModo').value,
+            keywords: $('capturaKeywords').value.split(',').map(k => k.trim()).filter(Boolean),
+            keyword_match: $('capturaMatch').value,
+            deduplication_hours: parseInt($('capturaDedup').value, 10) || 24,
+        };
+        if (_capturaClienteId) body.cliente_id = _capturaClienteId;
+        const r = await authFetch('/api/lead-capture-settings', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+        });
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error || 'Erro ao salvar');
+        toast('Captura configurada.', 'success');
+        $('modalCaptura').classList.remove('open');
+    } catch (e) {
+        toast('Erro: ' + e.message, 'error');
+    } finally {
+        btn.disabled = false; btn.innerHTML = prev;
     }
 }
 

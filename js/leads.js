@@ -158,12 +158,19 @@ function aplicarFiltros() {
     const periodo = $('periodoSelect')?.value || 'hojeOntem';
     const range = (periodo && periodo !== 'todos') ? calcRange(periodo) : null;
     const instanciaFiltro = ($('selectInstancia')?.value || '');
+    const origemFiltro = ($('selectOrigem')?.value || '');
 
     dadosFiltrados = rawData.filter(l => {
         if (clienteAdminSelecionado && l.cliente_id !== clienteAdminSelecionado) return false;
-        
+
         // Filtro por instância
         if (instanciaFiltro && l.instancia !== instanciaFiltro) return false;
+
+        // Filtro por origem (ctwa/organic). Leads antigos sem lead_origin = ctwa.
+        if (origemFiltro) {
+            const orig = (l.lead_origin || 'ctwa').toLowerCase();
+            if (orig !== origemFiltro) return false;
+        }
 
         if (busca) {
             const n = (l.nome||'').toLowerCase();
@@ -267,7 +274,7 @@ function renderTabela() {
 
     const tbody = $('tabela-corpo');
     if (!pagina.length) {
-        tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:40px;color:var(--muted);">Nenhum lead encontrado.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="11" style="text-align:center;padding:40px;color:var(--muted);">Nenhum lead encontrado.</td></tr>`;
         $('paginacao').innerHTML = '';
         return;
     }
@@ -301,6 +308,14 @@ function renderTabela() {
           conjunto ? `🗂 ${conjunto}` : '',
         ].filter(Boolean).join('\n');
 
+        // Origem do lead (badge): CTWA = azul, orgânico = âmbar. Default trata
+        // leads antigos sem lead_origin como CTWA (histórico era só-anúncio).
+        const origem = (lead.lead_origin || 'ctwa').toLowerCase();
+        const ehOrganico = origem === 'organic';
+        const origemBadge = ehOrganico
+          ? `<span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;background:rgba(245,158,11,.12);color:var(--amber);border:1px solid rgba(245,158,11,.25);white-space:nowrap;">Orgânico</span>`
+          : `<span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;background:rgba(59,130,246,.12);color:#3b82f6;border:1px solid rgba(59,130,246,.25);white-space:nowrap;">Anúncio</span>`;
+
         return `<tr>
             <td style="color:var(--text);font-weight:600;">${esc(lead.nome)||'N/A'}</td>
             <td>${esc(lead.telefone)||'N/A'}</td>
@@ -309,6 +324,7 @@ function renderTabela() {
             <td style="max-width:160px;" title="${esc(tooltipOrig)}">
                 ${anuncio ? `<div style="font-size:11px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(anuncio)}</div>` : `<div style="font-size:11px;color:var(--muted);">—</div>`}
             </td>
+            <td>${origemBadge}</td>
             <td title="${esc(lead.mensagem_recebida)}" style="max-width:180px;overflow:hidden;text-overflow:ellipsis;">${esc(msg)}${lead.mensagem_recebida?.length>35?'…':''}</td>
             <td style="font-size:12px;color:var(--muted);">${esc(lead.instancia||'—')}</td>
             <td><div class="platform-icon ${platCls}">${esc(lead.plataforma||'instagram')}</div></td>

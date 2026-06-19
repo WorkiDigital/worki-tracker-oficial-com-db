@@ -275,6 +275,49 @@
     </div>
 </div>
 
+<!-- Modal: Configuração de Captura de Leads por instância -->
+<div id="modalCaptura" class="modal-overlay" role="dialog" aria-modal="true" onclick="if(event.target===this) this.classList.remove('open')">
+    <div class="modal" style="max-width:460px;">
+        <div class="modal-head">
+            <div class="modal-icon" style="background:rgba(59,130,246,0.12);"><i data-lucide="filter" style="color:#3b82f6;width:22px;height:22px;"></i></div>
+            <div><h3>Captura de Leads</h3><p id="capturaInstanciaNome" style="font-family:monospace;font-size:12px;">—</p></div>
+            <button class="modal-close" aria-label="Fechar" onclick="$('modalCaptura').classList.remove('open')"><i data-lucide="x" style="width:16px;"></i></button>
+        </div>
+
+        <div class="input-group" style="margin-bottom:12px;">
+            <label>Modo de captura</label>
+            <select id="capturaModo" class="form-control" onchange="capturaToggleCampos()">
+                <option value="ctwa_only">Somente Anúncios (CTWA)</option>
+                <option value="all">Todos os contatos</option>
+                <option value="keyword">Por palavra-chave</option>
+            </select>
+            <p style="font-size:11px;color:var(--muted);margin-top:6px;">Padrão: somente leads de anúncio. Captura orgânica não envia evento para a Meta (CAPI).</p>
+        </div>
+
+        <div id="capturaKeywordBox" style="display:none;">
+            <div class="input-group" style="margin-bottom:12px;">
+                <label>Palavras-chave <span style="color:var(--muted);font-weight:400;font-size:11px;">(separadas por vírgula)</span></label>
+                <input type="text" id="capturaKeywords" class="form-control" placeholder="orçamento, preço, quero comprar">
+            </div>
+            <div class="input-group" style="margin-bottom:12px;">
+                <label>Tipo de correspondência</label>
+                <select id="capturaMatch" class="form-control">
+                    <option value="partial">Parcial (mensagem contém a palavra)</option>
+                    <option value="exact">Exata (mensagem é igual à palavra)</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="input-group" style="margin-bottom:16px;">
+            <label>Janela de deduplicação (horas)</label>
+            <input type="number" id="capturaDedup" class="form-control" value="24" min="1" max="720">
+            <p style="font-size:11px;color:var(--muted);margin-top:6px;">Tempo em que o mesmo telefone não gera lead duplicado (orgânico).</p>
+        </div>
+
+        <button class="btn-confirm" id="btnSalvarCaptura" onclick="salvarCaptura()">Salvar Configuração</button>
+    </div>
+</div>
+
 <div id="modalEditCliente" class="modal-overlay" role="dialog" aria-modal="true" onclick="if(event.target===this) this.classList.remove('open')">
     <div class="modal" style="max-width:480px;">
         <div class="modal-head">
@@ -518,6 +561,16 @@
                         <option value="">Todas instâncias</option>
                     </select>
                 </div>
+
+                <!-- Origin filter -->
+                <div id="originFilterContainer" class="ctrl-box">
+                    <i data-lucide="git-branch" style="width:14px;color:var(--muted);flex-shrink:0;"></i>
+                    <select id="selectOrigem" class="bare" onchange="aplicarFiltros()">
+                        <option value="">Todas origens</option>
+                        <option value="ctwa">Anúncio (CTWA)</option>
+                        <option value="organic">Orgânico</option>
+                    </select>
+                </div>
                 <!-- Search -->
                 <div class="ctrl-box">
                     <i data-lucide="search" style="width:14px;color:var(--muted);flex-shrink:0;"></i>
@@ -604,6 +657,7 @@
                                 <th class="sortable" onclick="sortBy('status')">Status <span class="sort-icon" id="sort-status">↕</span></th>
                                 <th class="sortable" onclick="sortBy('lead_score')">Score <span class="sort-icon" id="sort-lead_score">↕</span></th>
                                 <th>Anúncio</th>
+                                <th>Origem</th>
                                 <th>Mensagem</th>
                                 <th>Instância</th>
                                 <th>Plataforma</th>

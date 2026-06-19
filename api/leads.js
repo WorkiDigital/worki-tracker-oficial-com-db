@@ -43,7 +43,7 @@ export default async function handler(req, res) {
         const COLS = `id, nome, telefone, status, plataforma, instancia, event_time,
             created_at, utm_campaign, utm_medium, utm_content, mensagem_recebida, valor_venda,
             lead_score, qualified_at, email, cpf, endereco, cidade, estado, produto,
-            ctw_aci_id, cliente_id`;
+            ctw_aci_id, cliente_id, lead_origin, utm_source`;
 
         const result = await pool.query(
             `SELECT ${COLS} FROM leads_tracking ${whereSql} ORDER BY created_at DESC LIMIT $${limitIdx} OFFSET $${offsetIdx}`,
