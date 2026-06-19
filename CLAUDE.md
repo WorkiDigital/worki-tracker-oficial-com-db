@@ -349,6 +349,9 @@ Botão de perfil (ícone `user` roxo) em cada linha da tabela de leads abre um d
 - Instâncias novas passam a ser registradas automaticamente em `instancias_mapeamento`.
 - Campanhas antigas sem vínculo exibem um seletor de instância em cada linha de destino; não é necessário apagar e recriar os números.
 - `js/captacao.js` usa versão na URL para evitar que o navegador mantenha o formulário antigo em cache após o deploy.
+- O decodificador aceita o token mesmo quando o WhatsApp remove apenas os marcadores `U+2060` e preserva os bits `U+200B/U+200C`.
+- Se o token inteiro desaparecer, o webhook pode correlacionar um único clique pendente da mesma instância nos últimos 5 minutos (`recent_click_correlation`). Se houver mais de um candidato, não atribui automaticamente e registra `tracking_fallback` nos Logs do Sistema.
+- Os filtros de Logs do Sistema incluem `tracking_token`, `tracking_fallback` e `tracking_ignored` para diagnosticar o caminho real de cada teste.
 
 ### Banco e ativação em produção
 As novas tabelas/colunas são criadas por `setup-db.js`:

@@ -18,8 +18,10 @@ const BIT1 = '‌';
 const MARK = '⁠'; // início/fim
 const VERSION = 1;
 
-// Regex que captura QUALQUER sequência de marcadores+bits invisíveis na mensagem.
+// Bloco preferencial com marcadores e fallback para casos em que o WhatsApp
+// remove U+2060, mas preserva os bits U+200B/U+200C.
 const BLOCO_RE = /⁠[​‌]+⁠/;
+const BITS_RE = /[​‌]{24,}/g;
 // Para limpar TODOS os zero-width da mensagem visível (defensivo no display).
 const ZEROWIDTH_RE = /[​‌⁠﻿]/g;
 
@@ -64,31 +66,34 @@ export function decodeToken(message) {
   if (!message || typeof message !== 'string') {
     return { trackingId: null, cleanMessage: message || '' };
   }
-  const match = message.match(BLOCO_RE);
-  if (!match) {
-    return { trackingId: null, cleanMessage: message };
-  }
-  const bloco = match[0];
-  // Remove APENAS o bloco identificado (não varre a mensagem inteira às cegas).
-  const cleanMessage = message.replace(bloco, '');
+  const markedMatch = message.match(BLOCO_RE);
+  const candidates = markedMatch
+    ? [{ bloco: markedMatch[0], inner: markedMatch[0].slice(1, -1) }]
+    : [...message.matchAll(BITS_RE)].map(match => ({ bloco: match[0], inner: match[0] }));
 
-  try {
-    const inner = bloco.slice(1, -1); // tira os MARK
+  if (!candidates.length) return { trackingId: null, cleanMessage: message };
+
+  for (const candidate of candidates) {
+    try {
+      const { bloco, inner } = candidate;
     const bits = [...inner].map(c => (c === BIT0 ? '0' : c === BIT1 ? '1' : '')).join('');
     const bytes = bitsToBytes(bits);
-    if (bytes.length < 3) return { trackingId: null, cleanMessage };
+      if (bytes.length < 3) continue;
 
     const version = bytes[0];
     const cs = bytes[bytes.length - 1];
     const payload = bytes.slice(1, -1);
-    if (version !== VERSION) return { trackingId: null, cleanMessage };
-    if (checksum(payload) !== cs) return { trackingId: null, cleanMessage };
+      if (version !== VERSION) continue;
+      if (checksum(payload) !== cs) continue;
 
     const trackingId = Buffer.from(payload).toString('utf8');
-    return { trackingId, cleanMessage };
-  } catch {
-    return { trackingId: null, cleanMessage };
+      if (!/^[A-Za-z0-9_-]{4,40}$/.test(trackingId)) continue;
+      return { trackingId, cleanMessage: message.replace(bloco, '') };
+    } catch {
+      // Tenta a próxima sequência invisível encontrada.
+    }
   }
+  return { trackingId: null, cleanMessage: message.replace(ZEROWIDTH_RE, '') };
 }
 
 // Limpa qualquer zero-width residual (uso defensivo no display, opcional).

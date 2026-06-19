@@ -211,6 +211,7 @@ export default async function handler(req, res) {
   let tracking_method = null;
   let captureCfg = null;
   let trackedClick = null;
+  let effectiveTrackingId = clickTrackingId;
   if (!ctwaClid) {
     if (clickTrackingId) {
       try {
@@ -229,15 +230,67 @@ export default async function handler(req, res) {
           [clickTrackingId, cliente_id, instance]
         );
         trackedClick = tokenRes.rows[0] || null;
+        if (!trackedClick) {
+          await gravarLogWebhook({
+            cliente_id, instance, tag: 'tracking_token',
+            level: 'warn',
+            message: 'Token recebido, mas sem clique pendente compatível com a instância.',
+            data: { telefone, tracking_id: clickTrackingId }
+          });
+        }
       } catch (e) {
         log('warn', 'webhook_evo_tracking_token_lookup_fail', { error: e.message });
+      }
+    }
+
+    // Fallback seguro quando o WhatsApp remove o token invisível: só correlaciona
+    // se houver EXATAMENTE um clique pendente desta instância nos últimos 5 min.
+    // Mais de um candidato é ambíguo e não recebe campanha automaticamente.
+    if (!trackedClick && !clickTrackingId) {
+      try {
+        const recentRes = await getPool().query(
+          `SELECT k.id, k.tracking_id, k.campaign_id, c.origin_type,
+                  COALESCE(k.instance_name, d.instance_name) AS instance_name
+           FROM tracking_clicks k
+           JOIN tracking_campaigns c ON c.id = k.campaign_id
+           LEFT JOIN tracking_destinations d ON d.id = k.destination_id
+           WHERE k.cliente_id=$1
+             AND COALESCE(k.instance_name, d.instance_name)=$2
+             AND k.status='clicked' AND k.converted_at IS NULL
+             AND c.enabled=true
+             AND k.clicked_at > NOW() - INTERVAL '5 minutes'
+             AND (k.expires_at IS NULL OR k.expires_at > NOW())
+           ORDER BY k.clicked_at DESC
+           LIMIT 2`,
+          [cliente_id, instance]
+        );
+        if (recentRes.rows.length === 1) {
+          trackedClick = recentRes.rows[0];
+          effectiveTrackingId = trackedClick.tracking_id;
+          tracking_method = 'recent_click_correlation';
+          await gravarLogWebhook({
+            cliente_id, instance, tag: 'tracking_fallback',
+            level: 'warn',
+            message: 'Token invisível ausente; clique recente único correlacionado.',
+            data: { telefone, tracking_id: effectiveTrackingId, click_id: trackedClick.id }
+          });
+        } else if (recentRes.rows.length > 1) {
+          await gravarLogWebhook({
+            cliente_id, instance, tag: 'tracking_fallback',
+            level: 'warn',
+            message: 'Token invisível ausente e correlação ambígua; campanha não atribuída.',
+            data: { telefone, candidatos: recentRes.rows.map(r => r.id) }
+          });
+        }
+      } catch (e) {
+        log('warn', 'webhook_evo_tracking_fallback_fail', { error: e.message });
       }
     }
 
     if (trackedClick) {
       const origemMap = { bio: 'bio', rotator: 'rotator', campaign: 'campaign_link' };
       lead_origin = origemMap[trackedClick.origin_type] || 'campaign_link';
-      tracking_method = 'token';
+      tracking_method = tracking_method || 'token';
     } else {
       try {
         const poolCfg = getPool();
@@ -257,6 +310,16 @@ export default async function handler(req, res) {
         lead_origin = 'organic';
       } else {
         // ctwa_only (ou keyword sem match): mantém o filtro de só-anúncio.
+        await gravarLogWebhook({
+          cliente_id, instance, tag: 'tracking_ignored',
+          level: 'info',
+          message: 'Mensagem sem token válido e fora do modo de captura.',
+          data: {
+            telefone,
+            capture_mode: modo,
+            token_detectado: !!clickTrackingId
+          }
+        });
         return res.status(200).json({
           ignored: true,
           reason: 'Contato sem ctwaClid e fora do modo de captura — ignorado.'
@@ -388,7 +451,7 @@ export default async function handler(req, res) {
     // ser salvo como orgânico conforme a configuração, mas não recebe campanha.
     if (trackedClick) {
       const atr = await atribuirClique(pool, {
-        cliente_id, lead_id: lead.id, clickTrackingId, tracking_method, instance
+        cliente_id, lead_id: lead.id, clickTrackingId: effectiveTrackingId, tracking_method, instance
       });
       if (!atr) {
         await pool.query('DELETE FROM leads_tracking WHERE id=$1', [lead.id]);
@@ -447,6 +510,18 @@ export default async function handler(req, res) {
   } catch (error) {
     log('error', 'webhook_evo_error', { error: error.message, instance, telefone });
     return res.status(500).json({ error: error.message });
+  }
+}
+
+async function gravarLogWebhook({ cliente_id, instance, tag, level, message, data }) {
+  try {
+    await getPool().query(
+      `INSERT INTO webhook_logs (cliente_id, instance, tag, level, message, data)
+       VALUES ($1,$2,$3,$4,$5,$6)`,
+      [cliente_id, instance, tag, level, message, JSON.stringify(data || {})]
+    );
+  } catch {
+    // Diagnóstico best-effort: nunca interrompe o processamento do webhook.
   }
 }
 
