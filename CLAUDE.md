@@ -248,11 +248,28 @@ As instâncias têm **saudação automática/bot** antes do atendente humano. A 
 FIX_INSTANCIA=nome-instancia FIX_DAYS=10 FIX_DRY_RUN=true node -r dotenv/config scripts/fix-page-id.js
 ```
 - Usa AES-256-GCM (igual `api/_crypto.js`), cache de token+pixel por cliente
-- "page_id não retornado" = anúncio deletado/sem permissão → sem solução
-- Já rodado: ~90 eventos LeadSubmitted reenviados (reidosofa, reidoscolchoes)
+- 3 camadas de fallback de page_id (ver abaixo)
+- Já rodado: ~90+ eventos LeadSubmitted reenviados (reidosofa, reidoscolchoes, tayna)
 
 ### Log de page_id NULL no webhook
 O webhook agora grava em `webhook_logs` (tag `page_id_missing`) quando o page_id fica NULL — distingue "cliente sem token" de "Graph API não retornou". Visível na aba **Logs do Sistema**.
+
+## 🎯 As 3 fontes de page_id (ORDEM DE FALLBACK) — IMPORTANTE
+
+O `page_id` é o ID da **página do FB/IG** — normalmente **o mesmo em TODOS os anúncios de um cliente** (validado: reidoscolchoes tem 478 leads no mesmo `992303220626755`). Tanto `buscarInfoAnuncio` (webhook) quanto `fetchPageId` (`scripts/fix-page-id.js`) resolvem o page_id nesta ordem:
+
+1. **`creative.object_story_spec.page_id`** — funciona para anúncios "post da página" (maioria).
+2. **`tracking_specs[].page`** (método herdado do N8N) — para anúncios **dynamic/catálogo** que NÃO têm `object_story_spec` (Meta retorna erro #100 `Tried accessing nonexisting field (object_story_spec)`). Busca recursiva pela chave `page` no array `tracking_specs`. **Foi o que resolveu a Tayna** — confirmado com `scripts/teste-tracking-specs.js` (compara os 2 métodos com source_id real).
+3. **page_id dominante do cliente** (`resolvePageId` em `leads-update.js`; `getPageIdDominante` no script) — o `page_id` mais frequente dos outros leads do mesmo cliente. Cobre leads **sem source_id** (só têm ctwa_clid).
+
+**Para cliente NOVO sem nenhum page_id no banco** (fallback 3 não tem de onde copiar): descobrir a página real com `scripts/listar-pages-cliente.js` (`/me/accounts` + testa source_id real mostrando todos os caminhos). Depois forçar via `FIX_PAGEID=<id>` no `fix-page-id.js`. Ex: Tayna = `163794940158656`.
+
+> A única chamada do webhook agora pede `...,tracking_specs,creative{...object_story_spec{page_id}}` — uma requisição traz UTMs + ambos os caminhos de page_id.
+
+## 🌐 Resiliência de rede no painel (auto-refresh)
+
+- **Auto-refresh de leads (30s, `index.html`):** só dispara `recarregarLeads(true)` se `!document.hidden` E `navigator.onLine !== false`. Sem essas guardas, o refresh rodava offline/em background e empilhava `ERR_INTERNET_DISCONNECTED` no console. Em queda de rede, o indicador mostra **"sem conexão"** (amber), não "erro ao carregar" + toast.
+- **`authFetch` tem timeout de 30s** (AbortController). Sem ele, uma requisição que cai no meio fica pendurada para sempre → `recarregarLeads` nunca chega ao `finally` → o spinner "Atualizar" **gira eternamente**. O timeout aborta e libera. Respeita `signal` externo se já houver (ex: `authFetchJsonTimeout`).
 
 ## 👤 Drawer de Perfil do Lead (4 abas)
 
