@@ -387,6 +387,33 @@ function capSelecionarInstancia() {
   if (instancia?.whatsapp_number && numEl) numEl.value = instancia.whatsapp_number;
 }
 
+function capOpcoesInstancia(selecionada) {
+  const atualExiste = selecionada && _capInstancias.some(i => i.fullName === selecionada);
+  const pendente = selecionada && !atualExiste
+    ? `<option value="${esc(selecionada)}" selected>${esc(selecionada)} (não encontrada)</option>`
+    : '<option value="">Selecione…</option>';
+  return pendente + _capInstancias.map(i => {
+    const selected = i.fullName === selecionada ? ' selected' : '';
+    const estado = i.state === 'open' ? 'conectada' : (i.state || 'desconhecida');
+    return `<option value="${esc(i.fullName)}"${selected}>${esc(i.displayName || i.fullName)} (${esc(estado)})</option>`;
+  }).join('');
+}
+
+function capVincularDestino(idx, instanceName) {
+  const destino = _capDestinos[idx];
+  if (!destino) return;
+  if (instanceName && _capDestinos.some((d, i) => i !== idx && d.instance_name === instanceName)) {
+    toast('Esta instância já está vinculada a outro destino.', 'error');
+    capRenderDestinos();
+    return;
+  }
+  destino.instance_name = instanceName || null;
+  const instancia = _capInstancias.find(i => i.fullName === instanceName);
+  if (instancia?.whatsapp_number) destino.whatsapp_number = instancia.whatsapp_number;
+  capRenderDestinos();
+  capToggleModo();
+}
+
 function capRenderDestinos() {
   const lista = $('capDestinosLista');
   if (!lista) return;
@@ -415,7 +442,12 @@ function capRenderDestinos() {
         ${_capDestinos.map((d, i) => `
           <tr style="border-bottom:1px solid var(--border);">
             <td style="padding:6px 8px;font-family:monospace;font-size:12px;">${esc(d.whatsapp_number || '')}</td>
-            <td style="padding:6px 8px;color:${d.instance_name ? 'var(--text)' : 'var(--red)'};font-size:11px;">${esc(d.instance_name || 'Vínculo pendente')}</td>
+            <td style="padding:6px 8px;min-width:180px;">
+              <select class="form-control" onchange="capVincularDestino(${i}, this.value)"
+                style="min-width:170px;padding:6px 8px;font-size:11px;border-color:${d.instance_name ? 'var(--border)' : 'var(--red)'};">
+                ${capOpcoesInstancia(d.instance_name)}
+              </select>
+            </td>
             <td style="padding:6px 8px;color:var(--muted);">${esc(d.name || '—')}</td>
             <td class="cap-peso-cel" style="padding:6px 8px;text-align:center;display:${modo === 'weighted' ? '' : 'none'};">
               <input type="number" min="1" max="100" value="${d.weight || 1}"

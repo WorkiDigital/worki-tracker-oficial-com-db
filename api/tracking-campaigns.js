@@ -307,7 +307,7 @@ export default async function handler(req, res) {
     if (err.code === '23505') {
       return res.status(409).json({ error: 'Este identificador de URL já está em uso.' });
     }
-    if (/inválid|duplicado|adicione|mantenha|destino único/i.test(err.message || '')) {
+    if (/inválid|duplicado|adicione|mantenha|destino único|instância|vinculada|posição/i.test(err.message || '')) {
       return res.status(400).json({ error: err.message });
     }
     return res.status(500).json({ error: 'Erro interno ao salvar o link rastreável.' });
