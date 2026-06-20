@@ -21,7 +21,7 @@ export default async function handler(req, res) {
   if (req.method === 'GET') {
       try {
           // Lista todos os clientes para montar o painel Admin (EXCLUI token_meta por segurança)
-          const result = await pool.query('SELECT id, nome, email_contato, pixel_padrao, account_id, permissoes, template_venda, template_qualificacao, criado_em FROM clientes ORDER BY id DESC');
+          const result = await pool.query('SELECT id, nome, email_contato, pixel_padrao, account_id, permissoes, template_venda, template_qualificacao, capi_pixel_id, criado_em FROM clientes ORDER BY id DESC');
           return res.status(200).json(result.rows);
       } catch (err) {
           console.error(err);
@@ -71,7 +71,7 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'PATCH') {
-      const { id, nome, email_contato, pixel_padrao, token_meta, account_id, senha_acesso, permissoes, template_venda, template_qualificacao } = req.body;
+      const { id, nome, email_contato, pixel_padrao, token_meta, account_id, senha_acesso, permissoes, template_venda, template_qualificacao, capi_pixel_id, capi_token } = req.body;
       if (!id) return res.status(400).json({ error: 'ID do cliente é obrigatório' });
 
       try {
@@ -82,12 +82,19 @@ export default async function handler(req, res) {
           if (nome)         { fields.push(`nome=$${idx++}`);         values.push(nome); }
           if (email_contato){ fields.push(`email_contato=$${idx++}`);values.push(email_contato); }
           if (pixel_padrao) { fields.push(`pixel_padrao=$${idx++}`); values.push(pixel_padrao); }
-          if (token_meta)   { 
-              fields.push(`token_meta_enc=$${idx++}`);   values.push(encryptToken(token_meta)); 
+          if (token_meta)   {
+              fields.push(`token_meta_enc=$${idx++}`);   values.push(encryptToken(token_meta));
               fields.push(`token_last4=$${idx++}`);     values.push(token_meta.slice(-6));
               fields.push(`token_updated_at=$${idx++}`); values.push(new Date());
-              // Opcional: Manter retrocompatibilidade (gravando texto puro por enquanto se desejar, 
+              // Opcional: Manter retrocompatibilidade (gravando texto puro por enquanto se desejar,
               // mas a instrução diz para virar BYTEA. Aqui apenas seguimos a nova lógica)
+          }
+          // CAPI Web (links rastreáveis): pixel/token DEDICADOS, separados do token_meta de App.
+          if (capi_pixel_id !== undefined) { fields.push(`capi_pixel_id=$${idx++}`); values.push(capi_pixel_id || null); }
+          if (capi_token) {
+              fields.push(`capi_token_enc=$${idx++}`);      values.push(encryptToken(capi_token));
+              fields.push(`capi_token_last4=$${idx++}`);    values.push(capi_token.slice(-6));
+              fields.push(`capi_token_updated_at=$${idx++}`); values.push(new Date());
           }
           if (account_id !== undefined) { fields.push(`account_id=$${idx++}`); values.push(account_id || null); }
           if (permissoes)   { fields.push(`permissoes=$${idx++}`);   values.push(JSON.stringify(permissoes)); }

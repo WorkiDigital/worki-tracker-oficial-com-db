@@ -442,8 +442,12 @@
         <!-- Aba: Meta Ads -->
         <div id="editPanel-meta" style="display:none;">
             <div class="input-group"><label>Pixel Meta</label><input type="text" id="editCliPixel"></div>
-            <div class="input-group"><label>Token Meta</label><input type="text" id="editCliToken"></div>
+            <div class="input-group"><label>Token Meta <span style="color:var(--muted);font-weight:400;font-size:11px;">(App — canal WhatsApp/CTWA)</span></label><input type="text" id="editCliToken"></div>
             <div class="input-group"><label>ID da Conta de Anúncios <span style="color:var(--muted);font-weight:400;font-size:11px;">(ex: act_123456789)</span></label><input type="text" id="editCliAccountId" placeholder="act_XXXXXXXXX"></div>
+            <hr style="border:none;border-top:1px solid var(--border);margin:14px 0;">
+            <p style="font-size:11px;color:var(--muted);margin:0 0 10px;"><strong style="color:var(--text);">CAPI Web (links rastreáveis)</strong> — atribui leads de link à campanha do Facebook. Token gerado em <em>Eventos Manager → Conjuntos de Dados → Conversions API</em>.</p>
+            <div class="input-group"><label>Pixel CAPI Web <span style="color:var(--muted);font-weight:400;font-size:11px;">(dataset)</span></label><input type="text" id="editCliCapiPixel" placeholder="Apenas números"></div>
+            <div class="input-group"><label>Token CAPI Web <span style="color:var(--muted);font-weight:400;font-size:11px;">(deixe em branco p/ não alterar)</span></label><input type="text" id="editCliCapiToken" placeholder="Token de API do dataset"></div>
         </div>
         <!-- Aba: Venda -->
         <div id="editPanel-venda" style="display:none;">

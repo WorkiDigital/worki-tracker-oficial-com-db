@@ -4,6 +4,7 @@ import { cors } from './_cors.js';
 import { decryptToken } from './_crypto.js';
 import { decodeToken } from './_invisible-token.js';
 import { ensureTrackingSchema } from './_tracking-schema.js';
+import { enviarCapiWebLead } from './_capi-web.js';
 import { log } from './_logger.js';
 
 // ── Handler principal — recebe payload bruto da Evolution API ──
@@ -476,6 +477,35 @@ export default async function handler(req, res) {
       lead.tracking_method = atr.method;
       lead.tracking_campaign_id = atr.campaign_id;
       lead.lead_origin = lead_origin;
+
+      // ── 13c. CAPI Web: evento Lead atribuído à campanha do Facebook ──
+      // Só dispara se o clique tinha fbc (veio de anúncio web) E o cliente tem
+      // pixel+token CAPI configurados. Best-effort: nunca derruba o webhook.
+      if (atr.fbc) {
+        try {
+          const capi = await enviarCapiWebLead(pool, {
+            cliente_id, lead,
+            click: {
+              fbc: atr.fbc, fbp: atr.fbp, ip_address: atr.ip_address,
+              user_agent: atr.user_agent, referrer: atr.referrer,
+              utm_campaign: atr.utm_campaign,
+            }
+          });
+          await pool.query(
+            `UPDATE tracking_clicks SET capi_web_status=$1 WHERE id=$2`,
+            [capi.sent ? 'sent' : 'failed', atr.click_id]
+          );
+          await gravarLogWebhook({
+            cliente_id, instance,
+            tag: 'capi_web', level: capi.sent ? 'info' : 'warn',
+            message: capi.sent ? 'CAPI Web Lead enviado (atribuído à campanha FB).'
+                               : `CAPI Web Lead falhou: ${capi.error}`,
+            data: { lead_id: lead.id, click_id: atr.click_id, fbtrace_id: capi.fbtrace_id, error: capi.error }
+          });
+        } catch (e) {
+          log('warn', 'webhook_evo_capi_web_fail', { error: e.message });
+        }
+      }
     }
 
     // ── 14. Gravar log no webhook_logs ──
@@ -624,14 +654,17 @@ async function atribuirClique(pool, { cliente_id, lead_id, clickTrackingId, trac
        ))=$4
        AND status='clicked' AND converted_at IS NULL
        AND (expires_at IS NULL OR expires_at > NOW())
-     RETURNING id, campaign_id, utm_source, utm_campaign, utm_medium, utm_content`,
+     RETURNING id, campaign_id, utm_source, utm_campaign, utm_medium, utm_content,
+               fbc, fbp, ip_address, user_agent, referrer`,
     [lead_id, clickTrackingId, cliente_id, instance]
   );
   if (r.rows.length) {
     const c = r.rows[0];
     return { click_id: c.id, campaign_id: c.campaign_id, method: tracking_method || 'token',
              utm_source: c.utm_source, utm_campaign: c.utm_campaign,
-             utm_medium: c.utm_medium, utm_content: c.utm_content };
+             utm_medium: c.utm_medium, utm_content: c.utm_content,
+             fbc: c.fbc, fbp: c.fbp, ip_address: c.ip_address,
+             user_agent: c.user_agent, referrer: c.referrer };
   }
   return null;
 }

@@ -22,6 +22,16 @@ function gerarTrackingId() {
   return crypto.randomBytes(8).toString('base64url').slice(0, 10);
 }
 
+// Lê um cookie pelo nome do header Cookie (ex: _fbp do Pixel da Meta).
+function lerCookie(cookieHeader, nome) {
+  if (!cookieHeader) return null;
+  for (const par of cookieHeader.split(';')) {
+    const [k, ...v] = par.trim().split('=');
+    if (k === nome) return v.join('=') || null;
+  }
+  return null;
+}
+
 function htmlRedirect(url) {
   // Fallback HTML caso o 302 seja bloqueado; também evita preview de link quebrar.
   const safeUrl = url.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
@@ -79,15 +89,23 @@ export default async function handler(req, res) {
     const utm_campaign = q.utm_campaign || campaign.utm_campaign || null;
     const utm_content  = q.utm_content  || campaign.utm_content  || null;
 
+    // Atribuição Meta (anúncio web → link): o Facebook anexa ?fbclid=... ao clicar
+    // no anúncio. Geramos o fbc no formato oficial fb.1.<ts>.<fbclid> p/ CAPI web.
+    // fbp vem do cookie _fbp (se o Pixel já rodou no navegador). Ambos são best-effort:
+    // sem eles, segue só o tracking interno.
+    const fbclid = q.fbclid || null;
+    const fbc = fbclid ? `fb.1.${Date.now()}.${fbclid}` : null;
+    const fbp = lerCookie(req.headers.cookie, '_fbp');
+
     await client.query(
       `INSERT INTO tracking_clicks
         (tracking_id, campaign_id, destination_id, cliente_id, status,
          utm_source, utm_medium, utm_campaign, utm_content, referrer, ip_address, user_agent,
-         whatsapp_number, instance_name, expires_at)
-       VALUES ($1,$2,$3,$4,'clicked',$5,$6,$7,$8,$9,$10,$11,$12,$13, NOW() + INTERVAL '72 hours')`,
+         whatsapp_number, instance_name, fbclid, fbc, fbp, expires_at)
+       VALUES ($1,$2,$3,$4,'clicked',$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16, NOW() + INTERVAL '72 hours')`,
       [trackingId, campaign.id, destino.id, campaign.cliente_id,
        utm_source, utm_medium, utm_campaign, utm_content, referrer, ip, userAgent,
-       destino.whatsapp_number, destino.instance_name]
+       destino.whatsapp_number, destino.instance_name, fbclid, fbc, fbp]
     );
 
     await client.query('COMMIT');

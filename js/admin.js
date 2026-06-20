@@ -122,6 +122,8 @@ function abrirEditCliente(id) {
     $('editCliPixel').value     = c.pixel_padrao || '';
     $('editCliToken').value     = c.token_meta || '';
     $('editCliAccountId').value = c.account_id || '';
+    $('editCliCapiPixel').value = c.capi_pixel_id || '';
+    $('editCliCapiToken').value = ''; // nunca exibe o token (write-only)
     $('editCliTemplate').value  = c.template_venda || '';
     $('editCliTemplateQualificacao').value = c.template_qualificacao || '';
     $('editCliEmail').value     = c.email_contato || '';
@@ -149,6 +151,8 @@ async function salvarEdicaoCliente() {
         pixel_padrao:  $('editCliPixel').value.trim() || undefined,
         token_meta:    $('editCliToken').value.trim() || undefined,
         account_id:     $('editCliAccountId').value.trim() || undefined,
+        capi_pixel_id:  $('editCliCapiPixel').value.trim() || undefined,
+        capi_token:     $('editCliCapiToken').value.trim() || undefined,
         template_venda: $('editCliTemplate').value.trim() || undefined,
         template_qualificacao: $('editCliTemplateQualificacao').value.trim() || undefined,
         permissoes: {

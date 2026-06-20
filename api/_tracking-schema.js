@@ -92,10 +92,20 @@ async function createTrackingSchema() {
 
       ALTER TABLE public.tracking_clicks
       ADD COLUMN IF NOT EXISTS instance_name VARCHAR(100),
-      ADD COLUMN IF NOT EXISTS utm_content VARCHAR(255);
+      ADD COLUMN IF NOT EXISTS utm_content VARCHAR(255),
+      ADD COLUMN IF NOT EXISTS fbclid VARCHAR(512),
+      ADD COLUMN IF NOT EXISTS fbc VARCHAR(512),
+      ADD COLUMN IF NOT EXISTS fbp VARCHAR(255),
+      ADD COLUMN IF NOT EXISTS capi_web_status VARCHAR(20);
 
       ALTER TABLE public.tracking_campaigns
       ADD COLUMN IF NOT EXISTS utm_content VARCHAR(255);
+
+      ALTER TABLE public.clientes
+      ADD COLUMN IF NOT EXISTS capi_pixel_id VARCHAR(255),
+      ADD COLUMN IF NOT EXISTS capi_token_enc BYTEA,
+      ADD COLUMN IF NOT EXISTS capi_token_last4 VARCHAR(6),
+      ADD COLUMN IF NOT EXISTS capi_token_updated_at TIMESTAMP;
 
       CREATE INDEX IF NOT EXISTS idx_capture_cliente_instance
         ON public.lead_capture_settings(cliente_id, instance_name);
