@@ -218,6 +218,9 @@ async function carregarCampanhasLink() {
               <button class="cap-icon-action" onclick="abrirModalCampanha(${c.id})" title="Editar">
                 <i data-lucide="edit-3"></i>
               </button>
+              <button class="cap-icon-action" onclick="capDuplicar(${c.id})" title="Duplicar link">
+                <i data-lucide="copy-plus"></i>
+              </button>
               <button class="cap-icon-action cap-icon-danger" onclick="capExcluir(${Number(c.id)})" title="Excluir">
                 <i data-lucide="trash-2"></i>
               </button>
@@ -238,6 +241,20 @@ function capCopiarLink(id) {
   const campanha = _capCampanhas.find(c => Number(c.id) === Number(id));
   if (!campanha) return toast('Link não encontrado.', 'error');
   capCopiar(capLinkUrl(campanha.slug), 'Link copiado!');
+}
+
+function capSlugDuplicado(slugOriginal) {
+  const base = capNormalizarSlug(`${slugOriginal || 'link'}-copia`);
+  const slugsEmUso = new Set(_capCampanhas.map(c => String(c.slug || '').toLowerCase()));
+  if (!slugsEmUso.has(base)) return base;
+
+  let numero = 2;
+  while (slugsEmUso.has(`${base}-${numero}`)) numero++;
+  return `${base}-${numero}`;
+}
+
+function capDuplicar(id) {
+  abrirModalCampanha(id, true);
 }
 
 // ── Ativar / Pausar ────────────────────────────────────────────────────────────
@@ -272,12 +289,12 @@ async function capExcluir(id) {
 }
 
 // ── Modal Criar / Editar ───────────────────────────────────────────────────────
-async function abrirModalCampanha(id) {
+async function abrirModalCampanha(id, duplicar = false) {
   if (!capExigirCliente()) {
     toast('Selecione um cliente antes de criar ou editar um link.', 'error');
     return;
   }
-  _capEditId  = id || null;
+  _capEditId  = duplicar ? null : (id || null);
   _capDestinos = [];
   _capInstancias = [];
 
@@ -291,14 +308,14 @@ async function abrirModalCampanha(id) {
   capAtualizarSlugHint('');
 
   if (id) {
-    // Edição: carrega dados da campanha
-    $('capModalTitulo').textContent = 'Editar link';
-    $('btnSalvarCampanha').textContent = 'Salvar alterações';
+    // Edição/duplicação: carrega os dados completos da campanha.
+    $('capModalTitulo').textContent = duplicar ? 'Duplicar link' : 'Editar link';
+    $('btnSalvarCampanha').textContent = duplicar ? 'Criar cópia' : 'Salvar alterações';
     try {
       const r = await authFetch(capUrlApi('/api/tracking-campaigns', { id }));
       const c = await readApiJson(r, 'Falha ao carregar link');
-      $('capNome').value      = c.name || '';
-      $('capSlug').value      = c.slug || '';
+      $('capNome').value      = duplicar ? `Cópia de ${c.name || 'link'}` : (c.name || '');
+      $('capSlug').value      = duplicar ? capSlugDuplicado(c.slug) : (c.slug || '');
       modeEl.value            = c.rotation_mode || 'single';
       origEl.value            = c.origin_type   || 'bio';
       $('capMensagem').value  = c.default_message || '';
@@ -306,8 +323,12 @@ async function abrirModalCampanha(id) {
       $('capUtmMedium').value   = c.utm_medium   || '';
       $('capUtmCampaign').value = c.utm_campaign || '';
       $('capUtmContent').value  = c.utm_content  || '';
-      capAtualizarSlugHint(c.slug);
-      _capDestinos = (c.destinations || []).map(d => ({ ...d }));
+      capAtualizarSlugHint($('capSlug').value);
+      _capDestinos = (c.destinations || []).map(d => {
+        const copia = { ...d };
+        if (duplicar) delete copia.id;
+        return copia;
+      });
     } catch (e) {
       toast('Erro ao carregar campanha: ' + e.message, 'error');
       return;
