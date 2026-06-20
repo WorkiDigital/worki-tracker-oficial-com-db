@@ -43,24 +43,16 @@ async function carregarInstanciasEvolution() {
 
 function normalizarDestinos(destinations) {
   if (!Array.isArray(destinations)) return null;
-  const vistos = new Set();
   const instanciasVistas = new Set();
   const normalizados = destinations.map((d, position) => {
     const whatsapp_number = String(d.whatsapp_number || '').replace(/\D/g, '');
     const instance_name = String(d.instance_name || '').trim().slice(0, 100);
-    if (whatsapp_number.length < 8 || whatsapp_number.length > 15) {
-      throw new Error(`Número de WhatsApp inválido na posição ${position + 1}.`);
-    }
-    if (vistos.has(whatsapp_number)) {
-      throw new Error(`Número de WhatsApp duplicado: ${whatsapp_number}.`);
-    }
     if (!instance_name) {
       throw new Error(`Selecione a instância do destino na posição ${position + 1}.`);
     }
     if (instanciasVistas.has(instance_name)) {
       throw new Error(`Instância duplicada: ${instance_name}.`);
     }
-    vistos.add(whatsapp_number);
     instanciasVistas.add(instance_name);
     return {
       id: Number.isInteger(Number(d.id)) ? Number(d.id) : null,
@@ -85,7 +77,6 @@ function validarDestinosPorModo(destinations, rotationMode) {
 
 async function validarInstanciasDoCliente(client, clienteId, destinations) {
   const nomes = [...new Set(destinations.map(d => d.instance_name))];
-  const prefix = `cliente_${clienteId}_`;
   const mapeadas = await client.query(
     `SELECT instance_name
      FROM instancias_mapeamento
@@ -93,7 +84,7 @@ async function validarInstanciasDoCliente(client, clienteId, destinations) {
     [clienteId, nomes]
   );
   const permitidas = new Set(mapeadas.rows.map(r => r.instance_name));
-  const invalidas = nomes.filter(nome => !permitidas.has(nome) && !nome.startsWith(prefix));
+  const invalidas = nomes.filter(nome => !permitidas.has(nome));
   if (invalidas.length) {
     throw new Error(`Instância não vinculada a este cliente: ${invalidas.join(', ')}.`);
   }
