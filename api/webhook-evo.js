@@ -243,9 +243,54 @@ export default async function handler(req, res) {
       }
     }
 
-    // Sem token exato não existe identidade suficiente para associar a mensagem
-    // a um clique. A correlação temporal foi removida porque podia atribuir uma
-    // mensagem orgânica ao clique recente de outra pessoa na mesma instância.
+    // Fallback de correlação por tempo: o WhatsApp do iPhone REMOVE o token
+    // invisível, então sem isto nenhum lead de link rastreável é capturado nesse
+    // aparelho. Regra estrita p/ não roubar atribuição de outra pessoa: só
+    // correlaciona se houver EXATAMENTE 1 clique pendente desta instância nos
+    // últimos 10 min. Mais de um candidato é ambíguo e não recebe campanha.
+    // Quando atribui, este lead É de um clique real → captura SEMPRE, ignorando
+    // o capture_mode da instância (keyword/ctwa_only) — senão o clique legítimo
+    // do link seria descartado pelo filtro de só-anúncio.
+    if (!trackedClick && !clickTrackingId) {
+      try {
+        const recentRes = await getPool().query(
+          `SELECT k.id, k.tracking_id, k.campaign_id, c.origin_type,
+                  COALESCE(k.instance_name, d.instance_name) AS instance_name
+           FROM tracking_clicks k
+           JOIN tracking_campaigns c ON c.id = k.campaign_id
+           LEFT JOIN tracking_destinations d ON d.id = k.destination_id
+           WHERE k.cliente_id=$1
+             AND COALESCE(k.instance_name, d.instance_name)=$2
+             AND k.status='clicked' AND k.converted_at IS NULL
+             AND c.enabled=true
+             AND k.clicked_at > NOW() - INTERVAL '10 minutes'
+             AND (k.expires_at IS NULL OR k.expires_at > NOW())
+           ORDER BY k.clicked_at DESC
+           LIMIT 2`,
+          [cliente_id, instance]
+        );
+        if (recentRes.rows.length === 1) {
+          trackedClick = recentRes.rows[0];
+          effectiveTrackingId = trackedClick.tracking_id;
+          tracking_method = 'recent_click';
+          await gravarLogWebhook({
+            cliente_id, instance, tag: 'tracking_fallback',
+            level: 'warn',
+            message: 'Token invisível ausente; clique recente único correlacionado.',
+            data: { telefone, tracking_id: effectiveTrackingId, click_id: trackedClick.id }
+          });
+        } else if (recentRes.rows.length > 1) {
+          await gravarLogWebhook({
+            cliente_id, instance, tag: 'tracking_fallback',
+            level: 'warn',
+            message: 'Token invisível ausente e correlação ambígua; campanha não atribuída.',
+            data: { telefone, candidatos: recentRes.rows.map(r => r.id) }
+          });
+        }
+      } catch (e) {
+        log('warn', 'webhook_evo_tracking_fallback_fail', { error: e.message });
+      }
+    }
 
     if (trackedClick) {
       const origemMap = { bio: 'bio', rotator: 'rotator', campaign: 'campaign_link' };
