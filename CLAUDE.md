@@ -448,3 +448,45 @@ Após um terminal do EasyPanel executar uma versão antiga de `setup-db.js`, as 
   - WhatsApp iOS;
   - WhatsApp Web.
 - Conferir no Gerenciador de Eventos da Meta se Pixel e CAPI receberam o PageView com deduplicação.
+
+## 🔗 Atribuição de Link Rastreável — 3 armadilhas resolvidas (2026-06-20)
+
+Saga de debug que custou caro. Um lead de link `/r/<slug>` no **iPhone** não era capturado / vinha
+órfão. Três causas-raiz independentes, todas em `api/webhook-evo.js` + `api/_tracking-schema.js`.
+Validado de ponta a ponta (lead 3496 nasceu `campaign_link` + `recent_click` + vínculo completo).
+
+### 1. iPhone REMOVE o token invisível → fallback de clique recente é OBRIGATÓRIO
+O WhatsApp do iPhone apaga os zero-width do token. Sem fallback, o lead cai no `capture_mode` da
+instância. A correlação por tempo já tinha sido **removida** uma vez (medo de roubar atribuição) — e
+isso quebrou 100% dos links no iPhone. **Reintroduzida com regra estrita:** só atribui se houver
+**EXATAMENTE 1 clique pendente** (`status='clicked'`, `converted_at IS NULL`) da **mesma instância**
+nos **últimos 10 min**. 2+ candidatos = ambíguo → NÃO atribui (loga `tracking_fallback`). `tracking_method='recent_click'`.
+> ⚠️ NUNCA remover esse fallback de novo sem uma identidade alternativa — é a única âncora no iPhone.
+
+### 2. Lead de link DEVE bypassar o `capture_mode` da instância
+Quando o fallback (ou token) acha o clique, `trackedClick` é setado → o lead vira `campaign_link` e
+**pula** o bloco que checa `ctwa_only`/`keyword`/`all`. Sem isso, um clique LEGÍTIMO no link era
+descartado (`tracking_ignored`) só porque a instância de destino estava em `keyword`/`ctwa_only`.
+Um clique real no link rastreável captura SEMPRE, independente do modo de captura.
+
+### 3. Vínculo clique↔lead tem que ser ATÔMICO (e `tracking_method` cabe em VARCHAR(40))
+Antes, o vínculo era gravado em 2 UPDATEs autocommit soltos: o do **clique** (`lead_id`, `converted`)
+e o do **lead** (`tracking_click_id`, UTMs). O do lead falhava silenciosamente quando
+`tracking_method='recent_click_correlation'` (24 chars) estourava a coluna **`VARCHAR(20)`** →
+`value too long for type character varying(20)` engolido → **lead órfão** (`campaign_link` com
+`tracking_click_id` NULL). Correções: (a) os dois lados gravam na **mesma transação**
+(`pool.connect()`+BEGIN/COMMIT/ROLLBACK) em `atribuirClique`; (b) valor curto `'recent_click'`;
+(c) coluna ampliada para `VARCHAR(40)` em `_tracking-schema.js` (`ALTER COLUMN ... TYPE`, idempotente).
+O disparo do CAPI Web Lead fica FORA da transação (best-effort, pós-COMMIT).
+
+### Diagnóstico (sempre fazer assim)
+Os logs em `webhook_logs` (aba Logs do Sistema) contam a história. Tags úteis: `tracking_token`
+(token reconhecido), `tracking_fallback` (correlação por tempo: sucesso ou ambígua), `tracking_ignored`
+(descartado pelo modo — checar `capture_mode` e `token_detectado` no `data`). Cruzar o horário do log
+com `created_at` do lead e `converted_at`/`lead_id` do clique fecha qualquer caso.
+
+### Limitação conhecida (trade-off aceito)
+Em produção com **muitos cliques simultâneos** na mesma instância, o fallback fica ambíguo (2+
+pendentes) e o lead de iPhone pode não receber campanha (cai no modo da instância). É proposital
+(não roubar atribuição). Evolução futura: identidade visível mais robusta (nº de destino por campanha,
+sufixo na mensagem). Commits da saga: `2f62996`, `c883e46`, `8c13820`.
