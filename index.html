@@ -404,10 +404,11 @@
 
         <details style="border:1px solid var(--border);border-radius:10px;padding:11px 13px;margin-bottom:16px;">
             <summary style="cursor:pointer;font-size:12px;font-weight:700;color:var(--text);">Parâmetros de campanha (opcional)</summary>
-            <div class="cap-grid-utms" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:13px;">
+            <div class="cap-grid-utms" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:13px;">
                 <div class="input-group" style="margin:0;"><label>UTM Source</label><input id="capUtmSource" type="text" maxlength="255" placeholder="instagram"></div>
                 <div class="input-group" style="margin:0;"><label>UTM Medium</label><input id="capUtmMedium" type="text" maxlength="255" placeholder="bio"></div>
                 <div class="input-group" style="margin:0;"><label>UTM Campaign</label><input id="capUtmCampaign" type="text" maxlength="255" placeholder="campanha-junho"></div>
+                <div class="input-group" style="margin:0;"><label>UTM Content</label><input id="capUtmContent" type="text" maxlength="255" placeholder="nome-do-anuncio"></div>
             </div>
         </details>
 
@@ -5035,7 +5036,7 @@ function resetLeadSearchAutofill() {
 <script defer src="js/leads.js"></script>
 <script defer src="js/admin.js"></script>
 <script defer src="js/reports-auto.js"></script>
-<script defer src="js/captacao.js?v=20260619-2"></script>
+<script defer src="js/captacao.js?v=20260619-3"></script>
 
 <!-- Drawer Perfil do Lead (4 abas) — deve ficar no final do body para z-index funcionar -->
 <div id="leadProfileDrawer" style="position:fixed;inset:0;z-index:9999;display:none;align-items:stretch;justify-content:flex-end;background:rgba(0,0,0,0.55);" onclick="if(event.target===this)fecharPerfilLead()">

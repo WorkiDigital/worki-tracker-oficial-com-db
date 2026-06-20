@@ -77,15 +77,16 @@ export default async function handler(req, res) {
     const utm_source   = q.utm_source   || campaign.utm_source   || null;
     const utm_medium   = q.utm_medium   || campaign.utm_medium   || null;
     const utm_campaign = q.utm_campaign || campaign.utm_campaign || null;
+    const utm_content  = q.utm_content  || campaign.utm_content  || null;
 
     await client.query(
       `INSERT INTO tracking_clicks
         (tracking_id, campaign_id, destination_id, cliente_id, status,
-         utm_source, utm_medium, utm_campaign, referrer, ip_address, user_agent,
+         utm_source, utm_medium, utm_campaign, utm_content, referrer, ip_address, user_agent,
          whatsapp_number, instance_name, expires_at)
-       VALUES ($1,$2,$3,$4,'clicked',$5,$6,$7,$8,$9,$10,$11,$12, NOW() + INTERVAL '72 hours')`,
+       VALUES ($1,$2,$3,$4,'clicked',$5,$6,$7,$8,$9,$10,$11,$12,$13, NOW() + INTERVAL '72 hours')`,
       [trackingId, campaign.id, destino.id, campaign.cliente_id,
-       utm_source, utm_medium, utm_campaign, referrer, ip, userAgent,
+       utm_source, utm_medium, utm_campaign, utm_content, referrer, ip, userAgent,
        destino.whatsapp_number, destino.instance_name]
     );
 

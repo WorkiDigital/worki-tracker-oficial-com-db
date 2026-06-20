@@ -352,6 +352,7 @@ Botão de perfil (ícone `user` roxo) em cada linha da tabela de leads abre um d
 - O decodificador aceita o token mesmo quando o WhatsApp remove apenas os marcadores `U+2060` e preserva os bits `U+200B/U+200C`.
 - Se o token inteiro desaparecer, o webhook pode correlacionar um único clique pendente da mesma instância nos últimos 5 minutos (`recent_click_correlation`). Se houver mais de um candidato, não atribui automaticamente e registra `tracking_fallback` nos Logs do Sistema.
 - Os filtros de Logs do Sistema incluem `tracking_token`, `tracking_fallback` e `tracking_ignored` para diagnosticar o caminho real de cada teste.
+- O fluxo de links salva `utm_content` em `tracking_campaigns`/`tracking_clicks` e copia o valor para `leads_tracking.utm_content`, onde o front exibe o nome do anúncio.
 
 ### Banco e ativação em produção
 As novas tabelas/colunas são criadas por `setup-db.js`:

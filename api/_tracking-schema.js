@@ -12,7 +12,10 @@ async function createTrackingSchema() {
     await client.query(`
       ALTER TABLE public.leads_tracking
       ADD COLUMN IF NOT EXISTS lead_origin VARCHAR(20),
-      ADD COLUMN IF NOT EXISTS utm_source VARCHAR(255);
+      ADD COLUMN IF NOT EXISTS utm_source VARCHAR(255),
+      ADD COLUMN IF NOT EXISTS utm_medium VARCHAR(255),
+      ADD COLUMN IF NOT EXISTS utm_campaign VARCHAR(255),
+      ADD COLUMN IF NOT EXISTS utm_content VARCHAR(255);
 
       CREATE TABLE IF NOT EXISTS public.lead_capture_settings (
         id SERIAL PRIMARY KEY,
@@ -39,6 +42,7 @@ async function createTrackingSchema() {
         utm_source VARCHAR(255),
         utm_medium VARCHAR(255),
         utm_campaign VARCHAR(255),
+        utm_content VARCHAR(255),
         enabled BOOLEAN DEFAULT true,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -69,6 +73,7 @@ async function createTrackingSchema() {
         utm_source VARCHAR(255),
         utm_medium VARCHAR(255),
         utm_campaign VARCHAR(255),
+        utm_content VARCHAR(255),
         referrer TEXT,
         ip_address VARCHAR(64),
         user_agent TEXT,
@@ -86,7 +91,11 @@ async function createTrackingSchema() {
       ADD COLUMN IF NOT EXISTS tracking_method VARCHAR(20);
 
       ALTER TABLE public.tracking_clicks
-      ADD COLUMN IF NOT EXISTS instance_name VARCHAR(100);
+      ADD COLUMN IF NOT EXISTS instance_name VARCHAR(100),
+      ADD COLUMN IF NOT EXISTS utm_content VARCHAR(255);
+
+      ALTER TABLE public.tracking_campaigns
+      ADD COLUMN IF NOT EXISTS utm_content VARCHAR(255);
 
       CREATE INDEX IF NOT EXISTS idx_capture_cliente_instance
         ON public.lead_capture_settings(cliente_id, instance_name);

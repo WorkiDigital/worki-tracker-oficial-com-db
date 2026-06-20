@@ -466,10 +466,11 @@ export default async function handler(req, res) {
              tracking_method = $3, lead_origin = $4,
              utm_source = COALESCE(utm_source, $5),
              utm_campaign = COALESCE(utm_campaign, $6),
-             utm_medium = COALESCE(utm_medium, $7)
-         WHERE id = $8`,
+             utm_medium = COALESCE(utm_medium, $7),
+             utm_content = COALESCE(utm_content, $8)
+         WHERE id = $9`,
         [atr.click_id, atr.campaign_id, atr.method, lead_origin,
-         atr.utm_source, atr.utm_campaign, atr.utm_medium, lead.id]
+         atr.utm_source, atr.utm_campaign, atr.utm_medium, atr.utm_content, lead.id]
       );
       lead.tracking_click_id = atr.click_id;
       lead.tracking_method = atr.method;
@@ -623,13 +624,14 @@ async function atribuirClique(pool, { cliente_id, lead_id, clickTrackingId, trac
        ))=$4
        AND status='clicked' AND converted_at IS NULL
        AND (expires_at IS NULL OR expires_at > NOW())
-     RETURNING id, campaign_id, utm_source, utm_campaign, utm_medium`,
+     RETURNING id, campaign_id, utm_source, utm_campaign, utm_medium, utm_content`,
     [lead_id, clickTrackingId, cliente_id, instance]
   );
   if (r.rows.length) {
     const c = r.rows[0];
     return { click_id: c.id, campaign_id: c.campaign_id, method: tracking_method || 'token',
-             utm_source: c.utm_source, utm_campaign: c.utm_campaign, utm_medium: c.utm_medium };
+             utm_source: c.utm_source, utm_campaign: c.utm_campaign,
+             utm_medium: c.utm_medium, utm_content: c.utm_content };
   }
   return null;
 }

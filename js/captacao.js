@@ -262,7 +262,7 @@ async function abrirModalCampanha(id) {
   _capInstancias = [];
 
   // Reset form
-  ['capNome','capSlug','capMensagem','capUtmSource','capUtmMedium','capUtmCampaign'].forEach(i => {
+  ['capNome','capSlug','capMensagem','capUtmSource','capUtmMedium','capUtmCampaign','capUtmContent'].forEach(i => {
     const el = $(i); if (el) el.value = '';
   });
   const modeEl = $('capModo'); if (modeEl) modeEl.value = 'single';
@@ -285,6 +285,7 @@ async function abrirModalCampanha(id) {
       $('capUtmSource').value   = c.utm_source   || '';
       $('capUtmMedium').value   = c.utm_medium   || '';
       $('capUtmCampaign').value = c.utm_campaign || '';
+      $('capUtmContent').value  = c.utm_content  || '';
       capAtualizarSlugHint(c.slug);
       _capDestinos = (c.destinations || []).map(d => ({ ...d }));
     } catch (e) {
@@ -569,6 +570,7 @@ async function salvarCampanha() {
     utm_source:      $('capUtmSource')?.value.trim()   || null,
     utm_medium:      $('capUtmMedium')?.value.trim()   || null,
     utm_campaign:    $('capUtmCampaign')?.value.trim() || null,
+    utm_content:     $('capUtmContent')?.value.trim()  || null,
     destinations:    _capDestinos,
   });
 

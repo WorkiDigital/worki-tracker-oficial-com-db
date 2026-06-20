@@ -162,7 +162,7 @@ export default async function handler(req, res) {
       const cliente_id = alvoCliente(req.body.cliente_id);
       if (!cliente_id) return res.status(400).json({ error: 'cliente_id é obrigatório para administrador.' });
       const { name, origin_type = 'bio', rotation_mode = 'single',
-              default_message, utm_source, utm_medium, utm_campaign, destinations = [] } = req.body;
+              default_message, utm_source, utm_medium, utm_campaign, utm_content, destinations = [] } = req.body;
       if (!name) return res.status(400).json({ error: 'name é obrigatório.' });
       if (!ORIGIN_TYPES.has(origin_type)) return res.status(400).json({ error: 'origin_type inválido.' });
       if (!ROTATION_MODES.has(rotation_mode)) return res.status(400).json({ error: 'rotation_mode inválido.' });
@@ -180,10 +180,10 @@ export default async function handler(req, res) {
 
         const camp = await client.query(
           `INSERT INTO tracking_campaigns
-            (cliente_id, name, slug, origin_type, rotation_mode, default_message, utm_source, utm_medium, utm_campaign)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
+            (cliente_id, name, slug, origin_type, rotation_mode, default_message, utm_source, utm_medium, utm_campaign, utm_content)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
           [cliente_id, String(name).trim().slice(0, 255), slug, origin_type, rotation_mode,
-           default_message || null, utm_source || null, utm_medium || null, utm_campaign || null]
+           default_message || null, utm_source || null, utm_medium || null, utm_campaign || null, utm_content || null]
         );
         const campaign = camp.rows[0];
         await sincronizarDestinos(client, campaign.id, cliente_id, destinations);
@@ -253,7 +253,7 @@ export default async function handler(req, res) {
           }
         }
 
-        const campos = ['name','slug','origin_type','rotation_mode','default_message','utm_source','utm_medium','utm_campaign','enabled'];
+        const campos = ['name','slug','origin_type','rotation_mode','default_message','utm_source','utm_medium','utm_campaign','utm_content','enabled'];
         const sets = [], vals = []; let i = 1;
         for (const campo of campos) {
           if (campo in bodyAtualizacao) {
