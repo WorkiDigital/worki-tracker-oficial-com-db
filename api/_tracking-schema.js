@@ -123,6 +123,29 @@ async function createTrackingSchema() {
         WHERE tracking_click_id IS NOT NULL;
     `);
 
+    // Integridade da atribuição: um clique que já virou lead (status='converted')
+    // NÃO pode ser deletado — senão o ON DELETE SET NULL deixaria o lead órfão
+    // (campaign_link sem vínculo). O trigger bloqueia o DELETE no nível do banco,
+    // protegendo a atribuição independente de quem rode o DELETE (app, script, SQL manual).
+    await client.query(`
+      CREATE OR REPLACE FUNCTION bloquear_delete_clique_convertido()
+      RETURNS TRIGGER AS $$
+      BEGIN
+        IF OLD.status = 'converted' THEN
+          RAISE EXCEPTION 'Clique % já foi convertido em lead e não pode ser apagado (preserva a atribuição).', OLD.tracking_id
+            USING ERRCODE = 'integrity_constraint_violation';
+        END IF;
+        RETURN OLD;
+      END;
+      $$ LANGUAGE plpgsql;
+    `);
+    await client.query('DROP TRIGGER IF EXISTS trg_bloquear_delete_clique_convertido ON public.tracking_clicks');
+    await client.query(`
+      CREATE TRIGGER trg_bloquear_delete_clique_convertido
+      BEFORE DELETE ON public.tracking_clicks
+      FOR EACH ROW EXECUTE FUNCTION bloquear_delete_clique_convertido();
+    `);
+
     await client.query('COMMIT');
     console.log('[tracking-schema] Schema de captação verificado/criado.');
   } catch (error) {

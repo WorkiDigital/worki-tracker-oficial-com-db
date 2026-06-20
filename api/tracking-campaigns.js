@@ -293,12 +293,50 @@ export default async function handler(req, res) {
       if (!cliente_id) return res.status(400).json({ error: 'cliente_id é obrigatório para administrador.' });
       const id = req.query.id || req.body?.id;
       if (!id) return res.status(400).json({ error: 'id é obrigatório.' });
-      const r = await pool.query(
-        'DELETE FROM tracking_campaigns WHERE id=$1 AND cliente_id=$2 RETURNING id',
-        [id, cliente_id]
-      );
-      if (!r.rowCount) return res.status(404).json({ error: 'Não encontrado ou acesso negado.' });
-      return res.status(200).json({ deleted: r.rows[0].id });
+
+      // O trigger do banco impede apagar clique 'converted' (preserva atribuição).
+      // Para deletar a campanha sem violar isso, primeiro desvinculamos os leads
+      // dos cliques desta campanha (zerando a origem órfã), depois marcamos os
+      // cliques convertidos como históricos (não-converted), e só então o
+      // ON DELETE CASCADE pode removê-los. Tudo transacional.
+      const client = await pool.connect();
+      try {
+        await client.query('BEGIN');
+        const dono = await client.query(
+          'SELECT id FROM tracking_campaigns WHERE id=$1 AND cliente_id=$2 FOR UPDATE',
+          [id, cliente_id]
+        );
+        if (!dono.rowCount) {
+          await client.query('ROLLBACK');
+          return res.status(404).json({ error: 'Não encontrado ou acesso negado.' });
+        }
+        // Desvincula os leads dos cliques desta campanha e normaliza a origem.
+        await client.query(
+          `UPDATE leads_tracking
+           SET tracking_click_id=NULL, tracking_campaign_id=NULL, tracking_method=NULL,
+               lead_origin = CASE WHEN lead_origin IN ('bio','rotator','campaign_link')
+                                  THEN 'organic' ELSE lead_origin END
+           WHERE tracking_campaign_id=$1`,
+          [id]
+        );
+        // Libera os cliques convertidos do bloqueio do trigger (vira histórico).
+        await client.query(
+          `UPDATE tracking_clicks SET status='archived', lead_id=NULL
+           WHERE campaign_id=$1 AND status='converted'`,
+          [id]
+        );
+        const r = await client.query(
+          'DELETE FROM tracking_campaigns WHERE id=$1 AND cliente_id=$2 RETURNING id',
+          [id, cliente_id]
+        );
+        await client.query('COMMIT');
+        return res.status(200).json({ deleted: r.rows[0].id });
+      } catch (e) {
+        try { await client.query('ROLLBACK'); } catch (_) {}
+        throw e;
+      } finally {
+        client.release();
+      }
     }
 
     return res.status(405).json({ error: 'Método não permitido.' });
