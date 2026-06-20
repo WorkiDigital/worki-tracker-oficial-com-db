@@ -285,6 +285,12 @@
         </div>
 
         <div class="input-group" style="margin-bottom:12px;">
+            <div id="capturaInstanciaBox" style="display:none;margin-bottom:12px;">
+                <label>Conexão WhatsApp</label>
+                <select id="capturaInstanciaSelect" class="form-control" onchange="capturaSelecionarInstancia(this.value)">
+                    <option value="">Selecione a conexão...</option>
+                </select>
+            </div>
             <label>Modo de captura</label>
             <select id="capturaModo" class="form-control" onchange="capturaToggleCampos()">
                 <option value="ctwa_only">Somente Anúncios (CTWA)</option>
@@ -1537,7 +1543,7 @@
                         <div style="font-size:13px;font-weight:700;color:var(--text);">Captura orgânica</div>
                         <p style="font-size:11px;color:var(--muted);margin:4px 0 0;">Configure “todos” ou “palavra-chave” por conexão.</p>
                     </div>
-                    <button class="btn btn-ghost btn-sm" onclick="mudarAba('whatsapp')" style="white-space:nowrap;">Configurar</button>
+                    <button class="btn btn-ghost btn-sm" onclick="abrirCapturaGeral(this)" style="white-space:nowrap;">Configurar</button>
                 </div>
             </div>
 
@@ -5038,7 +5044,7 @@ function resetLeadSearchAutofill() {
 }
 </script>
 <script defer src="js/leads.js"></script>
-<script defer src="js/admin.js"></script>
+<script defer src="js/admin.js?v=20260620-1"></script>
 <script defer src="js/reports-auto.js"></script>
 <script defer src="js/captacao.js?v=20260619-3"></script>
 

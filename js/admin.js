@@ -460,12 +460,21 @@ async function waDesvincular(name) {
 // ── Captura de leads por instância (ctwa_only | all | keyword) ──────────────
 let _capturaInstancia = null;
 let _capturaClienteId = null;
+let _capturaInstanciasDisponiveis = [];
 
-async function abrirCaptura(instanceName, clienteId) {
+function capturaResetForm() {
+    $('capturaModo').value = 'ctwa_only';
+    $('capturaKeywords').value = '';
+    $('capturaMatch').value = 'partial';
+    $('capturaDedup').value = 24;
+    capturaToggleCampos();
+}
+
+async function carregarCapturaConfig(instanceName, clienteId) {
     _capturaInstancia = instanceName;
     _capturaClienteId = clienteId || null;
     $('capturaInstanciaNome').textContent = instanceName;
-    $('modalCaptura').classList.add('open');
+    capturaResetForm();
 
     // Carrega config existente (default ctwa_only)
     try {
@@ -478,12 +487,77 @@ async function abrirCaptura(instanceName, clienteId) {
         $('capturaMatch').value     = cfg?.keyword_match || 'partial';
         $('capturaDedup').value     = cfg?.deduplication_hours ?? 24;
     } catch {
-        $('capturaModo').value = 'ctwa_only';
-        $('capturaKeywords').value = '';
-        $('capturaMatch').value = 'partial';
-        $('capturaDedup').value = 24;
+        capturaResetForm();
     }
     capturaToggleCampos();
+}
+
+async function abrirCaptura(instanceName, clienteId) {
+    $('capturaInstanciaBox').style.display = 'none';
+    $('modalCaptura').classList.add('open');
+    await carregarCapturaConfig(instanceName, clienteId);
+}
+
+async function abrirCapturaGeral(btn) {
+    const user = JSON.parse(localStorage.getItem('adlytics_user') || '{}');
+    const clienteId = user.is_admin
+        ? (typeof clienteAdminSelecionado !== 'undefined' ? clienteAdminSelecionado : null)
+        : (user.cliente_id || null);
+    if (user.is_admin && !clienteId) {
+        toast('Selecione um cliente no topo do painel antes de configurar a captura.', 'error');
+        return;
+    }
+
+    const original = btn?.textContent;
+    if (btn) { btn.disabled = true; btn.textContent = 'Carregando...'; }
+    try {
+        const q = new URLSearchParams({ action: 'list' });
+        if (user.is_admin && clienteId) q.set('target_cliente_id', clienteId);
+        const r = await authFetch('/api/evo-manager?' + q.toString());
+        const data = await readApiJson(r, 'Falha ao carregar conexões WhatsApp');
+        _capturaInstanciasDisponiveis = (Array.isArray(data) ? data : [])
+            .filter(inst => inst.fullName && (!clienteId || Number(inst.cliente_id) === Number(clienteId)));
+
+        if (!_capturaInstanciasDisponiveis.length) {
+            toast('Nenhuma conexão WhatsApp vinculada a este cliente.', 'error');
+            mudarAba('whatsapp');
+            return;
+        }
+
+        if (_capturaInstanciasDisponiveis.length === 1) {
+            const inst = _capturaInstanciasDisponiveis[0];
+            await abrirCaptura(inst.fullName, inst.cliente_id || clienteId);
+            return;
+        }
+
+        const select = $('capturaInstanciaSelect');
+        select.innerHTML = '<option value="">Selecione a conexão...</option>' +
+            _capturaInstanciasDisponiveis.map(inst =>
+                `<option value="${esc(inst.fullName)}">${esc(inst.displayName || inst.fullName)}${inst.state === 'open' ? ' — conectada' : ' — desconectada'}</option>`
+            ).join('');
+        _capturaInstancia = null;
+        _capturaClienteId = clienteId;
+        $('capturaInstanciaNome').textContent = 'Selecione uma conexão';
+        $('capturaInstanciaBox').style.display = 'block';
+        capturaResetForm();
+        $('modalCaptura').classList.add('open');
+        lucide.createIcons({ nodes: [$('modalCaptura')] });
+    } catch (e) {
+        toast('Erro: ' + e.message, 'error');
+    } finally {
+        if (btn) { btn.disabled = false; btn.textContent = original; }
+    }
+}
+
+async function capturaSelecionarInstancia(instanceName) {
+    if (!instanceName) {
+        _capturaInstancia = null;
+        $('capturaInstanciaNome').textContent = 'Selecione uma conexão';
+        capturaResetForm();
+        return;
+    }
+    const inst = _capturaInstanciasDisponiveis.find(i => i.fullName === instanceName);
+    await carregarCapturaConfig(instanceName, inst?.cliente_id || _capturaClienteId);
 }
 
 // Mostra os campos de palavra-chave só no modo keyword.
@@ -493,6 +567,10 @@ function capturaToggleCampos() {
 }
 
 async function salvarCaptura() {
+    if (!_capturaInstancia) {
+        toast('Selecione uma conexão WhatsApp.', 'error');
+        return;
+    }
     const btn = $('btnSalvarCaptura');
     const prev = btn.innerHTML;
     btn.disabled = true; btn.innerHTML = 'Salvando...';
