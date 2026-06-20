@@ -200,19 +200,27 @@ export default async function handler(req, res) {
     });
 
     // PageView server-side (CAPI) com o MESMO event_id do Pixel → Meta deduplica.
-    // Best-effort: não bloqueia o redirect, mas loga o resultado.
+    // Best-effort: não bloqueia o redirect, mas loga e grava o status no clique.
     if (capiPixelId) {
       enviarCapiWebPageView(pool, {
         cliente_id: campaign.cliente_id,
         eventId: pageviewEventId,
         click: { fbc, fbp, ip_address: ip, user_agent: userAgent,
                  referrer, event_source_url: `${req.headers['x-forwarded-proto'] || 'https'}://${req.headers.host || ''}/r/${slug}` },
-      }).then(r => gravarLog(pool, {
-        cliente_id: campaign.cliente_id, instance: `link:${slug}`,
-        tag: 'capi_web', level: r.sent ? 'info' : 'warn',
-        message: r.sent ? 'CAPI Web PageView enviado (clique).' : `CAPI Web PageView falhou: ${r.error}`,
-        data: { tracking_id: trackingId, event_id: pageviewEventId, fbtrace_id: r.fbtrace_id, error: r.error },
-      })).catch(() => {});
+      }).then(async r => {
+        // Grava o status no clique (consistência com o log) — 'pv_sent' distingue
+        // o PageView do clique do 'sent' do Lead que vem depois pelo webhook.
+        try {
+          await pool.query('UPDATE tracking_clicks SET capi_web_status=$1 WHERE tracking_id=$2',
+            [r.sent ? 'pv_sent' : 'pv_failed', trackingId]);
+        } catch (_) {}
+        await gravarLog(pool, {
+          cliente_id: campaign.cliente_id, instance: `link:${slug}`,
+          tag: 'capi_web', level: r.sent ? 'info' : 'warn',
+          message: r.sent ? 'CAPI Web PageView enviado (clique).' : `CAPI Web PageView falhou: ${r.error}`,
+          data: { tracking_id: trackingId, event_id: pageviewEventId, fbtrace_id: r.fbtrace_id, error: r.error },
+        });
+      }).catch(() => {});
     }
 
     // 4. Mensagem + token invisível
