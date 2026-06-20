@@ -760,6 +760,10 @@
                         <span class="count-badge" id="leadsCount">—</span>
                     </div>
                     <div style="display:flex;gap:8px;align-items:center;">
+                        <span id="leadsSelecionadosInfo" style="display:none;font-size:12px;color:var(--muted);"></span>
+                        <button id="btnExcluirLeads" class="btn btn-ghost btn-sm" onclick="excluirLeadsSelecionados()" style="display:none;color:var(--red);border-color:rgba(239,68,68,.3);">
+                            <i data-lucide="trash-2" style="width:12px;"></i> Excluir selecionados
+                        </button>
                         <button class="btn btn-ghost btn-sm" onclick="recarregarLeads()">
                             <i data-lucide="refresh-cw" style="width:12px;" id="reloadIcon"></i> Atualizar
                         </button>
@@ -769,6 +773,9 @@
                     <table>
                         <thead>
                             <tr>
+                                <th style="width:42px;text-align:center;">
+                                    <input id="checkTodosLeads" type="checkbox" onchange="toggleTodosLeads(this.checked)" title="Selecionar todos os leads filtrados">
+                                </th>
                                 <th class="sortable" onclick="sortBy('nome')">Nome <span class="sort-icon" id="sort-nome">↕</span></th>
                                 <th>Telefone</th>
                                 <th class="sortable" onclick="sortBy('status')">Status <span class="sort-icon" id="sort-status">↕</span></th>
@@ -5043,7 +5050,7 @@ function resetLeadSearchAutofill() {
     input.defaultValue = '';
 }
 </script>
-<script defer src="js/leads.js"></script>
+<script defer src="js/leads.js?v=20260620-1"></script>
 <script defer src="js/admin.js?v=20260620-1"></script>
 <script defer src="js/reports-auto.js"></script>
 <script defer src="js/captacao.js?v=20260619-3"></script>

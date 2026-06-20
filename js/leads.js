@@ -1,5 +1,6 @@
 // ── Leads (extracted from index.html) ──────────────────────────
 let chumboAtivo = null;
+const leadsSelecionados = new Set();
 
 async function recarregarLeads(silencioso = false) {
     const dot   = $('refreshDot');
@@ -32,6 +33,10 @@ async function recarregarLeads(silencioso = false) {
         const data = await readApiJson(resp, 'Falha ao buscar leads');
         if (!Array.isArray(data)) throw new Error(data.error || 'Resposta inesperada do servidor');
         rawData = data;
+        const idsAtuais = new Set(rawData.map(lead => Number(lead.id)));
+        for (const id of leadsSelecionados) {
+            if (!idsAtuais.has(id)) leadsSelecionados.delete(id);
+        }
         // Registra qual período está de fato em rawData (usado por onPeriodoChange p/ decidir
         // se pode refiltrar a memória ou precisa rebuscar).
         window._periodoCarregado = periodo;
@@ -94,7 +99,7 @@ function renderSkeleton() {
     const tbody = $('tabela-corpo');
     tbody.innerHTML = Array.from({length:8}, () => `
         <tr class="sk-row">
-            ${Array.from({length:12}, () => `<td><div class="sk-line skeleton" style="width:${60+Math.random()*40}%"></div></td>`).join('')}
+            ${Array.from({length:13}, () => `<td><div class="sk-line skeleton" style="width:${60+Math.random()*40}%"></div></td>`).join('')}
         </tr>`).join('');
     $('leadsCount').textContent = '—';
     $('paginacao').innerHTML = '';
@@ -274,8 +279,9 @@ function renderTabela() {
 
     const tbody = $('tabela-corpo');
     if (!pagina.length) {
-        tbody.innerHTML = `<tr><td colspan="12" style="text-align:center;padding:40px;color:var(--muted);">Nenhum lead encontrado.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="13" style="text-align:center;padding:40px;color:var(--muted);">Nenhum lead encontrado.</td></tr>`;
         $('paginacao').innerHTML = '';
+        atualizarSelecaoLeads();
         return;
     }
 
@@ -313,6 +319,12 @@ function renderTabela() {
         const origemBadge = `<span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;background:${origemInfo.bg};color:${origemInfo.color};border:1px solid ${origemInfo.border};white-space:nowrap;">${origemInfo.label}</span>`;
 
         return `<tr>
+            <td style="text-align:center;">
+                <input type="checkbox" class="lead-row-check" data-lead-id="${Number(lead.id)}"
+                    ${leadsSelecionados.has(Number(lead.id)) ? 'checked' : ''}
+                    onchange="toggleLeadSelecionado(${Number(lead.id)}, this.checked)"
+                    aria-label="Selecionar ${esc(lead.nome || lead.telefone || 'lead')}">
+            </td>
             <td style="color:var(--text);font-weight:600;">${esc(lead.nome)||'N/A'}</td>
             <td>${esc(lead.telefone)||'N/A'}</td>
             <td><span class="tag" style="color:${stColor};border:${stBorder};">${esc(status)}</span></td>
@@ -334,10 +346,86 @@ function renderTabela() {
     }).join('');
 
     lucide.createIcons({ nodes: [tbody] });
+    atualizarSelecaoLeads();
 
     // Paginação
     const totalPags = Math.ceil(total / POR_PAGINA);
     renderPaginacao(totalPags, total, inicio);
+}
+
+function toggleLeadSelecionado(id, checked) {
+    const leadId = Number(id);
+    if (checked) leadsSelecionados.add(leadId);
+    else leadsSelecionados.delete(leadId);
+    atualizarSelecaoLeads();
+}
+
+function toggleTodosLeads(checked) {
+    for (const lead of dadosFiltrados) {
+        const id = Number(lead.id);
+        if (checked) leadsSelecionados.add(id);
+        else leadsSelecionados.delete(id);
+    }
+    document.querySelectorAll('.lead-row-check').forEach(input => {
+        input.checked = checked;
+    });
+    atualizarSelecaoLeads();
+}
+
+function atualizarSelecaoLeads() {
+    const selecionadosFiltrados = dadosFiltrados.filter(lead => leadsSelecionados.has(Number(lead.id))).length;
+    const totalFiltrados = dadosFiltrados.length;
+    const checkTodos = $('checkTodosLeads');
+    if (checkTodos) {
+        checkTodos.checked = totalFiltrados > 0 && selecionadosFiltrados === totalFiltrados;
+        checkTodos.indeterminate = selecionadosFiltrados > 0 && selecionadosFiltrados < totalFiltrados;
+    }
+
+    const info = $('leadsSelecionadosInfo');
+    const btn = $('btnExcluirLeads');
+    if (info) {
+        info.style.display = leadsSelecionados.size ? '' : 'none';
+        info.textContent = `${leadsSelecionados.size} selecionado${leadsSelecionados.size === 1 ? '' : 's'}`;
+    }
+    if (btn) btn.style.display = leadsSelecionados.size ? 'inline-flex' : 'none';
+}
+
+async function excluirLeadsSelecionados() {
+    const ids = [...leadsSelecionados];
+    if (!ids.length) return toast('Selecione pelo menos um lead.', 'error');
+    const plural = ids.length === 1 ? 'este lead' : `estes ${ids.length} leads`;
+    if (!confirm(`Excluir permanentemente ${plural}?\n\nEsta ação não pode ser desfeita.`)) return;
+
+    const btn = $('btnExcluirLeads');
+    const original = btn?.innerHTML;
+    if (btn) { btn.disabled = true; btn.innerHTML = 'Excluindo...'; }
+
+    try {
+        let totalExcluido = 0;
+        for (let i = 0; i < ids.length; i += 500) {
+            const lote = ids.slice(i, i + 500);
+            const body = { ids: lote };
+            if (typeof clienteAdminSelecionado !== 'undefined' && clienteAdminSelecionado) {
+                body.cliente_id = clienteAdminSelecionado;
+            }
+            const response = await authFetch('/api/leads-delete', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body),
+            });
+            const result = await readApiJson(response, 'Falha ao excluir leads');
+            totalExcluido += Number(result.deleted || 0);
+            for (const id of result.ids || lote) leadsSelecionados.delete(Number(id));
+        }
+        toast(`${totalExcluido} lead${totalExcluido === 1 ? '' : 's'} excluído${totalExcluido === 1 ? '' : 's'}.`, 'success');
+        await recarregarLeads();
+    } catch (error) {
+        toast('Erro ao excluir: ' + error.message, 'error');
+        atualizarSelecaoLeads();
+    } finally {
+        if (btn) { btn.disabled = false; btn.innerHTML = original; }
+        lucide.createIcons({ nodes: [btn].filter(Boolean) });
+    }
 }
 
 function obterOrigemLead(origem) {
