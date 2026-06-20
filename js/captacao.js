@@ -299,6 +299,8 @@ async function abrirModalCampanha(id) {
   await capCarregarInstancias();
   capRenderDestinos();
   capToggleModo();
+  capHintModo(modeEl.value);
+  capHintOrigem(origEl.value);
   $('modalCampanha').classList.add('open');
   lucide.createIcons({ nodes: [$('modalCampanha')] });
   $('capNome').focus();
@@ -352,6 +354,31 @@ function capToggleModo() {
   });
 }
 
+// Hint explicativo do modo de distribuição.
+function capHintModo(modo) {
+  const el = $('capHintModo');
+  if (!el) return;
+  const hints = {
+    single:      'Cada clique vai para o único número ativo.',
+    round_robin: 'Distribui os cliques igualmente entre os números, em rodízio.',
+    weighted:    'Distribui por peso: número com peso 2 recebe o dobro de um com peso 1.',
+    priority:    'Sempre envia para o primeiro número ativo da lista (os demais são reserva).',
+  };
+  el.textContent = hints[modo] || hints.single;
+}
+
+// Hint explicativo do tipo de origem.
+function capHintOrigem(tipo) {
+  const el = $('capHintOrigem');
+  if (!el) return;
+  const hints = {
+    bio:      'Para o link fixo da bio do Instagram/perfil. Lead aparece como "Link da bio".',
+    campaign: 'Para uma campanha específica com UTMs. Lead aparece como "Link campanha".',
+    rotator:  'Para distribuir atendimento entre vários comerciais. Lead aparece como "Rotador".',
+  };
+  el.textContent = hints[tipo] || 'Apenas classifica a origem do lead (badge no painel).';
+}
+
 // ── Destinos no Modal ──────────────────────────────────────────────────────────
 async function capCarregarInstancias() {
   const select = $('capNovaInstancia');
@@ -384,7 +411,9 @@ function capSelecionarInstancia() {
   const nome = $('capNovaInstancia')?.value || '';
   const instancia = _capInstancias.find(i => i.fullName === nome);
   const numEl = $('capNovoNumero');
-  if (instancia?.whatsapp_number && numEl) numEl.value = instancia.whatsapp_number;
+  if (!numEl) return;
+  // Número é read-only e vem SEMPRE da instância selecionada.
+  numEl.value = instancia?.whatsapp_number || '';
 }
 
 function capOpcoesInstancia(selecionada) {
@@ -475,13 +504,15 @@ function capAdicionarDestino() {
   const numEl = $('capNovoNumero');
   const nomeEl = $('capNovoNome');
   const instance_name = instanciaEl?.value || '';
-  const numero = (numEl?.value || '').replace(/\D/g, '').trim();
   if (!instance_name) {
     toast('Selecione a instância vinculada a este número.', 'error');
     return;
   }
+  // Número vem SEMPRE da instância (campo read-only), não do que foi digitado.
+  const instancia = _capInstancias.find(i => i.fullName === instance_name);
+  const numero = (instancia?.whatsapp_number || '').replace(/\D/g, '').trim();
   if (numero.length < 8 || numero.length > 15) {
-    toast('Informe o número com país e DDD, usando de 8 a 15 dígitos.', 'error');
+    toast('Esta instância não tem um número de WhatsApp conectado. Conecte-a antes de usá-la como destino.', 'error');
     return;
   }
   if (_capDestinos.some(d => String(d.whatsapp_number) === numero)) {

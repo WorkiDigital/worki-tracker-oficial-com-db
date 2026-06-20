@@ -339,11 +339,12 @@
             </div>
             <div class="input-group">
                 <label>Tipo de origem</label>
-                <select id="capOrigem" class="form-control">
+                <select id="capOrigem" class="form-control" onchange="capHintOrigem(this.value)">
                     <option value="bio">Link da bio</option>
                     <option value="campaign">Campanha rastreável</option>
                     <option value="rotator">Rotador comercial</option>
                 </select>
+                <p id="capHintOrigem" style="font-size:11px;color:var(--muted);margin-top:6px;">Apenas classifica a origem do lead (badge no painel). Não muda o funcionamento do link.</p>
             </div>
         </div>
 
@@ -356,12 +357,13 @@
         <div class="cap-grid-message" style="display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:12px;">
             <div class="input-group">
                 <label>Distribuição dos números</label>
-                <select id="capModo" class="form-control" onchange="capToggleModo()">
+                <select id="capModo" class="form-control" onchange="capToggleModo();capHintModo(this.value)">
                     <option value="single">Destino único</option>
                     <option value="round_robin">Rotação equilibrada</option>
                     <option value="weighted">Rotação por peso</option>
                     <option value="priority">Prioridade fixa</option>
                 </select>
+                <p id="capHintModo" style="font-size:11px;color:var(--muted);margin-top:6px;">Cada clique vai para o único número ativo.</p>
             </div>
             <div class="input-group">
                 <label>Mensagem pré-preenchida</label>
@@ -386,8 +388,8 @@
                     </select>
                 </div>
                 <div class="input-group" style="margin:0;min-width:0;">
-                    <label>Número</label>
-                    <input id="capNovoNumero" type="tel" inputmode="numeric" placeholder="5511999999999" style="width:100%;max-width:100%;" onkeydown="if(event.key==='Enter'){event.preventDefault();capAdicionarDestino();}">
+                    <label>Número <span style="color:var(--muted);font-weight:400;font-size:10px;">(da instância)</span></label>
+                    <input id="capNovoNumero" type="tel" inputmode="numeric" placeholder="Selecione a instância" readonly style="width:100%;max-width:100%;background:var(--tag);color:var(--muted);cursor:not-allowed;">
                 </div>
                 <div class="input-group" style="margin:0;min-width:0;">
                     <label>Nome</label>
