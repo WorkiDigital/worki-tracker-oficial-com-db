@@ -1106,7 +1106,7 @@ function lpFormatData(iso) {
     return d.toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
 }
 
-function lpPreencherDados({ lead, jornada }) {
+function lpPreencherDados({ lead, jornada, interacoes }) {
     // ── Header ──
     const inicial = (lead.nome || '?')[0].toUpperCase();
     $('lpAvatar').textContent = inicial;
@@ -1134,6 +1134,7 @@ function lpPreencherDados({ lead, jornada }) {
     $('lpRowScore').innerHTML    = lpRow('Lead Score', scoreVal ? `${scoreVal} pts` : null, scoreCor);
     $('lpRowInstancia').innerHTML = lpRow('Instância', lead.instancia);
     $('lpRowPlataforma').innerHTML = lpRow('Plataforma', lead.plataforma);
+    $('lpRowDispositivo').innerHTML = lpRow('Dispositivo', lead.device && lead.device.label);
     $('lpRowEntrada').innerHTML  = lpRow('Data de entrada', lpFormatData(lead.created_at));
     $('lpMensagem').textContent  = lead.mensagem_recebida || '—';
 
@@ -1151,42 +1152,85 @@ function lpPreencherDados({ lead, jornada }) {
     $('lpRowPageId').innerHTML    = lpRow('Page ID', lead.page_id);
 
     // ── Aba Jornada ──
-    const total = jornada.length;
-    $('lpJornadaResumo').innerHTML = `<strong style="color:var(--text-primary);">${total} contato${total !== 1 ? 's' : ''}</strong> registrado${total !== 1 ? 's' : ''} para este número.`;
-    $('lpTimeline').innerHTML = jornada.map((j, i) => {
-        const isCurrent = j.id === lead.id;
-        const isV = (j.status||'').toLowerCase() === 'vendido' || (j.status||'').toLowerCase() === 'venda_fechada';
-        const dotColor = isV ? '#10b981' : isCurrent ? '#3b82f6' : 'var(--muted)';
-        const linhaAds = [j.utm_content, j.utm_medium, j.utm_campaign].filter(Boolean);
-        const jornadaOrigem = obterOrigemLead(j.lead_origin);
-        return `<div style="display:flex;gap:14px;margin-bottom:${i < jornada.length-1 ? '0' : '0'};">
-            <div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0;">
-                <div style="width:12px;height:12px;border-radius:50%;background:${dotColor};border:2px solid ${dotColor};margin-top:3px;flex-shrink:0;${isCurrent?'box-shadow:0 0 0 3px rgba(59,130,246,.2)':''}"></div>
-                ${i < jornada.length-1 ? `<div style="width:2px;flex:1;background:var(--border);margin:4px 0;min-height:30px;"></div>` : ''}
-            </div>
-            <div style="padding-bottom:20px;flex:1;min-width:0;">
-                <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;">
-                    <span style="font-size:12px;font-weight:700;color:var(--text-primary);">${i+1}º contato</span>
-                    ${isCurrent ? `<span style="font-size:10px;background:rgba(59,130,246,.1);color:#3b82f6;padding:1px 7px;border-radius:10px;border:1px solid rgba(59,130,246,.2);">atual</span>` : ''}
-                    <span style="font-size:11px;color:var(--muted);margin-left:auto;">${lpFormatData(j.created_at)}</span>
+    // No modelo de contato único, cada TOQUE é um clique no link (tracking_clicks),
+    // não um lead novo. Quando há interações (cliques), elas são a jornada — com o
+    // dispositivo de cada toque. Sem cliques (lead CTWA/orgânico/legado), cai no
+    // histórico de leads do mesmo telefone (compatibilidade).
+    const toques = (interacoes && interacoes.length) ? interacoes : null;
+    if (toques) {
+        const total = toques.length;
+        $('lpJornadaResumo').innerHTML = `<strong style="color:var(--text-primary);">${total} interaç${total !== 1 ? 'ões' : 'ão'}</strong> registrad${total !== 1 ? 'as' : 'a'} para este número (cliques no link).`;
+        $('lpTimeline').innerHTML = toques.map((k, i) => {
+            const isCurrent = k.id === lead.tracking_click_id;
+            const dotColor = isCurrent ? '#3b82f6' : 'var(--muted)';
+            const linhaAds = [k.utm_content, k.utm_medium, k.utm_campaign].filter(Boolean);
+            const origem = obterOrigemLead(k.origin_type === 'campaign' ? 'campaign_link' : k.origin_type);
+            const dev = k.device && k.device.label;
+            return `<div style="display:flex;gap:14px;">
+                <div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0;">
+                    <div style="width:12px;height:12px;border-radius:50%;background:${dotColor};border:2px solid ${dotColor};margin-top:3px;flex-shrink:0;${isCurrent?'box-shadow:0 0 0 3px rgba(59,130,246,.2)':''}"></div>
+                    ${i < toques.length-1 ? `<div style="width:2px;flex:1;background:var(--border);margin:4px 0;min-height:30px;"></div>` : ''}
                 </div>
-                <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:5px;">
-                    ${linhaAds.length ? `
-                        ${j.utm_content  ? `<div style="font-size:12px;"><span style="color:var(--muted);">🎯 Anúncio: </span><span style="color:var(--text-primary);font-weight:500;">${esc(j.utm_content)}</span></div>` : ''}
-                        ${j.utm_medium   ? `<div style="font-size:12px;"><span style="color:var(--muted);">🗂 Conjunto: </span><span style="color:#6366f1;font-weight:500;">${esc(j.utm_medium)}</span></div>` : ''}
-                        ${j.utm_campaign ? `<div style="font-size:12px;"><span style="color:var(--muted);">📣 Campanha: </span><span style="color:#3b82f6;font-weight:500;">${esc(j.utm_campaign)}</span></div>` : ''}
-                    ` : `<div style="font-size:12px;color:var(--muted);">Sem dados de anúncio</div>`}
-                    <div style="display:flex;gap:8px;margin-top:4px;flex-wrap:wrap;">
-                        <span style="font-size:11px;padding:2px 8px;border-radius:10px;background:${jornadaOrigem.bg};border:1px solid ${jornadaOrigem.border};color:${jornadaOrigem.color};">${jornadaOrigem.label}</span>
-                        ${j.tracking_campaign_name ? `<span style="font-size:11px;padding:2px 8px;border-radius:10px;background:var(--bg-primary);border:1px solid var(--border);color:var(--muted);">${esc(j.tracking_campaign_name)}</span>` : ''}
-                        <span style="font-size:11px;padding:2px 8px;border-radius:10px;background:var(--bg-primary);border:1px solid var(--border);color:${isV?'#10b981':'var(--muted)'};">${j.status||'Lead'}</span>
-                        ${j.valor_venda ? `<span style="font-size:11px;padding:2px 8px;border-radius:10px;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.2);color:#10b981;">💰 R$ ${parseFloat(j.valor_venda).toLocaleString('pt-BR',{minimumFractionDigits:2})}</span>` : ''}
-                        ${j.plataforma ? `<span style="font-size:11px;padding:2px 8px;border-radius:10px;background:var(--bg-primary);border:1px solid var(--border);color:var(--muted);">${j.plataforma}</span>` : ''}
+                <div style="padding-bottom:20px;flex:1;min-width:0;">
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;">
+                        <span style="font-size:12px;font-weight:700;color:var(--text-primary);">${i+1}º toque</span>
+                        ${isCurrent ? `<span style="font-size:10px;background:rgba(59,130,246,.1);color:#3b82f6;padding:1px 7px;border-radius:10px;border:1px solid rgba(59,130,246,.2);">origem</span>` : ''}
+                        <span style="font-size:11px;color:var(--muted);margin-left:auto;">${lpFormatData(k.clicked_at)}</span>
+                    </div>
+                    <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:5px;">
+                        ${linhaAds.length ? `
+                            ${k.utm_content  ? `<div style="font-size:12px;"><span style="color:var(--muted);">🎯 Anúncio: </span><span style="color:var(--text-primary);font-weight:500;">${esc(k.utm_content)}</span></div>` : ''}
+                            ${k.utm_medium   ? `<div style="font-size:12px;"><span style="color:var(--muted);">🗂 Conjunto: </span><span style="color:#6366f1;font-weight:500;">${esc(k.utm_medium)}</span></div>` : ''}
+                            ${k.utm_campaign ? `<div style="font-size:12px;"><span style="color:var(--muted);">📣 Campanha: </span><span style="color:#3b82f6;font-weight:500;">${esc(k.utm_campaign)}</span></div>` : ''}
+                        ` : `<div style="font-size:12px;color:var(--muted);">Sem dados de anúncio</div>`}
+                        <div style="display:flex;gap:8px;margin-top:4px;flex-wrap:wrap;">
+                            <span style="font-size:11px;padding:2px 8px;border-radius:10px;background:${origem.bg};border:1px solid ${origem.border};color:${origem.color};">${origem.label}</span>
+                            ${k.tracking_campaign_name ? `<span style="font-size:11px;padding:2px 8px;border-radius:10px;background:var(--bg-primary);border:1px solid var(--border);color:var(--muted);">${esc(k.tracking_campaign_name)}</span>` : ''}
+                            ${dev ? `<span style="font-size:11px;padding:2px 8px;border-radius:10px;background:var(--bg-primary);border:1px solid var(--border);color:var(--muted);">📱 ${esc(dev)}</span>` : ''}
+                            <span style="font-size:11px;padding:2px 8px;border-radius:10px;background:var(--bg-primary);border:1px solid var(--border);color:${k.converted_at?'#10b981':'var(--muted)'};">${k.converted_at ? 'Convertido' : 'Clique'}</span>
+                        </div>
                     </div>
                 </div>
-            </div>
-        </div>`;
-    }).join('');
+            </div>`;
+        }).join('');
+    } else {
+        const total = jornada.length;
+        $('lpJornadaResumo').innerHTML = `<strong style="color:var(--text-primary);">${total} contato${total !== 1 ? 's' : ''}</strong> registrado${total !== 1 ? 's' : ''} para este número.`;
+        $('lpTimeline').innerHTML = jornada.map((j, i) => {
+            const isCurrent = j.id === lead.id;
+            const isV = (j.status||'').toLowerCase() === 'vendido' || (j.status||'').toLowerCase() === 'venda_fechada';
+            const dotColor = isV ? '#10b981' : isCurrent ? '#3b82f6' : 'var(--muted)';
+            const linhaAds = [j.utm_content, j.utm_medium, j.utm_campaign].filter(Boolean);
+            const jornadaOrigem = obterOrigemLead(j.lead_origin);
+            return `<div style="display:flex;gap:14px;">
+                <div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0;">
+                    <div style="width:12px;height:12px;border-radius:50%;background:${dotColor};border:2px solid ${dotColor};margin-top:3px;flex-shrink:0;${isCurrent?'box-shadow:0 0 0 3px rgba(59,130,246,.2)':''}"></div>
+                    ${i < jornada.length-1 ? `<div style="width:2px;flex:1;background:var(--border);margin:4px 0;min-height:30px;"></div>` : ''}
+                </div>
+                <div style="padding-bottom:20px;flex:1;min-width:0;">
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;">
+                        <span style="font-size:12px;font-weight:700;color:var(--text-primary);">${i+1}º contato</span>
+                        ${isCurrent ? `<span style="font-size:10px;background:rgba(59,130,246,.1);color:#3b82f6;padding:1px 7px;border-radius:10px;border:1px solid rgba(59,130,246,.2);">atual</span>` : ''}
+                        <span style="font-size:11px;color:var(--muted);margin-left:auto;">${lpFormatData(j.created_at)}</span>
+                    </div>
+                    <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:5px;">
+                        ${linhaAds.length ? `
+                            ${j.utm_content  ? `<div style="font-size:12px;"><span style="color:var(--muted);">🎯 Anúncio: </span><span style="color:var(--text-primary);font-weight:500;">${esc(j.utm_content)}</span></div>` : ''}
+                            ${j.utm_medium   ? `<div style="font-size:12px;"><span style="color:var(--muted);">🗂 Conjunto: </span><span style="color:#6366f1;font-weight:500;">${esc(j.utm_medium)}</span></div>` : ''}
+                            ${j.utm_campaign ? `<div style="font-size:12px;"><span style="color:var(--muted);">📣 Campanha: </span><span style="color:#3b82f6;font-weight:500;">${esc(j.utm_campaign)}</span></div>` : ''}
+                        ` : `<div style="font-size:12px;color:var(--muted);">Sem dados de anúncio</div>`}
+                        <div style="display:flex;gap:8px;margin-top:4px;flex-wrap:wrap;">
+                            <span style="font-size:11px;padding:2px 8px;border-radius:10px;background:${jornadaOrigem.bg};border:1px solid ${jornadaOrigem.border};color:${jornadaOrigem.color};">${jornadaOrigem.label}</span>
+                            ${j.tracking_campaign_name ? `<span style="font-size:11px;padding:2px 8px;border-radius:10px;background:var(--bg-primary);border:1px solid var(--border);color:var(--muted);">${esc(j.tracking_campaign_name)}</span>` : ''}
+                            <span style="font-size:11px;padding:2px 8px;border-radius:10px;background:var(--bg-primary);border:1px solid var(--border);color:${isV?'#10b981':'var(--muted)'};">${j.status||'Lead'}</span>
+                            ${j.valor_venda ? `<span style="font-size:11px;padding:2px 8px;border-radius:10px;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.2);color:#10b981;">💰 R$ ${parseFloat(j.valor_venda).toLocaleString('pt-BR',{minimumFractionDigits:2})}</span>` : ''}
+                            ${j.plataforma ? `<span style="font-size:11px;padding:2px 8px;border-radius:10px;background:var(--bg-primary);border:1px solid var(--border);color:var(--muted);">${j.plataforma}</span>` : ''}
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+        }).join('');
+    }
 
     // ── Aba Venda ──
     const diffResposta = lead.first_response_at && lead.created_at

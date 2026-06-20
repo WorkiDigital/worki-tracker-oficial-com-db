@@ -1,6 +1,7 @@
 import { getPool } from './_db.js';
 import { verifyAuth } from './_auth.js';
 import { cors } from './_cors.js';
+import { parseUserAgent } from './_device.js';
 
 export default async function handler(req, res) {
   if (cors(req, res, ['GET'])) return;
@@ -37,7 +38,8 @@ export default async function handler(req, res) {
       return res.status(403).json({ error: 'Acesso negado' });
     }
 
-    // Busca todos os contatos do mesmo telefone no mesmo cliente — a jornada completa
+    // Leads do mesmo telefone (no modelo de contato único costuma ser 1, mas pode
+    // haver histórico de antes da mudança — mantemos todos).
     const jornadaRes = await pool.query(`
       SELECT
         id, created_at, status, utm_campaign, utm_medium, utm_content,
@@ -50,9 +52,43 @@ export default async function handler(req, res) {
       ORDER BY created_at ASC
     `, [lead.telefone, lead.cliente_id]);
 
+    const leadIds = jornadaRes.rows.map(r => r.id);
+
+    // Interações de link rastreável: cada clique (toque) vinculado a qualquer lead
+    // deste telefone. É a fonte real da jornada agora que cliques repetidos não
+    // viram leads novos (contato único). Traz UTMs, campanha e user_agent do toque.
+    let cliques = [];
+    if (leadIds.length) {
+      const cliquesRes = await pool.query(`
+        SELECT
+          k.id, k.clicked_at, k.converted_at, k.utm_campaign, k.utm_medium,
+          k.utm_content, k.utm_source, k.user_agent, k.fbc, k.lead_id,
+          k.tracking_campaign_id,
+          c.name AS tracking_campaign_name, c.origin_type
+        FROM tracking_clicks k
+        LEFT JOIN tracking_campaigns c ON c.id = k.campaign_id
+        WHERE k.lead_id = ANY($1::int[])
+        ORDER BY k.clicked_at ASC
+      `, [leadIds]);
+      cliques = cliquesRes.rows.map(k => ({
+        ...k,
+        device: parseUserAgent(k.user_agent),
+      }));
+    }
+
+    // Dispositivo do lead principal: do clique que o originou (tracking_click_id).
+    let leadDevice = null;
+    if (lead.tracking_click_id) {
+      const principal = cliques.find(k => k.id === lead.tracking_click_id);
+      if (principal) leadDevice = principal.device;
+    }
+    if (!leadDevice && cliques.length) leadDevice = cliques[0].device;
+    lead.device = leadDevice;
+
     return res.status(200).json({
       lead,
       jornada: jornadaRes.rows,
+      interacoes: cliques,
     });
 
   } catch (err) {

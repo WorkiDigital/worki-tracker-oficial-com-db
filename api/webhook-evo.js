@@ -395,12 +395,60 @@ export default async function handler(req, res) {
     const writeClient = await pool.connect();
     try {
       await writeClient.query('BEGIN');
+      // Para link rastreável o lock é por TELEFONE (não por tracking_id): assim
+      // 2 toques simultâneos do mesmo número são serializados e não criam 2 leads.
       const dedupKey = trackedClick
-        ? `tracking:${cliente_id}:${effectiveTrackingId}`
+        ? `tracking:${cliente_id}:${telefone}`
         : lead_origin === 'ctwa'
           ? `ctwa:${cliente_id}:${telefone}:${ctwaClid || ''}`
           : `organic:${cliente_id}:${instance}:${telefone}`;
       await writeClient.query('SELECT pg_advisory_xact_lock(hashtext($1))', [dedupKey]);
+
+      // ── Link rastreável: CONTATO ÚNICO + FIRST-TOUCH ──
+      // O mesmo telefone clicando de novo NÃO vira um lead novo. Procuramos o lead
+      // existente do número; se houver, apenas registramos o novo toque (converte o
+      // clique e aponta lead_id) sem sobrescrever a campanha/origem do lead (a do
+      // PRIMEIRO contato permanece). O clique entra na jornada via tracking_clicks.
+      if (trackedClick) {
+        const existRes = await writeClient.query(
+          `SELECT id, tracking_click_id FROM leads_tracking
+           WHERE telefone = $1 AND cliente_id = $2
+           ORDER BY created_at ASC LIMIT 1`,
+          [telefone, cliente_id]
+        );
+        if (existRes.rows.length > 0) {
+          // Lead já existe → novo toque na jornada, sem novo lead (first-touch).
+          lead = existRes.rows[0];
+          const jaTinhaAtribuicao = !!lead.tracking_click_id;
+          atr = await atribuirClique(writeClient, {
+            cliente_id, lead_id: lead.id, clickTrackingId: effectiveTrackingId,
+            tracking_method, lead_origin, instance,
+            // Se o lead JÁ tem clique principal, não sobrescrever sua origem/UTMs.
+            preservarLead: jaTinhaAtribuicao
+          });
+          if (!atr) {
+            await writeClient.query('ROLLBACK');
+            return res.status(200).json({
+              ignored: true,
+              reason: 'Clique rastreável já convertido ou expirado.'
+            });
+          }
+          // Marca o toque mais recente (a coluna já existe em leads_tracking).
+          await writeClient.query(
+            'UPDATE leads_tracking SET last_interaction_at = NOW() WHERE id = $1',
+            [lead.id]
+          );
+          await writeClient.query('COMMIT');
+          return res.status(200).json({
+            ok: true,
+            interaction: true,
+            reason: 'Novo toque registrado na jornada do lead existente.',
+            lead_id: lead.id,
+            click_id: atr.click_id
+          });
+        }
+        // Sem lead do telefone → segue para o INSERT normal (lead novo).
+      }
 
       let dupeCheck;
       if (lead_origin === 'ctwa') {
@@ -642,7 +690,11 @@ function mensagemBateKeyword(mensagem, cfg) {
 // ou os dois lados persistem, ou nenhum. Antes isto eram dois UPDATEs autocommit
 // soltos: o do clique gravava e o do lead falhava silenciosamente, deixando o
 // lead com lead_origin='campaign_link' mas tracking_click_id NULL (lead órfão).
-async function atribuirClique(client, { cliente_id, lead_id, clickTrackingId, tracking_method, lead_origin, instance }) {
+// `preservarLead`: quando true, o lead JÁ existe e tem atribuição de origem
+// (first-touch num toque repetido). Aí só convertemos o clique + gravamos lead_id
+// nele, SEM tocar nas UTMs/origem do lead — o clique vive em tracking_clicks e
+// aparece na jornada, mas a campanha do PRIMEIRO contato permanece no lead.
+async function atribuirClique(client, { cliente_id, lead_id, clickTrackingId, tracking_method, lead_origin, instance, preservarLead = false }) {
   if (!clickTrackingId) return null;
   const r = await client.query(
     `UPDATE tracking_clicks k
@@ -660,19 +712,22 @@ async function atribuirClique(client, { cliente_id, lead_id, clickTrackingId, tr
   if (!r.rows.length) return null;
   const c = r.rows[0];
   const method = tracking_method || 'token';
-  // Lado do lead — na MESMA transação do UPDATE do clique acima.
-  await client.query(
-    `UPDATE leads_tracking
-     SET tracking_click_id = $1, tracking_campaign_id = $2,
-         tracking_method = $3, lead_origin = $4,
-         utm_source = COALESCE(utm_source, $5),
-         utm_campaign = COALESCE(utm_campaign, $6),
-         utm_medium = COALESCE(utm_medium, $7),
-         utm_content = COALESCE(utm_content, $8)
-     WHERE id = $9`,
-    [c.id, c.campaign_id, method, lead_origin,
-     c.utm_source, c.utm_campaign, c.utm_medium, c.utm_content, lead_id]
-  );
+  // Lado do lead — na MESMA transação do UPDATE do clique acima. Pulado quando
+  // preservarLead (toque repetido): a origem do primeiro contato é mantida.
+  if (!preservarLead) {
+    await client.query(
+      `UPDATE leads_tracking
+       SET tracking_click_id = $1, tracking_campaign_id = $2,
+           tracking_method = $3, lead_origin = $4,
+           utm_source = COALESCE(utm_source, $5),
+           utm_campaign = COALESCE(utm_campaign, $6),
+           utm_medium = COALESCE(utm_medium, $7),
+           utm_content = COALESCE(utm_content, $8)
+       WHERE id = $9`,
+      [c.id, c.campaign_id, method, lead_origin,
+       c.utm_source, c.utm_campaign, c.utm_medium, c.utm_content, lead_id]
+    );
+  }
   return { click_id: c.id, campaign_id: c.campaign_id, method,
            utm_source: c.utm_source, utm_campaign: c.utm_campaign,
            utm_medium: c.utm_medium, utm_content: c.utm_content,
