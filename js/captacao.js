@@ -232,7 +232,10 @@ async function carregarCampanhasLink() {
         </tr>`;
     }).join('');
 
-    lucide.createIcons({ nodes: [lista] });
+    // Varre o documento inteiro (sem `nodes`): a forma com nodes:[lista] às vezes
+    // não desce nos <i> aninhados em <tr><td><div>, deixando o ícone como um
+    // quadradinho vazio. createIcons() global é o padrão usado no resto do app.
+    if (typeof lucide !== 'undefined') lucide.createIcons();
 
   } catch (e) {
     lista.innerHTML = `<div style="color:var(--red);padding:20px;text-align:center;">Erro ao carregar: ${esc(e.message)}</div>`;
