@@ -148,16 +148,16 @@ async function carregarCampanhasLink() {
     }
 
     lista.innerHTML = `
-      <div style="overflow-x:auto;">
-        <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <div class="cap-links-table-wrap">
+        <table class="cap-links-table">
           <thead>
-            <tr style="border-bottom:1px solid var(--border);color:var(--muted);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;">
-              <th style="padding:8px 12px;text-align:left;">Nome / Link</th>
-              <th style="padding:8px 12px;text-align:center;">Modo</th>
-              <th style="padding:8px 12px;text-align:center;">Cliques</th>
-              <th style="padding:8px 12px;text-align:center;">Conv.</th>
-              <th style="padding:8px 12px;text-align:center;">Status</th>
-              <th style="padding:8px 12px;text-align:right;">Ações</th>
+            <tr>
+              <th>Nome / Link</th>
+              <th>Modo</th>
+              <th>Cliques</th>
+              <th>Conv.</th>
+              <th>Status</th>
+              <th>Ações</th>
             </tr>
           </thead>
           <tbody id="capTbody"></tbody>
@@ -174,34 +174,36 @@ async function carregarCampanhasLink() {
       const statusClr = status ? '#10b981' : '#ef4444';
       const statusLbl = status ? '● Ativo' : '● Pausado';
       return `
-        <tr style="border-bottom:1px solid var(--border);transition:background .12s;" onmouseover="this.style.background='var(--tag)'" onmouseout="this.style.background=''">
-          <td style="padding:12px 12px;max-width:280px;">
-            <div style="font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${esc(c.name)}">${esc(c.name)}</div>
-            <div style="display:flex;align-items:center;gap:6px;margin-top:4px;">
-              <code style="font-size:11px;color:var(--muted);background:var(--tag);padding:2px 6px;border-radius:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px;" title="${esc(url)}">/r/${esc(c.slug)}</code>
-              <button class="btn btn-ghost btn-sm" style="padding:2px 6px;font-size:10px;" onclick="capCopiarLink(${Number(c.id)})">
+        <tr>
+          <td>
+            <div class="cap-link-identity">
+              <strong title="${esc(c.name)}">${esc(c.name)}</strong>
+              <code title="${esc(url)}">/r/${esc(c.slug)}</code>
+              <button class="cap-icon-action" title="Copiar link" onclick="capCopiarLink(${Number(c.id)})">
                 <i data-lucide="copy" style="width:11px;"></i>
               </button>
             </div>
           </td>
-          <td style="padding:12px;text-align:center;">
-            <span style="font-size:11px;padding:2px 8px;border-radius:20px;background:rgba(59,130,246,.12);color:var(--blue);">${esc(MODO_LABEL[c.rotation_mode] || c.rotation_mode || '—')}</span>
+          <td>
+            <span class="cap-mode-badge">${esc(MODO_LABEL[c.rotation_mode] || c.rotation_mode || '—')}</span>
           </td>
-          <td style="padding:12px;text-align:center;font-weight:700;">${c.cliques || 0}</td>
-          <td style="padding:12px;text-align:center;font-weight:700;color:#10b981;">${c.conversoes || 0}</td>
-          <td style="padding:12px;text-align:center;">
-            <span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;background:${statusBg};color:${statusClr};">${statusLbl}</span>
+          <td class="cap-number-cell">${c.cliques || 0}</td>
+          <td class="cap-number-cell" style="color:#10b981;">${c.conversoes || 0}</td>
+          <td>
+            <span class="cap-status-badge" style="background:${statusBg};color:${statusClr};">${statusLbl}</span>
           </td>
-          <td style="padding:12px;text-align:right;white-space:nowrap;">
-            <button class="btn btn-ghost btn-sm" onclick="capAlternarStatus(${c.id}, ${!status})" title="${status ? 'Pausar' : 'Ativar'}" style="padding:4px 8px;">
-              <i data-lucide="${status ? 'pause' : 'play'}" style="width:13px;"></i>
-            </button>
-            <button class="btn btn-ghost btn-sm" onclick="abrirModalCampanha(${c.id})" style="padding:4px 8px;">
-              <i data-lucide="edit-3" style="width:13px;"></i>
-            </button>
-            <button class="btn btn-ghost btn-sm" onclick="capExcluir(${Number(c.id)})" style="padding:4px 8px;color:var(--red);">
-              <i data-lucide="trash-2" style="width:13px;"></i>
-            </button>
+          <td>
+            <div class="cap-row-actions">
+              <button class="cap-icon-action" onclick="capAlternarStatus(${c.id}, ${!status})" title="${status ? 'Pausar' : 'Ativar'}">
+                <i data-lucide="${status ? 'pause' : 'play'}"></i>
+              </button>
+              <button class="cap-icon-action" onclick="abrirModalCampanha(${c.id})" title="Editar">
+                <i data-lucide="edit-3"></i>
+              </button>
+              <button class="cap-icon-action cap-icon-danger" onclick="capExcluir(${Number(c.id)})" title="Excluir">
+                <i data-lucide="trash-2"></i>
+              </button>
+            </div>
           </td>
         </tr>`;
     }).join('');
