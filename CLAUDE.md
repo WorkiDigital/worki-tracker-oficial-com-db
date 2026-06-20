@@ -341,7 +341,7 @@ Botão de perfil (ícone `user` roxo) em cada linha da tabela de leads abre um d
   - pertence ao mesmo cliente;
   - ainda está pendente e dentro da validade;
   - pertence a uma campanha ativa.
-- Não existe atribuição automática por proximidade de horário. Sem token válido, o lead pode entrar como orgânico conforme a configuração da instância, mas não recebe campanha.
+- A atribuição principal continua sendo pelo token exato. Se o WhatsApp remover o token inteiro, existe fallback restrito: somente um único clique pendente da mesma instância nos últimos 5 minutos pode ser correlacionado. Havendo mais de um candidato, nenhuma campanha é atribuída automaticamente.
 - Origens possíveis: `ctwa`, `organic`, `bio`, `campaign_link` e `rotator`.
 - Um clique só pode ser associado a um lead, protegido por status transacional e índice único em `leads_tracking.tracking_click_id`.
 - Cada destino do rotador deve estar vinculado a uma instância Evolution do mesmo cliente.
@@ -353,6 +353,47 @@ Botão de perfil (ícone `user` roxo) em cada linha da tabela de leads abre um d
 - Se o token inteiro desaparecer, o webhook pode correlacionar um único clique pendente da mesma instância nos últimos 5 minutos (`recent_click_correlation`). Se houver mais de um candidato, não atribui automaticamente e registra `tracking_fallback` nos Logs do Sistema.
 - Os filtros de Logs do Sistema incluem `tracking_token`, `tracking_fallback` e `tracking_ignored` para diagnosticar o caminho real de cada teste.
 - O fluxo de links salva `utm_content` em `tracking_campaigns`/`tracking_clicks` e copia o valor para `leads_tracking.utm_content`, onde o front exibe o nome do anúncio.
+
+### UTMs da Meta
+- O redirecionador lê diretamente da URL: `utm_source`, `utm_medium`, `utm_campaign` e `utm_content`.
+- Os valores recebidos na URL têm prioridade sobre os valores padrão cadastrados no formulário do link.
+- Para parâmetros dinâmicos da Meta, usar:
+  `utm_source={{site_source_name}}&utm_medium={{adset.name}}&utm_campaign={{campaign.name}}&utm_content={{ad.name}}`.
+- Não é necessário PageView para capturar as UTMs; elas são gravadas no servidor no momento do clique.
+
+### CAPI Web e PageView do link
+- Credenciais dedicadas por cliente:
+  - `clientes.capi_pixel_id`;
+  - `clientes.capi_token_enc`;
+  - `clientes.capi_token_last4`;
+  - `clientes.capi_token_updated_at`.
+- `api/_capi-web.js` envia eventos web para a Meta usando essas credenciais, sem reutilizar o token da CAPI de WhatsApp.
+- Ao abrir `/r/<slug>`, o sistema:
+  1. grava o clique e as UTMs em `tracking_clicks`;
+  2. gera `pageview_event_id`;
+  3. envia `PageView` pela CAPI server-side;
+  4. serve uma página intermediária curta com Pixel JS;
+  5. dispara o mesmo `PageView` no navegador com o mesmo `event_id`;
+  6. redireciona para o WhatsApp após aproximadamente 1,4 segundo.
+- O mesmo `event_id` no Pixel e na CAPI permite a deduplicação pela Meta.
+- Sem Pixel/CAPI Web configurado, o redirecionamento continua funcionando com atraso mínimo e sem bloquear o clique.
+- Quando o clique vira lead, `api/webhook-evo.js` envia também o evento web `Lead`, associado ao clique rastreável.
+
+### Logs do rastreamento
+- O redirecionador grava diagnósticos em `webhook_logs`, visíveis na aba **Logs do Sistema**:
+  - `tracking_click`: clique, campanha, destino, presença de `fbclid`/`fbc`/`fbp` e configuração de pixel;
+  - `capi_web`: sucesso ou falha do PageView/Lead enviado pela CAPI Web;
+  - `tracking_token`: token recebido sem clique pendente compatível;
+  - `tracking_fallback`: correlação recente utilizada ou ambígua;
+  - `tracking_ignored`: mensagem sem token válido e fora do modo de captura.
+
+### Interface de links
+- A tabela da aba **Captação e Links** foi compactada:
+  - nome, URL e botão de copiar ficam na mesma linha;
+  - modo, cliques, conversões e status ficam centralizados;
+  - pausar, editar e excluir ficam lado a lado;
+  - telas menores usam rolagem horizontal para preservar os controles.
+- O número do destino é obtido da instância conectada e não deve ser digitado manualmente.
 
 ### Banco e ativação em produção
 As novas tabelas/colunas são criadas por `setup-db.js`:
@@ -390,12 +431,19 @@ Após um terminal do EasyPanel executar uma versão antiga de `setup-db.js`, as 
 - Rotador `single` e `round_robin` aprovados em teste isolado.
 - Página, CSS e `js/captacao.js` respondem `200` no servidor local.
 - Modal validado por DOM simulado: abertura, geração de slug e adição de destino.
+- Vínculo destino ↔ instância validado no frontend, backend, clique e webhook.
+- Token validado com e sem os marcadores `U+2060`.
+- `utm_content` validado no fluxo campanha → clique → lead → frontend.
+- Layout compacto da tabela validado no HTML gerado.
+- Produção verificada com `/health` respondendo `200`.
+- Produção confirmada com seletor de instância, UTM Content e tabela compacta publicados.
 
-### Validações ainda obrigatórias
-- Rodar a migração no PostgreSQL de produção.
-- Criar um link real e testar o redirecionamento.
-- Confirmar chegada e decodificação do token em:
+### Validações manuais recomendadas
+- Criar um clique novo e enviar a mensagem em até 5 minutos usando a instância vinculada.
+- Conferir em `tracking_clicks` se `status` muda de `clicked` para `converted`.
+- Conferir em `leads_tracking` os campos `tracking_click_id`, `tracking_campaign_id`, `tracking_method` e as quatro UTMs.
+- Confirmar a preservação do token e o fallback em:
   - WhatsApp Android;
   - WhatsApp iOS;
   - WhatsApp Web.
-- O navegador integrado não ficou disponível durante a implementação; a inspeção visual clicável do modal ainda precisa ser feita em navegador real.
+- Conferir no Gerenciador de Eventos da Meta se Pixel e CAPI receberam o PageView com deduplicação.
