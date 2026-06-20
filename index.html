@@ -378,22 +378,22 @@
                 </div>
                 <span id="capDestinoCount" style="font-size:10px;color:var(--muted);white-space:nowrap;">0 destinos</span>
             </div>
-            <div class="cap-grid-destination" style="display:grid;grid-template-columns:minmax(190px,1.1fr) minmax(150px,.75fr) minmax(160px,.9fr) auto;gap:8px;align-items:end;margin-bottom:10px;">
-                <div class="input-group" style="margin:0;">
+            <div class="cap-grid-destination" style="display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,.9fr) minmax(0,.9fr) auto;gap:8px;align-items:end;margin-bottom:10px;">
+                <div class="input-group" style="margin:0;min-width:0;">
                     <label>Instância <span style="color:var(--red)">*</span></label>
-                    <select id="capNovaInstancia" class="form-control" onchange="capSelecionarInstancia()">
+                    <select id="capNovaInstancia" class="form-control" onchange="capSelecionarInstancia()" style="width:100%;max-width:100%;text-overflow:ellipsis;">
                         <option value="">Carregando instâncias…</option>
                     </select>
                 </div>
-                <div class="input-group" style="margin:0;">
+                <div class="input-group" style="margin:0;min-width:0;">
                     <label>Número</label>
-                    <input id="capNovoNumero" type="tel" inputmode="numeric" placeholder="5511999999999" onkeydown="if(event.key==='Enter'){event.preventDefault();capAdicionarDestino();}">
+                    <input id="capNovoNumero" type="tel" inputmode="numeric" placeholder="5511999999999" style="width:100%;max-width:100%;" onkeydown="if(event.key==='Enter'){event.preventDefault();capAdicionarDestino();}">
                 </div>
-                <div class="input-group" style="margin:0;">
+                <div class="input-group" style="margin:0;min-width:0;">
                     <label>Nome</label>
-                    <input id="capNovoNome" type="text" maxlength="120" placeholder="Ex: Comercial 1" onkeydown="if(event.key==='Enter'){event.preventDefault();capAdicionarDestino();}">
+                    <input id="capNovoNome" type="text" maxlength="120" placeholder="Ex: Comercial 1" style="width:100%;max-width:100%;" onkeydown="if(event.key==='Enter'){event.preventDefault();capAdicionarDestino();}">
                 </div>
-                <button type="button" class="btn btn-primary btn-sm" onclick="capAdicionarDestino()" style="height:41px;padding:0 13px;display:inline-flex;align-items:center;gap:5px;">
+                <button type="button" class="btn btn-primary btn-sm" onclick="capAdicionarDestino()" style="height:41px;padding:0 13px;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;">
                     <i data-lucide="plus" style="width:13px;"></i> Adicionar
                 </button>
             </div>
