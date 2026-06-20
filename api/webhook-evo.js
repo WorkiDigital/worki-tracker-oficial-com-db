@@ -225,7 +225,6 @@ export default async function handler(req, res) {
            WHERE k.tracking_id=$1 AND k.cliente_id=$2
              AND COALESCE(k.instance_name, d.instance_name)=$3
              AND k.status='clicked' AND k.converted_at IS NULL
-             AND c.enabled=true
              AND (k.expires_at IS NULL OR k.expires_at > NOW())
            LIMIT 1`,
           [clickTrackingId, cliente_id, instance]
@@ -244,49 +243,9 @@ export default async function handler(req, res) {
       }
     }
 
-    // Fallback seguro quando o WhatsApp remove o token invisível: só correlaciona
-    // se houver EXATAMENTE um clique pendente desta instância nos últimos 5 min.
-    // Mais de um candidato é ambíguo e não recebe campanha automaticamente.
-    if (!trackedClick && !clickTrackingId) {
-      try {
-        const recentRes = await getPool().query(
-          `SELECT k.id, k.tracking_id, k.campaign_id, c.origin_type,
-                  COALESCE(k.instance_name, d.instance_name) AS instance_name
-           FROM tracking_clicks k
-           JOIN tracking_campaigns c ON c.id = k.campaign_id
-           LEFT JOIN tracking_destinations d ON d.id = k.destination_id
-           WHERE k.cliente_id=$1
-             AND COALESCE(k.instance_name, d.instance_name)=$2
-             AND k.status='clicked' AND k.converted_at IS NULL
-             AND c.enabled=true
-             AND k.clicked_at > NOW() - INTERVAL '5 minutes'
-             AND (k.expires_at IS NULL OR k.expires_at > NOW())
-           ORDER BY k.clicked_at DESC
-           LIMIT 2`,
-          [cliente_id, instance]
-        );
-        if (recentRes.rows.length === 1) {
-          trackedClick = recentRes.rows[0];
-          effectiveTrackingId = trackedClick.tracking_id;
-          tracking_method = 'recent_click_correlation';
-          await gravarLogWebhook({
-            cliente_id, instance, tag: 'tracking_fallback',
-            level: 'warn',
-            message: 'Token invisível ausente; clique recente único correlacionado.',
-            data: { telefone, tracking_id: effectiveTrackingId, click_id: trackedClick.id }
-          });
-        } else if (recentRes.rows.length > 1) {
-          await gravarLogWebhook({
-            cliente_id, instance, tag: 'tracking_fallback',
-            level: 'warn',
-            message: 'Token invisível ausente e correlação ambígua; campanha não atribuída.',
-            data: { telefone, candidatos: recentRes.rows.map(r => r.id) }
-          });
-        }
-      } catch (e) {
-        log('warn', 'webhook_evo_tracking_fallback_fail', { error: e.message });
-      }
-    }
+    // Sem token exato não existe identidade suficiente para associar a mensagem
+    // a um clique. A correlação temporal foi removida porque podia atribuir uma
+    // mensagem orgânica ao clique recente de outra pessoa na mesma instância.
 
     if (trackedClick) {
       const origemMap = { bio: 'bio', rotator: 'rotator', campaign: 'campaign_link' };
@@ -385,126 +344,115 @@ export default async function handler(req, res) {
       }
     }
 
-    // ── 12. Deduplicação — regra varia por origem ──
-    // CTWA: telefone + ctwaClid + cliente em 24h.
-    // Link rastreável: o token pendente é único e será consumido após o INSERT.
-    // Orgânico: telefone + cliente + instância dentro da janela configurada
-    // (não há ctwaClid para distinguir; usa a janela de dedup da config).
-    let dupeCheck;
-    if (lead_origin === 'ctwa') {
-      dupeCheck = await pool.query(
-        `SELECT id FROM leads_tracking
-         WHERE telefone = $1 AND ctw_aci_id = $2 AND cliente_id = $3
-         AND event_time > NOW() - INTERVAL '24 hours'
-         LIMIT 1`,
-        [telefone, ctwaClid, cliente_id]
-      );
-    } else if (trackedClick) {
-      dupeCheck = { rows: [] };
-    } else {
-      const dedupHoras = parseInt(captureCfg?.deduplication_hours, 10) || 24;
-      dupeCheck = await pool.query(
-        `SELECT id FROM leads_tracking
-         WHERE telefone = $1 AND cliente_id = $2 AND instancia = $3
-         AND event_time > NOW() - ($4 || ' hours')::interval
-         LIMIT 1`,
-        [telefone, cliente_id, instance, String(dedupHoras)]
-      );
-    }
-    if (dupeCheck.rows.length > 0) {
-      return res.status(200).json({
-        ignored: true,
-        reason: `Lead duplicado (${lead_origin}).`,
-        existing_id: dupeCheck.rows[0].id
-      });
-    }
+    // ── 12/13. Deduplicação + INSERT + atribuição em uma transação ──
+    let lead = null;
+    let atr = null;
+    const writeClient = await pool.connect();
+    try {
+      await writeClient.query('BEGIN');
+      const dedupKey = trackedClick
+        ? `tracking:${cliente_id}:${effectiveTrackingId}`
+        : lead_origin === 'ctwa'
+          ? `ctwa:${cliente_id}:${telefone}:${ctwaClid || ''}`
+          : `organic:${cliente_id}:${instance}:${telefone}`;
+      await writeClient.query('SELECT pg_advisory_xact_lock(hashtext($1))', [dedupKey]);
 
-    // ── 13. INSERT do lead ──
-    const insertResult = await pool.query(`
-      INSERT INTO leads_tracking (
-        cliente_id, nome, telefone, mensagem_recebida, ctw_aci_id, source_id,
-        event_source_url, anuncio_thumbnail_url, instancia, status, event_time,
-        page_id, plataforma, utm_campaign, utm_medium, utm_content, lead_origin
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'Lead', NOW(), $10, $11, $12, $13, $14, $15)
-      RETURNING *
-    `, [
-      cliente_id,
-      pushName || '',
-      telefone,
-      mensagem_recebida,
-      ctwaClid,
-      sourceId,
-      event_source_url,
-      anuncio_thumbnail_url,
-      instance,
-      page_id,
-      plataforma,
-      utm_campaign,
-      utm_medium,
-      utm_content,
-      lead_origin
-    ]);
+      let dupeCheck;
+      if (lead_origin === 'ctwa') {
+        dupeCheck = await writeClient.query(
+          `SELECT id FROM leads_tracking
+           WHERE telefone = $1 AND ctw_aci_id = $2 AND cliente_id = $3
+           AND event_time > NOW() - INTERVAL '24 hours'
+           LIMIT 1`,
+          [telefone, ctwaClid, cliente_id]
+        );
+      } else if (trackedClick) {
+        dupeCheck = { rows: [] };
+      } else {
+        const dedupHoras = parseInt(captureCfg?.deduplication_hours, 10) || 24;
+        dupeCheck = await writeClient.query(
+          `SELECT id FROM leads_tracking
+           WHERE telefone = $1 AND cliente_id = $2 AND instancia = $3
+           AND event_time > NOW() - ($4 || ' hours')::interval
+           LIMIT 1`,
+          [telefone, cliente_id, instance, String(dedupHoras)]
+        );
+      }
 
-    const lead = insertResult.rows[0];
-
-    // ── 13b. Atribuição exata do link rastreável pelo token ──
-    // Não existe atribuição automática por horário: sem token válido, o lead pode
-    // ser salvo como orgânico conforme a configuração, mas não recebe campanha.
-    if (trackedClick) {
-      const atr = await atribuirClique(pool, {
-        cliente_id, lead_id: lead.id, clickTrackingId: effectiveTrackingId, tracking_method, instance
-      });
-      if (!atr) {
-        await pool.query('DELETE FROM leads_tracking WHERE id=$1', [lead.id]);
+      if (dupeCheck.rows.length > 0) {
+        await writeClient.query('ROLLBACK');
         return res.status(200).json({
           ignored: true,
-          reason: 'Clique rastreável já convertido ou expirado.'
+          reason: `Lead duplicado (${lead_origin}).`,
+          existing_id: dupeCheck.rows[0].id
         });
       }
-      await pool.query(
-        `UPDATE leads_tracking
-         SET tracking_click_id = $1, tracking_campaign_id = $2,
-             tracking_method = $3, lead_origin = $4,
-             utm_source = COALESCE(utm_source, $5),
-             utm_campaign = COALESCE(utm_campaign, $6),
-             utm_medium = COALESCE(utm_medium, $7),
-             utm_content = COALESCE(utm_content, $8)
-         WHERE id = $9`,
-        [atr.click_id, atr.campaign_id, atr.method, lead_origin,
-         atr.utm_source, atr.utm_campaign, atr.utm_medium, atr.utm_content, lead.id]
-      );
-      lead.tracking_click_id = atr.click_id;
-      lead.tracking_method = atr.method;
-      lead.tracking_campaign_id = atr.campaign_id;
-      lead.lead_origin = lead_origin;
 
-      // ── 13c. CAPI Web: evento Lead atribuído à campanha do Facebook ──
-      // Só dispara se o clique tinha fbc (veio de anúncio web) E o cliente tem
-      // pixel+token CAPI configurados. Best-effort: nunca derruba o webhook.
-      if (atr.fbc) {
-        try {
-          const capi = await enviarCapiWebLead(pool, {
-            cliente_id, lead,
-            click: {
-              fbc: atr.fbc, fbp: atr.fbp, ip_address: atr.ip_address,
-              user_agent: atr.user_agent, referrer: atr.referrer,
-              utm_campaign: atr.utm_campaign,
-            }
+      const insertResult = await writeClient.query(`
+        INSERT INTO leads_tracking (
+          cliente_id, nome, telefone, mensagem_recebida, ctw_aci_id, source_id,
+          event_source_url, anuncio_thumbnail_url, instancia, status, event_time,
+          page_id, plataforma, utm_campaign, utm_medium, utm_content, lead_origin
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'Lead', NOW(), $10, $11, $12, $13, $14, $15)
+        RETURNING *
+      `, [
+        cliente_id, pushName || '', telefone, mensagem_recebida, ctwaClid, sourceId,
+        event_source_url, anuncio_thumbnail_url, instance, page_id, plataforma,
+        utm_campaign, utm_medium, utm_content, lead_origin
+      ]);
+      lead = insertResult.rows[0];
+
+      if (trackedClick) {
+        atr = await atribuirClique(writeClient, {
+          cliente_id, lead_id: lead.id, clickTrackingId: effectiveTrackingId,
+          tracking_method, lead_origin, instance
+        });
+        if (!atr) {
+          await writeClient.query('ROLLBACK');
+          return res.status(200).json({
+            ignored: true,
+            reason: 'Clique rastreável já convertido ou expirado.'
           });
-          await pool.query(
-            `UPDATE tracking_clicks SET capi_web_status=$1 WHERE id=$2`,
-            [capi.sent ? 'sent' : 'failed', atr.click_id]
-          );
-          await gravarLogWebhook({
-            cliente_id, instance,
-            tag: 'capi_web', level: capi.sent ? 'info' : 'warn',
-            message: capi.sent ? 'CAPI Web Lead enviado (atribuído à campanha FB).'
-                               : `CAPI Web Lead falhou: ${capi.error}`,
-            data: { lead_id: lead.id, click_id: atr.click_id, fbtrace_id: capi.fbtrace_id, error: capi.error }
-          });
-        } catch (e) {
-          log('warn', 'webhook_evo_capi_web_fail', { error: e.message });
         }
+        lead.tracking_click_id = atr.click_id;
+        lead.tracking_method = atr.method;
+        lead.tracking_campaign_id = atr.campaign_id;
+        lead.lead_origin = lead_origin;
+      }
+
+      await writeClient.query('COMMIT');
+    } catch (e) {
+      try { await writeClient.query('ROLLBACK'); } catch (_) {}
+      throw e;
+    } finally {
+      writeClient.release();
+    }
+
+    // CAPI Web roda depois do COMMIT; falha externa nunca deixa o banco parcial.
+    if (atr?.fbc) {
+      try {
+        const capi = await enviarCapiWebLead(pool, {
+          cliente_id, lead,
+          click: {
+            fbc: atr.fbc, fbp: atr.fbp, ip_address: atr.ip_address,
+            user_agent: atr.user_agent, referrer: atr.referrer,
+            event_source_url: atr.event_source_url,
+            utm_campaign: atr.utm_campaign,
+          }
+        });
+        await pool.query(
+          `UPDATE tracking_clicks SET capi_web_status=$1 WHERE id=$2`,
+          [capi.sent ? 'sent' : 'failed', atr.click_id]
+        );
+        await gravarLogWebhook({
+          cliente_id, instance,
+          tag: 'capi_web', level: capi.sent ? 'info' : 'warn',
+          message: capi.sent ? 'CAPI Web Lead enviado (atribuído à campanha FB).'
+                             : `CAPI Web Lead falhou: ${capi.error}`,
+          data: { lead_id: lead.id, click_id: atr.click_id, fbtrace_id: capi.fbtrace_id, error: capi.error }
+        });
+      } catch (e) {
+        log('warn', 'webhook_evo_capi_web_fail', { error: e.message });
       }
     }
 
@@ -643,9 +591,15 @@ function mensagemBateKeyword(mensagem, cfg) {
 
 // Atribui um lead a um clique de link rastreável pelo token exato.
 // Um clique só converte para UM lead (guard: status='clicked' AND converted_at IS NULL).
-async function atribuirClique(pool, { cliente_id, lead_id, clickTrackingId, tracking_method, instance }) {
+// Atribui o clique rastreável ao lead de forma ATÔMICA: grava os DOIS lados do
+// vínculo (clique→lead e lead→clique) na MESMA transação. Recebe um `client`
+// dedicado (BEGIN/COMMIT é responsabilidade do chamador), nunca o pool — assim,
+// ou os dois lados persistem, ou nenhum. Antes isto eram dois UPDATEs autocommit
+// soltos: o do clique gravava e o do lead falhava silenciosamente, deixando o
+// lead com lead_origin='campaign_link' mas tracking_click_id NULL (lead órfão).
+async function atribuirClique(client, { cliente_id, lead_id, clickTrackingId, tracking_method, lead_origin, instance }) {
   if (!clickTrackingId) return null;
-  const r = await pool.query(
+  const r = await client.query(
     `UPDATE tracking_clicks k
      SET status='converted', converted_at=NOW(), lead_id=$1
      WHERE tracking_id=$2 AND cliente_id=$3
@@ -655,18 +609,31 @@ async function atribuirClique(pool, { cliente_id, lead_id, clickTrackingId, trac
        AND status='clicked' AND converted_at IS NULL
        AND (expires_at IS NULL OR expires_at > NOW())
      RETURNING id, campaign_id, utm_source, utm_campaign, utm_medium, utm_content,
-               fbc, fbp, ip_address, user_agent, referrer`,
+               fbc, fbp, ip_address, user_agent, referrer, event_source_url`,
     [lead_id, clickTrackingId, cliente_id, instance]
   );
-  if (r.rows.length) {
-    const c = r.rows[0];
-    return { click_id: c.id, campaign_id: c.campaign_id, method: tracking_method || 'token',
-             utm_source: c.utm_source, utm_campaign: c.utm_campaign,
-             utm_medium: c.utm_medium, utm_content: c.utm_content,
-             fbc: c.fbc, fbp: c.fbp, ip_address: c.ip_address,
-             user_agent: c.user_agent, referrer: c.referrer };
-  }
-  return null;
+  if (!r.rows.length) return null;
+  const c = r.rows[0];
+  const method = tracking_method || 'token';
+  // Lado do lead — na MESMA transação do UPDATE do clique acima.
+  await client.query(
+    `UPDATE leads_tracking
+     SET tracking_click_id = $1, tracking_campaign_id = $2,
+         tracking_method = $3, lead_origin = $4,
+         utm_source = COALESCE(utm_source, $5),
+         utm_campaign = COALESCE(utm_campaign, $6),
+         utm_medium = COALESCE(utm_medium, $7),
+         utm_content = COALESCE(utm_content, $8)
+     WHERE id = $9`,
+    [c.id, c.campaign_id, method, lead_origin,
+     c.utm_source, c.utm_campaign, c.utm_medium, c.utm_content, lead_id]
+  );
+  return { click_id: c.id, campaign_id: c.campaign_id, method,
+           utm_source: c.utm_source, utm_campaign: c.utm_campaign,
+           utm_medium: c.utm_medium, utm_content: c.utm_content,
+           fbc: c.fbc, fbp: c.fbp, ip_address: c.ip_address,
+           user_agent: c.user_agent, referrer: c.referrer,
+           event_source_url: c.event_source_url };
 }
 
 function detectarPlataforma(sourceUrl, adReply) {

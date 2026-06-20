@@ -14,6 +14,7 @@ import crypto from 'crypto';
 import { decryptToken } from './_crypto.js';
 
 const GRAPH_VER = 'v25.0';
+const CAPI_TIMEOUT_MS = 1800;
 
 const hash = (str) => {
   const s = (str || '').toLowerCase().trim();
@@ -61,7 +62,12 @@ export async function enviarCapiWebPageView(pool, { cliente_id, click, eventId }
   try {
     const r = await fetch(
       `https://graph.facebook.com/${GRAPH_VER}/${row.capi_pixel_id}/events?access_token=${token}`,
-      { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(CAPI_TIMEOUT_MS),
+      }
     );
     const resp = await r.json();
     if (resp.events_received) return { sent: true, fbtrace_id: resp.fbtrace_id };
@@ -78,6 +84,9 @@ export async function enviarCapiWebPageView(pool, { cliente_id, click, eventId }
 export async function enviarCapiWebLead(pool, { cliente_id, click, lead }) {
   // Precisa de fbc (atribuição de anúncio) — sem ele não há o que atribuir.
   if (!click?.fbc) return { sent: false, error: 'sem fbc (lead não veio de anúncio web)' };
+  if (!click.event_source_url && !click.referrer) {
+    return { sent: false, error: 'evento web sem event_source_url' };
+  }
 
   // Token + pixel DEDICADOS de CAPI web.
   const cliRes = await pool.query(
@@ -106,7 +115,7 @@ export async function enviarCapiWebLead(pool, { cliente_id, click, lead }) {
       event_name:      'Lead',
       event_time:      Math.floor(Date.now() / 1000),
       action_source:   'website',
-      event_source_url: click.referrer || undefined,
+      event_source_url: click.event_source_url || click.referrer,
       user_data:       userData,
       custom_data: {
         ...(click.utm_campaign ? { campaign: click.utm_campaign } : {}),
@@ -117,7 +126,12 @@ export async function enviarCapiWebLead(pool, { cliente_id, click, lead }) {
   try {
     const r = await fetch(
       `https://graph.facebook.com/${GRAPH_VER}/${row.capi_pixel_id}/events?access_token=${token}`,
-      { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(CAPI_TIMEOUT_MS),
+      }
     );
     const resp = await r.json();
     if (resp.events_received) {

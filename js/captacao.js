@@ -131,7 +131,10 @@ async function carregarMetricasLink() {
         </div>
       </div>`).join('');
     lucide.createIcons({ nodes: [el] });
-  } catch { /* silencioso */ }
+  } catch (e) {
+    console.error('[captacao] Falha ao carregar métricas:', e);
+    el.innerHTML = '<div style="grid-column:1/-1;padding:12px 14px;border:1px solid rgba(239,68,68,.3);background:rgba(239,68,68,.08);border-radius:10px;color:var(--red);font-size:12px;">Não foi possível carregar as métricas dos links.</div>';
+  }
 }
 
 // ── Carregar lista de campanhas ───────────────────────────────────────────────
@@ -221,8 +224,8 @@ async function carregarCampanhasLink() {
               <button class="cap-icon-action" onclick="capDuplicar(${c.id})" title="Duplicar link">
                 <i data-lucide="copy-plus"></i>
               </button>
-              <button class="cap-icon-action cap-icon-danger" onclick="capExcluir(${Number(c.id)})" title="Excluir">
-                <i data-lucide="trash-2"></i>
+              <button class="cap-icon-action cap-icon-danger" onclick="capExcluir(${Number(c.id)})" title="Arquivar">
+                <i data-lucide="archive"></i>
               </button>
             </div>
           </td>
@@ -277,14 +280,14 @@ async function capAlternarStatus(id, enabled) {
 async function capExcluir(id) {
   const campanha = _capCampanhas.find(c => Number(c.id) === Number(id));
   const nome = campanha?.name || `#${id}`;
-  if (!confirm(`Excluir permanentemente o link "${nome}"?\n\nTodos os cliques e dados serão apagados.`)) return;
+  if (!confirm(`Arquivar o link "${nome}"?\n\nO link será desativado e removido da lista, mas cliques, conversões e atribuições serão preservados.`)) return;
   try {
     const r = await authFetch(capUrlApi('/api/tracking-campaigns', { id }), { method: 'DELETE' });
-    await readApiJson(r, 'Falha ao excluir link');
-    toast('Link excluído.', 'success');
+    await readApiJson(r, 'Falha ao arquivar link');
+    toast('Link arquivado. O histórico foi preservado.', 'success');
     carregarCampanhasLink();
   } catch (e) {
-    toast('Erro ao excluir: ' + e.message, 'error');
+    toast('Erro ao arquivar: ' + e.message, 'error');
   }
 }
 

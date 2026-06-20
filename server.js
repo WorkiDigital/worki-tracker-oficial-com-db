@@ -153,7 +153,7 @@ const server = http.createServer(async (req, res) => {
         try {
             const { checkRateLimit } = await import('./middleware/rateLimit.js');
             const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '127.0.0.1';
-            if (checkRateLimit(ip, wrappedRes)) return;
+            if (await checkRateLimit(ip, wrappedRes)) return;
         } catch (_) { /* rate limit best-effort */ }
         const redirectPath = path.join(__dirname, 'api', 'redirect.js');
         return callApiHandler(pathToFileURL(redirectPath).href, wrappedReq, wrappedRes);
@@ -185,7 +185,7 @@ const server = http.createServer(async (req, res) => {
             if (route.startsWith('webhook-') || route === 'redirect') {
                 const { checkRateLimit } = await import('./middleware/rateLimit.js');
                 const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '127.0.0.1';
-                if (checkRateLimit(ip, wrappedRes)) return;
+                if (await checkRateLimit(ip, wrappedRes)) return;
             }
 
             if (await parseBody(wrappedReq, res)) return;

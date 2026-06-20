@@ -3,6 +3,8 @@ import { getPool } from './_db.js';
 import { cors } from './_cors.js';
 import { ensureTrackingSchema } from './_tracking-schema.js';
 
+const HUMAN_CLICK_SQL = `COALESCE(user_agent, '') !~* '(bot|crawler|spider|preview|facebookexternalhit|facebot|whatsapp|telegrambot|slackbot|discordbot|linkedinbot|twitterbot|googlebot|bingbot)'`;
+
 // Métricas dos links rastreáveis: cliques, conversões, taxa, distribuição por número.
 export default async function handler(req, res) {
   if (cors(req, res, ['GET'])) return;
@@ -18,7 +20,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const where = ['cliente_id = $1'];
+    const where = ['cliente_id = $1', HUMAN_CLICK_SQL];
     const params = [cliente_id];
     if (campaignId) { where.push(`campaign_id = $2`); params.push(campaignId); }
     const whereSql = where.join(' AND ');
@@ -52,6 +54,7 @@ export default async function handler(req, res) {
          COUNT(k.*) FILTER (WHERE k.status='converted') AS conversoes
        FROM tracking_campaigns c
        LEFT JOIN tracking_clicks k ON k.campaign_id = c.id
+         AND ${HUMAN_CLICK_SQL.replaceAll('user_agent', 'k.user_agent')}
        WHERE c.cliente_id = $1
        GROUP BY c.id ORDER BY cliques DESC`,
       [cliente_id]

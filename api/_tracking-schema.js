@@ -44,6 +44,7 @@ async function createTrackingSchema() {
         utm_campaign VARCHAR(255),
         utm_content VARCHAR(255),
         enabled BOOLEAN DEFAULT true,
+        archived_at TIMESTAMP,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
@@ -77,6 +78,7 @@ async function createTrackingSchema() {
         referrer TEXT,
         ip_address VARCHAR(64),
         user_agent TEXT,
+        event_source_url TEXT,
         whatsapp_number VARCHAR(30),
         instance_name VARCHAR(100),
         clicked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -88,11 +90,19 @@ async function createTrackingSchema() {
       ALTER TABLE public.leads_tracking
       ADD COLUMN IF NOT EXISTS tracking_click_id INTEGER REFERENCES public.tracking_clicks(id) ON DELETE SET NULL,
       ADD COLUMN IF NOT EXISTS tracking_campaign_id INTEGER REFERENCES public.tracking_campaigns(id) ON DELETE SET NULL,
-      ADD COLUMN IF NOT EXISTS tracking_method VARCHAR(20);
+      ADD COLUMN IF NOT EXISTS tracking_method VARCHAR(40);
+
+      -- Bancos antigos criaram tracking_method como VARCHAR(20); valores como
+      -- 'recent_click_correlation' (24 chars) estouravam o limite e o UPDATE do
+      -- lead falhava silenciosamente (lead órfão: campaign_link sem click_id).
+      -- Amplia para 40 de forma idempotente.
+      ALTER TABLE public.leads_tracking
+        ALTER COLUMN tracking_method TYPE VARCHAR(40);
 
       ALTER TABLE public.tracking_clicks
       ADD COLUMN IF NOT EXISTS instance_name VARCHAR(100),
       ADD COLUMN IF NOT EXISTS utm_content VARCHAR(255),
+      ADD COLUMN IF NOT EXISTS event_source_url TEXT,
       ADD COLUMN IF NOT EXISTS fbclid VARCHAR(512),
       ADD COLUMN IF NOT EXISTS fbc VARCHAR(512),
       ADD COLUMN IF NOT EXISTS fbp VARCHAR(255),
@@ -100,7 +110,8 @@ async function createTrackingSchema() {
       ADD COLUMN IF NOT EXISTS capi_web_status VARCHAR(20);
 
       ALTER TABLE public.tracking_campaigns
-      ADD COLUMN IF NOT EXISTS utm_content VARCHAR(255);
+      ADD COLUMN IF NOT EXISTS utm_content VARCHAR(255),
+      ADD COLUMN IF NOT EXISTS archived_at TIMESTAMP;
 
       ALTER TABLE public.clientes
       ADD COLUMN IF NOT EXISTS capi_pixel_id VARCHAR(255),

@@ -279,6 +279,7 @@ async function setup() {
           utm_campaign VARCHAR(255),
           utm_content VARCHAR(255),
           enabled BOOLEAN DEFAULT true,
+          archived_at TIMESTAMP,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
@@ -316,6 +317,7 @@ async function setup() {
           referrer TEXT,
           ip_address VARCHAR(64),
           user_agent TEXT,
+          event_source_url TEXT,
           whatsapp_number VARCHAR(30),
           instance_name VARCHAR(100),
           clicked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -327,10 +329,12 @@ async function setup() {
     await client.query(`
       ALTER TABLE public.tracking_clicks
       ADD COLUMN IF NOT EXISTS instance_name VARCHAR(100),
-      ADD COLUMN IF NOT EXISTS utm_content VARCHAR(255);
+      ADD COLUMN IF NOT EXISTS utm_content VARCHAR(255),
+      ADD COLUMN IF NOT EXISTS event_source_url TEXT;
 
       ALTER TABLE public.tracking_campaigns
-      ADD COLUMN IF NOT EXISTS utm_content VARCHAR(255);
+      ADD COLUMN IF NOT EXISTS utm_content VARCHAR(255),
+      ADD COLUMN IF NOT EXISTS archived_at TIMESTAMP;
 
       CREATE INDEX IF NOT EXISTS idx_tracking_campaigns_cliente ON public.tracking_campaigns(cliente_id);
       CREATE INDEX IF NOT EXISTS idx_tracking_dest_campaign ON public.tracking_destinations(campaign_id);
@@ -342,7 +346,9 @@ async function setup() {
       ALTER TABLE public.leads_tracking
       ADD COLUMN IF NOT EXISTS tracking_click_id INTEGER REFERENCES public.tracking_clicks(id) ON DELETE SET NULL,
       ADD COLUMN IF NOT EXISTS tracking_campaign_id INTEGER REFERENCES public.tracking_campaigns(id) ON DELETE SET NULL,
-      ADD COLUMN IF NOT EXISTS tracking_method VARCHAR(20);
+      ADD COLUMN IF NOT EXISTS tracking_method VARCHAR(40);
+      ALTER TABLE public.leads_tracking
+      ALTER COLUMN tracking_method TYPE VARCHAR(40);
       CREATE UNIQUE INDEX IF NOT EXISTS idx_leads_tracking_click_unique
       ON public.leads_tracking(tracking_click_id)
       WHERE tracking_click_id IS NOT NULL;

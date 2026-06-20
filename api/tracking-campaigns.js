@@ -12,6 +12,35 @@ const normalizarSlug = (s) => (s || '')
   .toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
   .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 100);
 
+function getInstanceName(i) {
+  return i?.instance?.instanceName || i?.instanceName || i?.name || '';
+}
+
+function getInstancePhone(i) {
+  const raw = i?.instance?.ownerJid || i?.ownerJid
+    || i?.instance?.number || i?.number
+    || i?.instance?.wuid || i?.wuid || '';
+  const digits = String(raw).split('@')[0].replace(/\D/g, '');
+  return digits.length >= 8 && digits.length <= 15 ? digits : null;
+}
+
+async function carregarInstanciasEvolution() {
+  const url = process.env.EVOLUTION_API_URL;
+  const key = process.env.EVOLUTION_GLOBAL_KEY;
+  if (!url || !key) {
+    throw new Error('Instância não pôde ser validada: configuração da Evolution API ausente.');
+  }
+  const response = await fetch(`${url}/instance/fetchInstances`, {
+    headers: { apikey: key, 'Content-Type': 'application/json' },
+    signal: AbortSignal.timeout(5000),
+  });
+  if (!response.ok) {
+    throw new Error(`Instância não pôde ser validada na Evolution API (HTTP ${response.status}).`);
+  }
+  const data = await response.json();
+  return Array.isArray(data) ? data : [];
+}
+
 function normalizarDestinos(destinations) {
   if (!Array.isArray(destinations)) return null;
   const vistos = new Set();
@@ -67,6 +96,29 @@ async function validarInstanciasDoCliente(client, clienteId, destinations) {
   const invalidas = nomes.filter(nome => !permitidas.has(nome) && !nome.startsWith(prefix));
   if (invalidas.length) {
     throw new Error(`Instância não vinculada a este cliente: ${invalidas.join(', ')}.`);
+  }
+
+  // O número enviado pelo navegador não é confiável. A Evolution é a fonte
+  // autoritativa e o backend substitui o valor pelo número real da instância.
+  const instances = await carregarInstanciasEvolution();
+  const liveMap = new Map(instances.map(i => [getInstanceName(i), getInstancePhone(i)]));
+  for (const destino of destinations) {
+    if (!liveMap.has(destino.instance_name)) {
+      throw new Error(`Instância não encontrada na Evolution API: ${destino.instance_name}.`);
+    }
+    const phone = liveMap.get(destino.instance_name);
+    if (!phone) {
+      throw new Error(`Instância sem número de WhatsApp conectado: ${destino.instance_name}.`);
+    }
+    destino.whatsapp_number = phone;
+  }
+
+  const numeros = new Set();
+  for (const destino of destinations) {
+    if (numeros.has(destino.whatsapp_number)) {
+      throw new Error(`Número de WhatsApp duplicado entre as instâncias: ${destino.whatsapp_number}.`);
+    }
+    numeros.add(destino.whatsapp_number);
   }
 }
 
@@ -136,7 +188,7 @@ export default async function handler(req, res) {
       // Detalhe de 1 campanha (com destinos) se vier id
       if (req.query.id) {
         const camp = await pool.query(
-          'SELECT * FROM tracking_campaigns WHERE id=$1 AND cliente_id=$2',
+          'SELECT * FROM tracking_campaigns WHERE id=$1 AND cliente_id=$2 AND archived_at IS NULL',
           [req.query.id, cliente_id]
         );
         if (!camp.rows.length) return res.status(404).json({ error: 'Campanha não encontrada.' });
@@ -152,7 +204,8 @@ export default async function handler(req, res) {
            (SELECT COUNT(*) FROM tracking_clicks k WHERE k.campaign_id=c.id) AS cliques,
            (SELECT COUNT(*) FROM tracking_clicks k WHERE k.campaign_id=c.id AND k.status='converted') AS conversoes
          FROM tracking_campaigns c
-         WHERE c.cliente_id=$1 ORDER BY c.created_at DESC`,
+         WHERE c.cliente_id=$1 AND c.archived_at IS NULL
+         ORDER BY c.created_at DESC`,
         [cliente_id]
       );
       return res.status(200).json(r.rows);
@@ -215,7 +268,7 @@ export default async function handler(req, res) {
       try {
         await client.query('BEGIN');
         const atual = await client.query(
-          'SELECT * FROM tracking_campaigns WHERE id=$1 AND cliente_id=$2 FOR UPDATE',
+          'SELECT * FROM tracking_campaigns WHERE id=$1 AND cliente_id=$2 AND archived_at IS NULL FOR UPDATE',
           [id, cliente_id]
         );
         if (!atual.rows.length) {
@@ -294,49 +347,17 @@ export default async function handler(req, res) {
       const id = req.query.id || req.body?.id;
       if (!id) return res.status(400).json({ error: 'id é obrigatório.' });
 
-      // O trigger do banco impede apagar clique 'converted' (preserva atribuição).
-      // Para deletar a campanha sem violar isso, primeiro desvinculamos os leads
-      // dos cliques desta campanha (zerando a origem órfã), depois marcamos os
-      // cliques convertidos como históricos (não-converted), e só então o
-      // ON DELETE CASCADE pode removê-los. Tudo transacional.
-      const client = await pool.connect();
-      try {
-        await client.query('BEGIN');
-        const dono = await client.query(
-          'SELECT id FROM tracking_campaigns WHERE id=$1 AND cliente_id=$2 FOR UPDATE',
-          [id, cliente_id]
-        );
-        if (!dono.rowCount) {
-          await client.query('ROLLBACK');
-          return res.status(404).json({ error: 'Não encontrado ou acesso negado.' });
-        }
-        // Desvincula os leads dos cliques desta campanha e normaliza a origem.
-        await client.query(
-          `UPDATE leads_tracking
-           SET tracking_click_id=NULL, tracking_campaign_id=NULL, tracking_method=NULL,
-               lead_origin = CASE WHEN lead_origin IN ('bio','rotator','campaign_link')
-                                  THEN 'organic' ELSE lead_origin END
-           WHERE tracking_campaign_id=$1`,
-          [id]
-        );
-        // Libera os cliques convertidos do bloqueio do trigger (vira histórico).
-        await client.query(
-          `UPDATE tracking_clicks SET status='archived', lead_id=NULL
-           WHERE campaign_id=$1 AND status='converted'`,
-          [id]
-        );
-        const r = await client.query(
-          'DELETE FROM tracking_campaigns WHERE id=$1 AND cliente_id=$2 RETURNING id',
-          [id, cliente_id]
-        );
-        await client.query('COMMIT');
-        return res.status(200).json({ deleted: r.rows[0].id });
-      } catch (e) {
-        try { await client.query('ROLLBACK'); } catch (_) {}
-        throw e;
-      } finally {
-        client.release();
-      }
+      // "Excluir" no painel significa arquivar. Cliques, conversões, UTMs e o
+      // vínculo dos leads permanecem intactos para não reescrever o histórico.
+      const r = await pool.query(
+        `UPDATE tracking_campaigns
+         SET enabled=false, archived_at=NOW(), updated_at=NOW()
+         WHERE id=$1 AND cliente_id=$2 AND archived_at IS NULL
+         RETURNING id`,
+        [id, cliente_id]
+      );
+      if (!r.rowCount) return res.status(404).json({ error: 'Não encontrado ou acesso negado.' });
+      return res.status(200).json({ archived: r.rows[0].id });
     }
 
     return res.status(405).json({ error: 'Método não permitido.' });

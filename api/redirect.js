@@ -23,6 +23,23 @@ function gerarTrackingId() {
   return crypto.randomBytes(8).toString('base64url').slice(0, 10);
 }
 
+const PREVIEW_BOT_RE = /(bot|crawler|spider|preview|facebookexternalhit|facebot|whatsapp|telegrambot|slackbot|discordbot|linkedinbot|twitterbot|googlebot|bingbot)/i;
+
+function isPreviewBot(userAgent) {
+  return PREVIEW_BOT_RE.test(String(userAgent || ''));
+}
+
+function responderPreview(res, status = 200) {
+  res.writeHead(status, {
+    'Content-Type': 'text/html; charset=utf-8',
+    'Cache-Control': 'no-store',
+    'X-Robots-Tag': 'noindex, nofollow',
+  });
+  return res.end(status === 200
+    ? '<!doctype html><html lang="pt-br"><head><meta charset="utf-8"><meta name="robots" content="noindex,nofollow"><title>Link para WhatsApp</title></head><body></body></html>'
+    : '');
+}
+
 // Lê um cookie pelo nome do header Cookie (ex: _fbp do Pixel da Meta).
 function lerCookie(cookieHeader, nome) {
   if (!cookieHeader) return null;
@@ -122,13 +139,31 @@ export default async function handler(req, res) {
     return res.end('Link inválido.');
   }
 
+  // HEAD e crawlers de preview nunca representam uma intenção real de abrir o
+  // WhatsApp. Eles apenas verificam a URL; não podem criar clique, avançar o
+  // rotador nem disparar Pixel/CAPI.
+  if (req.method === 'HEAD' || isPreviewBot(req.headers['user-agent'])) {
+    try {
+      const found = await getPool().query(
+        'SELECT 1 FROM tracking_campaigns WHERE slug=$1 AND enabled=true',
+        [slug]
+      );
+      if (!found.rows.length) return responderPreview(res, 404);
+      return responderPreview(res, 200);
+    } catch (err) {
+      console.error('[redirect] falha ao validar preview:', err.message);
+      res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
+      return res.end('');
+    }
+  }
+
   await ensureTrackingSchema();
   const pool = getPool();
   const client = await pool.connect();
   try {
     // 1. Campanha ativa
     const campRes = await client.query(
-      'SELECT * FROM tracking_campaigns WHERE slug = $1 AND enabled = true',
+      'SELECT * FROM tracking_campaigns WHERE slug = $1 AND enabled = true AND archived_at IS NULL',
       [slug]
     );
     const campaign = campRes.rows[0];
@@ -152,6 +187,7 @@ export default async function handler(req, res) {
     const ip = (req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '').split(',')[0].trim();
     const userAgent = req.headers['user-agent'] || '';
     const referrer = req.headers['referer'] || req.headers['referrer'] || '';
+    const eventSourceUrl = `${req.headers['x-forwarded-proto'] || 'https'}://${req.headers.host || ''}/r/${slug}`;
     // UTMs: da query do link (override) ou os da campanha
     const q = req.query || {};
     const utmValue = value => String(value || '').trim().slice(0, 255) || null;
@@ -174,11 +210,11 @@ export default async function handler(req, res) {
       `INSERT INTO tracking_clicks
         (tracking_id, campaign_id, destination_id, cliente_id, status,
          utm_source, utm_medium, utm_campaign, utm_content, referrer, ip_address, user_agent,
-         whatsapp_number, instance_name, fbclid, fbc, fbp, pageview_event_id, expires_at)
-       VALUES ($1,$2,$3,$4,'clicked',$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17, NOW() + INTERVAL '72 hours')`,
+         whatsapp_number, instance_name, fbclid, fbc, fbp, pageview_event_id, event_source_url, expires_at)
+       VALUES ($1,$2,$3,$4,'clicked',$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18, NOW() + INTERVAL '72 hours')`,
       [trackingId, campaign.id, destino.id, campaign.cliente_id,
        utm_source, utm_medium, utm_campaign, utm_content, referrer, ip, userAgent,
-       destino.whatsapp_number, destino.instance_name, fbclid, fbc, fbp, pageviewEventId]
+       destino.whatsapp_number, destino.instance_name, fbclid, fbc, fbp, pageviewEventId, eventSourceUrl]
     );
 
     await client.query('COMMIT');
@@ -200,27 +236,25 @@ export default async function handler(req, res) {
     });
 
     // PageView server-side (CAPI) com o MESMO event_id do Pixel → Meta deduplica.
-    // Best-effort: não bloqueia o redirect, mas loga e grava o status no clique.
+    // Aguardamos a chamada antes de encerrar o handler para ambientes serverless
+    // não cancelarem a Promise assim que a resposta HTTP for enviada.
     if (capiPixelId) {
-      enviarCapiWebPageView(pool, {
+      const capiPageView = await enviarCapiWebPageView(pool, {
         cliente_id: campaign.cliente_id,
         eventId: pageviewEventId,
         click: { fbc, fbp, ip_address: ip, user_agent: userAgent,
-                 referrer, event_source_url: `${req.headers['x-forwarded-proto'] || 'https'}://${req.headers.host || ''}/r/${slug}` },
-      }).then(async r => {
-        // Grava o status no clique (consistência com o log) — 'pv_sent' distingue
-        // o PageView do clique do 'sent' do Lead que vem depois pelo webhook.
-        try {
-          await pool.query('UPDATE tracking_clicks SET capi_web_status=$1 WHERE tracking_id=$2',
-            [r.sent ? 'pv_sent' : 'pv_failed', trackingId]);
-        } catch (_) {}
-        await gravarLog(pool, {
-          cliente_id: campaign.cliente_id, instance: `link:${slug}`,
-          tag: 'capi_web', level: r.sent ? 'info' : 'warn',
-          message: r.sent ? 'CAPI Web PageView enviado (clique).' : `CAPI Web PageView falhou: ${r.error}`,
-          data: { tracking_id: trackingId, event_id: pageviewEventId, fbtrace_id: r.fbtrace_id, error: r.error },
-        });
-      }).catch(() => {});
+                 referrer, event_source_url: eventSourceUrl },
+      });
+      try {
+        await pool.query('UPDATE tracking_clicks SET capi_web_status=$1 WHERE tracking_id=$2',
+          [capiPageView.sent ? 'pv_sent' : 'pv_failed', trackingId]);
+      } catch (_) {}
+      await gravarLog(pool, {
+        cliente_id: campaign.cliente_id, instance: `link:${slug}`,
+        tag: 'capi_web', level: capiPageView.sent ? 'info' : 'warn',
+        message: capiPageView.sent ? 'CAPI Web PageView enviado (clique).' : `CAPI Web PageView falhou: ${capiPageView.error}`,
+        data: { tracking_id: trackingId, event_id: pageviewEventId, fbtrace_id: capiPageView.fbtrace_id, error: capiPageView.error },
+      });
     }
 
     // 4. Mensagem + token invisível
@@ -239,10 +273,6 @@ export default async function handler(req, res) {
     const numero = (destino.whatsapp_number || '').replace(/\D/g, '');
     const waUrl = `https://api.whatsapp.com/send?phone=${numero}&text=${encodeURIComponent(mensagem)}`;
 
-    if (req.method === 'HEAD') {
-      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-      return res.end('');
-    }
     res.writeHead(200, {
       'Content-Type': 'text/html; charset=utf-8',
       'Cache-Control': 'no-store',
