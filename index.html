@@ -1540,6 +1540,12 @@
                 <p style="color:var(--muted);font-size:13px;margin:4px 0 0;">Links rastreáveis com rotação entre números de WhatsApp. Cada clique é registrado e atribuído ao lead.</p>
             </div>
 
+            <!-- Seletor de cliente (admin) — espelha o seletor global das abas Leads -->
+            <div id="capClienteSelectorBox" style="display:none;margin-bottom:14px;align-items:center;gap:8px;">
+                <i data-lucide="users" style="width:15px;color:var(--muted);flex-shrink:0;"></i>
+                <select id="capSelectCliente" class="form-control" style="max-width:340px;" onchange="trocarClienteAdmin(this.value)"></select>
+            </div>
+
             <div id="capClienteAviso" style="display:none;margin-bottom:14px;padding:11px 13px;border:1px solid rgba(245,158,11,.35);background:rgba(245,158,11,.08);border-radius:9px;color:#f59e0b;font-size:12px;"></div>
 
             <div class="cap-overview-grid" style="display:grid;grid-template-columns:minmax(0,1.2fr) minmax(250px,.8fr);gap:12px;margin-bottom:18px;">
@@ -2189,6 +2195,11 @@ async function popularSeletorAdmin() {
 
 function trocarClienteAdmin(id) {
     clienteAdminSelecionado = id ? parseInt(id) : null;
+    // Mantém os dois seletores (global + o da aba Captação) em sincronia.
+    const g = document.getElementById('selectClienteAdmin');
+    const c = document.getElementById('capSelectCliente');
+    if (g && g.value !== String(id ?? '')) g.value = id ?? '';
+    if (c && c.value !== String(id ?? '')) c.value = id ?? '';
     // Leads são carregados sob demanda do backend por cliente — rebusca em vez de só refiltrar a memória.
     recarregarLeads();
     if (!$('aba-captacao')?.classList.contains('aba-oculta')) carregarCampanhasLink();

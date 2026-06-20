@@ -27,7 +27,25 @@ function capClienteNome() {
   return select?.options?.[select.selectedIndex]?.text || '';
 }
 
+// Espelha o seletor global de cliente (das abas Leads) dentro da aba Captação,
+// já que #leadsControls não aparece aqui. Só admin vê.
+function capSincronizarSeletorCliente() {
+  const box = $('capClienteSelectorBox');
+  const sel = $('capSelectCliente');
+  const global = $('selectClienteAdmin');
+  const user = capUsuario();
+  if (!box || !sel) return;
+  if (!user.is_admin || !global) { box.style.display = 'none'; return; }
+
+  // Copia as <option> do seletor global e marca o cliente atual.
+  sel.innerHTML = global.innerHTML;
+  if (clienteAdminSelecionado) sel.value = String(clienteAdminSelecionado);
+  box.style.display = 'flex';
+  if (window.lucide) lucide.createIcons({ nodes: [box] });
+}
+
 function capExigirCliente() {
+  capSincronizarSeletorCliente();
   const clienteId = capClienteId();
   const aviso = $('capClienteAviso');
   const user = capUsuario();
