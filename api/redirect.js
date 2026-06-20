@@ -35,6 +35,17 @@ function lerCookie(cookieHeader, nome) {
 
 const jsStr = (s) => JSON.stringify(String(s ?? ''));
 
+// Grava na tabela webhook_logs (aba Logs do Sistema). Best-effort.
+async function gravarLog(pool, { cliente_id, instance, tag, level, message, data }) {
+  try {
+    await pool.query(
+      `INSERT INTO webhook_logs (cliente_id, instance, tag, level, message, data)
+       VALUES ($1,$2,$3,$4,$5,$6)`,
+      [cliente_id || null, instance || 'redirect', tag, level || 'info', message, JSON.stringify(data || {})]
+    );
+  } catch { /* nunca derruba o redirect */ }
+}
+
 // Página intermediária: dispara o Pixel (PageView) no navegador com o mesmo
 // event_id do CAPI server-side (dedup), espera ~1.5s e redireciona pro WhatsApp.
 // Spinner discreto para o usuário entender que é rápido.
@@ -158,15 +169,29 @@ export default async function handler(req, res) {
       capiPixelId = px.rows[0]?.capi_pixel_id || null;
     } catch (_) {}
 
+    // Log do clique (sempre) — visível na aba Logs do Sistema.
+    await gravarLog(pool, {
+      cliente_id: campaign.cliente_id, instance: `link:${slug}`,
+      tag: 'tracking_click', level: 'info',
+      message: `Clique no link "${campaign.name}" → ${destino.whatsapp_number}`,
+      data: { tracking_id: trackingId, campaign_id: campaign.id, destino: destino.whatsapp_number,
+              fbclid: !!fbclid, fbc: !!fbc, fbp: !!fbp, capi_pixel: !!capiPixelId },
+    });
+
     // PageView server-side (CAPI) com o MESMO event_id do Pixel → Meta deduplica.
-    // Best-effort: não bloqueia o redirect.
+    // Best-effort: não bloqueia o redirect, mas loga o resultado.
     if (capiPixelId) {
       enviarCapiWebPageView(pool, {
         cliente_id: campaign.cliente_id,
         eventId: pageviewEventId,
         click: { fbc, fbp, ip_address: ip, user_agent: userAgent,
                  referrer, event_source_url: `${req.headers['x-forwarded-proto'] || 'https'}://${req.headers.host || ''}/r/${slug}` },
-      }).catch(() => {});
+      }).then(r => gravarLog(pool, {
+        cliente_id: campaign.cliente_id, instance: `link:${slug}`,
+        tag: 'capi_web', level: r.sent ? 'info' : 'warn',
+        message: r.sent ? 'CAPI Web PageView enviado (clique).' : `CAPI Web PageView falhou: ${r.error}`,
+        data: { tracking_id: trackingId, event_id: pageviewEventId, fbtrace_id: r.fbtrace_id, error: r.error },
+      })).catch(() => {});
     }
 
     // 4. Mensagem + token invisível
@@ -198,6 +223,8 @@ export default async function handler(req, res) {
   } catch (err) {
     try { await client.query('ROLLBACK'); } catch (_) {}
     console.error('[redirect]', err.message);
+    gravarLog(pool, { instance: `link:${slug}`, tag: 'tracking_click', level: 'error',
+      message: `Erro no redirecionador: ${err.message}`, data: { slug } });
     res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
     return res.end('Erro ao processar o link.');
   } finally {
