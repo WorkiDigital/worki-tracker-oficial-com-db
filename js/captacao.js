@@ -313,6 +313,21 @@ function fecharModalCampanha() {
   $('modalCampanha').classList.remove('open');
 }
 
+function capInserirVariavelMensagem(variavel) {
+  const input = $('capMensagem');
+  if (!input) return;
+  const inicio = Number.isInteger(input.selectionStart) ? input.selectionStart : input.value.length;
+  const fim = Number.isInteger(input.selectionEnd) ? input.selectionEnd : inicio;
+  const antes = input.value.slice(0, inicio);
+  const depois = input.value.slice(fim);
+  const separadorAntes = antes && !/\s$/.test(antes) ? ' ' : '';
+  const separadorDepois = depois && !/^\s|^[,.!?;:]/.test(depois) ? ' ' : '';
+  input.value = `${antes}${separadorAntes}${variavel}${separadorDepois}${depois}`.slice(0, 1000);
+  const cursor = Math.min(1000, antes.length + separadorAntes.length + variavel.length);
+  input.focus();
+  input.setSelectionRange(cursor, cursor);
+}
+
 // Auto-gera slug a partir do nome
 function capAutoSlug() {
   const nomeEl = $('capNome');

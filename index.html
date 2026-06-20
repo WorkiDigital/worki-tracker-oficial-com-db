@@ -374,7 +374,14 @@
             <div class="input-group">
                 <label>Mensagem pré-preenchida</label>
                 <input id="capMensagem" type="text" maxlength="1000" placeholder="Olá! Gostaria de mais informações.">
-                <p style="font-size:11px;color:var(--muted);margin-top:6px;">O token é anexado de forma invisível e removido antes de salvar a mensagem no CRM.</p>
+                <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:7px;">
+                    <span style="font-size:10px;color:var(--muted);">Inserir variável:</span>
+                    <button type="button" class="cap-message-variable" onclick="capInserirVariavelMensagem('{{utm_content}}')" title="Nome do anúncio">Anúncio</button>
+                    <button type="button" class="cap-message-variable" onclick="capInserirVariavelMensagem('{{utm_campaign}}')" title="Nome da campanha">Campanha</button>
+                    <button type="button" class="cap-message-variable" onclick="capInserirVariavelMensagem('{{utm_medium}}')" title="Nome do conjunto">Conjunto</button>
+                    <button type="button" class="cap-message-variable" onclick="capInserirVariavelMensagem('{{utm_source}}')" title="Origem do clique">Origem</button>
+                </div>
+                <p style="font-size:11px;color:var(--muted);margin-top:6px;">As variáveis são substituídas no clique. Para o nome do anúncio, configure na Meta: <code>utm_content={{ad.name}}</code>. O token continua invisível.</p>
             </div>
         </div>
 
@@ -5053,7 +5060,7 @@ function resetLeadSearchAutofill() {
 <script defer src="js/leads.js?v=20260620-1"></script>
 <script defer src="js/admin.js?v=20260620-1"></script>
 <script defer src="js/reports-auto.js"></script>
-<script defer src="js/captacao.js?v=20260619-3"></script>
+<script defer src="js/captacao.js?v=20260620-1"></script>
 
 <!-- Drawer Perfil do Lead (4 abas) — deve ficar no final do body para z-index funcionar -->
 <div id="leadProfileDrawer" style="position:fixed;inset:0;z-index:9999;display:none;align-items:stretch;justify-content:flex-end;background:rgba(0,0,0,0.55);" onclick="if(event.target===this)fecharPerfilLead()">

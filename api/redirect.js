@@ -35,6 +35,26 @@ function lerCookie(cookieHeader, nome) {
 
 const jsStr = (s) => JSON.stringify(String(s ?? ''));
 
+export function formatarMensagemDinamica(template, utms = {}) {
+  const valores = {
+    utm_source: utms.utm_source,
+    utm_medium: utms.utm_medium,
+    utm_campaign: utms.utm_campaign,
+    utm_content: utms.utm_content,
+  };
+  let mensagem = String(template || '');
+  for (const [chave, valor] of Object.entries(valores)) {
+    mensagem = mensagem.replace(
+      new RegExp(`{{\\s*${chave}\\s*}}`, 'gi'),
+      String(valor || '')
+    );
+  }
+  return mensagem
+    .replace(/[ \t]{2,}/g, ' ')
+    .replace(/ +([,.!?;:])/g, '$1')
+    .trim();
+}
+
 // Grava na tabela webhook_logs (aba Logs do Sistema). Best-effort.
 async function gravarLog(pool, { cliente_id, instance, tag, level, message, data }) {
   try {
@@ -134,10 +154,11 @@ export default async function handler(req, res) {
     const referrer = req.headers['referer'] || req.headers['referrer'] || '';
     // UTMs: da query do link (override) ou os da campanha
     const q = req.query || {};
-    const utm_source   = q.utm_source   || campaign.utm_source   || null;
-    const utm_medium   = q.utm_medium   || campaign.utm_medium   || null;
-    const utm_campaign = q.utm_campaign || campaign.utm_campaign || null;
-    const utm_content  = q.utm_content  || campaign.utm_content  || null;
+    const utmValue = value => String(value || '').trim().slice(0, 255) || null;
+    const utm_source   = utmValue(q.utm_source   || campaign.utm_source);
+    const utm_medium   = utmValue(q.utm_medium   || campaign.utm_medium);
+    const utm_campaign = utmValue(q.utm_campaign || campaign.utm_campaign);
+    const utm_content  = utmValue(q.utm_content  || campaign.utm_content);
 
     // Atribuição Meta (anúncio web → link): o Facebook anexa ?fbclid=... ao clicar
     // no anúncio. Geramos o fbc no formato oficial fb.1.<ts>.<fbclid> p/ CAPI web.
@@ -195,7 +216,10 @@ export default async function handler(req, res) {
     }
 
     // 4. Mensagem + token invisível
-    const baseMsg = campaign.default_message || 'Olá! Gostaria de mais informações.';
+    const messageTemplate = campaign.default_message || 'Olá! Gostaria de mais informações.';
+    const baseMsg = formatarMensagemDinamica(messageTemplate, {
+      utm_source, utm_medium, utm_campaign, utm_content,
+    }) || 'Olá! Gostaria de mais informações.';
     // Token no início: o cursor abre no final da mensagem e alterações comuns no
     // texto visível tendem a preservar o bloco invisível.
     const mensagem = encodeToken(trackingId) + baseMsg;

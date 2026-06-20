@@ -471,6 +471,8 @@ html.light .modal { background:#fff; border-color:var(--border); }
 .cap-icon-action svg { width:13px; height:13px; }
 .cap-icon-danger { color:var(--red); }
 .cap-icon-danger:hover { color:var(--red); border-color:rgba(239,68,68,.4); background:rgba(239,68,68,.08); }
+.cap-message-variable { padding:3px 7px; border:1px solid var(--border); border-radius:6px; background:var(--tag); color:var(--blue); font-size:10px; font-weight:600; cursor:pointer; transition:background .15s,border-color .15s; }
+.cap-message-variable:hover { background:rgba(59,130,246,.12); border-color:rgba(59,130,246,.35); }
 @media(max-width:720px) {
     #modalCampanha { align-items:flex-end; }
     #modalCampanha .modal { width:100vw !important; max-width:none !important; max-height:94vh !important; border-radius:16px 16px 0 0; padding:20px 16px; }

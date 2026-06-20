@@ -360,6 +360,7 @@ Botão de perfil (ícone `user` roxo) em cada linha da tabela de leads abre um d
 - Para parâmetros dinâmicos da Meta, usar:
   `utm_source={{site_source_name}}&utm_medium={{adset.name}}&utm_campaign={{campaign.name}}&utm_content={{ad.name}}`.
 - Não é necessário PageView para capturar as UTMs; elas são gravadas no servidor no momento do clique.
+- A mensagem pré-preenchida aceita variáveis dinâmicas: `{{utm_content}}`, `{{utm_campaign}}`, `{{utm_medium}}` e `{{utm_source}}`. O redirecionador substitui os valores no clique antes de abrir o WhatsApp; assim cada anúncio pode incluir seu próprio nome na mensagem.
 
 ### CAPI Web e PageView do link
 - Credenciais dedicadas por cliente:
