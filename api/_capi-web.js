@@ -22,6 +22,56 @@ const hash = (str) => {
 };
 
 /**
+ * Dispara o evento `PageView` (website) para a Meta, server-side.
+ * Usa o MESMO event_id do Pixel no navegador → a Meta deduplica (não conta 2x).
+ * Chamado no momento do clique (redirect). Best-effort.
+ * @returns {Promise<{sent:boolean, error?:string}>}
+ */
+export async function enviarCapiWebPageView(pool, { cliente_id, click, eventId }) {
+  // Token + pixel DEDICADOS de CAPI web.
+  const cliRes = await pool.query(
+    'SELECT capi_pixel_id, capi_token_enc FROM clientes WHERE id = $1',
+    [cliente_id]
+  );
+  const row = cliRes.rows[0];
+  if (!row?.capi_pixel_id || !row?.capi_token_enc) {
+    return { sent: false, error: 'cliente sem pixel/token CAPI web configurado' };
+  }
+  let token;
+  try { token = decryptToken(row.capi_token_enc); }
+  catch { return { sent: false, error: 'falha ao descriptografar token CAPI web' }; }
+
+  const userData = {};
+  if (click.fbc) userData.fbc = click.fbc;
+  if (click.fbp) userData.fbp = click.fbp;
+  if (click.ip_address) userData.client_ip_address = click.ip_address;
+  if (click.user_agent) userData.client_user_agent = click.user_agent;
+
+  const payload = {
+    data: [{
+      event_name:       'PageView',
+      event_time:       Math.floor(Date.now() / 1000),
+      event_id:         eventId,              // dedup com o Pixel do navegador
+      action_source:    'website',
+      event_source_url: click.event_source_url || click.referrer || undefined,
+      user_data:        userData,
+    }]
+  };
+
+  try {
+    const r = await fetch(
+      `https://graph.facebook.com/${GRAPH_VER}/${row.capi_pixel_id}/events?access_token=${token}`,
+      { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }
+    );
+    const resp = await r.json();
+    if (resp.events_received) return { sent: true, fbtrace_id: resp.fbtrace_id };
+    return { sent: false, error: resp.error?.message || JSON.stringify(resp) };
+  } catch (err) {
+    return { sent: false, error: err.message || String(err) };
+  }
+}
+
+/**
  * Dispara o evento `Lead` (website) para a Meta.
  * @returns {Promise<{sent:boolean, error?:string}>}
  */

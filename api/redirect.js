@@ -15,6 +15,7 @@ import { getPool } from './_db.js';
 import { selecionarDestino } from './_rotator.js';
 import { encodeToken } from './_invisible-token.js';
 import { ensureTrackingSchema } from './_tracking-schema.js';
+import { enviarCapiWebPageView } from './_capi-web.js';
 import crypto from 'crypto';
 
 function gerarTrackingId() {
@@ -32,13 +33,51 @@ function lerCookie(cookieHeader, nome) {
   return null;
 }
 
-function htmlRedirect(url) {
-  // Fallback HTML caso o 302 seja bloqueado; também evita preview de link quebrar.
-  const safeUrl = url.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
-  return `<!DOCTYPE html><html><head><meta charset="utf-8">
-<meta http-equiv="refresh" content="0;url=${safeUrl}">
-<title>Redirecionando…</title></head>
-<body>Redirecionando para o WhatsApp… <a href="${safeUrl}">clique aqui</a> se não for automático.</body></html>`;
+const jsStr = (s) => JSON.stringify(String(s ?? ''));
+
+// Página intermediária: dispara o Pixel (PageView) no navegador com o mesmo
+// event_id do CAPI server-side (dedup), espera ~1.5s e redireciona pro WhatsApp.
+// Spinner discreto para o usuário entender que é rápido.
+function htmlPagePixel({ waUrl, pixelId, eventId, fbc, fbp }) {
+  const safeUrl = waUrl.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+  const pixelSnippet = pixelId ? `
+  <script>
+    !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+    n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
+    document,'script','https://connect.facebook.net/en_US/fbevents.js');
+    try {
+      fbq('init', ${jsStr(pixelId)});
+      fbq('track', 'PageView', {}, { eventID: ${jsStr(eventId)} });
+    } catch(e) {}
+  </script>` : '';
+  return `<!DOCTYPE html><html lang="pt-br"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Redirecionando…</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    background:#0a0f1a;color:#e2e8f0;height:100vh;display:flex;align-items:center;
+    justify-content:center;flex-direction:column;gap:18px}
+  .spin{width:42px;height:42px;border:3px solid rgba(255,255,255,.15);
+    border-top-color:#25D366;border-radius:50%;animation:r .8s linear infinite}
+  @keyframes r{to{transform:rotate(360deg)}}
+  p{font-size:15px;color:#94a3b8}
+  a{color:#25D366;text-decoration:none;font-size:13px}
+</style></head>
+<body>
+  <div class="spin"></div>
+  <p>Redirecionando para o WhatsApp…</p>
+  <a id="manual" href="${safeUrl}">Abrir agora</a>
+  ${pixelSnippet}
+  <script>
+    var dest = ${jsStr(waUrl)};
+    // Delay curto para o Pixel disparar o PageView antes de sair da página.
+    setTimeout(function(){ window.location.replace(dest); }, ${pixelId ? 1400 : 300});
+  </script>
+</body></html>`;
 }
 
 export default async function handler(req, res) {
@@ -96,19 +135,39 @@ export default async function handler(req, res) {
     const fbclid = q.fbclid || null;
     const fbc = fbclid ? `fb.1.${Date.now()}.${fbclid}` : null;
     const fbp = lerCookie(req.headers.cookie, '_fbp');
+    // event_id compartilhado entre o Pixel (navegador) e o CAPI (servidor) → dedup.
+    const pageviewEventId = `pv_${trackingId}_${Date.now().toString(36)}`;
 
     await client.query(
       `INSERT INTO tracking_clicks
         (tracking_id, campaign_id, destination_id, cliente_id, status,
          utm_source, utm_medium, utm_campaign, utm_content, referrer, ip_address, user_agent,
-         whatsapp_number, instance_name, fbclid, fbc, fbp, expires_at)
-       VALUES ($1,$2,$3,$4,'clicked',$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16, NOW() + INTERVAL '72 hours')`,
+         whatsapp_number, instance_name, fbclid, fbc, fbp, pageview_event_id, expires_at)
+       VALUES ($1,$2,$3,$4,'clicked',$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17, NOW() + INTERVAL '72 hours')`,
       [trackingId, campaign.id, destino.id, campaign.cliente_id,
        utm_source, utm_medium, utm_campaign, utm_content, referrer, ip, userAgent,
-       destino.whatsapp_number, destino.instance_name, fbclid, fbc, fbp]
+       destino.whatsapp_number, destino.instance_name, fbclid, fbc, fbp, pageviewEventId]
     );
 
     await client.query('COMMIT');
+
+    // Busca o pixel CAPI Web do cliente (para o Pixel JS no navegador e o CAPI server).
+    let capiPixelId = null;
+    try {
+      const px = await pool.query('SELECT capi_pixel_id FROM clientes WHERE id = $1', [campaign.cliente_id]);
+      capiPixelId = px.rows[0]?.capi_pixel_id || null;
+    } catch (_) {}
+
+    // PageView server-side (CAPI) com o MESMO event_id do Pixel → Meta deduplica.
+    // Best-effort: não bloqueia o redirect.
+    if (capiPixelId) {
+      enviarCapiWebPageView(pool, {
+        cliente_id: campaign.cliente_id,
+        eventId: pageviewEventId,
+        click: { fbc, fbp, ip_address: ip, user_agent: userAgent,
+                 referrer, event_source_url: `${req.headers['x-forwarded-proto'] || 'https'}://${req.headers.host || ''}/r/${slug}` },
+      }).catch(() => {});
+    }
 
     // 4. Mensagem + token invisível
     const baseMsg = campaign.default_message || 'Olá! Gostaria de mais informações.';
@@ -116,17 +175,25 @@ export default async function handler(req, res) {
     // texto visível tendem a preservar o bloco invisível.
     const mensagem = encodeToken(trackingId) + baseMsg;
 
-    // 5. Redireciona para o WhatsApp
+    // 5. Página intermediária com Pixel (PageView no navegador) + redireciona.
+    // Se houver pixel CAPI Web, serve a página com Pixel e delay curto para o
+    // PageView disparar (dedup via event_id com o CAPI server). Sem pixel,
+    // mantém o redirect rápido (delay mínimo).
     const numero = (destino.whatsapp_number || '').replace(/\D/g, '');
     const waUrl = `https://api.whatsapp.com/send?phone=${numero}&text=${encodeURIComponent(mensagem)}`;
 
-    res.writeHead(302, {
-      'Location': waUrl,
+    if (req.method === 'HEAD') {
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      return res.end('');
+    }
+    res.writeHead(200, {
       'Content-Type': 'text/html; charset=utf-8',
       'Cache-Control': 'no-store',
       'Referrer-Policy': 'no-referrer',
     });
-    return res.end(req.method === 'HEAD' ? '' : htmlRedirect(waUrl));
+    return res.end(htmlPagePixel({
+      waUrl, pixelId: capiPixelId, eventId: pageviewEventId, fbc, fbp,
+    }));
 
   } catch (err) {
     try { await client.query('ROLLBACK'); } catch (_) {}

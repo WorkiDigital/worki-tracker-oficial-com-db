@@ -96,6 +96,7 @@ async function createTrackingSchema() {
       ADD COLUMN IF NOT EXISTS fbclid VARCHAR(512),
       ADD COLUMN IF NOT EXISTS fbc VARCHAR(512),
       ADD COLUMN IF NOT EXISTS fbp VARCHAR(255),
+      ADD COLUMN IF NOT EXISTS pageview_event_id VARCHAR(60),
       ADD COLUMN IF NOT EXISTS capi_web_status VARCHAR(20);
 
       ALTER TABLE public.tracking_campaigns
