@@ -82,13 +82,18 @@ export async function lookupGeoIp(req, ip) {
     });
     if (!response.ok) return headerGeo;
     const data = await response.json();
-    if (data?.success === false) return headerGeo;
+    // ip-api.com sinaliza erro com status:"fail"; outros com success:false.
+    if (data?.success === false || data?.status === 'fail') return headerGeo;
+    // Mapeia campos de vários provedores:
+    //  - ip-api.com: city, regionName, region(code), country, countryCode
+    //  - ipinfo.io:  city, region, country (country_code = country)
+    //  - ipapi.co:   city, region, region_code, country_name, country_code
     const value = {
       city: clean(data.city) || headerGeo?.city || null,
-      region: clean(data.region || data.region_name) || headerGeo?.region || null,
-      region_code: clean(data.region_code, 16) || headerGeo?.region_code || null,
-      country: clean(data.country || data.country_name) || headerGeo?.country || null,
-      country_code: clean(data.country_code, 8) || headerGeo?.country_code || null,
+      region: clean(data.regionName || data.region || data.region_name) || headerGeo?.region || null,
+      region_code: clean(data.region_code || data.region, 16) || headerGeo?.region_code || null,
+      country: clean(data.country_name || data.country) || headerGeo?.country || null,
+      country_code: clean(data.countryCode || data.country_code || data.country, 8) || headerGeo?.country_code || null,
       source: 'ip_lookup',
     };
     cache.set(ip, { value, expiresAt: Date.now() + CACHE_TTL_MS });
