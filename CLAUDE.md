@@ -590,3 +590,37 @@ query e grava no servidor no momento do clique — não depende de PageView.
 > Para adicionar um parâmetro novo no futuro: (1) coluna em `_tracking-schema.js` (criação + ADD
 > COLUMN), (2) capturar+INSERT em `redirect.js`, (3) SELECT + `lead.click_ad` em `lead-profile.js`,
 > (4) `lpRow` na aba Rastreamento (`js/leads.js` + `<div id>` no `index.html`). Publicado: `f7ab081`.
+
+## 🚫 Atribuição de link: SÓ por token/CTWA — fallback por tempo REMOVIDO (2026-06-21)
+
+> **NÃO reintroduzir atribuição por "clique recente"/correlação de tempo.** Foi removida de propósito.
+
+Existia em `api/webhook-evo.js` um fallback: quando a mensagem chegava **sem token** e havia 1 clique
+pendente na instância nos últimos 10 min, assumia-se que casavam. **Isso atribuía ERRADO** — o clique
+(`tracking_clicks`) **não guarda o telefone de quem clicou**, então era um chute por coincidência de
+horário. Em produção, conversas orgânicas ("Bom dia filha", "feito xixi") foram marcadas como
+`campaign_link` só porque caíram na janela de um clique de anúncio de OUTRA pessoa. Removido em `f2d9c53`.
+
+### Regra atual de atribuição ao anúncio (decisão do usuário)
+A atribuição de campanha só acontece com **CERTEZA**:
+1. **Token invisível validado** (`clickTrackingId` casa com um clique pendente) → `tracking_method='token'`.
+2. **CTWA nativo** (`ctwaClid` no payload) → fluxo CTWA.
+
+Sem token e sem ctwaClid, o lead **NÃO recebe campanha**. Ele segue **puramente** a Captura Orgânica
+configurada pelo usuário (`lead_capture_settings.capture_mode`): `all`→`organic`, `keyword`+match→
+`organic`, senão **ignorado** (`tracking_ignored`). Nada de atribuição inventada por trás.
+
+### Limitação aceita (consequência)
+No **iPhone o token quase sempre morre** (o WhatsApp iOS remove os zero-width). Sem o fallback, esses
+cliques de anúncio chegam mas **não são atribuídos** ao lead — o clique fica `clicked` e a mensagem
+vira orgânica/ignorada conforme o modo. É o trade-off escolhido: **atribuição errada é pior que
+ausente**. Para capturar esses leads (sem campanha), o usuário usa modo `all` na Captura Orgânica.
+
+### O problema em aberto (não resolvido)
+Ligar clique↔lead com certeza no iPhone exige um identificador que venha **na própria mensagem** do
+WhatsApp (ex: `ctwa_clid` que a Evolution possa entregar no payload). O `fbclid` real fica só no
+clique (navegador), não na mensagem — por isso não dá pra cruzar. Próximo passo, se for atacar:
+investigar o que a Evolution entrega no payload para anúncios de mensagem (não confundir com o token).
+
+> Como distinguir tráfego REAL de teste em `tracking_clicks.fbclid`: real = string longa da Meta
+> (`PAZ...`, `IwZXh0bgNhZW0...`, com `adid` embutido). Teste = `IwAR0TESTE_*`. NULL = acesso direto.
