@@ -455,6 +455,29 @@
     </div>
 </div>
 
+<div id="modalArquivarLink" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="capArquivarTitulo" onclick="if(event.target===this) capFecharModalArquivar()">
+    <div class="modal" style="max-width:440px;">
+        <div class="modal-head">
+            <div class="modal-icon" style="background:rgba(245,158,11,.12);color:#f59e0b;">
+                <i data-lucide="archive" style="width:22px;height:22px;"></i>
+            </div>
+            <div>
+                <h3 id="capArquivarTitulo">Arquivar link?</h3>
+                <p>O histórico continuará disponível nos leads e relatórios.</p>
+            </div>
+            <button class="modal-close" aria-label="Fechar" onclick="capFecharModalArquivar()"><i data-lucide="x" style="width:16px;"></i></button>
+        </div>
+        <div style="padding:14px;border:1px solid rgba(245,158,11,.28);background:rgba(245,158,11,.07);border-radius:10px;margin-bottom:18px;">
+            <div id="capArquivarNome" style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:5px;"></div>
+            <div style="font-size:12px;color:var(--muted);line-height:1.5;">O link será desativado e removido da lista. Cliques, conversões e atribuições serão preservados.</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <button type="button" class="btn btn-ghost" onclick="capFecharModalArquivar()" style="justify-content:center;">Cancelar</button>
+            <button type="button" id="capBtnConfirmarArquivar" onclick="capConfirmarArquivamento()" style="border:0;border-radius:8px;padding:12px;background:#f59e0b;color:#111827;font-weight:800;cursor:pointer;">Arquivar link</button>
+        </div>
+    </div>
+</div>
+
 <div id="modalEditCliente" class="modal-overlay" role="dialog" aria-modal="true" onclick="if(event.target===this) this.classList.remove('open')">
     <div class="modal" style="max-width:480px;">
         <div class="modal-head">
@@ -5094,7 +5117,7 @@ function resetLeadSearchAutofill() {
 <script defer src="js/leads.js?v=20260620-3"></script>
 <script defer src="js/admin.js?v=20260620-1"></script>
 <script defer src="js/reports-auto.js"></script>
-<script defer src="js/captacao.js?v=20260621-1"></script>
+<script defer src="js/captacao.js?v=20260621-2"></script>
 
 <!-- Drawer Perfil do Lead (4 abas) — deve ficar no final do body para z-index funcionar -->
 <div id="leadProfileDrawer" style="position:fixed;inset:0;z-index:9999;display:none;align-items:stretch;justify-content:flex-end;background:rgba(0,0,0,0.55);" onclick="if(event.target===this)fecharPerfilLead()">

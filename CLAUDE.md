@@ -510,6 +510,10 @@ Implementação atual:
 > Regra de UI: futuras confirmações destrutivas na área de leads devem reutilizar um modal interno,
 > nunca reintroduzir `confirm()` nativo. Publicado em produção no commit `8786267`.
 
+A mesma regra vale para **toda ação destrutiva do painel**, não apenas leads. Em especial, arquivar
+links em `js/captacao.js` usa `#modalArquivarLink` + `capConfirmarArquivamento()`; nunca usar
+`confirm()` nativo, que mostra “o domínio diz” e quebra a identidade visual do produto.
+
 ## 🕵️ Token invisível no iPhone — a fórmula que FUNCIONA (2026-06-21)
 
 O token invisível (`api/_invisible-token.js`) embute o `tracking_id` em caracteres invisíveis no

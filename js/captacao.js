@@ -6,6 +6,7 @@ let _capCampanhas   = [];   // cache da listagem
 let _capEditId      = null; // id da campanha em edição (null = criação)
 let _capDestinos    = [];   // destinos no modal (array mutável)
 let _capInstancias  = [];   // instâncias Evolution vinculadas ao cliente
+let _capArquivarId  = null; // link aguardando confirmação no modal interno
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 const baseUrl = () => window.location.origin;
@@ -279,18 +280,44 @@ async function capAlternarStatus(id, enabled) {
   }
 }
 
-// ── Excluir ────────────────────────────────────────────────────────────────────
-async function capExcluir(id) {
+// ── Arquivar ───────────────────────────────────────────────────────────────────
+function capExcluir(id) {
   const campanha = _capCampanhas.find(c => Number(c.id) === Number(id));
   const nome = campanha?.name || `#${id}`;
-  if (!confirm(`Arquivar o link "${nome}"?\n\nO link será desativado e removido da lista, mas cliques, conversões e atribuições serão preservados.`)) return;
+  _capArquivarId = Number(id);
+  $('capArquivarNome').textContent = `Link: ${nome}`;
+  $('modalArquivarLink').classList.add('open');
+  lucide.createIcons({ nodes: [$('modalArquivarLink')] });
+  setTimeout(() => $('capBtnConfirmarArquivar')?.focus(), 50);
+}
+
+function capFecharModalArquivar() {
+  $('modalArquivarLink')?.classList.remove('open');
+  _capArquivarId = null;
+}
+
+async function capConfirmarArquivamento() {
+  const id = _capArquivarId;
+  if (!id) return capFecharModalArquivar();
+  const btn = $('capBtnConfirmarArquivar');
+  const original = btn?.textContent;
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Arquivando...';
+  }
   try {
     const r = await authFetch(capUrlApi('/api/tracking-campaigns', { id }), { method: 'DELETE' });
     await readApiJson(r, 'Falha ao arquivar link');
     toast('Link arquivado. O histórico foi preservado.', 'success');
-    carregarCampanhasLink();
+    capFecharModalArquivar();
+    await carregarCampanhasLink();
   } catch (e) {
     toast('Erro ao arquivar: ' + e.message, 'error');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = original;
+    }
   }
 }
 
