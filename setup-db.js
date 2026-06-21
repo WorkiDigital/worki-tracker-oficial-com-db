@@ -318,6 +318,11 @@ async function setup() {
           ip_address VARCHAR(64),
           user_agent TEXT,
           event_source_url TEXT,
+          geo_city VARCHAR(120),
+          geo_region VARCHAR(120),
+          geo_region_code VARCHAR(20),
+          geo_country VARCHAR(120),
+          geo_country_code VARCHAR(10),
           whatsapp_number VARCHAR(30),
           instance_name VARCHAR(100),
           clicked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -330,7 +335,12 @@ async function setup() {
       ALTER TABLE public.tracking_clicks
       ADD COLUMN IF NOT EXISTS instance_name VARCHAR(100),
       ADD COLUMN IF NOT EXISTS utm_content VARCHAR(255),
-      ADD COLUMN IF NOT EXISTS event_source_url TEXT;
+      ADD COLUMN IF NOT EXISTS event_source_url TEXT,
+      ADD COLUMN IF NOT EXISTS geo_city VARCHAR(120),
+      ADD COLUMN IF NOT EXISTS geo_region VARCHAR(120),
+      ADD COLUMN IF NOT EXISTS geo_region_code VARCHAR(20),
+      ADD COLUMN IF NOT EXISTS geo_country VARCHAR(120),
+      ADD COLUMN IF NOT EXISTS geo_country_code VARCHAR(10);
 
       ALTER TABLE public.tracking_campaigns
       ADD COLUMN IF NOT EXISTS utm_content VARCHAR(255),

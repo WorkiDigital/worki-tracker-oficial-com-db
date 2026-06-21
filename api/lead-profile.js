@@ -63,7 +63,9 @@ export default async function handler(req, res) {
         SELECT
           k.id, k.clicked_at, k.converted_at, k.utm_campaign, k.utm_medium,
           k.utm_content, k.utm_source, k.user_agent, k.fbc, k.lead_id,
-          k.tracking_campaign_id,
+          k.ip_address, k.geo_city, k.geo_region, k.geo_region_code,
+          k.geo_country, k.geo_country_code,
+          k.campaign_id AS tracking_campaign_id,
           c.name AS tracking_campaign_name, c.origin_type
         FROM tracking_clicks k
         LEFT JOIN tracking_campaigns c ON c.id = k.campaign_id
@@ -84,6 +86,17 @@ export default async function handler(req, res) {
     }
     if (!leadDevice && cliques.length) leadDevice = cliques[0].device;
     lead.device = leadDevice;
+    const principalClick = lead.tracking_click_id
+      ? cliques.find(k => k.id === lead.tracking_click_id)
+      : cliques[0];
+    lead.click_location = principalClick ? {
+      ip: principalClick.ip_address || null,
+      city: principalClick.geo_city || null,
+      region: principalClick.geo_region || null,
+      region_code: principalClick.geo_region_code || null,
+      country: principalClick.geo_country || null,
+      country_code: principalClick.geo_country_code || null,
+    } : null;
 
     return res.status(200).json({
       lead,

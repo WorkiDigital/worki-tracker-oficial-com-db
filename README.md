@@ -183,6 +183,7 @@ Configure no EasyPanel:
 | `EVOLUTION_API_URL` | ⬜ | `https://evo.seudominio.com` | URL base da Evolution API |
 | `EVOLUTION_GLOBAL_KEY` | ⬜ | `chave_global` | Chave de autenticação global da Evolution API |
 | `WEBHOOK_SECRET` | ⬜ | `segredo_para_webhooks` | Segredo para validar webhooks da Evolution |
+| `IP_GEOLOCATION_URL` | ⬜ | `https://ipwho.is/{ip}?fields=success,country,country_code,region,region_code,city` | Endpoint de geolocalização por IP. `{ip}` é substituído pelo IP do clique. O padrão usa IPWHOIS; em uso comercial, configure um plano/provedor compatível |
 | `RATE_LIMIT_RPM` | ⬜ | `120` | Requisições por minuto por usuário (default: 120) |
 | `LOG_LEVEL` | ⬜ | `info` | Nível de log: `debug`, `info`, `warn`, `error` (default: `info`) |
 | `PORT` | ⬜ | `3000` | Porta do servidor (default: 3000) |

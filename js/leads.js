@@ -1150,6 +1150,17 @@ function lpPreencherDados({ lead, jornada, interacoes }) {
     $('lpRowCtwa').innerHTML      = lpRow('CTWA Click ID', lead.ctw_aci_id ? lead.ctw_aci_id.substring(0,24)+'…' : null);
     $('lpRowSourceId').innerHTML  = lpRow('Source ID (Anúncio)', lead.source_id);
     $('lpRowPageId').innerHTML    = lpRow('Page ID', lead.page_id);
+    const clickLocation = lead.click_location || {};
+    $('lpRowClickIp').innerHTML     = lpRow('IP do clique', clickLocation.ip);
+    $('lpRowClickCidade').innerHTML = lpRow('Cidade do clique', clickLocation.city);
+    $('lpRowClickEstado').innerHTML = lpRow(
+        'Estado / região',
+        [clickLocation.region, clickLocation.region_code].filter(Boolean).join(' - ') || null
+    );
+    $('lpRowClickPais').innerHTML   = lpRow(
+        'País do clique',
+        [clickLocation.country, clickLocation.country_code].filter(Boolean).join(' - ') || null
+    );
 
     // ── Aba Jornada ──
     // No modelo de contato único, cada TOQUE é um clique no link (tracking_clicks),
@@ -1166,6 +1177,7 @@ function lpPreencherDados({ lead, jornada, interacoes }) {
             const linhaAds = [k.utm_content, k.utm_medium, k.utm_campaign].filter(Boolean);
             const origem = obterOrigemLead(k.origin_type === 'campaign' ? 'campaign_link' : k.origin_type);
             const dev = k.device && k.device.label;
+            const localClique = [k.geo_city, k.geo_region_code || k.geo_region, k.geo_country_code || k.geo_country].filter(Boolean).join(' · ');
             return `<div style="display:flex;gap:14px;">
                 <div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0;">
                     <div style="width:12px;height:12px;border-radius:50%;background:${dotColor};border:2px solid ${dotColor};margin-top:3px;flex-shrink:0;${isCurrent?'box-shadow:0 0 0 3px rgba(59,130,246,.2)':''}"></div>
@@ -1187,6 +1199,7 @@ function lpPreencherDados({ lead, jornada, interacoes }) {
                             <span style="font-size:11px;padding:2px 8px;border-radius:10px;background:${origem.bg};border:1px solid ${origem.border};color:${origem.color};">${origem.label}</span>
                             ${k.tracking_campaign_name ? `<span style="font-size:11px;padding:2px 8px;border-radius:10px;background:var(--bg-primary);border:1px solid var(--border);color:var(--muted);">${esc(k.tracking_campaign_name)}</span>` : ''}
                             ${dev ? `<span style="font-size:11px;padding:2px 8px;border-radius:10px;background:var(--bg-primary);border:1px solid var(--border);color:var(--muted);">📱 ${esc(dev)}</span>` : ''}
+                            ${localClique ? `<span style="font-size:11px;padding:2px 8px;border-radius:10px;background:var(--bg-primary);border:1px solid var(--border);color:var(--muted);">📍 ${esc(localClique)}</span>` : ''}
                             <span style="font-size:11px;padding:2px 8px;border-radius:10px;background:var(--bg-primary);border:1px solid var(--border);color:${k.converted_at?'#10b981':'var(--muted)'};">${k.converted_at ? 'Convertido' : 'Clique'}</span>
                         </div>
                     </div>
