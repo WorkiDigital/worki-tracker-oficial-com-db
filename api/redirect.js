@@ -16,11 +16,14 @@ import { selecionarDestino } from './_rotator.js';
 import { encodeToken } from './_invisible-token.js';
 import { ensureTrackingSchema } from './_tracking-schema.js';
 import { enviarCapiWebPageView } from './_capi-web.js';
+import { extractClientIp, lookupGeoIp } from './_geoip.js';
 import crypto from 'crypto';
 
 function gerarTrackingId() {
-  // 10 chars base64url (~60 bits), tamanho fixo e seguro para o índice UNIQUE.
-  return crypto.randomBytes(8).toString('base64url').slice(0, 10);
+  // 7 chars base64url (~42 bits, ~4 trilhões de combinações): entropia de sobra e
+  // o índice UNIQUE pega qualquer colisão. Menor = token invisível mais curto na
+  // mensagem (cada char do ID vira ~4 caracteres invisíveis no token base-4).
+  return crypto.randomBytes(6).toString('base64url').slice(0, 7);
 }
 
 const PREVIEW_BOT_RE = /(bot|crawler|spider|preview|facebookexternalhit|facebot|whatsapp|telegrambot|slackbot|discordbot|linkedinbot|twitterbot|googlebot|bingbot)/i;
@@ -184,10 +187,11 @@ export default async function handler(req, res) {
 
     // 3. Registrar clique
     const trackingId = gerarTrackingId();
-    const ip = (req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '').split(',')[0].trim();
+    const ip = extractClientIp(req);
     const userAgent = req.headers['user-agent'] || '';
     const referrer = req.headers['referer'] || req.headers['referrer'] || '';
     const eventSourceUrl = `${req.headers['x-forwarded-proto'] || 'https'}://${req.headers.host || ''}/r/${slug}`;
+    const geo = await lookupGeoIp(req, ip);
     // UTMs: da query do link (override) ou os da campanha
     const q = req.query || {};
     const utmValue = value => String(value || '').trim().slice(0, 255) || null;
@@ -210,11 +214,14 @@ export default async function handler(req, res) {
       `INSERT INTO tracking_clicks
         (tracking_id, campaign_id, destination_id, cliente_id, status,
          utm_source, utm_medium, utm_campaign, utm_content, referrer, ip_address, user_agent,
-         whatsapp_number, instance_name, fbclid, fbc, fbp, pageview_event_id, event_source_url, expires_at)
-       VALUES ($1,$2,$3,$4,'clicked',$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18, NOW() + INTERVAL '72 hours')`,
+         whatsapp_number, instance_name, fbclid, fbc, fbp, pageview_event_id, event_source_url,
+         geo_city, geo_region, geo_region_code, geo_country, geo_country_code, expires_at)
+       VALUES ($1,$2,$3,$4,'clicked',$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23, NOW() + INTERVAL '72 hours')`,
       [trackingId, campaign.id, destino.id, campaign.cliente_id,
        utm_source, utm_medium, utm_campaign, utm_content, referrer, ip, userAgent,
-       destino.whatsapp_number, destino.instance_name, fbclid, fbc, fbp, pageviewEventId, eventSourceUrl]
+       destino.whatsapp_number, destino.instance_name, fbclid, fbc, fbp, pageviewEventId, eventSourceUrl,
+       geo?.city || null, geo?.region || null, geo?.region_code || null,
+       geo?.country || null, geo?.country_code || null]
     );
 
     await client.query('COMMIT');
@@ -232,7 +239,9 @@ export default async function handler(req, res) {
       tag: 'tracking_click', level: 'info',
       message: `Clique no link "${campaign.name}" → ${destino.whatsapp_number}`,
       data: { tracking_id: trackingId, campaign_id: campaign.id, destino: destino.whatsapp_number,
-              fbclid: !!fbclid, fbc: !!fbc, fbp: !!fbp, capi_pixel: !!capiPixelId },
+              fbclid: !!fbclid, fbc: !!fbc, fbp: !!fbp, capi_pixel: !!capiPixelId,
+              geo_city: geo?.city || null, geo_region: geo?.region || null,
+              geo_country: geo?.country || null },
     });
 
     // PageView server-side (CAPI) com o MESMO event_id do Pixel → Meta deduplica.
