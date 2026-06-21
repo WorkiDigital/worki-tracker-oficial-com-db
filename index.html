@@ -349,7 +349,7 @@
 
 <!-- Modal: Link rastreável + rotador -->
 <div id="modalCampanha" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="capModalTitulo" onclick="if(event.target===this) fecharModalCampanha()">
-    <div class="modal" style="width:min(760px,94vw);max-width:760px;max-height:90vh;overflow-y:auto;">
+    <div class="modal" style="width:min(940px,96vw);max-width:940px;max-height:92vh;overflow-y:auto;">
         <div class="modal-head">
             <div class="modal-icon" style="background:rgba(59,130,246,.14);">
                 <i data-lucide="route" style="color:var(--blue);width:22px;height:22px;"></i>
@@ -383,7 +383,7 @@
             <p id="capSlugHint" style="font-size:11px;color:var(--muted);margin-top:6px;">Gerado automaticamente a partir do nome.</p>
         </div>
 
-        <div class="cap-grid-message" style="display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:12px;">
+        <div class="cap-grid-message" style="display:grid;grid-template-columns:minmax(220px,.65fr) minmax(0,1.35fr);gap:16px;align-items:start;">
             <div class="input-group">
                 <label>Distribuição dos números</label>
                 <select id="capModo" class="form-control" onchange="capToggleModo();capHintModo(this.value)">
@@ -396,7 +396,7 @@
             </div>
             <div class="input-group">
                 <label>Mensagem pré-preenchida</label>
-                <input id="capMensagem" type="text" maxlength="1000" placeholder="Olá! Gostaria de mais informações.">
+                <textarea id="capMensagem" maxlength="1000" rows="2" placeholder="Olá! Gostaria de mais informações." oninput="capAutoResizeMensagem()" style="width:100%;min-height:48px;max-height:220px;resize:none;overflow-y:hidden;line-height:1.45;"></textarea>
                 <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:7px;">
                     <span style="font-size:10px;color:var(--muted);">Inserir variável:</span>
                     <button type="button" class="cap-message-variable" onclick="capInserirVariavelMensagem('{{utm_content}}')" title="Nome do anúncio">Anúncio</button>
@@ -5094,7 +5094,7 @@ function resetLeadSearchAutofill() {
 <script defer src="js/leads.js?v=20260620-3"></script>
 <script defer src="js/admin.js?v=20260620-1"></script>
 <script defer src="js/reports-auto.js"></script>
-<script defer src="js/captacao.js?v=20260620-3"></script>
+<script defer src="js/captacao.js?v=20260621-1"></script>
 
 <!-- Drawer Perfil do Lead (4 abas) — deve ficar no final do body para z-index funcionar -->
 <div id="leadProfileDrawer" style="position:fixed;inset:0;z-index:9999;display:none;align-items:stretch;justify-content:flex-end;background:rgba(0,0,0,0.55);" onclick="if(event.target===this)fecharPerfilLead()">

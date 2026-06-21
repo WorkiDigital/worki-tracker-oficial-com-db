@@ -444,7 +444,22 @@ html.light .modal { background:#fff; border-color:var(--border); }
 /* ── Captação e links rastreáveis ───────── */
 #modalCampanha .modal { box-sizing:border-box; }
 #modalCampanha select,
-#modalCampanha input { box-sizing:border-box; }
+#modalCampanha input,
+#modalCampanha textarea { box-sizing:border-box; }
+#modalCampanha textarea {
+    font:inherit;
+    background:var(--bg-secondary);
+    color:var(--text);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:11px 12px;
+    transition:border-color .15s,box-shadow .15s;
+}
+#modalCampanha textarea:focus {
+    outline:none;
+    border-color:var(--blue);
+    box-shadow:0 0 0 3px rgba(59,130,246,.12);
+}
 .cap-links-table-wrap { width:100%; overflow-x:auto; }
 .cap-links-table { width:100%; min-width:880px; table-layout:fixed; border-collapse:collapse; font-size:13px; }
 .cap-links-table th { padding:10px 12px; color:var(--muted); font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; text-align:center; border-bottom:1px solid var(--border); }

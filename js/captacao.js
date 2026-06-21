@@ -325,6 +325,7 @@ async function abrirModalCampanha(id, duplicar = false) {
       modeEl.value            = c.rotation_mode || 'single';
       origEl.value            = c.origin_type   || 'bio';
       $('capMensagem').value  = c.default_message || '';
+      capAutoResizeMensagem();
       $('capUtmSource').value   = c.utm_source   || '';
       $('capUtmMedium').value   = c.utm_medium   || '';
       $('capUtmCampaign').value = c.utm_campaign || '';
@@ -342,6 +343,7 @@ async function abrirModalCampanha(id, duplicar = false) {
   } else {
     $('capModalTitulo').textContent = 'Novo link rastreável';
     $('btnSalvarCampanha').textContent = 'Criar link';
+    capAutoResizeMensagem();
   }
 
   await capCarregarInstancias();
@@ -351,6 +353,7 @@ async function abrirModalCampanha(id, duplicar = false) {
   capHintOrigem(origEl.value);
   $('modalCampanha').classList.add('open');
   lucide.createIcons({ nodes: [$('modalCampanha')] });
+  requestAnimationFrame(capAutoResizeMensagem);
   $('capNome').focus();
 }
 
@@ -371,6 +374,16 @@ function capInserirVariavelMensagem(variavel) {
   const cursor = Math.min(1000, antes.length + separadorAntes.length + variavel.length);
   input.focus();
   input.setSelectionRange(cursor, cursor);
+  capAutoResizeMensagem();
+}
+
+function capAutoResizeMensagem() {
+  const input = $('capMensagem');
+  if (!input) return;
+  input.style.height = 'auto';
+  const altura = Math.min(220, Math.max(48, input.scrollHeight));
+  input.style.height = `${altura}px`;
+  input.style.overflowY = input.scrollHeight > 220 ? 'auto' : 'hidden';
 }
 
 // Auto-gera slug a partir do nome
