@@ -1,41 +1,33 @@
 /**
- * Token invisível — codifica um tracking_id em caracteres invisíveis embutidos
- * na mensagem que o usuário envia no WhatsApp ao clicar no link.
+ * Token invisível — codifica um tracking_id em caracteres zero-width embutidos no
+ * INÍCIO da mensagem que o usuário envia no WhatsApp ao clicar no link.
  *
- * ⚠️ HISTÓRICO (2026-06-21):
- * - Zero-width clássicos (U+200B/U+200C/U+2060) são "format chars" (Cf): o iPhone
- *   os REMOVE na sanitização → token sumia no iOS (token_detectado=false).
- * - Trocamos para fillers Hangul (categoria Letter) + Braille, que SOBREVIVEM ao
- *   iOS. Funcionou, mas U+2800/U+3164 a 1 bit/char (~100 chars) deixavam um espaço
- *   feio e largo na mensagem.
+ * FÓRMULA (2026-06-21) — replicada de um app de referência que funciona no iPhone:
+ *   - SOMENTE dois caracteres: U+200B = bit 0, U+200C = bit 1.
+ *   - SEM marcadores (o U+2060/word-joiner que usávamos antes atrapalhava).
+ *   - Token no INÍCIO, colado ao texto, sem espaço e sem quebra de linha.
+ *   - 8 bits por caractere do tracking_id (ID curto = token curto).
+ * A URL final usa api.whatsapp.com/send?...&text=<encodeURIComponent(msg)>; o
+ * percent-encoding UTF-8 (U+200B→%E2%80%8B, U+200C→%E2%80%8C) preserva os
+ * caracteres na maioria dos casos.
  *
- * SOLUÇÃO ATUAL — base-4 com 4 fillers invisíveis (2 bits por caractere):
- *   00=U+115F  01=U+1160  10=U+3164  11=U+FFA0  (todos Hangul fillers, invisíveis,
- *   categoria Letter → passam pelos filtros do WhatsApp iOS).
- * Isso reduz o token de ~100 para ~30 caracteres. Ainda há largura mínima, então o
- * token é posto no FIM, após uma quebra de linha, isolando-o do texto visível.
+ * ⚠️ Continua FRÁGIL: o iPhone pode remover os zero-width. Por isso o fallback de
+ * correlação por clique recente (webhook) permanece como rede de segurança — a
+ * atribuição no iPhone pode vir dele, não necessariamente do token.
  *
- * RETROCOMPATÍVEL: o decoder ainda lê os formatos antigos (U+2800/U+3164 a 1 bit e
- * o zero-width original) para não quebrar links já gerados.
- *
- * Formato: [8 bits versão][N bits payload][8 bits checksum], 2 bits por caractere.
+ * Formato dos bits: [8 bits versão][N bits payload][8 bits checksum].
  * O checksum (soma dos bytes do payload mod 256) impede aceitar lixo invisível.
  */
 
-// ── Alfabeto base-4 (NOVO, compacto) ── 2 bits por caractere.
-const Q = ['ᅟ', 'ᅠ', 'ㅤ', 'ﾠ']; // U+115F, U+1160, U+3164, U+FFA0
-const Q_MAP = { 'ᅟ': 0, 'ᅠ': 1, 'ㅤ': 2, 'ﾠ': 3 };
-const Q_CLASS = '[ᅟᅠㅤﾠ]';
-const Q_SEQ_RE = new RegExp(`${Q_CLASS}{16,}`, 'g'); // sequência longa = candidato
+const BIT0 = '​'; // zero-width space  → 0
+const BIT1 = '‌'; // zero-width non-joiner → 1
 const VERSION = 1;
 
-// ── Formato ANTIGO 0 (zero-width) — só DECODIFICAR ──
-const Z_BIT0 = '​', Z_BIT1 = '‌';
-const Z_BLOCO_RE = /⁠[​‌]+⁠/;
-const Z_BITS_RE = /[​‌]{24,}/g;
-
-// Limpa TODOS os invisíveis usados (novo base-4 + zero-width antigo) da mensagem.
-const INVISIVEIS_RE = /[ᅟᅠㅤﾠ⠀​‌⁠﻿]/g;
+// Sequência de bits no início (sem marcadores). Aceita também versões antigas que
+// tinham marcadores U+2060 ao redor (retrocompat: o decoder os ignora).
+const BITS_RE = /[​‌]{24,}/g;
+// Limpa qualquer zero-width residual da mensagem visível (inclui U+2060/U+FEFF).
+const INVISIVEIS_RE = /[​‌‍⁠﻿]/g;
 
 function bytesToBits(bytes) {
   let bits = '';
@@ -50,25 +42,17 @@ function bitsToBytes(bits) {
 function checksum(bytes) { return bytes.reduce((a, b) => (a + b) & 0xff, 0); }
 
 /**
- * Codifica um tracking_id num bloco invisível compacto (base-4, formato novo).
- * Prefixa uma quebra de linha para isolar o bloco do texto visível.
+ * Codifica um tracking_id (ASCII curto) em zero-width, para prefixar a mensagem.
+ * SÓ U+200B/U+200C, sem marcadores — exatamente o formato que sobrevive melhor.
  */
 export function encodeToken(trackingId) {
   if (!trackingId) return '';
   const payload = [...Buffer.from(String(trackingId), 'utf8')];
   const all = [VERSION, ...payload, checksum(payload)];
-  let bits = bytesToBits(all);
-  if (bits.length % 2) bits += '0'; // par para agrupar de 2 em 2
-  let out = '';
-  for (let i = 0; i < bits.length; i += 2) {
-    out += Q[parseInt(bits.slice(i, i + 2), 2)];
-  }
-  // \n isola o bloco invisível do texto principal (fica numa "linha" própria,
-  // sem quebrar a frase visível). O decoder remove o bloco e o \n residual.
-  return '\n' + out;
+  const bits = bytesToBits(all);
+  return [...bits].map(b => (b === '0' ? BIT0 : BIT1)).join('');
 }
 
-// Decodifica bits (string "0"/"1") → tracking_id validado, ou null.
 function bitsToTrackingId(bits) {
   const bytes = bitsToBytes(bits);
   if (bytes.length < 3) return null;
@@ -81,40 +65,24 @@ function bitsToTrackingId(bits) {
 }
 
 /**
- * Decodifica o tracking_id de uma mensagem. Tenta o formato NOVO (base-4) e os
- * ANTIGOS (1 bit Braille/Hangul e zero-width) — retrocompatível com links já gerados.
- * Retorna { trackingId, cleanMessage }.
+ * Decodifica o tracking_id de uma mensagem. Retorna { trackingId, cleanMessage }.
+ * Varre todas as sequências longas de U+200B/U+200C (com ou sem marcadores antigos
+ * em volta) e valida por versão+checksum. Retrocompatível com os links anteriores.
  */
 export function decodeToken(message) {
   if (!message || typeof message !== 'string') {
     return { trackingId: null, cleanMessage: message || '' };
   }
-
-  // 1) NOVO base-4: cada char = 2 bits.
-  for (const m of message.matchAll(Q_SEQ_RE)) {
+  for (const m of message.matchAll(BITS_RE)) {
     const bloco = m[0];
-    let bits = '';
-    for (const ch of bloco) bits += Q_MAP[ch].toString(2).padStart(2, '0');
+    const bits = [...bloco].map(c => (c === BIT0 ? '0' : c === BIT1 ? '1' : '')).join('');
     const id = bitsToTrackingId(bits);
     if (id) {
-      // Remove o bloco e a quebra de linha que o precede (se houver).
-      const clean = message.replace(new RegExp(`\\n?${escapeRe(bloco)}`), '');
+      // Remove o bloco e marcadores U+2060 residuais grudados (formato antigo).
+      const clean = message.replace(new RegExp(`\\u2060?${escapeRe(bloco)}\\u2060?`), '');
       return { trackingId: id, cleanMessage: clean };
     }
   }
-
-  // 2) ANTIGO zero-width (com ou sem marcadores) — links gerados antes da troca.
-  const zMark = message.match(Z_BLOCO_RE);
-  const zCands = zMark ? [zMark[0].slice(1, -1)] : [...message.matchAll(Z_BITS_RE)].map(m => m[0]);
-  for (const inner of zCands) {
-    const bits = [...inner].map(c => (c === Z_BIT0 ? '0' : c === Z_BIT1 ? '1' : '')).join('');
-    const id = bitsToTrackingId(bits);
-    if (id) {
-      const bloco = zMark ? zMark[0] : inner;
-      return { trackingId: id, cleanMessage: message.replace(bloco, '') };
-    }
-  }
-
   return { trackingId: null, cleanMessage: message.replace(INVISIVEIS_RE, '') };
 }
 
