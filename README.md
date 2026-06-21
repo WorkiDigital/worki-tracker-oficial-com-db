@@ -183,12 +183,14 @@ Configure no EasyPanel:
 | `EVOLUTION_API_URL` | ⬜ | `https://evo.seudominio.com` | URL base da Evolution API |
 | `EVOLUTION_GLOBAL_KEY` | ⬜ | `chave_global` | Chave de autenticação global da Evolution API |
 | `WEBHOOK_SECRET` | ⬜ | `segredo_para_webhooks` | Segredo para validar webhooks da Evolution |
-| `IP_GEOLOCATION_URL` | ⬜ | `https://ipwho.is/{ip}?fields=success,country,country_code,region,region_code,city` | Endpoint de geolocalização por IP. `{ip}` é substituído pelo IP do clique. O padrão usa IPWHOIS; em uso comercial, configure um plano/provedor compatível |
+| `IP_GEOLOCATION_URL` | ⬜ | `https://seu-provedor.com/lookup/{ip}` | Endpoint licenciado de geolocalização por IP. `{ip}` é substituído pelo IP do clique. Sem esta variável, nenhum IP é enviado a terceiros |
 | `RATE_LIMIT_RPM` | ⬜ | `120` | Requisições por minuto por usuário (default: 120) |
 | `LOG_LEVEL` | ⬜ | `info` | Nível de log: `debug`, `info`, `warn`, `error` (default: `info`) |
 | `PORT` | ⬜ | `3000` | Porta do servidor (default: 3000) |
 
 > ⬜ = opcional em desenvolvimento, mas recomendado em produção.
+
+Se o domínio estiver na Cloudflare, ative **Rules → Transform Rules → Managed Transforms → Add visitor location headers**. A aplicação lê diretamente `cf-ipcity`, `cf-region`, `cf-region-code` e `cf-ipcountry`, dispensando uma consulta externa. Mantenha o origin protegido para que somente proxies confiáveis possam definir os cabeçalhos de IP/localização.
 
 ---
 

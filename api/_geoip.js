@@ -31,12 +31,16 @@ function isPublicIp(ip) {
 
 function fromHeaders(headers = {}) {
   const countryCode = clean(headers['cf-ipcountry'] || headers['x-vercel-ip-country'], 8);
-  const regionCode = clean(headers['x-vercel-ip-country-region'], 16);
-  const city = clean(decodeHeader(headers['x-vercel-ip-city']));
-  if (!countryCode && !regionCode && !city) return null;
+  const regionCode = clean(
+    headers['cf-region-code'] || headers['x-vercel-ip-country-region'],
+    16
+  );
+  const region = clean(decodeHeader(headers['cf-region'])) || regionCode;
+  const city = clean(decodeHeader(headers['cf-ipcity'] || headers['x-vercel-ip-city']));
+  if (!countryCode && !region && !city) return null;
   return {
     city,
-    region: regionCode,
+    region,
     region_code: regionCode,
     country: countryCode,
     country_code: countryCode,
@@ -67,10 +71,10 @@ export async function lookupGeoIp(req, ip) {
   const cached = cache.get(ip);
   if (cached && cached.expiresAt > Date.now()) return cached.value;
 
-  // Pode ser trocado por outro provedor através da variável. O padrão usa
-  // ipwho.is e solicita apenas os campos necessários.
-  const template = process.env.IP_GEOLOCATION_URL
-    || 'https://ipwho.is/{ip}?fields=success,country,country_code,region,region_code,city';
+  // Sem provedor explicitamente configurado, não envia o IP para terceiros.
+  // Isso também evita usar indevidamente planos gratuitos sem licença comercial.
+  const template = process.env.IP_GEOLOCATION_URL;
+  if (!template) return headerGeo;
   try {
     const response = await fetch(interpolateUrl(template, ip), {
       headers: { Accept: 'application/json' },
