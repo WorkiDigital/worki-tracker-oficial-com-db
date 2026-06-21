@@ -490,3 +490,69 @@ Em produção com **muitos cliques simultâneos** na mesma instância, o fallbac
 pendentes) e o lead de iPhone pode não receber campanha (cai no modo da instância). É proposital
 (não roubar atribuição). Evolução futura: identidade visível mais robusta (nº de destino por campanha,
 sufixo na mensagem). Commits da saga: `2f62996`, `c883e46`, `8c13820`.
+
+## 🗑️ Confirmação de exclusão de leads (2026-06-20)
+
+A exclusão de leads **não deve usar `window.confirm()` / `confirm()` nativo do navegador**. O alerta
+com o texto “o domínio diz” não segue a identidade visual do sistema e oferece pouca clareza para
+ações destrutivas.
+
+Implementação atual:
+
+- modal próprio `#modalExcluirLeads` em `index.html`;
+- abertura por `excluirLeadsSelecionados()` em `js/leads.js`;
+- confirmação efetiva por `confirmarExclusaoLeads()`;
+- fechamento/cancelamento por `fecharModalExcluirLeads()`;
+- texto e título adaptados para um lead ou vários leads selecionados;
+- botão de confirmação mostra `Excluindo...` e fica desabilitado durante a operação;
+- exclusão em lotes de até 500 IDs e chamada a `/api/leads-delete` foram preservadas.
+
+> Regra de UI: futuras confirmações destrutivas na área de leads devem reutilizar um modal interno,
+> nunca reintroduzir `confirm()` nativo. Publicado em produção no commit `8786267`.
+
+## 🕵️ Token invisível no iPhone — a fórmula que FUNCIONA (2026-06-21)
+
+O token invisível (`api/_invisible-token.js`) embute o `tracking_id` em caracteres invisíveis no
+início da mensagem do WhatsApp. No **iPhone** ele sumia/ficava feio. Após 4 tentativas, a fórmula que
+funcionou (replicada de um app de referência que opera no iOS):
+
+- **SOMENTE `U+200B` (bit 0) e `U+200C` (bit 1). SEM marcadores.**
+- O **`U+2060` (word joiner)** que usávamos como marcador início/fim era o vilão — tirá-lo resolveu.
+- Token no **INÍCIO**, colado ao texto, sem espaço e sem `\n`.
+- A sobrevivência vem do **percent-encoding UTF-8** na URL (`U+200B`→`%E2%80%8B`,
+  `U+200C`→`%E2%80%8C`), via `encodeURIComponent` + `api.whatsapp.com/send?...&text=`.
+- ID curto (`gerarTrackingId` em `redirect.js` usa 7 chars) = token mais curto.
+- Mantemos envelope **versão+checksum** (rejeita lixo invisível); decoder é retrocompatível.
+
+### ❌ O que NÃO funciona (já testado, não repetir)
+- `U+2060` como marcador → token some no iOS.
+- `U+2800` (Braille) / `U+3164` (Hangul) → ocupam largura → **espaço feio** na mensagem.
+- Fillers Hangul `U+115F/U+1160/U+FFA0` → viram **quadradinhos (tofu)** no WhatsApp iOS (a fonte
+  não tem glifo). Só `U+200B/U+200C` são realmente invisíveis E sobrevivem.
+
+### ⚠️ Verdade importante
+Atribuição correta no iPhone **NÃO prova** que o token sobreviveu — pode ter vindo do **fallback de
+clique recente** (10 min, 1 clique único). O próprio app de referência confirma que depende do
+fallback também. Se o perfil do lead mostra `tracking_method: recent_click`, foi o fallback; se
+`token`, o token sobreviveu. Ambos atribuem certo. Ver [[as 3 armadilhas de atribuição de link]].
+
+## 🌎 Geo-IP do clique (cidade/estado/país) — `api/_geoip.js`
+
+O redirecionador (`api/redirect.js`) resolve a localização do IP no clique e salva
+`geo_city/geo_region/geo_region_code/geo_country/geo_country_code` em `tracking_clicks`. O
+`lead-profile.js` lê esses campos **direto do clique** (não copia pro lead) e o front mostra na aba
+**Rastreamento** do perfil.
+
+- **Ativado por env** `IP_GEOLOCATION_URL` (NÃO versionada — configurar no `.env` local E no
+  EasyPanel). Sem ela, `lookupGeoIp` retorna só o que os headers de proxy derem (no EasyPanel não há)
+  → cidade/estado/país ficam vazios. **Esse foi o motivo de virem vazios.**
+- Provedor atual: **ip-api.com grátis** (45 req/min, HTTP, proíbe uso comercial — trocar por Pro/
+  ipinfo Core ao escalar, só mudando a env):
+  `IP_GEOLOCATION_URL=http://ip-api.com/json/{ip}?fields=status,message,country,countryCode,regionName,region,city`
+- `{ip}` é substituído pelo IP real. O parser (`_geoip.js`) mapeia campos de **vários provedores**:
+  ip-api usa camelCase (`regionName`/`countryCode`), ipinfo/ipapi usam outros — todos cobertos.
+- **Cache de 24h por IP** (em memória) evita reconsultar o mesmo IP — vantagem sobre o app de
+  referência (que não tem cache).
+- **Não há geo retroativo**: só cliques NOVOS após a env configurada terão localização.
+- ⚠️ Privacidade/LGPD: enviar o IP do lead a um terceiro. Por isso o código **não** consulta nada
+  sem a env explicitamente configurada (decisão deliberada).
