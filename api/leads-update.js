@@ -1,59 +1,12 @@
 import { getPool } from './_db.js';
 import { verifyAuth } from './_auth.js';
-import crypto from 'crypto';
 import { cors } from './_cors.js';
 import { rateLimit } from './_rate-limit.js';
-import { decryptToken } from './_crypto.js';
+import { enviarConversao } from './_capi.js';
 
-// fetch com timeout para nunca pendurar o request (botão travado no painel)
-async function fetchWithTimeout(url, opts = {}, ms = 8000) {
-  const ctrl = new AbortController();
-  const t = setTimeout(() => ctrl.abort(), ms);
-  try {
-    return await fetch(url, { ...opts, signal: ctrl.signal });
-  } finally {
-    clearTimeout(t);
-  }
-}
-
-// Grava o resultado de um envio CAPI em webhook_logs para aparecer na aba "Logs do Sistema".
-// Best-effort: nunca derruba o fluxo principal se o log falhar.
-async function gravarLogCapi(pool, lead, tag, level, message, data) {
-  try {
-    await pool.query(
-      `INSERT INTO webhook_logs (cliente_id, instance, tag, level, message, data)
-       VALUES ($1, $2, $3, $4, $5, $6)`,
-      [lead.cliente_id || null, lead.instancia || null, tag, level, message, JSON.stringify(data || {})]
-    );
-  } catch (e) {
-    console.error('Falha ao gravar log CAPI em webhook_logs:', e.message);
-  }
-}
-
-// IMPORTANTE: no canal business_messaging a Meta REJEITA client_ip_address e
-// client_user_agent em eventos como Purchase/QualifiedLead (error_subcode 2804064).
-// Não inclua esses campos no user_data desses eventos.
-
-// A Meta exige page_id (ou whatsapp_business_account_id) no user_data de eventos
-// business_messaging (error_subcode 2804116 quando falta). Alguns leads ficam sem
-// page_id (URL do anúncio em formato que extrairPageId não reconheceu). Como
-// fallback, usamos o page_id mais frequente dos outros leads do mesmo cliente.
-async function resolvePageId(pool, lead) {
-  if (lead.page_id) return lead.page_id;
-  if (!lead.cliente_id) return null;
-  try {
-    const r = await pool.query(
-      `SELECT page_id FROM leads_tracking
-       WHERE cliente_id = $1 AND page_id IS NOT NULL AND page_id <> ''
-       GROUP BY page_id ORDER BY COUNT(*) DESC LIMIT 1`,
-      [lead.cliente_id]
-    );
-    return r.rows[0]?.page_id || null;
-  } catch (e) {
-    console.error('resolvePageId falhou:', e.message);
-    return null;
-  }
-}
+// Envio CAPI (Purchase/QualifiedLead) centralizado em api/_capi.js — page_id,
+// hashing, canal e dedup por event_id vivem lá. Este endpoint só atualiza o lead
+// e delega a conversão ao módulo central (mesmo caminho do disparo automático).
 
 export default async function handler(req, res) {
   if (cors(req, res, ['PATCH'])) return;
@@ -108,13 +61,37 @@ export default async function handler(req, res) {
         return res.status(404).json({ error: 'Lead não encontrado ou não pertence ao seu cliente.' });
       }
 
+      // Venda/Qualificação manual → módulo CAPI central (mesmo event_id determinístico
+      // do disparo automático da jornada → não duplica o evento na Meta). Registra
+      // também em lead_journey_history para o histórico unificado do lead.
       let capi = null;
-      if (status === 'Vendido' || status === 'Venda') {
-        const lead = updateResult.rows[0];
-        capi = await sendCapiPurchase(lead, valor_venda, pool);
-      } else if (status === 'Qualificado') {
-        const lead = updateResult.rows[0];
-        capi = await sendCapiQualifiedLead(lead, pool);
+      const lead = updateResult.rows[0];
+      let concept = null;
+      if (status === 'Vendido' || status === 'Venda') concept = 'purchase';
+      else if (status === 'Qualificado') concept = 'qualified';
+
+      if (concept) {
+        capi = await enviarConversao({
+          lead, concept,
+          value: concept === 'purchase' ? valor_venda : undefined,
+          currency: 'BRL', pool,
+        });
+        capi = { sent: capi.sent, error: capi.error, fbtrace_id: capi.fbtrace_id };
+        try {
+          await pool.query(
+            `INSERT INTO lead_journey_history
+              (lead_id, cliente_id, event_concept, event_name, value, currency, channel,
+               event_id, meta_status, meta_response, fbtrace_id, attempts, created_at, last_attempt_at)
+             VALUES ($1,$2,$3,$4,$5,'BRL',$6,$7,$8,$9,$10,1,NOW(),NOW())`,
+            [lead.id, lead.cliente_id, concept,
+             concept === 'purchase' ? 'Purchase' : 'QualifiedLead',
+             concept === 'purchase' ? parseFloat(valor_venda || 0) : null,
+             lead.ctw_aci_id ? 'business_messaging' : 'website',
+             `j_${lead.id}_${concept}`,
+             capi.sent ? 'sent' : 'error', capi.sent ? null : (capi.error || 'falha'),
+             capi.fbtrace_id || null]
+          );
+        } catch (_) { /* history é best-effort; o evento já foi enviado */ }
       }
 
       // O status do lead já foi salvo no banco. capi informa o resultado real do envio à Meta.
@@ -125,201 +102,5 @@ export default async function handler(req, res) {
   } catch (error) {
     console.error('Leads UPDATE error:', error);
     return res.status(500).json({ error: error.message || 'Erro ao atualizar.' });
-  }
-}
-
-async function sendCapiPurchase(lead, value, pool) {
-  let token;
-  let { pixel, ctw_aci_id, telefone, cidade, estado, cliente_id } = lead;
-
-  if (!pixel && cliente_id) {
-    const clientRes = await pool.query('SELECT pixel_padrao, token_meta, token_meta_enc FROM clientes WHERE id = $1', [cliente_id]);
-    const row = clientRes.rows[0];
-    if (row) {
-      pixel = pixel || row.pixel_padrao;
-      let tokenValue = row.token_meta || process.env.META_ADS_TOKEN || null;
-      if (row.token_meta_enc) {
-        try { tokenValue = decryptToken(row.token_meta_enc); } catch (e) { console.error('CAPI Purchase (Update): Erro descriptografia', e.message); }
-      }
-      token = tokenValue;
-    }
-  } else if (cliente_id) {
-    const clientRes = await pool.query('SELECT token_meta, token_meta_enc FROM clientes WHERE id = $1', [cliente_id]);
-    const row = clientRes.rows[0];
-    let tokenValue = row?.token_meta || process.env.META_ADS_TOKEN || null;
-    if (row?.token_meta_enc) {
-      try { tokenValue = decryptToken(row.token_meta_enc); } catch (e) { console.error('CAPI Purchase (Update): Erro descriptografia', e.message); }
-    }
-    token = tokenValue;
-  } else {
-    token = process.env.META_ADS_TOKEN || null;
-  }
-
-  if (!pixel || !token) {
-    const motivo = !pixel ? 'Pixel não configurado para este cliente/lead' : 'Token da Meta não configurado';
-    console.warn('CAPI Purchase não enviada:', motivo, '— lead ID', lead.id);
-    await gravarLogCapi(pool, lead, 'capi-purchase', 'error', `Purchase não enviada: ${motivo}`, { lead_id: lead.id });
-    return { sent: false, error: motivo };
-  }
-
-  const hash = str => /^[a-f0-9]{64}$/.test(str)
-    ? str
-    : crypto.createHash('sha256').update((str || '').toLowerCase().trim()).digest('hex');
-
-  const ph = (telefone || '').replace(/\D/g, '');
-  const nomeParts = (lead.nome || '').trim().split(/\s+/);
-
-  // page_id é obrigatório p/ business_messaging; usa fallback do cliente se o lead não tiver.
-  const finalPageId = await resolvePageId(pool, lead);
-  if (!finalPageId) {
-    console.warn('CAPI não enviada: page_id ausente e sem fallback — lead ID', lead.id);
-    await gravarLogCapi(pool, lead, 'capi', 'error', 'page_id ausente (sem fallback do cliente)', { lead_id: lead.id });
-    return { sent: false, error: 'page_id ausente — anúncio sem página identificada' };
-  }
-
-  // Base que a Meta ACEITA (idêntica ao LeadSubmitted do webhook-evo):
-  // ctwa_clid (cru) + ph (array hasheado) + page_id (cru).
-  // Advanced matching adicionado por cima (tudo hasheado, conforme doc de
-  // Customer Information Parameters). ctwa_clid e page_id NÃO são hasheados.
-  const userData = { ctwa_clid: ctw_aci_id || undefined };
-  if (ph)           userData.ph          = [hash(ph)];
-  userData.page_id = finalPageId;
-  if (lead.email)   userData.em          = [hash(lead.email.toLowerCase().trim())];
-  if (nomeParts[0]) userData.fn          = [hash(nomeParts[0])];
-  if (nomeParts[1]) userData.ln          = [hash(nomeParts.slice(1).join(' '))];
-  if (lead.cpf)     userData.external_id = [hash(lead.cpf.replace(/\D/g, ''))];
-  if (cidade)       userData.ct          = [hash(cidade)];
-  if (estado)       userData.st          = [hash(estado)];
-  userData.country = [hash('br')];
-
-  const customData = { currency: 'BRL', value: parseFloat(value || 0) };
-  if (lead.produto) customData.content_name = lead.produto;
-
-  const payload = {
-    data: [{
-      event_name:        'Purchase',
-      event_time:        Math.floor(Date.now() / 1000),
-      action_source:     'business_messaging',
-      messaging_channel: 'whatsapp',
-      user_data:         userData,
-      custom_data:       customData
-    }]
-  };
-
-  try {
-    const r    = await fetchWithTimeout(`https://graph.facebook.com/v25.0/${pixel}/events?access_token=${token}`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
-    });
-    const resp = await r.json();
-    if (resp.events_received) {
-      console.log('✅ CAPI Purchase (manual) aceita pela Meta:', resp.fbtrace_id);
-      await gravarLogCapi(pool, lead, 'capi-purchase', 'info', `Purchase enviada (R$ ${customData.value})`, { lead_id: lead.id, fbtrace_id: resp.fbtrace_id });
-      return { sent: true, fbtrace_id: resp.fbtrace_id };
-    }
-    const msg = resp.error?.message || 'Evento rejeitado pela Meta';
-    console.warn('❌ CAPI Purchase (manual) rejeitada:', JSON.stringify(resp.error || resp));
-    await gravarLogCapi(pool, lead, 'capi-purchase', 'error', `Purchase rejeitada: ${msg}`, { lead_id: lead.id, meta_error: resp.error || resp });
-    return { sent: false, error: msg };
-  } catch (err) {
-    const msg = err.name === 'AbortError' ? 'Timeout ao contatar a Meta' : err.message;
-    console.error('CAPI Purchase error:', msg);
-    await gravarLogCapi(pool, lead, 'capi-purchase', 'error', `Purchase erro: ${msg}`, { lead_id: lead.id });
-    return { sent: false, error: msg };
-  }
-}
-
-async function sendCapiQualifiedLead(lead, pool) {
-  let token;
-  let { pixel, ctw_aci_id, telefone, cidade, estado, cliente_id } = lead;
-
-  if (!pixel && cliente_id) {
-    const clientRes = await pool.query('SELECT pixel_padrao, token_meta, token_meta_enc FROM clientes WHERE id = $1', [cliente_id]);
-    const row = clientRes.rows[0];
-    if (row) {
-      pixel = pixel || row.pixel_padrao;
-      let tokenValue = row.token_meta || process.env.META_ADS_TOKEN || null;
-      if (row.token_meta_enc) {
-        try { tokenValue = decryptToken(row.token_meta_enc); } catch (e) { console.error('CAPI QualifiedLead: Erro descriptografia', e.message); }
-      }
-      token = tokenValue;
-    }
-  } else if (cliente_id) {
-    const clientRes = await pool.query('SELECT token_meta, token_meta_enc FROM clientes WHERE id = $1', [cliente_id]);
-    const row = clientRes.rows[0];
-    let tokenValue = row?.token_meta || process.env.META_ADS_TOKEN || null;
-    if (row?.token_meta_enc) {
-      try { tokenValue = decryptToken(row.token_meta_enc); } catch (e) { console.error('CAPI QualifiedLead: Erro descriptografia', e.message); }
-    }
-    token = tokenValue;
-  } else {
-    token = process.env.META_ADS_TOKEN || null;
-  }
-
-  if (!pixel || !token) {
-    const motivo = !pixel ? 'Pixel não configurado para este cliente/lead' : 'Token da Meta não configurado';
-    console.warn('CAPI QualifiedLead não enviada:', motivo, '— lead ID', lead.id);
-    await gravarLogCapi(pool, lead, 'capi-qualified', 'error', `QualifiedLead não enviada: ${motivo}`, { lead_id: lead.id });
-    return { sent: false, error: motivo };
-  }
-
-  const hash = str => /^[a-f0-9]{64}$/.test(str)
-    ? str
-    : crypto.createHash('sha256').update((str || '').toLowerCase().trim()).digest('hex');
-
-  const ph = (telefone || '').replace(/\D/g, '');
-  const nomeParts = (lead.nome || '').trim().split(/\s+/);
-
-  // page_id é obrigatório p/ business_messaging; usa fallback do cliente se o lead não tiver.
-  const finalPageId = await resolvePageId(pool, lead);
-  if (!finalPageId) {
-    console.warn('CAPI não enviada: page_id ausente e sem fallback — lead ID', lead.id);
-    await gravarLogCapi(pool, lead, 'capi', 'error', 'page_id ausente (sem fallback do cliente)', { lead_id: lead.id });
-    return { sent: false, error: 'page_id ausente — anúncio sem página identificada' };
-  }
-
-  // Base que a Meta ACEITA (idêntica ao LeadSubmitted do webhook-evo):
-  // ctwa_clid (cru) + ph (array hasheado) + page_id (cru).
-  // Advanced matching adicionado por cima (tudo hasheado, conforme doc de
-  // Customer Information Parameters). ctwa_clid e page_id NÃO são hasheados.
-  const userData = { ctwa_clid: ctw_aci_id || undefined };
-  if (ph)           userData.ph          = [hash(ph)];
-  userData.page_id = finalPageId;
-  if (lead.email)   userData.em          = [hash(lead.email.toLowerCase().trim())];
-  if (nomeParts[0]) userData.fn          = [hash(nomeParts[0])];
-  if (nomeParts[1]) userData.ln          = [hash(nomeParts.slice(1).join(' '))];
-  if (lead.cpf)     userData.external_id = [hash(lead.cpf.replace(/\D/g, ''))];
-  if (cidade)       userData.ct          = [hash(cidade)];
-  if (estado)       userData.st          = [hash(estado)];
-  userData.country = [hash('br')];
-
-  const payload = {
-    data: [{
-      event_name:        'QualifiedLead',
-      event_time:        Math.floor(Date.now() / 1000),
-      action_source:     'business_messaging',
-      messaging_channel: 'whatsapp',
-      user_data:         userData
-    }]
-  };
-
-  try {
-    const r    = await fetchWithTimeout(`https://graph.facebook.com/v25.0/${pixel}/events?access_token=${token}`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
-    });
-    const resp = await r.json();
-    if (resp.events_received) {
-      console.log('✅ CAPI QualifiedLead aceita pela Meta:', resp.fbtrace_id);
-      await gravarLogCapi(pool, lead, 'capi-qualified', 'info', 'QualifiedLead enviada', { lead_id: lead.id, fbtrace_id: resp.fbtrace_id });
-      return { sent: true, fbtrace_id: resp.fbtrace_id };
-    }
-    const msg = resp.error?.message || 'Evento rejeitado pela Meta';
-    console.warn('❌ CAPI QualifiedLead rejeitada:', JSON.stringify(resp.error || resp));
-    await gravarLogCapi(pool, lead, 'capi-qualified', 'error', `QualifiedLead rejeitada: ${msg}`, { lead_id: lead.id, meta_error: resp.error || resp });
-    return { sent: false, error: msg };
-  } catch (err) {
-    const msg = err.name === 'AbortError' ? 'Timeout ao contatar a Meta' : err.message;
-    console.error('CAPI QualifiedLead error:', msg);
-    await gravarLogCapi(pool, lead, 'capi-qualified', 'error', `QualifiedLead erro: ${msg}`, { lead_id: lead.id });
-    return { sent: false, error: msg };
   }
 }
