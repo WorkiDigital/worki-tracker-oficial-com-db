@@ -210,18 +210,31 @@ export default async function handler(req, res) {
     // event_id compartilhado entre o Pixel (navegador) e o CAPI (servidor) → dedup.
     const pageviewEventId = `pv_${trackingId}_${Date.now().toString(36)}`;
 
+    // Parâmetros extras do anúncio (vêm na URL via variáveis dinâmicas da Meta/Google):
+    //  placement={{placement}}  ad_id={{ad.id}}  adset_id={{adset.id}}
+    //  meta_campaign_id={{campaign.id}}  gclid={gclid} (Google Ads)
+    // Aceita nomes alternativos comuns para robustez (ad_name->placement não; só IDs/posição).
+    const adParam = (v, max = 120) => String(v || '').trim().slice(0, max) || null;
+    const placement      = adParam(q.placement);
+    const ad_id          = adParam(q.ad_id || q.adid, 64);
+    const adset_id       = adParam(q.adset_id, 64);
+    const metaCampaignId = adParam(q.meta_campaign_id || q.campaign_id, 64);
+    const gclid          = adParam(q.gclid, 512);
+
     await client.query(
       `INSERT INTO tracking_clicks
         (tracking_id, campaign_id, destination_id, cliente_id, status,
          utm_source, utm_medium, utm_campaign, utm_content, referrer, ip_address, user_agent,
          whatsapp_number, instance_name, fbclid, fbc, fbp, pageview_event_id, event_source_url,
-         geo_city, geo_region, geo_region_code, geo_country, geo_country_code, expires_at)
-       VALUES ($1,$2,$3,$4,'clicked',$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23, NOW() + INTERVAL '72 hours')`,
+         geo_city, geo_region, geo_region_code, geo_country, geo_country_code,
+         placement, ad_id, adset_id, meta_campaign_id, gclid, expires_at)
+       VALUES ($1,$2,$3,$4,'clicked',$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28, NOW() + INTERVAL '72 hours')`,
       [trackingId, campaign.id, destino.id, campaign.cliente_id,
        utm_source, utm_medium, utm_campaign, utm_content, referrer, ip, userAgent,
        destino.whatsapp_number, destino.instance_name, fbclid, fbc, fbp, pageviewEventId, eventSourceUrl,
        geo?.city || null, geo?.region || null, geo?.region_code || null,
-       geo?.country || null, geo?.country_code || null]
+       geo?.country || null, geo?.country_code || null,
+       placement, ad_id, adset_id, metaCampaignId, gclid]
     );
 
     await client.query('COMMIT');

@@ -1184,6 +1184,13 @@ function lpPreencherDados({ lead, jornada, interacoes }) {
         'País do clique',
         [clickLocation.country, clickLocation.country_code].filter(Boolean).join(' - ') || null
     );
+    // Parâmetros do anúncio (placement, IDs Meta, gclid) capturados no clique.
+    const clickAd = lead.click_ad || {};
+    $('lpRowPlacement').innerHTML      = lpRow('Posicionamento', clickAd.placement);
+    $('lpRowAdId').innerHTML           = lpRow('Ad ID (Meta)', clickAd.ad_id);
+    $('lpRowAdsetId').innerHTML        = lpRow('Conjunto ID (Meta)', clickAd.adset_id);
+    $('lpRowMetaCampaignId').innerHTML = lpRow('Campanha ID (Meta)', clickAd.meta_campaign_id);
+    $('lpRowGclid').innerHTML          = lpRow('Google Click ID', clickAd.gclid ? clickAd.gclid.substring(0,24)+'…' : null);
 
     // ── Aba Jornada ──
     // No modelo de contato único, cada TOQUE é um clique no link (tracking_clicks),

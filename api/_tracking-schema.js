@@ -84,6 +84,11 @@ async function createTrackingSchema() {
         geo_region_code VARCHAR(20),
         geo_country VARCHAR(120),
         geo_country_code VARCHAR(10),
+        placement VARCHAR(120),
+        ad_id VARCHAR(64),
+        adset_id VARCHAR(64),
+        meta_campaign_id VARCHAR(64),
+        gclid VARCHAR(512),
         whatsapp_number VARCHAR(30),
         instance_name VARCHAR(100),
         clicked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -117,7 +122,12 @@ async function createTrackingSchema() {
       ADD COLUMN IF NOT EXISTS fbc VARCHAR(512),
       ADD COLUMN IF NOT EXISTS fbp VARCHAR(255),
       ADD COLUMN IF NOT EXISTS pageview_event_id VARCHAR(60),
-      ADD COLUMN IF NOT EXISTS capi_web_status VARCHAR(20);
+      ADD COLUMN IF NOT EXISTS capi_web_status VARCHAR(20),
+      ADD COLUMN IF NOT EXISTS placement VARCHAR(120),
+      ADD COLUMN IF NOT EXISTS ad_id VARCHAR(64),
+      ADD COLUMN IF NOT EXISTS adset_id VARCHAR(64),
+      ADD COLUMN IF NOT EXISTS meta_campaign_id VARCHAR(64),
+      ADD COLUMN IF NOT EXISTS gclid VARCHAR(512);
 
       ALTER TABLE public.tracking_campaigns
       ADD COLUMN IF NOT EXISTS utm_content VARCHAR(255),

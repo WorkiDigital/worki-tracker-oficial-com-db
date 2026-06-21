@@ -65,6 +65,7 @@ export default async function handler(req, res) {
           k.utm_content, k.utm_source, k.user_agent, k.fbc, k.lead_id,
           k.ip_address, k.geo_city, k.geo_region, k.geo_region_code,
           k.geo_country, k.geo_country_code,
+          k.placement, k.ad_id, k.adset_id, k.meta_campaign_id, k.gclid,
           k.campaign_id AS tracking_campaign_id,
           c.name AS tracking_campaign_name, c.origin_type
         FROM tracking_clicks k
@@ -96,6 +97,14 @@ export default async function handler(req, res) {
       region_code: principalClick.geo_region_code || null,
       country: principalClick.geo_country || null,
       country_code: principalClick.geo_country_code || null,
+    } : null;
+    // Parâmetros do anúncio capturados no clique (placement, IDs Meta, gclid).
+    lead.click_ad = principalClick ? {
+      placement: principalClick.placement || null,
+      ad_id: principalClick.ad_id || null,
+      adset_id: principalClick.adset_id || null,
+      meta_campaign_id: principalClick.meta_campaign_id || null,
+      gclid: principalClick.gclid || null,
     } : null;
 
     return res.status(200).json({
