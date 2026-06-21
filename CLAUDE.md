@@ -556,3 +556,33 @@ O redirecionador (`api/redirect.js`) resolve a localização do IP no clique e s
 - **Não há geo retroativo**: só cliques NOVOS após a env configurada terão localização.
 - ⚠️ Privacidade/LGPD: enviar o IP do lead a um terceiro. Por isso o código **não** consulta nada
   sem a env explicitamente configurada (decisão deliberada).
+
+## 🎯 Parâmetros do anúncio capturados no clique (placement, IDs Meta, gclid)
+
+Além das 4 UTMs e do `fbclid`, o redirecionador (`api/redirect.js`) captura da **query da URL** mais
+parâmetros do anúncio e salva em `tracking_clicks`:
+
+- `placement` — posicionamento (`{{placement}}`): Instagram_Stories, Facebook_Feed, etc.
+- `ad_id`, `adset_id`, `meta_campaign_id` — **IDs numéricos** da Meta (`{{ad.id}}`/`{{adset.id}}`/
+  `{{campaign.id}}`), para cruzar com o Gerenciador de Anúncios.
+- `gclid` — Google Click ID (quem roda Google Ads; o Google adiciona sozinho com auto-tagging).
+
+> ⚠️ A coluna é **`meta_campaign_id`** (NÃO `campaign_id`): `tracking_clicks.campaign_id` já existe
+> como FK para `tracking_campaigns`. Nunca renomear para `campaign_id` — quebra a FK.
+
+### Fluxo (igual ao geo)
+`redirect.js` salva no clique → `lead-profile.js` lê do clique principal e expõe em `lead.click_ad`
+→ front (`js/leads.js` `lpPreencherDados`) mostra na aba **Rastreamento** do perfil (junto de IP/geo).
+Schema auto-migra (`ADD COLUMN IF NOT EXISTS` em `_tracking-schema.js`). Sem dado retroativo: só
+cliques novos. Aceita aliases na query (`adid`→`ad_id`, `campaign_id`→`meta_campaign_id`).
+
+### Modelo de URL para o campo "URL do site" do anúncio (Meta)
+```
+https://<dominio>/r/<slug>?utm_source={{site_source_name}}&utm_medium={{adset.name}}&utm_campaign={{campaign.name}}&utm_content={{ad.name}}&placement={{placement}}&ad_id={{ad.id}}&adset_id={{adset.id}}&meta_campaign_id={{campaign.id}}
+```
+As `{{variáveis}}` só funcionam no campo **URL do site** (não no Display URL). O redirect lê tudo da
+query e grava no servidor no momento do clique — não depende de PageView.
+
+> Para adicionar um parâmetro novo no futuro: (1) coluna em `_tracking-schema.js` (criação + ADD
+> COLUMN), (2) capturar+INSERT em `redirect.js`, (3) SELECT + `lead.click_ad` em `lead-profile.js`,
+> (4) `lpRow` na aba Rastreamento (`js/leads.js` + `<div id>` no `index.html`). Publicado: `f7ab081`.
