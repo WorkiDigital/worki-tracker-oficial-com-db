@@ -390,13 +390,35 @@ function atualizarSelecaoLeads() {
     if (btn) btn.style.display = leadsSelecionados.size ? 'inline-flex' : 'none';
 }
 
-async function excluirLeadsSelecionados() {
+let idsExclusaoLeadsPendente = [];
+
+function excluirLeadsSelecionados() {
     const ids = [...leadsSelecionados];
     if (!ids.length) return toast('Selecione pelo menos um lead.', 'error');
-    const plural = ids.length === 1 ? 'este lead' : `estes ${ids.length} leads`;
-    if (!confirm(`Excluir permanentemente ${plural}?\n\nEsta ação não pode ser desfeita.`)) return;
+    idsExclusaoLeadsPendente = ids;
+    const quantidade = ids.length;
+    $('tituloExcluirLeads').textContent = quantidade === 1 ? 'Excluir lead?' : `Excluir ${quantidade} leads?`;
+    $('subtituloExcluirLeads').textContent = quantidade === 1
+        ? 'Você está prestes a remover um lead'
+        : 'Você está prestes a remover vários leads';
+    $('textoExcluirLeads').textContent = quantidade === 1
+        ? 'O lead selecionado será excluído permanentemente.'
+        : `Os ${quantidade} leads selecionados serão excluídos permanentemente.`;
+    $('modalExcluirLeads').classList.add('open');
+    lucide.createIcons({ nodes: [$('modalExcluirLeads')] });
+    setTimeout(() => $('btnConfirmarExcluirLeads')?.focus(), 50);
+}
 
-    const btn = $('btnExcluirLeads');
+function fecharModalExcluirLeads() {
+    $('modalExcluirLeads')?.classList.remove('open');
+    idsExclusaoLeadsPendente = [];
+}
+
+async function confirmarExclusaoLeads() {
+    const ids = [...idsExclusaoLeadsPendente];
+    if (!ids.length) return fecharModalExcluirLeads();
+
+    const btn = $('btnConfirmarExcluirLeads');
     const original = btn?.innerHTML;
     if (btn) { btn.disabled = true; btn.innerHTML = 'Excluindo...'; }
 
@@ -418,6 +440,7 @@ async function excluirLeadsSelecionados() {
             for (const id of result.ids || lote) leadsSelecionados.delete(Number(id));
         }
         toast(`${totalExcluido} lead${totalExcluido === 1 ? '' : 's'} excluído${totalExcluido === 1 ? '' : 's'}.`, 'success');
+        fecharModalExcluirLeads();
         await recarregarLeads();
     } catch (error) {
         toast('Erro ao excluir: ' + error.message, 'error');

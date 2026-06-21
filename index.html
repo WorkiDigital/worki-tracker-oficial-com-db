@@ -212,6 +212,29 @@
     </div>
 </div>
 
+<div id="modalExcluirLeads" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="tituloExcluirLeads" onclick="if(event.target===this) fecharModalExcluirLeads()">
+    <div class="modal" style="max-width:430px;">
+        <div class="modal-head">
+            <div class="modal-icon" style="background:rgba(239,68,68,.12);color:#ef4444;">
+                <i data-lucide="trash-2" style="width:22px;height:22px;"></i>
+            </div>
+            <div>
+                <h3 id="tituloExcluirLeads">Excluir lead?</h3>
+                <p id="subtituloExcluirLeads">Confirme a exclusão permanente</p>
+            </div>
+            <button class="modal-close" aria-label="Fechar" onclick="fecharModalExcluirLeads()"><i data-lucide="x" style="width:16px;"></i></button>
+        </div>
+        <div style="padding:14px;border:1px solid rgba(239,68,68,.25);background:rgba(239,68,68,.07);border-radius:10px;margin-bottom:18px;">
+            <div id="textoExcluirLeads" style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:5px;"></div>
+            <div style="font-size:12px;color:var(--muted);line-height:1.5;">Esta ação não pode ser desfeita.</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <button type="button" class="btn btn-ghost" onclick="fecharModalExcluirLeads()" style="justify-content:center;">Cancelar</button>
+            <button type="button" id="btnConfirmarExcluirLeads" onclick="confirmarExclusaoLeads()" style="border:0;border-radius:8px;padding:12px;background:#ef4444;color:#fff;font-weight:700;cursor:pointer;">Excluir permanentemente</button>
+        </div>
+    </div>
+</div>
+
 <!-- Modal Novo Cliente -->
 <div id="modalAddCliente" class="modal-overlay" role="dialog" aria-modal="true" onclick="if(event.target===this) this.classList.remove('open')">
     <div class="modal">
@@ -5068,7 +5091,7 @@ function resetLeadSearchAutofill() {
     input.defaultValue = '';
 }
 </script>
-<script defer src="js/leads.js?v=20260620-2"></script>
+<script defer src="js/leads.js?v=20260620-3"></script>
 <script defer src="js/admin.js?v=20260620-1"></script>
 <script defer src="js/reports-auto.js"></script>
 <script defer src="js/captacao.js?v=20260620-3"></script>
