@@ -152,6 +152,58 @@ async function createTrackingSchema() {
       CREATE UNIQUE INDEX IF NOT EXISTS idx_leads_tracking_click_unique
         ON public.leads_tracking(tracking_click_id)
         WHERE tracking_click_id IS NOT NULL;
+
+      -- ── Jornada configurável de conversões Meta (Fase 1) ──
+      -- Etapas configuráveis POR CLIENTE (uma jornada vale p/ todas as instâncias).
+      CREATE TABLE IF NOT EXISTS public.journey_stages (
+        id SERIAL PRIMARY KEY,
+        cliente_id INTEGER REFERENCES public.clientes(id) ON DELETE CASCADE,
+        name VARCHAR(120) NOT NULL,
+        event_concept VARCHAR(20) NOT NULL,   -- lead|qualified|appointment|checkout|purchase
+        trigger_type VARCHAR(20) DEFAULT 'keyword', -- first_message|keyword
+        keywords TEXT[] DEFAULT '{}',
+        keyword_match VARCHAR(10) DEFAULT 'partial', -- exact|partial
+        value_regex TEXT,                     -- regex com grupo nomeado (?<value>...)
+        currency VARCHAR(8) DEFAULT 'BRL',
+        position INTEGER DEFAULT 0,
+        enabled BOOLEAN DEFAULT true,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+
+      -- Histórico de jornada por lead: 1 linha por (lead, etapa) — UNIQUE impede duplicar.
+      CREATE TABLE IF NOT EXISTS public.lead_journey_history (
+        id SERIAL PRIMARY KEY,
+        lead_id INTEGER REFERENCES public.leads_tracking(id) ON DELETE CASCADE,
+        cliente_id INTEGER REFERENCES public.clientes(id) ON DELETE CASCADE,
+        stage_id INTEGER REFERENCES public.journey_stages(id) ON DELETE SET NULL,
+        event_concept VARCHAR(20) NOT NULL,
+        event_name VARCHAR(40),               -- nome real enviado à Meta (LeadSubmitted, Purchase…)
+        trigger_message TEXT,
+        value NUMERIC(14,2),
+        currency VARCHAR(8) DEFAULT 'BRL',
+        channel VARCHAR(20),                  -- business_messaging|website
+        event_id VARCHAR(80),                 -- determinístico p/ dedup da Meta
+        meta_status VARCHAR(12) DEFAULT 'pending', -- pending|sent|error|skipped
+        meta_response TEXT,
+        fbtrace_id VARCHAR(80),
+        attempts INTEGER DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        last_attempt_at TIMESTAMP,
+        UNIQUE (lead_id, stage_id)
+      );
+
+      ALTER TABLE public.leads_tracking
+      ADD COLUMN IF NOT EXISTS current_stage_id INTEGER REFERENCES public.journey_stages(id) ON DELETE SET NULL,
+      ADD COLUMN IF NOT EXISTS stage_changed_at TIMESTAMP,
+      ADD COLUMN IF NOT EXISTS scheduled_at TIMESTAMP;
+
+      CREATE INDEX IF NOT EXISTS idx_journey_stages_cliente
+        ON public.journey_stages(cliente_id, position);
+      CREATE INDEX IF NOT EXISTS idx_lead_journey_hist_lead
+        ON public.lead_journey_history(lead_id);
+      CREATE INDEX IF NOT EXISTS idx_lead_journey_hist_status
+        ON public.lead_journey_history(cliente_id, meta_status);
     `);
 
     // Integridade da atribuição: um clique que já virou lead (status='converted')
