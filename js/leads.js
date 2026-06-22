@@ -1082,8 +1082,66 @@ async function abrirPerfilLead(leadId) {
         lpPreencherDados(_lpDados);
         $(`lpPainel-perfil`).style.display = 'block';
         lucide.createIcons({ nodes: [drawer] });
+        // Histórico de eventos de conversão (jornada) — best-effort, não bloqueia o perfil.
+        lpCarregarEventos(leadId, _lpDados.lead?.cliente_id);
     } catch(e) {
         $('lpLoading').innerHTML = `<span style="color:var(--muted)">Erro ao carregar: ${e.message}</span>`;
+    }
+}
+
+// Busca e renderiza os eventos de conversão (lead_journey_history) na aba Jornada.
+async function lpCarregarEventos(leadId, clienteId) {
+    const box = $('lpEventosConversao');
+    if (!box) return;
+    box.innerHTML = '';
+    try {
+        const q = clienteId ? `&cliente_id=${clienteId}` : '';
+        const r = await authFetch(`/api/journey-stages?lead_id=${leadId}${q}`);
+        if (!r.ok) return;
+        const eventos = await r.json();
+        if (!Array.isArray(eventos) || !eventos.length) return;
+        const STATUS = {
+            sent:    { label: 'Enviado',  cor: '#10b981', bg: 'rgba(16,185,129,.12)' },
+            error:   { label: 'Erro',     cor: '#ef4444', bg: 'rgba(239,68,68,.12)' },
+            pending: { label: 'Pendente', cor: '#f59e0b', bg: 'rgba(245,158,11,.12)' },
+            skipped: { label: 'Pulada',   cor: 'var(--muted)', bg: 'var(--bg-primary)' },
+        };
+        box.innerHTML = `
+            <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">Eventos de Conversão (Meta)</div>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+                ${eventos.map(ev => {
+                    const st = STATUS[ev.meta_status] || STATUS.pending;
+                    const valor = ev.value ? ` · R$ ${parseFloat(ev.value).toLocaleString('pt-BR',{minimumFractionDigits:2})}` : '';
+                    const podeReenviar = ev.meta_status === 'error';
+                    return `<div style="border:1px solid var(--border);border-radius:8px;padding:10px 12px;background:var(--bg-secondary);">
+                        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                            <span style="font-size:13px;font-weight:600;color:var(--text-primary);">${esc(ev.event_name || ev.event_concept)}</span>
+                            <span style="font-size:11px;padding:2px 8px;border-radius:10px;background:${st.bg};color:${st.cor};">${st.label}</span>
+                            ${ev.stage_name ? `<span style="font-size:11px;color:var(--muted);">${esc(ev.stage_name)}</span>` : ''}
+                            <span style="font-size:11px;color:var(--muted);margin-left:auto;">${valor}</span>
+                        </div>
+                        ${ev.meta_response ? `<div style="font-size:11px;color:#ef4444;margin-top:5px;">${esc(ev.meta_response)}</div>` : ''}
+                        ${podeReenviar ? `<button class="btn btn-sm" onclick="lpReenviarEvento(${ev.id}, ${leadId}, ${clienteId||'null'})" style="margin-top:8px;background:var(--blue);color:#fff;font-size:12px;padding:5px 10px;border-radius:6px;">Reenviar para Meta</button>` : ''}
+                    </div>`;
+                }).join('')}
+            </div>`;
+    } catch (_) { /* best-effort */ }
+}
+
+async function lpReenviarEvento(historyId, leadId, clienteId) {
+    try {
+        const r = await authFetch('/api/journey-stages', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'resend', history_id: historyId, cliente_id: clienteId }),
+        });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error || 'Falha');
+        if (d.capi && d.capi.sent) toast('Evento reenviado à Meta.', 'success');
+        else toast('Reenvio falhou: ' + (d.capi?.error || 'erro'), 'warning');
+        lpCarregarEventos(leadId, clienteId);
+    } catch (e) {
+        toast('Erro: ' + e.message, 'error');
     }
 }
 
