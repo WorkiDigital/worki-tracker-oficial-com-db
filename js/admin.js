@@ -195,7 +195,10 @@ let currentWaInstance = null;
 let _waData = [];
 
 function setWaView(view) {
-    if (waPollTimer) clearInterval(waPollTimer);
+    if (waPollTimer) {
+        clearInterval(waPollTimer);
+        waPollTimer = null;
+    }
     ['waList','waCreate','waQrView','waConnectedView'].forEach(id => {
         const el = $(id); if (el) el.style.display = 'none';
     });
@@ -395,7 +398,10 @@ async function checkWaStatus(fetchQrIfNotOpen = false) {
             }
         }
     } catch(e) {
-        if (waPollTimer) clearInterval(waPollTimer);
+        if (waPollTimer) {
+            clearInterval(waPollTimer);
+            waPollTimer = null;
+        }
     }
 }
 
@@ -423,7 +429,10 @@ async function waCreateInstance() {
             $('waWaitQr').style.display = 'none';
             toast("QR Code gerado! Aponte o celular.", "success");
             
-            if (waPollTimer) clearInterval(waPollTimer);
+            if (waPollTimer) {
+                clearInterval(waPollTimer);
+                waPollTimer = null;
+            }
             waPollTimer = setInterval(() => checkWaStatus(false), 4000);
         } else if (data.instance?.state === 'open' || data.state === 'open') {
             checkWaStatus();
