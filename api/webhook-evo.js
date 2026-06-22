@@ -538,20 +538,24 @@ export default async function handler(req, res) {
     }
 
     // CAPI Web (conversão do link) roda depois do COMMIT; falha externa nunca
-    // deixa o banco parcial. O EVENTO é configurável por campanha
-    // (tracking_campaigns.conversion_event) — default 'lead'. Clique = PageView
-    // (já disparado no redirect); aqui é a CONVERSÃO.
-    if (atr?.fbc) {
+    // deixa o banco parcial. SÓ dispara se a campanha tiver "enviar conversão
+    // automática" (conversion_auto=true); o EVENTO é o configurado
+    // (conversion_event). Clique = PageView (já disparado no redirect); aqui é
+    // a CONVERSÃO.
+    let conversionAuto = false;
+    let conceito = 'lead';
+    if (atr?.campaign_id) {
       try {
-        // Evento de conversão configurado para a campanha do link.
-        let conceito = 'lead';
-        try {
-          const ce = await pool.query(
-            'SELECT conversion_event FROM tracking_campaigns WHERE id = $1',
-            [atr.campaign_id]
-          );
-          conceito = ce.rows[0]?.conversion_event || 'lead';
-        } catch (_) {}
+        const ce = await pool.query(
+          'SELECT conversion_event, conversion_auto FROM tracking_campaigns WHERE id = $1',
+          [atr.campaign_id]
+        );
+        conversionAuto = ce.rows[0]?.conversion_auto === true;
+        conceito = ce.rows[0]?.conversion_event || 'lead';
+      } catch (_) {}
+    }
+    if (atr?.fbc && conversionAuto) {
+      try {
 
         // Monta o lead com os campos web que o módulo central espera (canal website).
         const leadWeb = {

@@ -485,7 +485,6 @@
         <div style="display:flex;gap:4px;margin-bottom:20px;background:var(--tag);border-radius:10px;padding:4px;">
             <button id="editTab-dados"  onclick="switchEditTab('dados')"  style="flex:1;padding:8px;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;background:var(--blue);color:#fff;">Dados</button>
             <button id="editTab-meta"   onclick="switchEditTab('meta')"   style="flex:1;padding:8px;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;background:transparent;color:var(--text-muted);">Meta Ads</button>
-            <button id="editTab-venda"  onclick="switchEditTab('venda')"  style="flex:1;padding:8px;border:none;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;background:transparent;color:var(--text-muted);">Venda</button>
             <button id="editTab-inteligente" onclick="switchEditTab('inteligente')" style="flex:1;padding:8px;border:none;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;background:transparent;color:var(--text-muted);">Inteligente</button>
             <button id="editTab-link" onclick="switchEditTab('link')" style="flex:1;padding:8px;border:none;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;background:transparent;color:var(--text-muted);">Link</button>
         </div>
@@ -494,6 +493,28 @@
             <div class="input-group"><label>Nome da Empresa</label><input type="text" id="editCliNome"></div>
             <div class="input-group"><label>E-mail (Login)</label><input type="email" id="editCliEmail"></div>
             <div class="input-group"><label>Nova Senha <span style="color:var(--muted);font-weight:400;font-size:11px;">(deixe em branco para não alterar)</span></label><input type="text" id="editCliSenha" placeholder="Nova senha (opcional)"></div>
+            <hr style="border:none;border-top:1px solid var(--border);margin:16px 0 12px;">
+            <p style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:12px;">Permissões de Acesso</p>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px;">
+                <label class="pad-md" style="display:flex;align-items:center;gap:10px;background:var(--tag);border-radius:8px;cursor:pointer;">
+                    <input type="checkbox" id="permLeads" style="width:16px;height:16px;accent-color:var(--blue);"><span style="font-size:13px;">Leads</span>
+                </label>
+                <label class="pad-md" style="display:flex;align-items:center;gap:10px;background:var(--tag);border-radius:8px;cursor:pointer;">
+                    <input type="checkbox" id="permAnuncios" style="width:16px;height:16px;accent-color:var(--blue);"><span style="font-size:13px;">Meta Ads</span>
+                </label>
+                <label class="pad-md" style="display:flex;align-items:center;gap:10px;background:var(--tag);border-radius:8px;cursor:pointer;">
+                    <input type="checkbox" id="permRelatorios" style="width:16px;height:16px;accent-color:var(--blue);"><span style="font-size:13px;">Relatórios</span>
+                </label>
+                <label class="pad-md" style="display:flex;align-items:center;gap:10px;background:var(--tag);border-radius:8px;cursor:pointer;">
+                    <input type="checkbox" id="permWhatsapp" style="width:16px;height:16px;accent-color:var(--blue);"><span style="font-size:13px;">Conexão WhatsApp</span>
+                </label>
+                <label class="pad-md" style="display:flex;align-items:center;gap:10px;background:var(--tag);border-radius:8px;cursor:pointer;">
+                    <input type="checkbox" id="permConfig" style="width:16px;height:16px;accent-color:var(--blue);"><span style="font-size:13px;">Contas de Anúncio</span>
+                </label>
+                <label class="pad-md" style="display:flex;align-items:center;gap:10px;background:var(--tag);border-radius:8px;cursor:pointer;">
+                    <input type="checkbox" id="permClientes" style="width:16px;height:16px;accent-color:var(--blue);"><span style="font-size:13px;">Compartilhar Dash</span>
+                </label>
+            </div>
         </div>
         <!-- Aba: Meta Ads -->
         <div id="editPanel-meta" style="display:none;">
@@ -505,57 +526,25 @@
             <div class="input-group"><label>Pixel CAPI Web <span style="color:var(--muted);font-weight:400;font-size:11px;">(dataset)</span></label><input type="text" id="editCliCapiPixel" placeholder="Apenas números"></div>
             <div class="input-group"><label>Token CAPI Web <span style="color:var(--muted);font-weight:400;font-size:11px;">(deixe em branco p/ não alterar)</span></label><input type="text" id="editCliCapiToken" placeholder="Token de API do dataset"></div>
         </div>
-        <!-- Aba: Venda -->
-        <div id="editPanel-venda" style="display:none;">
+        <!-- Aba: Rastreamento Inteligente (jornada por mensagem no WhatsApp / CTWA) -->
+        <div id="editPanel-inteligente" style="display:none;">
+            <p style="font-size:11px;color:var(--muted);margin:0 0 14px;">
+                <strong style="color:var(--text);">Rastreamento inteligente.</strong>
+                Eventos enviados à Meta quando o atendente usa a palavra-chave no WhatsApp
+                (campanhas de mensagem / CTWA). Cada etapa dispara <strong>uma vez por lead</strong>.
+            </p>
+            <!-- Template de venda + gatilho de qualificação (vindos da antiga aba Venda) -->
             <div class="input-group">
                 <label>Template de Venda <span style="color:var(--muted);font-weight:400;font-size:11px;">(formato da mensagem do atendente)</span></label>
-                <textarea id="editCliTemplate" rows="8" placeholder="Ex:&#10;Nome completo: {nome}&#10;Produto: {produto}&#10;Valor da Compra: {valor}&#10;Endereço: {endereco}&#10;Cidade: {cidade}" class="pad-md" style="width:100%;border:1px solid var(--border);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);font-family:monospace;font-size:12px;resize:vertical;margin-top:6px;box-sizing:border-box;"></textarea>
+                <textarea id="editCliTemplate" rows="6" placeholder="Ex:&#10;Nome completo: {nome}&#10;Produto: {produto}&#10;Valor da Compra: {valor}&#10;Endereço: {endereco}&#10;Cidade: {cidade}" class="pad-md" style="width:100%;border:1px solid var(--border);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);font-family:monospace;font-size:12px;resize:vertical;margin-top:6px;box-sizing:border-box;"></textarea>
             </div>
-            <div style="margin-bottom:15px;">
-                <label style="font-weight:600;font-size:13px;display:block;">Gatilho de Qualificação (Opcional)</label>
-                <span style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Palavra-chave ou hashtag que marca o lead como Qualificado (ex: #qualificado). Se vazio, usa #qualificado.</span>
+            <div style="margin-bottom:14px;">
+                <label style="font-weight:600;font-size:13px;display:block;">Gatilho de Qualificação <span style="color:var(--muted);font-weight:400;font-size:11px;">(opcional)</span></label>
+                <span style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Palavra-chave que marca o lead como Qualificado (ex: #qualificado). Se vazio, usa #qualificado.</span>
                 <input type="text" id="editCliTemplateQualificacao" placeholder="Ex: #leadbom" class="pad-md" style="width:100%;border:1px solid var(--border);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);box-sizing:border-box;">
-                <p style="font-size:11px;color:var(--muted);margin-top:4px;">
-                    Enviados à Meta: <code>{valor}</code> <code>{nome}</code> <code>{cidade}</code> <code>{produto}</code> <code>{email}</code> <code>{cpf}</code> &nbsp;|&nbsp;
-                    Só banco: <code>{endereco}</code> <code>{cor}</code> <code>{pagamento}</code>
-                </p>
             </div>
-            <hr style="border:none;border-top:1px solid var(--border);margin:16px 0 12px;">
-            <p style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:12px;">Permissões de Acesso</p>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
-                <label class="pad-md" style="display:flex;align-items:center;gap:10px;background:var(--tag);border-radius:8px;cursor:pointer;">
-                    <input type="checkbox" id="permLeads" style="width:16px;height:16px;accent-color:var(--blue);">
-                    <span style="font-size:13px;">Leads</span>
-                </label>
-                <label class="pad-md" style="display:flex;align-items:center;gap:10px;background:var(--tag);border-radius:8px;cursor:pointer;">
-                    <input type="checkbox" id="permAnuncios" style="width:16px;height:16px;accent-color:var(--blue);">
-                    <span style="font-size:13px;">Meta Ads</span>
-                </label>
-                <label class="pad-md" style="display:flex;align-items:center;gap:10px;background:var(--tag);border-radius:8px;cursor:pointer;">
-                    <input type="checkbox" id="permRelatorios" style="width:16px;height:16px;accent-color:var(--blue);">
-                    <span style="font-size:13px;">Relatórios</span>
-                </label>
-                <label class="pad-md" style="display:flex;align-items:center;gap:10px;background:var(--tag);border-radius:8px;cursor:pointer;">
-                    <input type="checkbox" id="permWhatsapp" style="width:16px;height:16px;accent-color:var(--blue);">
-                    <span style="font-size:13px;">Conexão WhatsApp</span>
-                </label>
-                <label class="pad-md" style="display:flex;align-items:center;gap:10px;background:var(--tag);border-radius:8px;cursor:pointer;">
-                    <input type="checkbox" id="permConfig" style="width:16px;height:16px;accent-color:var(--blue);">
-                    <span style="font-size:13px;">Contas de Anúncio</span>
-                </label>
-                <label class="pad-md" style="display:flex;align-items:center;gap:10px;background:var(--tag);border-radius:8px;cursor:pointer;">
-                    <input type="checkbox" id="permClientes" style="width:16px;height:16px;accent-color:var(--blue);">
-                    <span style="font-size:13px;">Compartilhar Dash</span>
-                </label>
-            </div>
-        </div>
-        <!-- Aba: Rastreamento Inteligente (jornada por palavra-chave do atendente) -->
-        <div id="editPanel-inteligente" style="display:none;">
-            <p style="font-size:11px;color:var(--muted);margin:0 0 12px;">
-                <strong style="color:var(--text);">Rastreamento inteligente.</strong>
-                Eventos enviados à Meta quando o atendente usa a palavra-chave no WhatsApp.
-                Cada etapa dispara <strong>uma vez por lead</strong>. Ordene pelo funil.
-            </p>
+            <hr style="border:none;border-top:1px solid var(--border);margin:6px 0 14px;">
+            <p style="font-size:12px;font-weight:600;color:var(--text);margin:0 0 10px;">Etapas da jornada</p>
             <div id="jornadaLista" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;"></div>
             <button class="btn btn-sm" onclick="jornadaNovaEtapa()" style="width:100%;border:1px dashed var(--border);background:transparent;color:var(--blue);padding:9px;border-radius:8px;cursor:pointer;font-size:13px;">
                 <i data-lucide="plus" style="width:13px;vertical-align:-2px;"></i> Nova etapa

@@ -106,7 +106,7 @@ async function carregarClientesAdmin() {
 }
 
 function switchEditTab(tab) {
-    ['dados','meta','venda','inteligente','link'].forEach(t => {
+    ['dados','meta','inteligente','link'].forEach(t => {
         const panel = $('editPanel-' + t);
         if (panel) panel.style.display = t === tab ? '' : 'none';
         const btn = $('editTab-' + t);
@@ -279,15 +279,40 @@ async function linkEventosCarregar() {
         }
         box.innerHTML = _linkCampanhas.map(c => {
             const atual = c.conversion_event || 'lead';
+            const auto = c.conversion_auto === true;
             const opts = web.map(e => `<option value="${e.key}" ${e.key===atual?'selected':''}>${esc(e.label)}</option>`).join('');
             return `<div style="border:1px solid var(--border);border-radius:8px;padding:11px 12px;background:var(--bg-secondary);">
-                <div style="font-size:13px;font-weight:600;color:var(--text-primary);margin-bottom:6px;">${esc(c.name)} <span style="font-size:11px;color:var(--muted);font-weight:400;">/r/${esc(c.slug)}</span></div>
-                <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Evento na conversão</label>
-                <select onchange="linkEventoSalvar(${c.id}, this.value)" class="pad-md" style="width:100%;border:1px solid var(--border);border-radius:8px;background:var(--bg-primary);color:var(--text-primary);box-sizing:border-box;">${opts}</select>
+                <div style="font-size:13px;font-weight:600;color:var(--text-primary);margin-bottom:8px;">${esc(c.name)} <span style="font-size:11px;color:var(--muted);font-weight:400;">/r/${esc(c.slug)}</span></div>
+                <label class="pad-md" style="display:flex;align-items:center;gap:10px;background:var(--tag);border-radius:8px;cursor:pointer;margin-bottom:8px;">
+                    <input type="checkbox" id="linkAuto-${c.id}" ${auto?'checked':''} onchange="linkAutoToggle(${c.id}, this.checked)" style="width:16px;height:16px;accent-color:var(--blue);">
+                    <span style="font-size:13px;">Enviar evento de conversão automático</span>
+                </label>
+                <div id="linkEventoBox-${c.id}" style="${auto?'':'display:none;'}">
+                    <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Qual evento enviar na conversão</label>
+                    <select onchange="linkEventoSalvar(${c.id}, this.value)" class="pad-md" style="width:100%;border:1px solid var(--border);border-radius:8px;background:var(--bg-primary);color:var(--text-primary);box-sizing:border-box;">${opts}</select>
+                </div>
             </div>`;
         }).join('');
     } catch (e) {
         box.innerHTML = `<p style="font-size:12px;color:var(--red);">Erro: ${esc(e.message)}</p>`;
+    }
+}
+
+// Marca/desmarca "enviar evento automático" do link e mostra/esconde o seletor.
+async function linkAutoToggle(campanhaId, ativo) {
+    const box = $(`linkEventoBox-${campanhaId}`);
+    if (box) box.style.display = ativo ? '' : 'none';
+    const clienteId = $('editCliId').value;
+    try {
+        const r = await authFetch('/api/tracking-campaigns', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: campanhaId, cliente_id: clienteId, conversion_auto: ativo }),
+        });
+        if (!r.ok) { const d = await r.json(); throw new Error(d.error || 'Falha'); }
+        toast(ativo ? 'Conversão automática ativada.' : 'Conversão automática desativada.', 'success');
+    } catch (e) {
+        toast('Erro: ' + e.message, 'error');
     }
 }
 
