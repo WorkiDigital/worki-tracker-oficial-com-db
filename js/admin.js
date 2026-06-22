@@ -250,11 +250,15 @@ async function jornadaExcluir(id) {
     }
 }
 
-// Popula o <select id="jeConcept"> com a lista completa de eventos Meta.
+// Popula o <select id="jeConcept"> SÓ com eventos válidos no canal de mensagem
+// (WhatsApp/CTWA) — a aba Inteligente é disparada por mensagem do atendente.
+// Eventos que só existem no canal web (Contact, AddToCart, ViewContent...) NÃO
+// aparecem aqui: a Meta os rejeita em business_messaging.
 function jornadaPopularSelect() {
     const sel = $('jeConcept');
     if (!sel || !_conceitos) return;
-    sel.innerHTML = _conceitos.map(c =>
+    const validos = _conceitos.filter(c => c.wpp);
+    sel.innerHTML = validos.map(c =>
         `<option value="${c.key}">${esc(c.label)}</option>`).join('');
 }
 

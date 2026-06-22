@@ -2,13 +2,16 @@ import { verifyAuth } from './_auth.js';
 import { getPool } from './_db.js';
 import { cors } from './_cors.js';
 import { ensureTrackingSchema } from './_tracking-schema.js';
-import { enviarConversao, CONCEPT_KEYS, CONCEPTS } from './_capi.js';
+import { enviarConversao, CONCEPT_KEYS_WPP, CONCEPTS } from './_capi.js';
 
 // CRUD das etapas da Jornada de Conversões (por cliente) + leitura do histórico
 // de um lead + reenvio de um evento para a Meta. Multi-tenant: usuário comum só
 // mexe no próprio cliente_id; admin passa cliente_id no body/query.
 
-const CONCEITOS = CONCEPT_KEYS; // lista completa (fonte única em _capi.js)
+// A jornada inteligente dispara por mensagem (canal WhatsApp/CTWA): só aceita
+// conceitos válidos nesse canal. Eventos só-web (Contact, ViewContent...) ficam
+// na aba "Link de rastreamento", não aqui.
+const CONCEITOS = CONCEPT_KEYS_WPP;
 const TRIGGERS  = ['first_message', 'keyword'];
 
 // Valida que um regex compila (evita salvar regex inválida).

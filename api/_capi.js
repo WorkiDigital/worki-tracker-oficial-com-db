@@ -56,6 +56,9 @@ export const CONCEPTS = [
   { key: 'submit_application',    label: 'Formulário enviado',web: true, wpp: false },
 ];
 export const CONCEPT_KEYS = CONCEPTS.map(c => c.key);
+// Conceitos válidos no canal de mensagem (WhatsApp/CTWA) — a jornada inteligente
+// só pode usar estes (a Meta rejeita os demais em business_messaging).
+export const CONCEPT_KEYS_WPP = CONCEPTS.filter(c => c.wpp).map(c => c.key);
 
 // Conceitos que carregam valor monetário (custom_data com value/currency).
 const COM_VALOR = new Set(['purchase', 'checkout', 'add_to_cart', 'subscribe']);
