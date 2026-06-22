@@ -36,14 +36,31 @@ function montarWebhookBody() {
 
 async function configurarWebhookEvolution(EVO_URL, headers, instanceName) {
   const webhookBody = montarWebhookBody();
-  if (!webhookBody) return;
+  if (!webhookBody) throw new Error('WEBHOOK_URL não configurada no servidor.');
   const response = await fetch(`${EVO_URL}/webhook/set/${instanceName}`, {
     method: 'POST',
     headers,
     body: JSON.stringify(webhookBody)
   });
   const data = response.headers.get('content-type')?.includes('json') ? await response.json() : {};
+  if (!response.ok) {
+    throw new Error(data?.message || data?.error || `Evolution recusou o webhook (HTTP ${response.status}).`);
+  }
+  const verifyResponse = await fetch(`${EVO_URL}/webhook/find/${instanceName}`, { headers });
+  const saved = verifyResponse.headers.get('content-type')?.includes('json') ? await verifyResponse.json() : {};
+  if (!verifyResponse.ok) {
+    throw new Error(`Webhook enviado, mas não foi possível confirmar na Evolution (HTTP ${verifyResponse.status}).`);
+  }
+  const esperado = webhookBody.webhook;
+  const eventosSalvos = Array.isArray(saved?.events) ? saved.events : [];
+  const eventosAusentes = esperado.events.filter(event => !eventosSalvos.includes(event));
+  if (saved?.url !== esperado.url || saved?.enabled !== true || eventosAusentes.length) {
+    throw new Error(
+      `Evolution não persistiu o webhook corretamente${eventosAusentes.length ? `; eventos ausentes: ${eventosAusentes.join(', ')}` : ''}.`
+    );
+  }
   console.log(`[evo-manager] Webhook set para ${instanceName} (${response.status}):`, JSON.stringify(data));
+  return saved;
 }
 
 export default async function handler(req, res) {
@@ -156,35 +173,18 @@ export default async function handler(req, res) {
         if (!cid) return res.status(400).json({ error: 'cliente_id obrigatório' });
         if (!instanceName) return res.status(400).json({ error: 'instanceName obrigatório' });
 
+        await configurarWebhookEvolution(EVO_URL, headers, instanceName);
+
         const pool = getPool();
         await pool.query(
             'INSERT INTO instancias_mapeamento (instance_name, cliente_id) VALUES ($1, $2) ON CONFLICT (instance_name) DO UPDATE SET cliente_id=$2',
             [instanceName, cid]
         );
 
-        // Configura o webhook nativo (api/webhook-evo) na instância existente
-        if (process.env.WEBHOOK_URL) {
-            let webhookUrl = process.env.WEBHOOK_URL;
-            if (process.env.WEBHOOK_SECRET && process.env.WEBHOOK_SECRET_IN_URL === 'true') {
-                const sep = webhookUrl.includes('?') ? '&' : '?';
-                webhookUrl += `${sep}secret=${process.env.WEBHOOK_SECRET}`;
-            }
-            const webhookBody = { 
-                webhook: { 
-                    enabled: true, 
-                    url: webhookUrl, 
-                    webhookByEvents: false, 
-                    webhookBase64: false, 
-                    events: ["MESSAGES_UPSERT", "CONNECTION_UPDATE", "QRCODE_UPDATED"],
-                    webhookSecret: process.env.WEBHOOK_SECRET || undefined
-                } 
-            };
-            const wRes = await fetch(`${EVO_URL}/webhook/set/${instanceName}`, { method: 'POST', headers, body: JSON.stringify(webhookBody) });
-            const wData = wRes.headers.get('content-type')?.includes('json') ? await wRes.json() : {};
-            console.log(`[evo-manager] Webhook vinculado em ${instanceName} (${wRes.status}):`, JSON.stringify(wData));
-        }
-
-        return res.status(200).json({ message: 'Instância vinculada com sucesso!' });
+        return res.status(200).json({
+          message: 'Instância vinculada e webhook confirmado com sucesso!',
+          webhook_configured: true
+        });
     }
 
     if (action === 'status') {
@@ -213,33 +213,7 @@ export default async function handler(req, res) {
          return res.status(400).json({ error: data.message || 'Erro ao criar instância' });
       }
 
-      // Auto-configura o webhook nativo (api/webhook-evo) na instância criada
-      if (process.env.WEBHOOK_URL) {
-        let webhookUrl = process.env.WEBHOOK_URL;
-        if (process.env.WEBHOOK_SECRET && process.env.WEBHOOK_SECRET_IN_URL === 'true') {
-            const sep = webhookUrl.includes('?') ? '&' : '?';
-            webhookUrl += `${sep}secret=${process.env.WEBHOOK_SECRET}`;
-        }
-        const webhookBody = {
-          webhook: {
-            enabled: true,
-            url: webhookUrl,
-            webhookByEvents: false,
-            webhookBase64: false,
-            events: ["MESSAGES_UPSERT", "CONNECTION_UPDATE", "QRCODE_UPDATED"],
-            webhookSecret: process.env.WEBHOOK_SECRET || undefined
-          }
-        };
-        const wRes = await fetch(`${EVO_URL}/webhook/set/${finalInstanceName}`, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify(webhookBody)
-        });
-        const wData = wRes.headers.get('content-type')?.includes('json') ? await wRes.json() : {};
-        console.log(`[evo-manager] Webhook set para ${finalInstanceName} (${wRes.status}):`, JSON.stringify(wData));
-      } else {
-        console.warn('[evo-manager] WEBHOOK_URL não definida — webhook não configurado');
-      }
+      await configurarWebhookEvolution(EVO_URL, headers, finalInstanceName);
 
       const ownerClienteId = user.is_admin ? Number(targetClienteId) : Number(user.cliente_id);
       if (ownerClienteId) {
