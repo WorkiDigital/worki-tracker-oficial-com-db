@@ -624,3 +624,67 @@ investigar o que a Evolution entrega no payload para anúncios de mensagem (não
 
 > Como distinguir tráfego REAL de teste em `tracking_clicks.fbclid`: real = string longa da Meta
 > (`PAZ...`, `IwZXh0bgNhZW0...`, com `adid` embutido). Teste = `IwAR0TESTE_*`. NULL = acesso direto.
+
+## 🎯 Jornada de Conversões Meta — CAPI centralizado, 2 canais, eventos configuráveis
+
+Sistema de envio de eventos de conversão à Meta, configurável por cliente. **TODO envio CAPI passa
+por `api/_capi.js`** (`enviarConversao`) — não recriar lógica de envio espalhada (antes havia 5
+funções duplicadas em 3 arquivos; foram unificadas).
+
+### `api/_capi.js` — o módulo central (fonte única)
+- **`enviarConversao({ lead, concept, value, currency, pool })`**: decide o canal, monta o
+  `user_data` hasheado (SHA-256), envia (Graph v25) e grava em `lead_journey_history`.
+- **Canal automático** por `resolverCanal(lead)`: lead com `ctw_aci_id` → `business_messaging`
+  (WhatsApp); senão → `website` (link, usa fbc/fbp/ip/ua).
+- **`event_id` DETERMINÍSTICO**: `j_<lead_id>_<concept>` → a Meta deduplica reenvios, e o disparo
+  MANUAL (painel) + AUTOMÁTICO (webhook) do mesmo conceito **não duplicam** o evento.
+- **`EVENT_NAME[canal][concept]`**: mapa conceito→nome real. `null` = conceito não existe no canal →
+  `enviarConversao` rejeita com erro claro (NÃO envia lixo).
+- **Exports (fonte única front+back):** `CONCEPTS` (key/label/web/wpp), `CONCEPT_KEYS` (todos),
+  `CONCEPT_KEYS_WPP` (só os válidos no WhatsApp). O front lê via `GET /api/journey-stages?meta=concepts`.
+- **`extrairValor(texto, regex)`**: extrai valor BR (`R$ 1.250,90`→1250.9) com guard (regex do
+  usuário não trava o webhook). Grupo nomeado `(?<value>...)`.
+
+### ⚠️ Eventos por canal (NÃO todos funcionam no WhatsApp)
+A Meta REJEITA eventos só-web no `business_messaging`. Válidos por canal:
+- **business_messaging (WhatsApp/CTWA):** `LeadSubmitted, QualifiedLead, AppointmentBooked,
+  InitiateCheckout, Purchase` (5 — `CONCEPT_KEYS_WPP`).
+- **website (link):** os 11 — inclui `Contact, CompleteRegistration, AddToCart, Subscribe,
+  ViewContent, SubmitApplication` além dos acima (`Lead`/`Schedule` no lugar de `LeadSubmitted`/`AppointmentBooked`).
+> ⚠️ Doc da Meta NÃO confirma 100% `QualifiedLead/AppointmentBooked/InitiateCheckout` no WhatsApp —
+> **validar 1 a 1 no Test Events** antes de produção; se rejeitar, tirar de `wpp` no `_capi.js`.
+
+### As duas formas de disparar (UI no modal Editar Cliente)
+- **Aba "Inteligente"** (canal mensagem/CTWA): jornada por **palavra-chave do atendente** (`fromMe`).
+  Tabela `journey_stages` (por cliente): nome, `event_concept`, `keywords`, `value_regex`. O select
+  só mostra os 5 eventos `wpp`. Absorveu o Template de Venda + Gatilho de Qualificação (a aba "Venda"
+  foi removida; Permissões foram p/ aba "Dados"). Disparo: `processarJornadaFromMe` no `webhook-evo.js`
+  (bloco `fromMe` — usar SÓ `clienteIdFm`/`telefoneFm`, nunca `instance`). Regra "sequencial
+  permitindo pular": etapas anteriores viram `skipped` sem reenviar.
+- **Aba "Link de rastreamento"** (canal web): por campanha, caixinha **`conversion_auto`** +
+  `conversion_event` (lista completa, inclui Contact). Clique = `PageView` fixo (redirect); a
+  CONVERSÃO (clique vira lead) dispara o evento escolhido — SÓ se `conversion_auto=true`. Disparo:
+  `webhook-evo.js` ~linha 544, lê `conversion_event`/`conversion_auto` da campanha e chama `enviarConversao`.
+
+### Tabelas (auto-migram via `ensureTrackingSchema`)
+- **`journey_stages`** (config por cliente): etapas da jornada inteligente.
+- **`lead_journey_history`** (1 linha por lead+etapa, `UNIQUE(lead_id,stage_id)`): histórico com
+  `meta_status` (pending|sent|error|skipped), `event_id`, `fbtrace_id`, `value`. Conversão de link
+  não tem stage_id → dedup por `event_id`.
+- **`tracking_campaigns`**: `conversion_event VARCHAR(40) DEFAULT 'lead'`, `conversion_auto BOOLEAN DEFAULT false`.
+- **`leads_tracking`**: `current_stage_id`, `stage_changed_at`, `scheduled_at`.
+
+### Onde aparece no painel
+- Config: modal Editar Cliente → abas **Inteligente** e **Link** (dentro de Gestão de Clientes, por
+  cliente — NÃO no menu lateral). Endpoint CRUD: `api/journey-stages.js` (+ `action='resend'`).
+- Histórico do lead: drawer de perfil → aba Jornada → "Eventos de Conversão (Meta)" com badge de
+  status + botão **Reenviar** (`lpCarregarEventos`/`lpReenviarEvento` em `js/leads.js`).
+
+### Venda/Qualificação MANUAL (`api/leads-update.js`)
+Usa o `enviarConversao` central (mesmo event_id → não duplica com o automático) e grava no
+`lead_journey_history`. As ~245 linhas de CAPI duplicado foram removidas.
+
+> Para adicionar um evento novo: (1) `EVENT_NAME` + `CONCEPTS` em `_capi.js` (define se é web/wpp),
+> (2) o resto (UI, validação, histórico) deriva automaticamente da fonte única. Commits da feature:
+> `3df6332` (backend), `1fa9142` (UI v1), `ad60ebe` (link x inteligente), `4a4102c` (reorg abas +
+> caixinha auto), `c9ade87` (validação por canal).
