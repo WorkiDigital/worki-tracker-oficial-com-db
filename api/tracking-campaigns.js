@@ -2,12 +2,15 @@ import { verifyAuth } from './_auth.js';
 import { getPool } from './_db.js';
 import { cors } from './_cors.js';
 import { ensureTrackingSchema } from './_tracking-schema.js';
+import { CONCEPTS } from './_capi.js';
 import { randomUUID } from 'crypto';
 
 // CRUD de campanhas/links rastreáveis + seus destinos (rotador).
 // Isolamento multi-tenant por cliente_id (admin pode passar cliente_id).
 const ROTATION_MODES = new Set(['single', 'round_robin', 'weighted', 'priority']);
 const ORIGIN_TYPES = new Set(['bio', 'campaign', 'rotator']);
+const WEB_CONCEPTS = new Set(CONCEPTS.filter(c => c.web).map(c => c.key));
+const KEYWORD_MATCHES = new Set(['partial', 'exact']);
 
 function getInstanceName(i) {
   return i?.instance?.instanceName || i?.instanceName || i?.name || '';
@@ -159,6 +162,114 @@ async function sincronizarDestinos(client, campaignId, clienteId, destinations) 
   }
 }
 
+function normalizarEtapasJornada(stages) {
+  if (!Array.isArray(stages)) return null;
+  return stages.map((stage, position) => {
+    const stageId = Number(stage.id);
+    const name = String(stage.name || '').trim().slice(0, 120);
+    const eventConcept = String(stage.event_concept || '').trim();
+    const keywords = (Array.isArray(stage.keywords) ? stage.keywords : String(stage.keywords || '').split(','))
+      .map(k => String(k).trim())
+      .filter(Boolean);
+    const valueRegex = String(stage.value_regex || '').trim() || null;
+
+    if (!name) throw new Error(`Informe o nome da etapa ${position + 1}.`);
+    if (!WEB_CONCEPTS.has(eventConcept)) {
+      throw new Error(`Evento Meta inválido na etapa "${name}".`);
+    }
+    if (!keywords.length) {
+      throw new Error(`Informe ao menos uma palavra-chave na etapa "${name}".`);
+    }
+    if (valueRegex) {
+      try { new RegExp(valueRegex); } catch {
+        throw new Error(`Regex de valor inválida na etapa "${name}".`);
+      }
+    }
+
+    return {
+      id: Number.isInteger(stageId) && stageId > 0 ? stageId : null,
+      name,
+      event_concept: eventConcept,
+      trigger_type: 'keyword',
+      keywords,
+      keyword_match: KEYWORD_MATCHES.has(stage.keyword_match) ? stage.keyword_match : 'partial',
+      value_regex: valueRegex,
+      currency: String(stage.currency || 'BRL').trim().slice(0, 8) || 'BRL',
+      position,
+      enabled: stage.enabled !== false,
+    };
+  });
+}
+
+async function sincronizarEtapasJornada(client, campaignId, clienteId, stages) {
+  const normalizadas = normalizarEtapasJornada(stages);
+  if (!normalizadas) return;
+
+  const existentes = await client.query(
+    `SELECT id
+     FROM journey_stages
+     WHERE tracking_campaign_id=$1 AND cliente_id=$2
+     FOR UPDATE`,
+    [campaignId, clienteId]
+  );
+  const idsExistentes = new Set(existentes.rows.map(row => Number(row.id)));
+
+  for (const stage of normalizadas) {
+    if (stage.id && !idsExistentes.has(stage.id)) {
+      throw new Error(`Etapa de jornada inválida para este link: ${stage.id}.`);
+    }
+  }
+
+  const idsMantidos = normalizadas.map(stage => stage.id).filter(Boolean);
+  if (idsExistentes.size) {
+    if (idsMantidos.length) {
+      await client.query(
+        `DELETE FROM journey_stages
+         WHERE tracking_campaign_id=$1 AND cliente_id=$2
+           AND NOT (id = ANY($3::int[]))`,
+        [campaignId, clienteId, idsMantidos]
+      );
+    } else {
+      await client.query(
+        'DELETE FROM journey_stages WHERE tracking_campaign_id=$1 AND cliente_id=$2',
+        [campaignId, clienteId]
+      );
+    }
+  }
+
+  for (const stage of normalizadas) {
+    const values = [
+      stage.name, stage.event_concept, stage.trigger_type, stage.keywords,
+      stage.keyword_match, stage.value_regex, stage.currency, stage.position,
+      stage.enabled,
+    ];
+    if (stage.id) {
+      await client.query(
+        `UPDATE journey_stages SET
+           name=$1, event_concept=$2, trigger_type=$3, keywords=$4,
+           keyword_match=$5, value_regex=$6, currency=$7, position=$8,
+           enabled=$9, updated_at=NOW()
+         WHERE id=$10 AND tracking_campaign_id=$11 AND cliente_id=$12`,
+        [...values, stage.id, campaignId, clienteId]
+      );
+    } else {
+      await client.query(
+        `INSERT INTO journey_stages
+          (cliente_id, tracking_campaign_id, name, event_concept, trigger_type,
+           keywords, keyword_match, value_regex, currency, position, enabled)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+        [clienteId, campaignId, ...values]
+      );
+    }
+  }
+}
+
+function validarEventoConversao(evento) {
+  if (!WEB_CONCEPTS.has(String(evento || 'lead'))) {
+    throw new Error('Evento de conversão inválido para links rastreáveis.');
+  }
+}
+
 export default async function handler(req, res) {
   if (cors(req, res, ['GET', 'POST', 'PATCH', 'DELETE'])) return;
 
@@ -184,7 +295,17 @@ export default async function handler(req, res) {
           'SELECT * FROM tracking_destinations WHERE campaign_id=$1 AND cliente_id=$2 ORDER BY position, id',
           [req.query.id, cliente_id]
         );
-        return res.status(200).json({ ...camp.rows[0], destinations: dests.rows });
+        const stages = await pool.query(
+          `SELECT * FROM journey_stages
+           WHERE tracking_campaign_id=$1 AND cliente_id=$2
+           ORDER BY position, id`,
+          [req.query.id, cliente_id]
+        );
+        return res.status(200).json({
+          ...camp.rows[0],
+          destinations: dests.rows,
+          journey_stages: stages.rows,
+        });
       }
       // Lista com contagem de cliques/conversões
       const r = await pool.query(
@@ -203,10 +324,14 @@ export default async function handler(req, res) {
       const cliente_id = alvoCliente(req.body.cliente_id);
       if (!cliente_id) return res.status(400).json({ error: 'cliente_id é obrigatório para administrador.' });
       const { name, origin_type = 'bio', rotation_mode = 'single',
-              default_message, utm_source, utm_medium, utm_campaign, utm_content, destinations = [] } = req.body;
+              default_message, utm_source, utm_medium, utm_campaign, utm_content,
+              conversion_event = 'lead', conversion_auto = false,
+              destinations = [], journey_stages = [] } = req.body;
       if (!name) return res.status(400).json({ error: 'name é obrigatório.' });
       if (!ORIGIN_TYPES.has(origin_type)) return res.status(400).json({ error: 'origin_type inválido.' });
       if (!ROTATION_MODES.has(rotation_mode)) return res.status(400).json({ error: 'rotation_mode inválido.' });
+      validarEventoConversao(conversion_event);
+      normalizarEtapasJornada(journey_stages);
 
       // O identificador público é sempre gerado no servidor. O cliente não pode
       // escolher nem alterar a URL, evitando colisões e links previsíveis.
@@ -219,13 +344,16 @@ export default async function handler(req, res) {
         await client.query('BEGIN');
         const camp = await client.query(
           `INSERT INTO tracking_campaigns
-            (cliente_id, name, slug, origin_type, rotation_mode, default_message, utm_source, utm_medium, utm_campaign, utm_content)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
+            (cliente_id, name, slug, origin_type, rotation_mode, default_message,
+             utm_source, utm_medium, utm_campaign, utm_content, conversion_event, conversion_auto)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *`,
           [cliente_id, String(name).trim().slice(0, 255), slug, origin_type, rotation_mode,
-           default_message || null, utm_source || null, utm_medium || null, utm_campaign || null, utm_content || null]
+           default_message || null, utm_source || null, utm_medium || null, utm_campaign || null,
+           utm_content || null, conversion_event, conversion_auto === true]
         );
         const campaign = camp.rows[0];
         await sincronizarDestinos(client, campaign.id, cliente_id, destinations);
+        await sincronizarEtapasJornada(client, campaign.id, cliente_id, journey_stages);
         await client.query('COMMIT');
         return res.status(201).json(campaign);
       } catch (err) {
@@ -248,7 +376,9 @@ export default async function handler(req, res) {
       if ('rotation_mode' in req.body && !ROTATION_MODES.has(req.body.rotation_mode)) {
         return res.status(400).json({ error: 'rotation_mode inválido.' });
       }
+      if ('conversion_event' in req.body) validarEventoConversao(req.body.conversion_event);
       if (Array.isArray(destinations)) normalizarDestinos(destinations);
+      if (Array.isArray(req.body.journey_stages)) normalizarEtapasJornada(req.body.journey_stages);
 
       const client = await pool.connect();
       try {
@@ -298,6 +428,9 @@ export default async function handler(req, res) {
         if (Array.isArray(destinations)) {
           await sincronizarDestinos(client, Number(id), cliente_id, destinations);
         }
+        if (Array.isArray(req.body.journey_stages)) {
+          await sincronizarEtapasJornada(client, Number(id), cliente_id, req.body.journey_stages);
+        }
 
         const out = await client.query(
           'SELECT * FROM tracking_campaigns WHERE id=$1 AND cliente_id=$2',
@@ -338,7 +471,7 @@ export default async function handler(req, res) {
     if (err.code === '23505') {
       return res.status(409).json({ error: 'Não foi possível gerar um identificador único. Tente novamente.' });
     }
-    if (/inválid|duplicado|adicione|mantenha|destino único|instância|vinculada|posição/i.test(err.message || '')) {
+    if (/inválid|duplicado|adicione|informe|mantenha|destino único|instância|vinculada|posição|etapa|evento/i.test(err.message || '')) {
       return res.status(400).json({ error: err.message });
     }
     return res.status(500).json({ error: 'Erro interno ao salvar o link rastreável.' });

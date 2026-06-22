@@ -4,13 +4,14 @@ import { cors } from './_cors.js';
 import { ensureTrackingSchema } from './_tracking-schema.js';
 import { enviarConversao, CONCEPT_KEYS_WPP, CONCEPTS } from './_capi.js';
 
-// CRUD das etapas da Jornada de Conversões (por cliente) + leitura do histórico
-// de um lead + reenvio de um evento para a Meta. Multi-tenant: usuário comum só
-// mexe no próprio cliente_id; admin passa cliente_id no body/query.
+// CRUD da Jornada geral CTWA/WhatsApp (tracking_campaign_id NULL) + histórico.
+// Jornadas de links são salvas transacionalmente por /api/tracking-campaigns.
+// Multi-tenant: usuário comum só mexe no próprio cliente_id; admin passa
+// cliente_id no body/query.
 
 // A jornada inteligente dispara por mensagem (canal WhatsApp/CTWA): só aceita
 // conceitos válidos nesse canal. Eventos só-web (Contact, ViewContent...) ficam
-// na aba "Link de rastreamento", não aqui.
+// na Jornada de cada link em Captação e Links, não aqui.
 const CONCEITOS = CONCEPT_KEYS_WPP;
 const TRIGGERS  = ['first_message', 'keyword'];
 
@@ -66,7 +67,9 @@ export default async function handler(req, res) {
       }
 
       const r = await pool.query(
-        'SELECT * FROM journey_stages WHERE cliente_id = $1 ORDER BY position ASC, id ASC',
+        `SELECT * FROM journey_stages
+         WHERE cliente_id = $1 AND tracking_campaign_id IS NULL
+         ORDER BY position ASC, id ASC`,
         [cliente_id]
       );
       return res.status(200).json(r.rows);
@@ -111,7 +114,8 @@ export default async function handler(req, res) {
           `UPDATE journey_stages SET
              name=$1, event_concept=$2, trigger_type=$3, keywords=$4, keyword_match=$5,
              value_regex=$6, currency=$7, position=$8, enabled=$9, updated_at=NOW()
-           WHERE id=$10 AND cliente_id=$11 RETURNING *`,
+           WHERE id=$10 AND cliente_id=$11 AND tracking_campaign_id IS NULL
+           RETURNING *`,
           [name.trim(), event_concept, trigger_type, kwArray,
            keyword_match === 'exact' ? 'exact' : 'partial',
            value_regex || null, currency || 'BRL', parseInt(position, 10) || 0,
@@ -138,7 +142,10 @@ export default async function handler(req, res) {
       const cliente_id = alvoCliente(req.query.cliente_id);
       const id = parseInt(req.query.id, 10);
       if (!cliente_id || !id) return res.status(400).json({ error: 'id e cliente_id são obrigatórios.' });
-      await pool.query('DELETE FROM journey_stages WHERE id = $1 AND cliente_id = $2', [id, cliente_id]);
+      await pool.query(
+        'DELETE FROM journey_stages WHERE id = $1 AND cliente_id = $2 AND tracking_campaign_id IS NULL',
+        [id, cliente_id]
+      );
       return res.status(200).json({ ok: true });
     }
 
@@ -156,14 +163,18 @@ async function reenviar(req, res, pool, cliente_id) {
   if (!histId) return res.status(400).json({ error: 'history_id é obrigatório.' });
 
   const r = await pool.query(
-    `SELECT h.*, l.* , h.id AS hist_id, h.value AS hist_value, h.currency AS hist_currency
+    `SELECT h.*, l.*, h.id AS hist_id, h.value AS hist_value, h.currency AS hist_currency,
+            k.fbc, k.fbp, k.ip_address, k.user_agent, k.referrer,
+            k.event_source_url AS click_event_source_url
      FROM lead_journey_history h
      JOIN leads_tracking l ON l.id = h.lead_id
+     LEFT JOIN tracking_clicks k ON k.id = l.tracking_click_id
      WHERE h.id = $1 AND h.cliente_id = $2`,
     [histId, cliente_id]
   );
   if (!r.rows.length) return res.status(404).json({ error: 'Registro não encontrado.' });
   const row = r.rows[0];
+  if (row.click_event_source_url) row.event_source_url = row.click_event_source_url;
 
   const capi = await enviarConversao({
     lead: row, concept: row.event_concept,

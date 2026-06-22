@@ -734,35 +734,47 @@ function mensagemBateKeyword(mensagem, cfg) {
 }
 
 // ── Jornada de conversões: avança a etapa a partir de uma mensagem do comercial ──
-// Acionada no bloco fromMe. Carrega as etapas configuradas do cliente, identifica
-// qual etapa a palavra-chave dispara, localiza o lead do telefone, aplica a regra
+// Acionada no bloco fromMe. Primeiro localiza o lead e então carrega a jornada
+// exclusiva do link ou a jornada geral CTWA, aplica a regra
 // "sequencial permitindo pular" (marca anteriores pendentes como concluídas SEM
 // reenviar) e envia o evento à Meta via módulo central. Cada (lead, etapa) dispara
 // 1x — a UNIQUE em lead_journey_history protege contra duplicado (ex: bot repetindo).
 async function processarJornadaFromMe(pool, { clienteIdFm, telefoneFm, textoFm }) {
-  // Etapas keyword ativas do cliente, em ordem do funil.
+  // Lead mais recente do telefone (padrão já usado no fromMe).
+  const leadRes = await pool.query(
+    `SELECT l.*, k.fbc, k.fbp, k.ip_address, k.user_agent, k.referrer,
+            k.event_source_url AS click_event_source_url
+     FROM leads_tracking l
+     LEFT JOIN tracking_clicks k ON k.id = l.tracking_click_id
+     WHERE l.telefone = $1 AND l.cliente_id = $2
+     ORDER BY l.created_at DESC LIMIT 1`,
+    [telefoneFm, clienteIdFm]
+  );
+  const lead = leadRes.rows[0];
+  if (!lead) return;
+  if (lead.click_event_source_url) lead.event_source_url = lead.click_event_source_url;
+
+  // Lead de link usa SOMENTE as etapas daquele link. Lead sem link usa SOMENTE
+  // a jornada geral; não há fallback para impedir disparos cruzados.
+  const campaignId = lead.tracking_campaign_id ? Number(lead.tracking_campaign_id) : null;
+  const campaignFilter = campaignId
+    ? 'tracking_campaign_id = $2'
+    : 'tracking_campaign_id IS NULL';
+  const params = campaignId ? [clienteIdFm, campaignId] : [clienteIdFm];
+
   const stagesRes = await pool.query(
     `SELECT id, name, event_concept, keywords, keyword_match, value_regex, currency, position
      FROM journey_stages
-     WHERE cliente_id = $1 AND enabled = true AND trigger_type = 'keyword'
+     WHERE cliente_id = $1 AND ${campaignFilter}
+       AND enabled = true AND trigger_type = 'keyword'
      ORDER BY position ASC, id ASC`,
-    [clienteIdFm]
+    params
   );
   if (!stagesRes.rows.length) return;
 
   // Qual etapa a mensagem aciona (primeira que casar).
   const alvo = stagesRes.rows.find(s => mensagemBateKeyword(textoFm, s));
   if (!alvo) return;
-
-  // Lead mais recente do telefone (padrão já usado no fromMe).
-  const leadRes = await pool.query(
-    `SELECT * FROM leads_tracking
-     WHERE telefone = $1 AND cliente_id = $2
-     ORDER BY created_at DESC LIMIT 1`,
-    [telefoneFm, clienteIdFm]
-  );
-  const lead = leadRes.rows[0];
-  if (!lead) return;
 
   // Já existe histórico dessa etapa para esse lead? (idempotência app-level)
   const jaRes = await pool.query(

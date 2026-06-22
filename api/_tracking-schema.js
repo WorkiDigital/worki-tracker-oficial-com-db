@@ -160,6 +160,7 @@ async function createTrackingSchema() {
       CREATE TABLE IF NOT EXISTS public.journey_stages (
         id SERIAL PRIMARY KEY,
         cliente_id INTEGER REFERENCES public.clientes(id) ON DELETE CASCADE,
+        tracking_campaign_id INTEGER REFERENCES public.tracking_campaigns(id) ON DELETE CASCADE,
         name VARCHAR(120) NOT NULL,
         event_concept VARCHAR(20) NOT NULL,   -- lead|qualified|appointment|checkout|purchase
         trigger_type VARCHAR(20) DEFAULT 'keyword', -- first_message|keyword
@@ -172,6 +173,9 @@ async function createTrackingSchema() {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
+
+      ALTER TABLE public.journey_stages
+      ADD COLUMN IF NOT EXISTS tracking_campaign_id INTEGER REFERENCES public.tracking_campaigns(id) ON DELETE CASCADE;
 
       -- Histórico de jornada por lead: 1 linha por (lead, etapa) — UNIQUE impede duplicar.
       CREATE TABLE IF NOT EXISTS public.lead_journey_history (
@@ -202,6 +206,9 @@ async function createTrackingSchema() {
 
       CREATE INDEX IF NOT EXISTS idx_journey_stages_cliente
         ON public.journey_stages(cliente_id, position);
+      CREATE INDEX IF NOT EXISTS idx_journey_stages_campaign
+        ON public.journey_stages(tracking_campaign_id, position)
+        WHERE tracking_campaign_id IS NOT NULL;
       CREATE INDEX IF NOT EXISTS idx_lead_journey_hist_lead
         ON public.lead_journey_history(lead_id);
       CREATE INDEX IF NOT EXISTS idx_lead_journey_hist_status

@@ -7,6 +7,8 @@ let _capEditId      = null; // id da campanha em edição (null = criação)
 let _capDestinos    = [];   // destinos no modal (array mutável)
 let _capInstancias  = [];   // instâncias Evolution vinculadas ao cliente
 let _capArquivarId  = null; // link aguardando confirmação no modal interno
+let _capJornadaEtapas = []; // etapas locais; persistidas junto com o link
+let _capConceitos = null;   // conceitos Meta aceitos pelo backend
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 const baseUrl = () => window.location.origin;
@@ -312,6 +314,163 @@ async function capConfirmarArquivamento() {
 }
 
 // ── Modal Criar / Editar ───────────────────────────────────────────────────────
+async function capCarregarConceitos() {
+  if (_capConceitos) return _capConceitos;
+  const r = await authFetch('/api/journey-stages?meta=concepts');
+  const data = await readApiJson(r, 'Falha ao carregar eventos Meta');
+  _capConceitos = Array.isArray(data) ? data : [];
+  return _capConceitos;
+}
+
+function capConceitosWeb() {
+  return (_capConceitos || []).filter(conceito => conceito.web);
+}
+
+function capConceitoLabel(key) {
+  return capConceitosWeb().find(conceito => conceito.key === key)?.label || key || 'Evento';
+}
+
+function capPopularEventosJornada() {
+  const options = capConceitosWeb()
+    .map(conceito => `<option value="${esc(conceito.key)}">${esc(conceito.label)}</option>`)
+    .join('');
+  const conversion = $('capConversionEvent');
+  const stage = $('capJeConcept');
+  if (conversion) conversion.innerHTML = options;
+  if (stage) stage.innerHTML = options;
+}
+
+function capSwitchModalTab(tab) {
+  const atual = tab === 'jornada' ? 'jornada' : 'config';
+  ['config', 'jornada'].forEach(nome => {
+    const panel = $(`capPanel-${nome}`);
+    const button = $(`capTab-${nome}`);
+    if (panel) panel.style.display = nome === atual ? '' : 'none';
+    if (button) button.classList.toggle('active', nome === atual);
+  });
+  capJornadaCancelarForm();
+  if (window.lucide) lucide.createIcons({ nodes: [$('modalCampanha')] });
+}
+
+function capToggleConversionAuto() {
+  const ativo = $('capConversionAuto')?.checked === true;
+  const box = $('capConversionEventBox');
+  if (box) box.style.display = ativo ? '' : 'none';
+}
+
+function capJornadaRender() {
+  const lista = $('capJornadaLista');
+  if (!lista) return;
+  if (!_capJornadaEtapas.length) {
+    lista.innerHTML = '<div class="cap-journey-empty">Nenhuma etapa configurada para este link.</div>';
+    return;
+  }
+
+  lista.innerHTML = _capJornadaEtapas.map((etapa, index) => {
+    const keywords = (etapa.keywords || []).join(', ');
+    const inactive = etapa.enabled === false ? ' · inativa' : '';
+    return `
+      <div class="cap-journey-stage">
+        <span class="cap-journey-order">${index + 1}</span>
+        <div class="cap-journey-stage-main">
+          <strong>${esc(etapa.name)}${inactive}</strong>
+          <small>${esc(capConceitoLabel(etapa.event_concept))} · ${esc(keywords || 'sem palavra-chave')}</small>
+        </div>
+        <div class="cap-journey-actions">
+          <button type="button" onclick="capJornadaMover(${index}, -1)" title="Mover para cima" ${index === 0 ? 'disabled' : ''}><i data-lucide="arrow-up"></i></button>
+          <button type="button" onclick="capJornadaMover(${index}, 1)" title="Mover para baixo" ${index === _capJornadaEtapas.length - 1 ? 'disabled' : ''}><i data-lucide="arrow-down"></i></button>
+          <button type="button" onclick="capJornadaEditar(${index})" title="Editar etapa"><i data-lucide="edit-3"></i></button>
+          <button type="button" class="danger" onclick="capJornadaExcluir(${index})" title="Excluir etapa"><i data-lucide="trash-2"></i></button>
+        </div>
+      </div>`;
+  }).join('');
+  if (window.lucide) lucide.createIcons({ nodes: [lista] });
+}
+
+function capJornadaNovaEtapa() {
+  capPopularEventosJornada();
+  $('capJeIndex').value = '';
+  $('capJeNome').value = '';
+  $('capJeConcept').value = capConceitosWeb().some(c => c.key === 'qualified') ? 'qualified' : (capConceitosWeb()[0]?.key || '');
+  $('capJeKeywords').value = '';
+  $('capJeMatch').value = 'partial';
+  $('capJeRegex').value = '';
+  $('capJeEnabled').checked = true;
+  $('capJeSalvarBtn').textContent = 'Adicionar etapa';
+  $('capJornadaForm').style.display = '';
+  $('capJeNome').focus();
+}
+
+function capJornadaEditar(index) {
+  const etapa = _capJornadaEtapas[index];
+  if (!etapa) return;
+  capPopularEventosJornada();
+  $('capJeIndex').value = String(index);
+  $('capJeNome').value = etapa.name || '';
+  $('capJeConcept').value = etapa.event_concept || 'lead';
+  $('capJeKeywords').value = (etapa.keywords || []).join(', ');
+  $('capJeMatch').value = etapa.keyword_match === 'exact' ? 'exact' : 'partial';
+  $('capJeRegex').value = etapa.value_regex || '';
+  $('capJeEnabled').checked = etapa.enabled !== false;
+  $('capJeSalvarBtn').textContent = 'Salvar etapa';
+  $('capJornadaForm').style.display = '';
+  $('capJeNome').focus();
+}
+
+function capJornadaCancelarForm() {
+  const form = $('capJornadaForm');
+  if (form) form.style.display = 'none';
+}
+
+function capJornadaSalvarEtapa() {
+  const nome = $('capJeNome')?.value.trim();
+  const keywords = ($('capJeKeywords')?.value || '').split(',').map(k => k.trim()).filter(Boolean);
+  const valueRegex = $('capJeRegex')?.value.trim() || null;
+  if (!nome) return toast('Informe o nome da etapa.', 'error');
+  if (!keywords.length) return toast('Informe ao menos uma palavra-chave.', 'error');
+  if (valueRegex) {
+    try { new RegExp(valueRegex); } catch {
+      return toast('A expressão regular de valor é inválida.', 'error');
+    }
+  }
+
+  const indexValue = $('capJeIndex')?.value;
+  const index = indexValue === '' ? -1 : Number(indexValue);
+  const original = index >= 0 ? _capJornadaEtapas[index] : null;
+  const etapa = {
+    ...(original?.id ? { id: original.id } : {}),
+    name: nome,
+    event_concept: $('capJeConcept')?.value || 'lead',
+    trigger_type: 'keyword',
+    keywords,
+    keyword_match: $('capJeMatch')?.value === 'exact' ? 'exact' : 'partial',
+    value_regex: valueRegex,
+    currency: original?.currency || 'BRL',
+    enabled: $('capJeEnabled')?.checked !== false,
+  };
+
+  if (index >= 0 && _capJornadaEtapas[index]) _capJornadaEtapas[index] = etapa;
+  else _capJornadaEtapas.push(etapa);
+  capJornadaCancelarForm();
+  capJornadaRender();
+}
+
+function capJornadaMover(index, direction) {
+  const destination = index + direction;
+  if (index < 0 || destination < 0 || destination >= _capJornadaEtapas.length) return;
+  [_capJornadaEtapas[index], _capJornadaEtapas[destination]] =
+    [_capJornadaEtapas[destination], _capJornadaEtapas[index]];
+  capJornadaCancelarForm();
+  capJornadaRender();
+}
+
+function capJornadaExcluir(index) {
+  if (!_capJornadaEtapas[index]) return;
+  _capJornadaEtapas.splice(index, 1);
+  capJornadaCancelarForm();
+  capJornadaRender();
+}
+
 async function abrirModalCampanha(id, duplicar = false) {
   if (!capExigirCliente()) {
     toast('Selecione um cliente antes de criar ou editar um link.', 'error');
@@ -320,6 +479,7 @@ async function abrirModalCampanha(id, duplicar = false) {
   _capEditId  = duplicar ? null : (id || null);
   _capDestinos = [];
   _capInstancias = [];
+  _capJornadaEtapas = [];
 
   // Reset form
   ['capNome','capMensagem','capUtmSource','capUtmMedium','capUtmCampaign','capUtmContent'].forEach(i => {
@@ -327,7 +487,18 @@ async function abrirModalCampanha(id, duplicar = false) {
   });
   const modeEl = $('capModo'); if (modeEl) modeEl.value = 'single';
   const origEl = $('capOrigem'); if (origEl) origEl.value = 'bio';
+  $('capConversionAuto').checked = false;
   $('capDestinosLista').innerHTML = '';
+  capSwitchModalTab('config');
+  capJornadaCancelarForm();
+  try {
+    await capCarregarConceitos();
+    capPopularEventosJornada();
+    $('capConversionEvent').value = 'lead';
+  } catch (e) {
+    toast('Erro ao preparar eventos da jornada: ' + e.message, 'error');
+    return;
+  }
   if (id) {
     // Edição/duplicação: carrega os dados completos da campanha.
     $('capModalTitulo').textContent = duplicar ? 'Duplicar link' : 'Editar link';
@@ -344,8 +515,18 @@ async function abrirModalCampanha(id, duplicar = false) {
       $('capUtmMedium').value   = c.utm_medium   || '';
       $('capUtmCampaign').value = c.utm_campaign || '';
       $('capUtmContent').value  = c.utm_content  || '';
+      $('capConversionAuto').checked = c.conversion_auto === true;
+      $('capConversionEvent').value = c.conversion_event || 'lead';
       _capDestinos = (c.destinations || []).map(d => {
         const copia = { ...d };
+        if (duplicar) delete copia.id;
+        return copia;
+      });
+      _capJornadaEtapas = (c.journey_stages || []).map(stage => {
+        const copia = {
+          ...stage,
+          keywords: Array.isArray(stage.keywords) ? [...stage.keywords] : [],
+        };
         if (duplicar) delete copia.id;
         return copia;
       });
@@ -359,6 +540,8 @@ async function abrirModalCampanha(id, duplicar = false) {
     capAutoResizeMensagem();
   }
 
+  capToggleConversionAuto();
+  capJornadaRender();
   await capCarregarInstancias();
   capRenderDestinos();
   capToggleModo();
@@ -622,7 +805,10 @@ async function salvarCampanha() {
     utm_medium:      $('capUtmMedium')?.value.trim()   || null,
     utm_campaign:    $('capUtmCampaign')?.value.trim() || null,
     utm_content:     $('capUtmContent')?.value.trim()  || null,
+    conversion_auto: $('capConversionAuto')?.checked === true,
+    conversion_event:$('capConversionEvent')?.value || 'lead',
     destinations:    _capDestinos,
+    journey_stages:  _capJornadaEtapas.map((stage, position) => ({ ...stage, position })),
   });
 
   const btn = $('btnSalvarCampanha');
