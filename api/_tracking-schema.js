@@ -131,7 +131,8 @@ async function createTrackingSchema() {
 
       ALTER TABLE public.tracking_campaigns
       ADD COLUMN IF NOT EXISTS utm_content VARCHAR(255),
-      ADD COLUMN IF NOT EXISTS archived_at TIMESTAMP;
+      ADD COLUMN IF NOT EXISTS archived_at TIMESTAMP,
+      ADD COLUMN IF NOT EXISTS conversion_event VARCHAR(40) DEFAULT 'lead';
 
       ALTER TABLE public.clientes
       ADD COLUMN IF NOT EXISTS capi_pixel_id VARCHAR(255),

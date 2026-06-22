@@ -4,7 +4,6 @@ import { cors } from './_cors.js';
 import { decryptToken } from './_crypto.js';
 import { decodeToken } from './_invisible-token.js';
 import { ensureTrackingSchema } from './_tracking-schema.js';
-import { enviarCapiWebLead } from './_capi-web.js';
 import { enviarConversao, extrairValor } from './_capi.js';
 import { log } from './_logger.js';
 
@@ -538,28 +537,59 @@ export default async function handler(req, res) {
       writeClient.release();
     }
 
-    // CAPI Web roda depois do COMMIT; falha externa nunca deixa o banco parcial.
+    // CAPI Web (conversão do link) roda depois do COMMIT; falha externa nunca
+    // deixa o banco parcial. O EVENTO é configurável por campanha
+    // (tracking_campaigns.conversion_event) — default 'lead'. Clique = PageView
+    // (já disparado no redirect); aqui é a CONVERSÃO.
     if (atr?.fbc) {
       try {
-        const capi = await enviarCapiWebLead(pool, {
-          cliente_id, lead,
-          click: {
-            fbc: atr.fbc, fbp: atr.fbp, ip_address: atr.ip_address,
-            user_agent: atr.user_agent, referrer: atr.referrer,
-            event_source_url: atr.event_source_url,
-            utm_campaign: atr.utm_campaign,
-          }
-        });
+        // Evento de conversão configurado para a campanha do link.
+        let conceito = 'lead';
+        try {
+          const ce = await pool.query(
+            'SELECT conversion_event FROM tracking_campaigns WHERE id = $1',
+            [atr.campaign_id]
+          );
+          conceito = ce.rows[0]?.conversion_event || 'lead';
+        } catch (_) {}
+
+        // Monta o lead com os campos web que o módulo central espera (canal website).
+        const leadWeb = {
+          ...lead,
+          ctw_aci_id: null, // força canal website
+          fbc: atr.fbc, fbp: atr.fbp,
+          ip_address: atr.ip_address, user_agent: atr.user_agent,
+          referrer: atr.referrer, event_source_url: atr.event_source_url,
+        };
+        const capi = await enviarConversao({ lead: leadWeb, concept: conceito, pool });
+
         await pool.query(
           `UPDATE tracking_clicks SET capi_web_status=$1 WHERE id=$2`,
           [capi.sent ? 'sent' : 'failed', atr.click_id]
         );
+        // Registra no histórico de conversões do lead (mesma fonte da jornada).
+        // Conversão de link não tem stage_id (NULL) — a UNIQUE (lead_id, stage_id)
+        // não protege NULLs, então deduplicamos pelo event_id determinístico.
+        try {
+          await pool.query(
+            `INSERT INTO lead_journey_history
+              (lead_id, cliente_id, event_concept, event_name, channel, event_id,
+               meta_status, meta_response, fbtrace_id, attempts, created_at, last_attempt_at)
+             SELECT $1,$2,$3,$4,'website',$5,$6,$7,$8,1,NOW(),NOW()
+             WHERE NOT EXISTS (
+               SELECT 1 FROM lead_journey_history WHERE lead_id=$1 AND event_id=$5
+             )`,
+            [lead.id, cliente_id, conceito, capi.event_name, capi.event_id,
+             capi.sent ? 'sent' : 'error', capi.sent ? null : (capi.error || 'falha'),
+             capi.fbtrace_id || null]
+          );
+        } catch (_) {}
         await gravarLogWebhook({
           cliente_id, instance,
           tag: 'capi_web', level: capi.sent ? 'info' : 'warn',
-          message: capi.sent ? 'CAPI Web Lead enviado (atribuído à campanha FB).'
-                             : `CAPI Web Lead falhou: ${capi.error}`,
-          data: { lead_id: lead.id, click_id: atr.click_id, fbtrace_id: capi.fbtrace_id, error: capi.error }
+          message: capi.sent ? `CAPI Web ${capi.event_name} enviado (conversão do link).`
+                             : `CAPI Web ${capi.event_name || conceito} falhou: ${capi.error}`,
+          data: { lead_id: lead.id, click_id: atr.click_id, concept: conceito, fbtrace_id: capi.fbtrace_id, error: capi.error }
         });
       } catch (e) {
         log('warn', 'webhook_evo_capi_web_fail', { error: e.message });

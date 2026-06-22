@@ -278,7 +278,7 @@ export default async function handler(req, res) {
         const bodyAtualizacao = { ...req.body };
         delete bodyAtualizacao.slug;
 
-        const campos = ['name','origin_type','rotation_mode','default_message','utm_source','utm_medium','utm_campaign','utm_content','enabled'];
+        const campos = ['name','origin_type','rotation_mode','default_message','utm_source','utm_medium','utm_campaign','utm_content','enabled','conversion_event'];
         const sets = [], vals = []; let i = 1;
         for (const campo of campos) {
           if (campo in bodyAtualizacao) {

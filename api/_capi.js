@@ -22,20 +22,43 @@ import { decryptToken } from './_crypto.js';
 
 const GRAPH = 'https://graph.facebook.com/v25.0';
 
-// Mapa conceito → nome real do evento por canal.
+// Mapa conceito → nome real do evento por canal. Para website usa o nome do
+// evento PADRÃO do Pixel; para business_messaging, o nome aceito nesse canal.
+// `null` = o conceito NÃO existe naquele canal (enviarConversao rejeita com erro).
 const EVENT_NAME = {
-  business_messaging: {
-    lead: 'LeadSubmitted', qualified: 'QualifiedLead', appointment: 'AppointmentBooked',
-    checkout: 'InitiateCheckout', purchase: 'Purchase',
-  },
   website: {
-    lead: 'Lead', qualified: 'QualifiedLead', appointment: 'Schedule',
-    checkout: 'InitiateCheckout', purchase: 'Purchase',
+    contact: 'Contact', lead: 'Lead', qualified: 'QualifiedLead',
+    complete_registration: 'CompleteRegistration', appointment: 'Schedule',
+    add_to_cart: 'AddToCart', checkout: 'InitiateCheckout', purchase: 'Purchase',
+    subscribe: 'Subscribe', view_content: 'ViewContent', submit_application: 'SubmitApplication',
+  },
+  business_messaging: {
+    contact: null, lead: 'LeadSubmitted', qualified: 'QualifiedLead',
+    complete_registration: null, appointment: 'AppointmentBooked',
+    add_to_cart: null, checkout: 'InitiateCheckout', purchase: 'Purchase',
+    subscribe: null, view_content: null, submit_application: null,
   },
 };
 
+// Lista de conceitos suportados (fonte única — front e back leem daqui via a API).
+// label: rótulo PT exibido na UI; canais: onde o evento existe.
+export const CONCEPTS = [
+  { key: 'contact',               label: 'Contato',          web: true,  wpp: false },
+  { key: 'lead',                  label: 'Lead',             web: true,  wpp: true  },
+  { key: 'qualified',             label: 'Qualificação',     web: true,  wpp: true  },
+  { key: 'complete_registration', label: 'Cadastro completo',web: true,  wpp: false },
+  { key: 'appointment',           label: 'Agendamento',      web: true,  wpp: true  },
+  { key: 'add_to_cart',           label: 'Adicionar ao carrinho', web: true, wpp: false },
+  { key: 'checkout',              label: 'Checkout',         web: true,  wpp: true  },
+  { key: 'purchase',              label: 'Compra',           web: true,  wpp: true  },
+  { key: 'subscribe',             label: 'Inscrição',        web: true,  wpp: false },
+  { key: 'view_content',          label: 'Conteúdo visto',   web: true,  wpp: false },
+  { key: 'submit_application',    label: 'Formulário enviado',web: true, wpp: false },
+];
+export const CONCEPT_KEYS = CONCEPTS.map(c => c.key);
+
 // Conceitos que carregam valor monetário (custom_data com value/currency).
-const COM_VALOR = new Set(['purchase', 'checkout']);
+const COM_VALOR = new Set(['purchase', 'checkout', 'add_to_cart', 'subscribe']);
 
 function hash(str) {
   return /^[a-f0-9]{64}$/.test(str)
@@ -125,7 +148,15 @@ export async function enviarConversao({ lead, concept, value, currency = 'BRL', 
   const event_id = gerarEventId(lead.id, concept); // por lead+conceito (dedup manual↔automático)
   const base = { sent: false, event_id, channel, event_name };
 
-  if (!event_name) return { ...base, error: `Conceito de evento inválido: ${concept}` };
+  // event_name null/undefined: conceito não existe neste canal (ex: Contact no
+  // business_messaging) ou conceito desconhecido. Rejeita sem enviar lixo à Meta.
+  if (!event_name) {
+    const motivo = (channel === 'business_messaging' && concept in (EVENT_NAME.business_messaging || {}))
+      ? `Evento "${concept}" não é suportado no canal WhatsApp (use um lead de link/web).`
+      : `Conceito de evento inválido: ${concept}`;
+    await gravarLogCapi(pool, lead, 'capi', 'warn', motivo, { lead_id: lead.id, channel, concept });
+    return { ...base, error: motivo };
+  }
 
   const { pixel, token } = await carregarCredenciais(pool, lead.cliente_id, channel);
   if (!pixel || !token) {

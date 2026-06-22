@@ -106,7 +106,7 @@ async function carregarClientesAdmin() {
 }
 
 function switchEditTab(tab) {
-    ['dados','meta','venda','jornada'].forEach(t => {
+    ['dados','meta','venda','inteligente','link'].forEach(t => {
         const panel = $('editPanel-' + t);
         if (panel) panel.style.display = t === tab ? '' : 'none';
         const btn = $('editTab-' + t);
@@ -114,16 +114,27 @@ function switchEditTab(tab) {
         btn.style.background = t === tab ? 'var(--blue)' : 'transparent';
         btn.style.color      = t === tab ? '#fff' : 'var(--text-muted)';
     });
-    if (tab === 'jornada') jornadaCarregar();
+    if (tab === 'inteligente') jornadaCarregar();
+    if (tab === 'link') linkEventosCarregar();
 }
 
-// ── Jornada do Lead: CRUD de etapas de conversão (por cliente) ───────────────
-let _jornadaEtapas = [];
+// ── Conceitos de evento Meta (fonte única no backend, via _capi.js) ──────────
+let _conceitos = null; // cache [{key,label,web,wpp}]
+async function carregarConceitos() {
+    if (_conceitos) return _conceitos;
+    try {
+        const r = await authFetch('/api/journey-stages?meta=concepts');
+        _conceitos = await r.json();
+    } catch { _conceitos = []; }
+    return _conceitos;
+}
+function conceitoLabel(key) {
+    const c = (_conceitos || []).find(x => x.key === key);
+    return c ? c.label : key;
+}
 
-const JORNADA_EVENTO_LABEL = {
-    lead: 'Lead', qualified: 'Qualificação', appointment: 'Agendamento',
-    checkout: 'Checkout', purchase: 'Compra',
-};
+// ── Rastreamento Inteligente: CRUD de etapas (jornada por palavra-chave) ─────
+let _jornadaEtapas = [];
 
 async function jornadaCarregar() {
     const lista = $('jornadaLista');
@@ -132,6 +143,8 @@ async function jornadaCarregar() {
     if (!clienteId) { lista.innerHTML = '<p style="font-size:12px;color:var(--muted);">Salve o cliente primeiro.</p>'; return; }
     lista.innerHTML = '<p style="font-size:12px;color:var(--muted);">Carregando…</p>';
     jornadaCancelarForm();
+    await carregarConceitos();
+    jornadaPopularSelect();
     try {
         const r = await authFetch(`/api/journey-stages?cliente_id=${clienteId}`);
         _jornadaEtapas = await r.json();
@@ -144,7 +157,7 @@ async function jornadaCarregar() {
                 <span style="font-size:11px;color:var(--muted);min-width:18px;">${e.position || 0}</span>
                 <div style="flex:1;min-width:0;">
                     <div style="font-size:13px;font-weight:600;color:var(--text-primary);">${esc(e.name)} ${e.enabled ? '' : '<span style=\"color:var(--muted);font-weight:400;\">(inativa)</span>'}</div>
-                    <div style="font-size:11px;color:var(--muted);">${JORNADA_EVENTO_LABEL[e.event_concept] || e.event_concept} · ${(e.keywords||[]).join(', ') || 'sem palavra-chave'}</div>
+                    <div style="font-size:11px;color:var(--muted);">${conceitoLabel(e.event_concept)} · ${(e.keywords||[]).join(', ') || 'sem palavra-chave'}</div>
                 </div>
                 <button class="btn-icon" title="Editar" onclick="jornadaEditar(${e.id})" style="background:transparent;border:none;cursor:pointer;color:var(--blue);"><i data-lucide="edit-3" style="width:15px;"></i></button>
                 <button class="btn-icon" title="Excluir" onclick="jornadaExcluir(${e.id})" style="background:transparent;border:none;cursor:pointer;color:var(--red);"><i data-lucide="trash-2" style="width:15px;"></i></button>
@@ -156,6 +169,7 @@ async function jornadaCarregar() {
 }
 
 function jornadaNovaEtapa() {
+    jornadaPopularSelect();
     $('jeId').value = '';
     $('jeNome').value = '';
     $('jeConcept').value = 'purchase';
@@ -169,6 +183,7 @@ function jornadaNovaEtapa() {
 function jornadaEditar(id) {
     const e = _jornadaEtapas.find(x => Number(x.id) === Number(id));
     if (!e) return;
+    jornadaPopularSelect();
     $('jeId').value = e.id;
     $('jeNome').value = e.name || '';
     $('jeConcept').value = e.event_concept || 'purchase';
@@ -230,6 +245,62 @@ async function jornadaExcluir(id) {
         if (!r.ok) { const d = await r.json(); throw new Error(d.error || 'Falha'); }
         toast('Etapa excluída.', 'success');
         await jornadaCarregar();
+    } catch (e) {
+        toast('Erro: ' + e.message, 'error');
+    }
+}
+
+// Popula o <select id="jeConcept"> com a lista completa de eventos Meta.
+function jornadaPopularSelect() {
+    const sel = $('jeConcept');
+    if (!sel || !_conceitos) return;
+    sel.innerHTML = _conceitos.map(c =>
+        `<option value="${c.key}">${esc(c.label)}</option>`).join('');
+}
+
+// ── Link de rastreamento: evento de conversão por campanha de link ───────────
+let _linkCampanhas = [];
+
+async function linkEventosCarregar() {
+    const box = $('linkEventosLista');
+    if (!box) return;
+    const clienteId = $('editCliId').value;
+    if (!clienteId) { box.innerHTML = '<p style="font-size:12px;color:var(--muted);">Salve o cliente primeiro.</p>'; return; }
+    box.innerHTML = '<p style="font-size:12px;color:var(--muted);">Carregando…</p>';
+    await carregarConceitos();
+    // Só conceitos que existem no canal web (o link é canal website).
+    const web = (_conceitos || []).filter(c => c.web);
+    try {
+        const r = await authFetch(`/api/tracking-campaigns?cliente_id=${clienteId}`);
+        _linkCampanhas = await r.json();
+        if (!Array.isArray(_linkCampanhas) || !_linkCampanhas.length) {
+            box.innerHTML = '<p style="font-size:12px;color:var(--muted);">Nenhum link rastreável criado para este cliente.</p>';
+            return;
+        }
+        box.innerHTML = _linkCampanhas.map(c => {
+            const atual = c.conversion_event || 'lead';
+            const opts = web.map(e => `<option value="${e.key}" ${e.key===atual?'selected':''}>${esc(e.label)}</option>`).join('');
+            return `<div style="border:1px solid var(--border);border-radius:8px;padding:11px 12px;background:var(--bg-secondary);">
+                <div style="font-size:13px;font-weight:600;color:var(--text-primary);margin-bottom:6px;">${esc(c.name)} <span style="font-size:11px;color:var(--muted);font-weight:400;">/r/${esc(c.slug)}</span></div>
+                <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Evento na conversão</label>
+                <select onchange="linkEventoSalvar(${c.id}, this.value)" class="pad-md" style="width:100%;border:1px solid var(--border);border-radius:8px;background:var(--bg-primary);color:var(--text-primary);box-sizing:border-box;">${opts}</select>
+            </div>`;
+        }).join('');
+    } catch (e) {
+        box.innerHTML = `<p style="font-size:12px;color:var(--red);">Erro: ${esc(e.message)}</p>`;
+    }
+}
+
+async function linkEventoSalvar(campanhaId, evento) {
+    const clienteId = $('editCliId').value;
+    try {
+        const r = await authFetch('/api/tracking-campaigns', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: campanhaId, cliente_id: clienteId, conversion_event: evento }),
+        });
+        if (!r.ok) { const d = await r.json(); throw new Error(d.error || 'Falha'); }
+        toast('Evento do link atualizado.', 'success');
     } catch (e) {
         toast('Erro: ' + e.message, 'error');
     }

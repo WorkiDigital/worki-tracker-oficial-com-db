@@ -485,8 +485,9 @@
         <div style="display:flex;gap:4px;margin-bottom:20px;background:var(--tag);border-radius:10px;padding:4px;">
             <button id="editTab-dados"  onclick="switchEditTab('dados')"  style="flex:1;padding:8px;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;background:var(--blue);color:#fff;">Dados</button>
             <button id="editTab-meta"   onclick="switchEditTab('meta')"   style="flex:1;padding:8px;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;background:transparent;color:var(--text-muted);">Meta Ads</button>
-            <button id="editTab-venda"  onclick="switchEditTab('venda')"  style="flex:1;padding:8px;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;background:transparent;color:var(--text-muted);">Venda</button>
-            <button id="editTab-jornada" onclick="switchEditTab('jornada')" style="flex:1;padding:8px;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;background:transparent;color:var(--text-muted);">Jornada</button>
+            <button id="editTab-venda"  onclick="switchEditTab('venda')"  style="flex:1;padding:8px;border:none;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;background:transparent;color:var(--text-muted);">Venda</button>
+            <button id="editTab-inteligente" onclick="switchEditTab('inteligente')" style="flex:1;padding:8px;border:none;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;background:transparent;color:var(--text-muted);">Inteligente</button>
+            <button id="editTab-link" onclick="switchEditTab('link')" style="flex:1;padding:8px;border:none;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;background:transparent;color:var(--text-muted);">Link</button>
         </div>
         <!-- Aba: Dados -->
         <div id="editPanel-dados">
@@ -548,11 +549,12 @@
                 </label>
             </div>
         </div>
-        <!-- Aba: Jornada do Lead (etapas configuráveis de conversão Meta) -->
-        <div id="editPanel-jornada" style="display:none;">
+        <!-- Aba: Rastreamento Inteligente (jornada por palavra-chave do atendente) -->
+        <div id="editPanel-inteligente" style="display:none;">
             <p style="font-size:11px;color:var(--muted);margin:0 0 12px;">
-                Etapas de conversão enviadas à Meta quando o atendente usa a palavra-chave no WhatsApp.
-                Cada etapa dispara <strong>uma vez por lead</strong>. Ordene pelo funil (Lead → Compra).
+                <strong style="color:var(--text);">Rastreamento inteligente.</strong>
+                Eventos enviados à Meta quando o atendente usa a palavra-chave no WhatsApp.
+                Cada etapa dispara <strong>uma vez por lead</strong>. Ordene pelo funil.
             </p>
             <div id="jornadaLista" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;"></div>
             <button class="btn btn-sm" onclick="jornadaNovaEtapa()" style="width:100%;border:1px dashed var(--border);background:transparent;color:var(--blue);padding:9px;border-radius:8px;cursor:pointer;font-size:13px;">
@@ -564,20 +566,14 @@
                 <div class="input-group"><label>Nome da etapa</label><input type="text" id="jeNome" placeholder="Ex: Compra confirmada"></div>
                 <div class="input-group">
                     <label>Evento Meta</label>
-                    <select id="jeConcept" class="pad-md" style="width:100%;border:1px solid var(--border);border-radius:8px;background:var(--bg-primary);color:var(--text-primary);box-sizing:border-box;">
-                        <option value="lead">Lead (LeadSubmitted)</option>
-                        <option value="qualified">Qualificação (QualifiedLead)</option>
-                        <option value="appointment">Agendamento (AppointmentBooked)</option>
-                        <option value="checkout">Checkout (InitiateCheckout)</option>
-                        <option value="purchase">Compra (Purchase)</option>
-                    </select>
+                    <select id="jeConcept" class="pad-md" style="width:100%;border:1px solid var(--border);border-radius:8px;background:var(--bg-primary);color:var(--text-primary);box-sizing:border-box;"></select>
                 </div>
                 <div class="input-group">
                     <label>Palavra-chave do atendente <span style="color:var(--muted);font-weight:400;font-size:11px;">(separe por vírgula)</span></label>
                     <input type="text" id="jeKeywords" placeholder="Ex: #venda, compra confirmada">
                 </div>
                 <div class="input-group" id="jeRegexBox">
-                    <label>Regex de valor <span style="color:var(--muted);font-weight:400;font-size:11px;">(grupo (?&lt;value&gt;...) — só p/ Compra/Checkout)</span></label>
+                    <label>Regex de valor <span style="color:var(--muted);font-weight:400;font-size:11px;">(grupo (?&lt;value&gt;...) — só p/ eventos com valor)</span></label>
                     <input type="text" id="jeRegex" placeholder="R\$\s*(?<value>\d{1,3}(?:\.\d{3})*,\d{2})">
                 </div>
                 <label class="pad-md" style="display:flex;align-items:center;gap:10px;background:var(--tag);border-radius:8px;cursor:pointer;margin-bottom:10px;">
@@ -589,6 +585,15 @@
                     <button class="btn btn-sm" id="jeSalvarBtn" onclick="jornadaSalvarEtapa()" style="background:var(--blue);color:#fff;">Salvar etapa</button>
                 </div>
             </div>
+        </div>
+        <!-- Aba: Link de rastreamento (evento de conversão por campanha de link) -->
+        <div id="editPanel-link" style="display:none;">
+            <p style="font-size:11px;color:var(--muted);margin:0 0 12px;">
+                <strong style="color:var(--text);">Link de rastreamento.</strong>
+                No clique sempre dispara <code>PageView</code>. Quando o clique vira lead no WhatsApp,
+                dispara o <strong>evento de conversão</strong> escolhido abaixo para cada link.
+            </p>
+            <div id="linkEventosLista" style="display:flex;flex-direction:column;gap:10px;"></div>
         </div>
         <button class="btn-confirm" id="btnSalvarEditCliente" onclick="salvarEdicaoCliente()">Salvar Alterações</button>
     </div>

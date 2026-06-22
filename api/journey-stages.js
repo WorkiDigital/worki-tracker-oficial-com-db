@@ -2,13 +2,13 @@ import { verifyAuth } from './_auth.js';
 import { getPool } from './_db.js';
 import { cors } from './_cors.js';
 import { ensureTrackingSchema } from './_tracking-schema.js';
-import { enviarConversao } from './_capi.js';
+import { enviarConversao, CONCEPT_KEYS, CONCEPTS } from './_capi.js';
 
 // CRUD das etapas da Jornada de Conversões (por cliente) + leitura do histórico
 // de um lead + reenvio de um evento para a Meta. Multi-tenant: usuário comum só
 // mexe no próprio cliente_id; admin passa cliente_id no body/query.
 
-const CONCEITOS = ['lead', 'qualified', 'appointment', 'checkout', 'purchase'];
+const CONCEITOS = CONCEPT_KEYS; // lista completa (fonte única em _capi.js)
 const TRIGGERS  = ['first_message', 'keyword'];
 
 // Valida que um regex compila (evita salvar regex inválida).
@@ -33,6 +33,11 @@ export default async function handler(req, res) {
   };
 
   try {
+    // ── GET ?meta=concepts: lista de conceitos de evento (p/ montar selects) ──
+    if (method === 'GET' && req.query.meta === 'concepts') {
+      return res.status(200).json(CONCEPTS);
+    }
+
     // ── GET: lista etapas do cliente; ou histórico de um lead (?lead_id=) ──
     if (method === 'GET') {
       const cliente_id = alvoCliente(req.query.cliente_id);
