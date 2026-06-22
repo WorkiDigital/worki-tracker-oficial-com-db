@@ -1,5 +1,6 @@
 /**
- * Redirecionador público de link rastreável: GET /r/<slug>
+ * Redirecionador público de link rastreável:
+ * GET /redirect/<uuid> (atual) ou GET /r/<slug> (compatibilidade)
  *
  * Fluxo:
  *  1. Acha a campanha ativa pelo slug
@@ -8,8 +9,8 @@
  *  4. Codifica o tracking_id num token invisível na mensagem
  *  5. Responde 302 para api.whatsapp.com/send com a mensagem pronta
  *
- * Rota pública (sem auth). O server.js encaminha /r/<slug> para cá com
- * req.query.slug preenchido, e aplica rate limit antes.
+ * Rota pública (sem auth). O server.js encaminha o identificador em
+ * req.query.slug e informa a rota usada em req.query.public_path.
  */
 import { getPool } from './_db.js';
 import { selecionarDestino } from './_rotator.js';
@@ -20,10 +21,33 @@ import { extractClientIp, lookupGeoIp } from './_geoip.js';
 import crypto from 'crypto';
 
 function gerarTrackingId() {
-  // 7 chars base64url (~42 bits, ~4 trilhões de combinações): entropia de sobra e
-  // o índice UNIQUE pega qualquer colisão. Menor = token invisível mais curto na
-  // mensagem (cada char do ID vira ~4 caracteres invisíveis no token base-4).
-  return crypto.randomBytes(6).toString('base64url').slice(0, 7);
+  // 4 bytes = 32 caracteres invisíveis no WhatsApp. O valor hexadecimal fica
+  // armazenado no banco e é recuperado exatamente pelo decoder do webhook.
+  return crypto.randomBytes(4).toString('hex').toUpperCase();
+}
+
+async function gerarTrackingIdUnico(client) {
+  for (let tentativa = 0; tentativa < 8; tentativa++) {
+    const trackingId = gerarTrackingId();
+    const existe = await client.query(
+      'SELECT 1 FROM tracking_clicks WHERE tracking_id=$1 LIMIT 1',
+      [trackingId]
+    );
+    if (!existe.rows.length) return trackingId;
+  }
+  throw new Error('Não foi possível gerar um identificador único para o clique.');
+}
+
+function inserirTokenNaMensagem(texto, token) {
+  const mensagem = String(texto || '');
+  if (!token) return mensagem;
+
+  // Insere dentro da primeira palavra com pelo menos 4 letras. Manter o bloco
+  // cercado por texto reduz a chance de o WhatsApp tratá-lo como espaço isolado.
+  const palavra = /[\p{L}\p{N}]{4,}/u.exec(mensagem);
+  if (!palavra) return token + mensagem;
+  const ponto = palavra.index + Math.max(2, Math.floor(palavra[0].length / 2));
+  return mensagem.slice(0, ponto) + token + mensagem.slice(ponto);
 }
 
 const PREVIEW_BOT_RE = /(bot|crawler|spider|preview|facebookexternalhit|facebot|whatsapp|telegrambot|slackbot|discordbot|linkedinbot|twitterbot|googlebot|bingbot)/i;
@@ -186,11 +210,12 @@ export default async function handler(req, res) {
     }
 
     // 3. Registrar clique
-    const trackingId = gerarTrackingId();
+    const trackingId = await gerarTrackingIdUnico(client);
     const ip = extractClientIp(req);
     const userAgent = req.headers['user-agent'] || '';
     const referrer = req.headers['referer'] || req.headers['referrer'] || '';
-    const eventSourceUrl = `${req.headers['x-forwarded-proto'] || 'https'}://${req.headers.host || ''}/r/${slug}`;
+    const publicPath = req.query.public_path === 'redirect' ? 'redirect' : 'r';
+    const eventSourceUrl = `${req.headers['x-forwarded-proto'] || 'https'}://${req.headers.host || ''}/${publicPath}/${slug}`;
     const geo = await lookupGeoIp(req, ip);
     // UTMs: da query do link (override) ou os da campanha
     const q = req.query || {};
@@ -284,16 +309,14 @@ export default async function handler(req, res) {
     const baseMsg = formatarMensagemDinamica(messageTemplate, {
       utm_source, utm_medium, utm_campaign, utm_content,
     }) || 'Olá! Gostaria de mais informações.';
-    // Token no início: o cursor abre no final da mensagem e alterações comuns no
-    // texto visível tendem a preservar o bloco invisível.
-    const mensagem = encodeToken(trackingId) + baseMsg;
+    const mensagem = inserirTokenNaMensagem(baseMsg, encodeToken(trackingId));
 
     // 5. Página intermediária com Pixel (PageView no navegador) + redireciona.
     // Se houver pixel CAPI Web, serve a página com Pixel e delay curto para o
     // PageView disparar (dedup via event_id com o CAPI server). Sem pixel,
     // mantém o redirect rápido (delay mínimo).
     const numero = (destino.whatsapp_number || '').replace(/\D/g, '');
-    const waUrl = `https://api.whatsapp.com/send?phone=${numero}&text=${encodeURIComponent(mensagem)}`;
+    const waUrl = `https://api.whatsapp.com/send/?phone=${numero}&text=${encodeURIComponent(mensagem)}&type=phone_number&app_absent=0`;
 
     res.writeHead(200, {
       'Content-Type': 'text/html; charset=utf-8',

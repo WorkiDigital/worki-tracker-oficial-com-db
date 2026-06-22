@@ -89,9 +89,9 @@ function capBodyCliente(body = {}) {
   return clienteId ? { ...body, cliente_id: clienteId } : body;
 }
 
-/** Monta a URL pública de um slug. */
-function capLinkUrl(slug) {
-  return `${baseUrl()}/r/${slug}`;
+/** Monta a URL pública usando o identificador imutável gerado pelo servidor. */
+function capLinkUrl(publicId) {
+  return `${baseUrl()}/redirect/${publicId}`;
 }
 
 /** Copia texto para a área de transferência com feedback de toast. */
@@ -200,7 +200,7 @@ async function carregarCampanhasLink() {
           <td>
             <div class="cap-link-identity">
               <strong title="${esc(c.name)}">${esc(c.name)}</strong>
-              <code title="${esc(url)}">/r/${esc(c.slug)}</code>
+              <code title="${esc(url)}">/redirect/${esc(c.slug)}</code>
               <button class="cap-icon-action" title="Copiar link" onclick="capCopiarLink(${Number(c.id)})">
                 <i data-lucide="copy" style="width:11px;"></i>
               </button>
@@ -248,16 +248,6 @@ function capCopiarLink(id) {
   const campanha = _capCampanhas.find(c => Number(c.id) === Number(id));
   if (!campanha) return toast('Link não encontrado.', 'error');
   capCopiar(capLinkUrl(campanha.slug), 'Link copiado!');
-}
-
-function capSlugDuplicado(slugOriginal) {
-  const base = capNormalizarSlug(`${slugOriginal || 'link'}-copia`);
-  const slugsEmUso = new Set(_capCampanhas.map(c => String(c.slug || '').toLowerCase()));
-  if (!slugsEmUso.has(base)) return base;
-
-  let numero = 2;
-  while (slugsEmUso.has(`${base}-${numero}`)) numero++;
-  return `${base}-${numero}`;
 }
 
 function capDuplicar(id) {
@@ -332,14 +322,12 @@ async function abrirModalCampanha(id, duplicar = false) {
   _capInstancias = [];
 
   // Reset form
-  ['capNome','capSlug','capMensagem','capUtmSource','capUtmMedium','capUtmCampaign','capUtmContent'].forEach(i => {
+  ['capNome','capMensagem','capUtmSource','capUtmMedium','capUtmCampaign','capUtmContent'].forEach(i => {
     const el = $(i); if (el) el.value = '';
   });
   const modeEl = $('capModo'); if (modeEl) modeEl.value = 'single';
   const origEl = $('capOrigem'); if (origEl) origEl.value = 'bio';
   $('capDestinosLista').innerHTML = '';
-  capAtualizarSlugHint('');
-
   if (id) {
     // Edição/duplicação: carrega os dados completos da campanha.
     $('capModalTitulo').textContent = duplicar ? 'Duplicar link' : 'Editar link';
@@ -348,7 +336,6 @@ async function abrirModalCampanha(id, duplicar = false) {
       const r = await authFetch(capUrlApi('/api/tracking-campaigns', { id }));
       const c = await readApiJson(r, 'Falha ao carregar link');
       $('capNome').value      = duplicar ? `Cópia de ${c.name || 'link'}` : (c.name || '');
-      $('capSlug').value      = duplicar ? capSlugDuplicado(c.slug) : (c.slug || '');
       modeEl.value            = c.rotation_mode || 'single';
       origEl.value            = c.origin_type   || 'bio';
       $('capMensagem').value  = c.default_message || '';
@@ -357,7 +344,6 @@ async function abrirModalCampanha(id, duplicar = false) {
       $('capUtmMedium').value   = c.utm_medium   || '';
       $('capUtmCampaign').value = c.utm_campaign || '';
       $('capUtmContent').value  = c.utm_content  || '';
-      capAtualizarSlugHint($('capSlug').value);
       _capDestinos = (c.destinations || []).map(d => {
         const copia = { ...d };
         if (duplicar) delete copia.id;
@@ -411,40 +397,6 @@ function capAutoResizeMensagem() {
   const altura = Math.min(220, Math.max(48, input.scrollHeight));
   input.style.height = `${altura}px`;
   input.style.overflowY = input.scrollHeight > 220 ? 'auto' : 'hidden';
-}
-
-// Auto-gera slug a partir do nome
-function capAutoSlug() {
-  const nomeEl = $('capNome');
-  const slugEl = $('capSlug');
-  if (!nomeEl || !slugEl) return;
-  if (!_capEditId) {
-    // Só auto-gera se em criação
-    const slug = capNormalizarSlug(nomeEl.value);
-    slugEl.value = slug;
-    capAtualizarSlugHint(slug);
-  }
-}
-
-function capNormalizarSlug(valor) {
-  return String(valor || '').toLowerCase()
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 100);
-}
-
-function capAtualizarSlugHint(slug) {
-  const slugNormalizado = capNormalizarSlug(slug);
-  const input = $('capSlug');
-  if (input && input.value !== slugNormalizado) input.value = slugNormalizado;
-  const el = $('capSlugHint');
-  if (!el) return;
-  if (slugNormalizado) {
-    el.textContent = `URL: ${baseUrl()}/r/${slugNormalizado}`;
-    el.style.color = 'var(--blue)';
-  } else {
-    el.textContent = 'Gerado automaticamente a partir do nome.';
-    el.style.color = 'var(--muted)';
-  }
 }
 
 function capToggleModo() {
@@ -653,8 +605,6 @@ function capRemoverDestino(idx) {
 async function salvarCampanha() {
   const nome = $('capNome')?.value.trim();
   if (!nome) { toast('Nome é obrigatório.', 'error'); return; }
-  const slug = capNormalizarSlug($('capSlug')?.value);
-  if (!slug) { toast('O identificador da URL é obrigatório.', 'error'); return; }
   if (!_capDestinos.length) { toast('Adicione pelo menos um número de destino.', 'error'); return; }
   if (_capDestinos.some(d => !d.instance_name)) { toast('Todos os destinos precisam estar vinculados a uma instância.', 'error'); return; }
   if (!_capDestinos.some(d => d.enabled !== false)) { toast('Mantenha ao menos um destino ativo.', 'error'); return; }
@@ -665,7 +615,6 @@ async function salvarCampanha() {
 
   const body = capBodyCliente({
     name:            nome,
-    slug,
     rotation_mode:   $('capModo')?.value  || 'single',
     origin_type:     $('capOrigem')?.value || 'bio',
     default_message: $('capMensagem')?.value.trim() || null,

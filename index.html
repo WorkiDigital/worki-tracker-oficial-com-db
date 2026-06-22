@@ -364,7 +364,8 @@
         <div class="cap-grid-main" style="display:grid;grid-template-columns:minmax(0,1.3fr) minmax(180px,.7fr);gap:12px;">
             <div class="input-group">
                 <label>Nome do link <span style="color:var(--red)">*</span></label>
-                <input id="capNome" type="text" maxlength="255" placeholder="Ex: Bio do Instagram" oninput="capAutoSlug()">
+                <input id="capNome" type="text" maxlength="255" placeholder="Ex: Bio do Instagram">
+                <p style="font-size:11px;color:var(--muted);margin-top:6px;">A URL recebe um identificador único automaticamente após salvar.</p>
             </div>
             <div class="input-group">
                 <label>Tipo de origem</label>
@@ -375,12 +376,6 @@
                 </select>
                 <p id="capHintOrigem" style="font-size:11px;color:var(--muted);margin-top:6px;">Apenas classifica a origem do lead (badge no painel). Não muda o funcionamento do link.</p>
             </div>
-        </div>
-
-        <div class="input-group">
-            <label>Identificador da URL <span style="color:var(--red)">*</span></label>
-            <input id="capSlug" type="text" maxlength="100" placeholder="bio-instagram" oninput="capAtualizarSlugHint(this.value)">
-            <p id="capSlugHint" style="font-size:11px;color:var(--muted);margin-top:6px;">Gerado automaticamente a partir do nome.</p>
         </div>
 
         <div class="cap-grid-message" style="display:grid;grid-template-columns:minmax(220px,.65fr) minmax(0,1.35fr);gap:16px;align-items:start;">

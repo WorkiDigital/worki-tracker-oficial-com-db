@@ -2,15 +2,12 @@ import { verifyAuth } from './_auth.js';
 import { getPool } from './_db.js';
 import { cors } from './_cors.js';
 import { ensureTrackingSchema } from './_tracking-schema.js';
+import { randomUUID } from 'crypto';
 
 // CRUD de campanhas/links rastreáveis + seus destinos (rotador).
 // Isolamento multi-tenant por cliente_id (admin pode passar cliente_id).
 const ROTATION_MODES = new Set(['single', 'round_robin', 'weighted', 'priority']);
 const ORIGIN_TYPES = new Set(['bio', 'campaign', 'rotator']);
-
-const normalizarSlug = (s) => (s || '')
-  .toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-  .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 100);
 
 function getInstanceName(i) {
   return i?.instance?.instanceName || i?.instanceName || i?.name || '';
@@ -211,17 +208,15 @@ export default async function handler(req, res) {
       if (!ORIGIN_TYPES.has(origin_type)) return res.status(400).json({ error: 'origin_type inválido.' });
       if (!ROTATION_MODES.has(rotation_mode)) return res.status(400).json({ error: 'rotation_mode inválido.' });
 
-      let slug = normalizarSlug(req.body.slug || name);
-      if (!slug) return res.status(400).json({ error: 'slug inválido.' });
+      // O identificador público é sempre gerado no servidor. O cliente não pode
+      // escolher nem alterar a URL, evitando colisões e links previsíveis.
+      const slug = randomUUID();
       const destinosNormalizados = normalizarDestinos(destinations);
       validarDestinosPorModo(destinosNormalizados, rotation_mode);
 
       const client = await pool.connect();
       try {
         await client.query('BEGIN');
-        const exists = await client.query('SELECT 1 FROM tracking_campaigns WHERE slug=$1', [slug]);
-        if (exists.rows.length) slug = `${slug}-${Math.random().toString(36).slice(2, 6)}`;
-
         const camp = await client.query(
           `INSERT INTO tracking_campaigns
             (cliente_id, name, slug, origin_type, rotation_mode, default_message, utm_source, utm_medium, utm_campaign, utm_content)
@@ -281,23 +276,9 @@ export default async function handler(req, res) {
         }
 
         const bodyAtualizacao = { ...req.body };
-        if ('slug' in bodyAtualizacao) {
-          bodyAtualizacao.slug = normalizarSlug(bodyAtualizacao.slug);
-          if (!bodyAtualizacao.slug) {
-            await client.query('ROLLBACK');
-            return res.status(400).json({ error: 'slug inválido.' });
-          }
-          const slugEmUso = await client.query(
-            'SELECT 1 FROM tracking_campaigns WHERE slug=$1 AND id<>$2',
-            [bodyAtualizacao.slug, id]
-          );
-          if (slugEmUso.rows.length) {
-            await client.query('ROLLBACK');
-            return res.status(409).json({ error: 'Este identificador de URL já está em uso.' });
-          }
-        }
+        delete bodyAtualizacao.slug;
 
-        const campos = ['name','slug','origin_type','rotation_mode','default_message','utm_source','utm_medium','utm_campaign','utm_content','enabled'];
+        const campos = ['name','origin_type','rotation_mode','default_message','utm_source','utm_medium','utm_campaign','utm_content','enabled'];
         const sets = [], vals = []; let i = 1;
         for (const campo of campos) {
           if (campo in bodyAtualizacao) {
@@ -355,7 +336,7 @@ export default async function handler(req, res) {
   } catch (err) {
     console.error('[tracking-campaigns]', err.message);
     if (err.code === '23505') {
-      return res.status(409).json({ error: 'Este identificador de URL já está em uso.' });
+      return res.status(409).json({ error: 'Não foi possível gerar um identificador único. Tente novamente.' });
     }
     if (/inválid|duplicado|adicione|mantenha|destino único|instância|vinculada|posição/i.test(err.message || '')) {
       return res.status(400).json({ error: err.message });

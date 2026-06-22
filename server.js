@@ -138,10 +138,12 @@ const server = http.createServer(async (req, res) => {
 
     // Redirecionador público de link rastreável: /r/<slug> (Fase 2)
     // Rota pública sem auth, com rate limit por IP (mesma proteção dos webhooks).
-    if (pathname.startsWith('/r/')) {
+    if (pathname.startsWith('/redirect/') || pathname.startsWith('/r/')) {
+        const isUuidRoute = pathname.startsWith('/redirect/');
+        const prefixLength = isUuidRoute ? '/redirect/'.length : '/r/'.length;
         let slug;
         try {
-            slug = decodeURIComponent(pathname.slice(3).replace(/\/$/, ''));
+            slug = decodeURIComponent(pathname.slice(prefixLength).replace(/\/$/, ''));
         } catch {
             res.writeHead(400, { 'Content-Type': 'text/plain; charset=utf-8' });
             res.end('Link inválido.');
@@ -150,6 +152,7 @@ const server = http.createServer(async (req, res) => {
         const wrappedReq = wrapReq(req);
         const wrappedRes = wrapRes(res);
         wrappedReq.query.slug = slug;
+        wrappedReq.query.public_path = isUuidRoute ? 'redirect' : 'r';
         try {
             const { checkRateLimit } = await import('./middleware/rateLimit.js');
             const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '127.0.0.1';
