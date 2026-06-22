@@ -24,8 +24,44 @@ export default async function handler(req, res) {
 
   const body = req.body;
 
-  // ── 2. Filtrar apenas MESSAGES_UPSERT ──
   const event = body.event || body.apiType || '';
+  const eventNormalized = String(event).toLowerCase().replace(/_/g, '.');
+
+  // Evento oficial da Evolution para mudança de estado da instância.
+  if (eventNormalized === 'connection.update') {
+    const instance = body.instance || body.instanceName || body.sender?.instance || '';
+    const eventData = Array.isArray(body.data) ? body.data[0] : (body.data || {});
+    const state = eventData.state || eventData.instance?.state || body.state || body.instance?.state || 'unknown';
+    try {
+      const pool = getPool();
+      let clienteId = null;
+      const prefixMatch = String(instance).match(/^cliente_(\d+)_/);
+      if (prefixMatch) clienteId = parseInt(prefixMatch[1], 10);
+      if (!clienteId && instance) {
+        const mapped = await pool.query(
+          'SELECT cliente_id FROM instancias_mapeamento WHERE instance_name=$1',
+          [instance]
+        );
+        clienteId = mapped.rows[0]?.cliente_id || null;
+      }
+      await pool.query(
+        `INSERT INTO webhook_logs (cliente_id, instance, tag, level, message, data)
+         VALUES ($1,$2,'connection_update',$3,$4,$5)`,
+        [
+          clienteId,
+          instance || 'evolution',
+          state === 'open' ? 'info' : 'warn',
+          state === 'open' ? 'WhatsApp conectado com sucesso.' : `Estado da conexão alterado para: ${state}.`,
+          JSON.stringify({ state, event })
+        ]
+      );
+    } catch (error) {
+      log('warn', 'webhook_evo_connection_log_fail', { error: error.message, instance, state });
+    }
+    return res.status(200).json({ ok: true, event: 'CONNECTION_UPDATE', state });
+  }
+
+  // ── 2. Filtrar apenas MESSAGES_UPSERT ──
   if (event && event !== 'messages.upsert' && event !== 'MESSAGES_UPSERT') {
     return res.status(200).json({ ignored: true, reason: `Evento ${event} ignorado.` });
   }

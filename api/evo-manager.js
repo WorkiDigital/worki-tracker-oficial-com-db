@@ -15,6 +15,37 @@ function getInstancePhone(i) {
   return digits.length >= 8 && digits.length <= 15 ? digits : null;
 }
 
+function montarWebhookBody() {
+  let webhookUrl = process.env.WEBHOOK_URL;
+  if (!webhookUrl) return null;
+  if (process.env.WEBHOOK_SECRET && process.env.WEBHOOK_SECRET_IN_URL === 'true') {
+    const sep = webhookUrl.includes('?') ? '&' : '?';
+    webhookUrl += `${sep}secret=${process.env.WEBHOOK_SECRET}`;
+  }
+  return {
+    webhook: {
+      enabled: true,
+      url: webhookUrl,
+      webhookByEvents: false,
+      webhookBase64: false,
+      events: ["MESSAGES_UPSERT", "CONNECTION_UPDATE", "QRCODE_UPDATED"],
+      webhookSecret: process.env.WEBHOOK_SECRET || undefined
+    }
+  };
+}
+
+async function configurarWebhookEvolution(EVO_URL, headers, instanceName) {
+  const webhookBody = montarWebhookBody();
+  if (!webhookBody) return;
+  const response = await fetch(`${EVO_URL}/webhook/set/${instanceName}`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(webhookBody)
+  });
+  const data = response.headers.get('content-type')?.includes('json') ? await response.json() : {};
+  console.log(`[evo-manager] Webhook set para ${instanceName} (${response.status}):`, JSON.stringify(data));
+}
+
 export default async function handler(req, res) {
   if (cors(req, res, ['POST', 'GET'])) return;
 
@@ -144,7 +175,7 @@ export default async function handler(req, res) {
                     url: webhookUrl, 
                     webhookByEvents: false, 
                     webhookBase64: false, 
-                    events: ["MESSAGES_UPSERT"],
+                    events: ["MESSAGES_UPSERT", "CONNECTION_UPDATE", "QRCODE_UPDATED"],
                     webhookSecret: process.env.WEBHOOK_SECRET || undefined
                 } 
             };
@@ -195,7 +226,7 @@ export default async function handler(req, res) {
             url: webhookUrl,
             webhookByEvents: false,
             webhookBase64: false,
-            events: ["MESSAGES_UPSERT"],
+            events: ["MESSAGES_UPSERT", "CONNECTION_UPDATE", "QRCODE_UPDATED"],
             webhookSecret: process.env.WEBHOOK_SECRET || undefined
           }
         };
@@ -227,6 +258,7 @@ export default async function handler(req, res) {
     }
 
     if (action === 'connect') {
+      await configurarWebhookEvolution(EVO_URL, headers, finalInstanceName);
       const r = await fetch(`${EVO_URL}/instance/connect/${finalInstanceName}`, { headers });
       const data = await r.json();
       return res.status(200).json(data);

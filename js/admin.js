@@ -364,13 +364,16 @@ async function checkWaStatus(fetchQrIfNotOpen = false) {
     try {
         const r = await authFetch(`/api/evo-manager?action=status&instanceName=${encodeURIComponent(currentWaInstance)}`);
         const data = await r.json();
-        const state = data?.instance?.state || data?.state;
-        const isConnected = state === 'open';
+        const state = String(data?.instance?.state || data?.state || '').toLowerCase();
+        const isConnected = ['open', 'connected', 'online'].includes(state);
         
         if (isConnected) {
             if (waPollTimer) { clearInterval(waPollTimer); waPollTimer = null; }
-            toast(`✅ WhatsApp conectado: ${currentWaInstance}`, 'success');
-            await carregarListaWa();
+            setWaView('waConnectedView');
+            $('waConnTitle').textContent = currentWaInstance;
+            $('btnWaLogout').onclick = () => waLogout(currentWaInstance);
+            toast(`WhatsApp conectado: ${currentWaInstance}`, 'success');
+            if (window.lucide) lucide.createIcons({ nodes: [$('waConnectedView')] });
         } else {
             setWaView('waQrView');
             $('waQrTitle').textContent = `Conectar: ${currentWaInstance}`;
