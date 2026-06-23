@@ -116,13 +116,15 @@ function onPeriodoChange() {
     $('areaPersonalizada').style.display = v === 'personalizado' ? 'flex' : 'none';
     if (v === 'personalizado') return; // só recarrega no botão OK
 
-    // Se o período pedido é hoje/ontem E o que está carregado também é curto (hoje+ontem),
-    // basta refiltrar a memória — troca instantânea, sem ir ao backend.
-    if (PERIODOS_LOCAIS.includes(v) && PERIODOS_LOCAIS.includes(window._periodoCarregado)) {
+    // Só dá pra refiltrar a memória (instantâneo) se o que ESTÁ carregado é
+    // 'hojeOntem' — o único período que traz hoje E ontem juntos em rawData.
+    // Se a memória tem só um dia (carregou 'hoje' OU 'ontem'), trocar para o outro
+    // dia precisa REBUSCAR — senão refiltra sobre dados que não existem e some tudo.
+    if (PERIODOS_LOCAIS.includes(v) && window._periodoCarregado === 'hojeOntem') {
         aplicarFiltros();
         return;
     }
-    // Períodos maiores (ou vindo de um período maior) rebuscam do backend (dados frescos).
+    // Demais casos rebuscam do backend (dados frescos e completos).
     recarregarLeads();
 }
 
