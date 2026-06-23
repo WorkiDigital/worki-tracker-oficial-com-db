@@ -102,6 +102,12 @@ select:focus-visible, textarea:focus-visible, [tabindex]:focus-visible {
 /* Remove o outline padrão só quando NÃO é navegação por teclado. */
 :focus:not(:focus-visible) { outline:none; }
 
+/* ── Utilitárias (Fase 4: consolidar inline styles repetidos) ── */
+/* Checkbox padrão do painel (azul). Tamanhos: .cbx (14), .cbx-md (16), .cbx-lg (17). */
+.cbx { width:14px; height:14px; accent-color:var(--blue); }
+.cbx-md { width:16px; height:16px; accent-color:var(--blue); }
+.cbx-lg { width:17px; height:17px; accent-color:var(--blue); }
+
 /* ── Custom Scrollbar ────────────────────── */
 ::-webkit-scrollbar { width:6px; height:6px; }
 ::-webkit-scrollbar-track { background:transparent; }
