@@ -34,7 +34,7 @@ export default async function handler(req, res) {
   const insightsParam = (dateFrom && dateTo)
     ? `insights.time_range({"since":"${dateFrom}","until":"${dateTo}"})`
     : `insights.date_preset(${datePreset})`;
-  const mkFields = (flds) => `name,status,objective,${insightsParam}{${flds}}`;
+  const mkFields = (flds) => `name,status,objective,daily_budget,lifetime_budget,${insightsParam}{${flds}}`;
   const fields = mkFields(insightFields);
 
   // ── Cache hit? ────────────────────────────────────────────────

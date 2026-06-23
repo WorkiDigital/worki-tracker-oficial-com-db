@@ -24,7 +24,7 @@ export default async function handler(req, res) {
   try {
     // Busca todas as páginas (Meta pagina por padrão em 25)
     const todas = [];
-    let url = `https://graph.facebook.com/v20.0/me/adaccounts?fields=id,name,account_id,account_status&limit=200&access_token=${token}`;
+    let url = `https://graph.facebook.com/v20.0/me/adaccounts?fields=id,name,account_id,account_status,currency&limit=200&access_token=${token}`;
 
     while (url) {
       const r = await fetchMeta(url);

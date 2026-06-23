@@ -71,6 +71,28 @@ export async function cacheSet(key, data, ttlMs = TTL_MS) {
   memSet(key, data, ttlMs);
 }
 
+/** Remove todas as entradas cujo nome começa com o prefixo informado. */
+export async function cacheDeletePrefix(prefix) {
+  for (const key of memStore.keys()) {
+    if (key.startsWith(prefix)) memStore.delete(key);
+  }
+
+  if (redis && redisReady) {
+    try {
+      let cursor = '0';
+      do {
+        const [nextCursor, keys] = await redis.scan(
+          cursor, 'MATCH', `${prefix}*`, 'COUNT', 100
+        );
+        cursor = nextCursor;
+        if (keys.length) await redis.del(...keys);
+      } while (cursor !== '0');
+    } catch {
+      // O fallback em memória já foi limpo; falha do Redis não bloqueia a ação.
+    }
+  }
+}
+
 export function cacheKey(...parts) {
   return parts.join(':');
 }

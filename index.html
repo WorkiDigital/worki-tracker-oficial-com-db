@@ -15,7 +15,7 @@
     <!-- Exportação de relatório em PDF -->
     <script defer src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-    <link rel="stylesheet" href="css/dashboard.css?v=20260622-3">
+    <link rel="stylesheet" href="css/dashboard.css?v=20260623-2">
     <link rel="stylesheet" href="css/splash.css">
     <script defer src="js/utils.js"></script>
 </head>
@@ -984,6 +984,52 @@
                             <button class="btn btn-ghost btn-sm" onclick="selecionarTodasContas()">Selecionar todas</button>
                             <button class="btn btn-ghost btn-sm" onclick="desmarcarTodasContas()">Desmarcar todas</button>
                             <span id="cfgContasSalvo" style="font-size:12px;color:var(--blue);display:none;">✓ Salvo</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="modalAdsBudget" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="adsBudgetTitulo" onclick="if(event.target===this)fecharModalAdsBudget()">
+                    <div class="modal-box ads-budget-modal">
+                        <div class="modal-head">
+                            <div style="display:flex;align-items:center;gap:10px;">
+                                <div class="modal-icon" style="background:rgba(16,185,129,.12);">
+                                    <i data-lucide="circle-dollar-sign" style="color:#10b981;width:20px;height:20px;"></i>
+                                </div>
+                                <div>
+                                    <h3 id="adsBudgetTitulo" style="margin:0;font-size:15px;">Aumentar orçamento</h3>
+                                    <p id="adsBudgetSubtitulo" style="margin:3px 0 0;font-size:11px;color:var(--muted);"></p>
+                                </div>
+                            </div>
+                            <button type="button" class="modal-close" aria-label="Fechar" onclick="fecharModalAdsBudget()"><i data-lucide="x" style="width:16px;"></i></button>
+                        </div>
+
+                        <div class="ads-budget-summary">
+                            <div><span>Nível</span><strong id="adsBudgetNivel">—</strong></div>
+                            <div><span>Tipo</span><strong id="adsBudgetTipo">—</strong></div>
+                            <div><span>Orçamento atual</span><strong id="adsBudgetAtual">—</strong></div>
+                        </div>
+
+                        <div class="input-group" style="margin-bottom:10px;">
+                            <label>Novo orçamento <span id="adsBudgetMoedaLabel" style="color:var(--muted);font-weight:400;"></span></label>
+                            <input type="text" id="adsBudgetNovo" inputmode="decimal" placeholder="0,00" oninput="atualizarResumoAdsBudget()">
+                        </div>
+
+                        <div class="ads-budget-presets">
+                            <button type="button" onclick="aplicarPercentualAdsBudget(10)">+10%</button>
+                            <button type="button" onclick="aplicarPercentualAdsBudget(20)">+20%</button>
+                            <button type="button" onclick="aplicarPercentualAdsBudget(30)">+30%</button>
+                            <button type="button" onclick="aplicarPercentualAdsBudget(50)">+50%</button>
+                        </div>
+
+                        <div id="adsBudgetResumo" class="ads-budget-change">Informe um valor maior que o orçamento atual.</div>
+                        <div class="ads-budget-warning">
+                            <i data-lucide="shield-alert"></i>
+                            <span>Esta ação altera o orçamento real na Meta e permite somente aumento.</span>
+                        </div>
+
+                        <div class="ads-budget-actions">
+                            <button type="button" class="btn btn-ghost" onclick="fecharModalAdsBudget()">Cancelar</button>
+                            <button type="button" class="btn-confirm" id="btnConfirmarAdsBudget" onclick="confirmarAumentoAdsBudget()">Confirmar aumento</button>
                         </div>
                     </div>
                 </div>
@@ -2521,7 +2567,7 @@ function renderDropdown(lista) {
         const st = acctStatusInfo(c);
         const accountId = c.account_id || c.id?.replace('act_','') || c.id;
         return `<div class="acct-opt${_contaSelecionada?.id === c.id ? ' selected' : ''}"
-             onclick="selecionarConta({id:'${esc(c.id)}',name:'${esc(c.name)}',account_id:'${esc(accountId)}',account_status:${c.account_status||0}})">
+             onclick="selecionarConta({id:'${esc(c.id)}',name:'${esc(c.name)}',account_id:'${esc(accountId)}',account_status:${c.account_status||0},currency:'${esc(c.currency || 'BRL')}'})">
             <div class="acct-opt-name">${esc(c.name)}</div>
             <div class="acct-opt-sub">
                 <div class="acct-status-dot" style="background:${st.color}"></div>
@@ -2974,6 +3020,198 @@ const OBJETIVO_PT = {
     APP_INSTALLS:           'Instalações de App',
 };
 function fmtObjetivo(o) { return OBJETIVO_PT[o] || o; }
+
+let _adsBudgetTarget = null;
+
+function getAdsCurrency() {
+    const selectedId = $('adsAccountSelect')?.value;
+    return _contaSelecionada?.currency
+        || _todasContas.find(c => c.id === selectedId)?.currency
+        || 'BRL';
+}
+
+function adsCurrencyDigits(currency = getAdsCurrency()) {
+    try {
+        return new Intl.NumberFormat('pt-BR', { style:'currency', currency })
+            .resolvedOptions().maximumFractionDigits;
+    } catch {
+        return 2;
+    }
+}
+
+function getAdsBudgetInfo(item) {
+    const daily = Number(item?.daily_budget);
+    if (Number.isSafeInteger(daily) && daily > 0) {
+        return { field:'daily_budget', type:'daily', value:daily, label:'Diário' };
+    }
+    const lifetime = Number(item?.lifetime_budget);
+    if (Number.isSafeInteger(lifetime) && lifetime > 0) {
+        return { field:'lifetime_budget', type:'lifetime', value:lifetime, label:'Total' };
+    }
+    return null;
+}
+
+function formatAdsMinor(value, currency = getAdsCurrency()) {
+    const digits = adsCurrencyDigits(currency);
+    const factor = Math.pow(10, digits);
+    try {
+        return new Intl.NumberFormat('pt-BR', {
+            style:'currency', currency,
+            minimumFractionDigits:digits, maximumFractionDigits:digits,
+        }).format(Number(value || 0) / factor);
+    } catch {
+        return `${currency} ${(Number(value || 0) / factor).toFixed(digits)}`;
+    }
+}
+
+function adsMinorToInput(value, currency = getAdsCurrency()) {
+    const digits = adsCurrencyDigits(currency);
+    const factor = Math.pow(10, digits);
+    return new Intl.NumberFormat('pt-BR', {
+        minimumFractionDigits:digits,
+        maximumFractionDigits:digits,
+        useGrouping:true,
+    }).format(Number(value || 0) / factor);
+}
+
+function parseAdsBudgetInput(value, currency = getAdsCurrency()) {
+    const digits = adsCurrencyDigits(currency);
+    let normalized = String(value || '').trim().replace(/[^\d,.-]/g, '');
+    if (!normalized) return null;
+    if (normalized.includes(',')) normalized = normalized.replace(/\./g, '').replace(',', '.');
+    const amount = Number(normalized);
+    if (!Number.isFinite(amount) || amount <= 0) return null;
+    const minor = Math.round(amount * Math.pow(10, digits));
+    return Number.isSafeInteger(minor) ? minor : null;
+}
+
+function adsBudgetCell(item, entityType) {
+    const budget = getAdsBudgetInfo(item);
+    if (!budget) {
+        return `<td class="ads-budget-cell"><span class="ads-budget-inherited">${entityType === 'campaign' ? 'Nos conjuntos' : 'Na campanha'}</span></td>`;
+    }
+    return `<td class="ads-budget-cell">
+                <div class="ads-budget-inline">
+                    <div class="ads-budget-inline-text">
+                        <span class="ads-budget-value">${esc(formatAdsMinor(budget.value))}</span>
+                        <span class="ads-budget-kind">${budget.label}</span>
+                    </div>
+                    <button type="button" class="ads-budget-btn" onclick="abrirModalAdsBudget('${entityType}','${esc(item.id)}',event)">
+                        <i data-lucide="trending-up"></i> Aumentar
+                    </button>
+                </div>
+            </td>`;
+}
+
+function encontrarAdsBudgetEntity(entityType, entityId) {
+    if (entityType === 'campaign') {
+        return campanhasRaw.find(c => String(c.id) === String(entityId)) || null;
+    }
+    for (const [key, items] of Object.entries(expandCache)) {
+        if (!key.startsWith('adsets_') || !Array.isArray(items)) continue;
+        const found = items.find(item => String(item.id) === String(entityId));
+        if (found) return found;
+    }
+    return null;
+}
+
+function abrirModalAdsBudget(entityType, entityId, event) {
+    event?.stopPropagation?.();
+    const item = encontrarAdsBudgetEntity(entityType, entityId);
+    const budget = getAdsBudgetInfo(item);
+    if (!item || !budget) {
+        toast('Esta entidade não possui orçamento próprio.', 'error');
+        return;
+    }
+    const currency = getAdsCurrency();
+    _adsBudgetTarget = {
+        entityType, entityId:String(entityId), item, budget, currency,
+        accountId:$('adsAccountSelect').value,
+    };
+    $('adsBudgetSubtitulo').textContent = item.name || entityId;
+    $('adsBudgetNivel').textContent = entityType === 'campaign' ? 'Campanha' : 'Conjunto';
+    $('adsBudgetTipo').textContent = budget.type === 'daily' ? 'Diário' : 'Total da vigência';
+    $('adsBudgetAtual').textContent = formatAdsMinor(budget.value, currency);
+    $('adsBudgetMoedaLabel').textContent = `(${currency})`;
+    $('adsBudgetNovo').value = adsMinorToInput(budget.value, currency);
+    atualizarResumoAdsBudget();
+    $('modalAdsBudget').classList.add('open');
+    lucide.createIcons({ nodes:[$('modalAdsBudget')] });
+    setTimeout(() => {
+        $('adsBudgetNovo')?.focus();
+        $('adsBudgetNovo')?.select();
+    }, 50);
+}
+
+function fecharModalAdsBudget() {
+    $('modalAdsBudget')?.classList.remove('open');
+    _adsBudgetTarget = null;
+}
+
+function aplicarPercentualAdsBudget(percentual) {
+    if (!_adsBudgetTarget) return;
+    const novo = Math.ceil(_adsBudgetTarget.budget.value * (1 + Number(percentual) / 100));
+    $('adsBudgetNovo').value = adsMinorToInput(novo, _adsBudgetTarget.currency);
+    atualizarResumoAdsBudget();
+}
+
+function atualizarResumoAdsBudget() {
+    const box = $('adsBudgetResumo');
+    const button = $('btnConfirmarAdsBudget');
+    if (!box || !_adsBudgetTarget) return;
+    const novo = parseAdsBudgetInput($('adsBudgetNovo')?.value, _adsBudgetTarget.currency);
+    const atual = _adsBudgetTarget.budget.value;
+    box.classList.remove('valid', 'invalid');
+    if (!novo) {
+        box.textContent = 'Informe um valor válido.';
+        box.classList.add('invalid');
+        button.disabled = true;
+        return;
+    }
+    if (novo <= atual) {
+        box.textContent = 'O novo orçamento precisa ser maior que o atual.';
+        box.classList.add('invalid');
+        button.disabled = true;
+        return;
+    }
+    const aumento = ((novo / atual) - 1) * 100;
+    box.textContent = `${formatAdsMinor(atual, _adsBudgetTarget.currency)} → ${formatAdsMinor(novo, _adsBudgetTarget.currency)} (+${aumento.toFixed(1).replace('.', ',')}%)`;
+    box.classList.add('valid');
+    button.disabled = false;
+}
+
+async function confirmarAumentoAdsBudget() {
+    if (!_adsBudgetTarget) return;
+    const novo = parseAdsBudgetInput($('adsBudgetNovo')?.value, _adsBudgetTarget.currency);
+    if (!novo || novo <= _adsBudgetTarget.budget.value) {
+        atualizarResumoAdsBudget();
+        return;
+    }
+    const button = $('btnConfirmarAdsBudget');
+    const original = button.textContent;
+    button.disabled = true;
+    button.textContent = 'Atualizando na Meta…';
+    try {
+        const response = await authFetch('/api/ads-budget', {
+            method:'PATCH',
+            headers:{ 'Content-Type':'application/json' },
+            body:JSON.stringify({
+                accountId:_adsBudgetTarget.accountId,
+                entity_type:_adsBudgetTarget.entityType,
+                entity_id:_adsBudgetTarget.entityId,
+                new_budget_minor:novo,
+            }),
+        });
+        const result = await readApiJson(response, 'Falha ao alterar orçamento na Meta');
+        toast(`Orçamento aumentado para ${formatAdsMinor(result.new_budget_minor, _adsBudgetTarget.currency)}.`, 'success');
+        fecharModalAdsBudget();
+        await carregarAnuncios();
+    } catch (error) {
+        toast(error.message, 'error');
+        button.disabled = false;
+        button.textContent = original;
+    }
+}
 
 function preencherObjetivos(camps) {
     const objs = [...new Set(camps.map(c=>c.objective).filter(Boolean))];
@@ -4015,10 +4253,10 @@ function renderTabelaCampanhas(camps) {
     const cols  = getColsAtivas();
     const thead = $('tabela-campanhas-head');
     const tbody = $('tabela-campanhas-corpo');
-    const total = 2 + cols.length; // Campanha + Status + colunas dinâmicas
+    const total = 3 + cols.length; // Campanha + Status + Orçamento + dinâmicas
 
     // Atualiza header — coluna extra para botão expand
-    thead.innerHTML = `<tr><th style="width:32px;"></th><th>Campanha</th><th>Status</th>${cols.map(c=>`<th>${c.label}</th>`).join('')}</tr>`;
+    thead.innerHTML = `<tr><th style="width:32px;"></th><th class="ads-campaign-name">Campanha</th><th>Status</th><th>Orçamento</th>${cols.map(c=>`<th>${c.label}</th>`).join('')}</tr>`;
 
     if (!camps.length) {
         tbody.innerHTML = `<tr><td colspan="${total+1}" style="text-align:center;padding:40px;color:var(--muted);">Nenhuma campanha encontrada.</td></tr>`;
@@ -4043,11 +4281,13 @@ function renderTabelaCampanhas(camps) {
         const bs    = isAct ? 'background:rgba(16,185,129,.15);color:#10b981;border:1px solid rgba(16,185,129,.3)' : 'background:rgba(156,163,175,.1);color:#9ca3af;border:1px solid rgba(156,163,175,.2)';
         return `<tr data-row-id="${esc(c.id)}" data-nome="${esc(c.name)}">
             <td style="text-align:center;padding:0 4px;"><button class="expand-btn" onclick="toggleExpand('adsets','${esc(c.id)}',this,event)">▶</button></td>
-            <td style="color:var(--text);font-weight:600;max-width:220px;overflow:hidden;text-overflow:ellipsis;text-align:left;" title="${esc(c.name)}"><span class="row-name-link" onclick="focarLinha('campanha','${esc(c.id)}',event)">${esc(c.name)}</span></td>
+            <td class="ads-campaign-name" style="color:var(--text);font-weight:600;text-align:left;" title="${esc(c.name)}"><span class="row-name-link" onclick="focarLinha('campanha','${esc(c.id)}',event)">${esc(c.name)}</span></td>
             <td><span class="status-badge" style="${bs}">${isAct ? '● Ativa' : '○ Pausada'}</span></td>
+            ${adsBudgetCell(c, 'campaign')}
             ${cols.map(col=>`<td>${getVal(col.key)}</td>`).join('')}
         </tr>`;
     }).join('');
+    lucide.createIcons({ nodes:[tbody] });
 }
 
 // ── Foco hierárquico (clique no nome para filtrar) ──────────────
@@ -4242,13 +4482,15 @@ async function toggleExpand(level, parentId, btn, e) {
             : '';
         return `<tr data-parent="${key}" data-row-id="${esc(item.id)}" data-nome="${esc(item.name)}" class="row-child row-depth-${indent}">
             <td style="text-align:center;padding:0 4px;">${expandBtn}</td>
-            <td style="padding-left:${indent*28}px;text-align:left;font-weight:500;color:var(--text);" title="${esc(item.name)}">${hasChild ? `<span class="row-name-link" onclick="focarLinha('adset','${esc(item.id)}',event)">${esc(item.name)}</span>` : esc(item.name)}</td>
+            <td class="ads-campaign-name" style="padding-left:${indent*28}px;text-align:left;font-weight:500;color:var(--text);" title="${esc(item.name)}">${hasChild ? `<span class="row-name-link" onclick="focarLinha('adset','${esc(item.id)}',event)">${esc(item.name)}</span>` : esc(item.name)}</td>
             <td><span class="status-badge" style="${bs(item.status)}">${esc(item.status||'')}</span></td>
+            ${hasChild ? adsBudgetCell(item, 'adset') : '<td class="ads-budget-cell"><span class="ads-budget-inherited">—</span></td>'}
             ${cols.map(col=>`<td>${getVal(col.key)}</td>`).join('')}
         </tr>`;
     }).join('');
 
     parentRow.insertAdjacentHTML('afterend', html);
+    lucide.createIcons({ nodes:[$('tabela-campanhas-corpo')] });
 }
 
 // ── Melhores Anúncios ─────────────────────────────────────────
@@ -4573,6 +4815,8 @@ async function abrirAdMedia(adId) {
 document.addEventListener('keydown', e => {
     if (e.key === 'Escape' && document.getElementById('adMediaOverlay')?.classList.contains('open')) {
         fecharAdMedia(null);
+    } else if (e.key === 'Escape' && document.getElementById('modalAdsBudget')?.classList.contains('open')) {
+        fecharModalAdsBudget();
     } else if (e.key === 'Escape' && document.getElementById('modalCampanha')?.classList.contains('open')) {
         fecharModalCampanha();
     }

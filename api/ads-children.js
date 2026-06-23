@@ -28,7 +28,8 @@ export default async function handler(req, res) {
   if (cached) return res.status(200).json(cached);
 
   const insightFields = 'spend,impressions,clicks,outbound_clicks,ctr,reach,cpm,cpc,frequency,inline_link_clicks,actions,action_values,cost_per_action_type,purchase_roas';
-  const fields = `name,status,insights.date_preset(${datePreset}){${insightFields}}`;
+  const budgetFields = level === 'adsets' ? ',daily_budget,lifetime_budget' : '';
+  const fields = `name,status${budgetFields},insights.date_preset(${datePreset}){${insightFields}}`;
 
   try {
     const parentCheck = await fetchMeta(`https://graph.facebook.com/v20.0/${parentId}?fields=account_id&access_token=${token}`);
