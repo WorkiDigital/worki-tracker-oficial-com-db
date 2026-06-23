@@ -2177,15 +2177,31 @@ async function authFetch(url, opts = {}) {
     }
 }
 
+// Mensagem de erro amigável e ESPECÍFICA a partir do erro/status. Centraliza o
+// que antes virava sempre um "erro genérico": distingue sem conexão, timeout,
+// sem permissão (403), erro de servidor (5xx). 401 é tratado no authFetch (redirect).
+function mensagemErro(err, status) {
+    const msg = (err && err.message) || '';
+    if (err && err.name === 'AbortError') return 'O servidor demorou a responder. Tente novamente.';
+    if (navigator.onLine === false || /Failed to fetch|NetworkError|ERR_INTERNET/i.test(msg)) {
+        return 'Sem conexão com a internet. Verifique sua rede.';
+    }
+    if (status === 403) return 'Você não tem permissão para esta ação.';
+    if (status === 404) return 'Não encontrado.';
+    if (status >= 500) return 'Erro no servidor. Tente novamente em instantes.';
+    return msg || 'Erro ao comunicar com o servidor.';
+}
+
 async function readApiJson(response, fallbackMessage = 'Erro ao comunicar com o servidor') {
     const contentType = response.headers.get('content-type') || '';
     if (!contentType.includes('application/json')) {
-        throw new Error(`${fallbackMessage} (HTTP ${response.status})`);
+        throw new Error(mensagemErro(null, response.status) || `${fallbackMessage} (HTTP ${response.status})`);
     }
 
     const data = await response.json();
     if (!response.ok) {
-        throw new Error(data?.error || `${fallbackMessage} (HTTP ${response.status})`);
+        // Mensagem do backend tem prioridade; senão, usa a específica por status.
+        throw new Error(data?.error || mensagemErro(null, response.status));
     }
     return data;
 }
@@ -2199,8 +2215,8 @@ async function authFetchJsonTimeout(url, ms = 30000) {
         if (!r.ok && !data.error) data.error = `HTTP ${r.status}`;
         return data;
     } catch (e) {
-        if (e.name === 'AbortError') throw new Error('A busca demorou demais. Tente novamente ou reduza o periodo.');
-        throw e;
+        if (e.name === 'AbortError') throw new Error('A busca demorou demais. Tente novamente ou reduza o período.');
+        throw new Error(mensagemErro(e));
     } finally {
         clearTimeout(timer);
     }

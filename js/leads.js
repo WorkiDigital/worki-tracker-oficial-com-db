@@ -57,7 +57,8 @@ async function recarregarLeads(silencioso = false) {
         } else {
             dot.style.background = 'var(--red)';
             label.textContent = 'erro ao carregar';
-            if (!silencioso) toast(e.message, 'error');
+            // mensagemErro (global, index.html) dá texto específico por tipo de falha.
+            if (!silencioso) toast(typeof mensagemErro === 'function' ? mensagemErro(e) : e.message, 'error');
         }
     } finally {
         if (icon) icon.style.animation = '';
