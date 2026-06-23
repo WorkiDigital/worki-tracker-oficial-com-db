@@ -35,18 +35,25 @@ function capClienteNome() {
 // Espelha o seletor global de cliente (das abas Leads) dentro da aba Captação,
 // já que #leadsControls não aparece aqui. Só admin vê.
 function capSincronizarSeletorCliente() {
-  const box = $('capClienteSelectorBox');
-  const sel = $('capSelectCliente');
   const global = $('selectClienteAdmin');
   const user = capUsuario();
-  if (!box || !sel) return;
-  if (!user.is_admin || !global) { box.style.display = 'none'; return; }
+  const seletores = [
+    { box: $('capClienteSelectorBox'), sel: $('capSelectCliente') },
+    { box: $('intClienteSelectorBox'), sel: $('intSelectCliente') },
+  ];
 
-  // Copia as <option> do seletor global e marca o cliente atual.
-  sel.innerHTML = global.innerHTML;
-  if (clienteAdminSelecionado) sel.value = String(clienteAdminSelecionado);
-  box.style.display = 'flex';
-  if (window.lucide) lucide.createIcons({ nodes: [box] });
+  seletores.forEach(({ box, sel }) => {
+    if (!box || !sel) return;
+    if (!user.is_admin || !global) {
+      box.style.display = 'none';
+      return;
+    }
+    // Copia as <option> do seletor global e marca o cliente atual.
+    sel.innerHTML = global.innerHTML;
+    if (clienteAdminSelecionado) sel.value = String(clienteAdminSelecionado);
+    box.style.display = 'flex';
+    if (window.lucide) lucide.createIcons({ nodes: [box] });
+  });
 }
 
 function capExigirCliente() {
@@ -108,13 +115,6 @@ async function capCopiar(text, msg) {
   }
 }
 
-async function carregarCaptacao() {
-  await Promise.allSettled([
-    carregarCampanhasLink(),
-    capIntCarregar(),
-  ]);
-}
-
 function capIntBloquear(bloqueado, mensagem) {
   const blocked = $('capIntBlocked');
   const content = $('capIntContent');
@@ -142,6 +142,7 @@ function capIntConceitoLabel(key) {
 }
 
 async function capIntCarregar() {
+  capSincronizarSeletorCliente();
   const clienteId = capClienteId();
   const seq = ++_capIntLoadSeq;
   _capIntEtapas = [];
