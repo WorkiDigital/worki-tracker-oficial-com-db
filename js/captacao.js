@@ -244,6 +244,12 @@ function capIntCancelarForm() {
   if (form) form.style.display = 'none';
 }
 
+async function capIntCancelarConfig() {
+  capIntCancelarForm();
+  await capIntCarregar();
+  toast('Alterações não salvas foram descartadas.', 'success');
+}
+
 function capIntEtapaPayload(etapa, position) {
   return capBodyCliente({
     id: etapa.id || undefined,

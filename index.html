@@ -15,7 +15,7 @@
     <!-- Exportação de relatório em PDF -->
     <script defer src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-    <link rel="stylesheet" href="css/dashboard.css?v=20260622-2">
+    <link rel="stylesheet" href="css/dashboard.css?v=20260622-3">
     <link rel="stylesheet" href="css/splash.css">
     <script defer src="js/utils.js"></script>
 </head>
@@ -1725,8 +1725,8 @@
                     <div class="cap-int-divider"></div>
                     <div class="cap-journey-head">
                         <div>
-                            <strong>Etapas da jornada geral</strong>
-                            <p>Válidas para campanhas de mensagem e leads sem um link rastreável específico.</p>
+                            <strong>Etapas por palavra-chave</strong>
+                            <p>O atendente envia uma palavra-chave e o sistema registra a etapa e envia o evento escolhido.</p>
                         </div>
                         <button type="button" class="btn btn-primary btn-sm" onclick="capIntNovaEtapa()">
                             <i data-lucide="plus" style="width:13px;"></i> Nova etapa
@@ -1764,7 +1764,10 @@
                         </div>
                     </div>
 
-                    <button type="button" class="btn-confirm" id="capIntSalvarConfigBtn" onclick="capIntSalvarConfig()">Salvar Alterações</button>
+                    <div class="cap-int-actions">
+                        <button type="button" class="btn btn-ghost" onclick="capIntCancelarConfig()">Cancelar</button>
+                        <button type="button" class="btn-confirm" id="capIntSalvarConfigBtn" onclick="capIntSalvarConfig()">Salvar alterações</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -5267,7 +5270,7 @@ function resetLeadSearchAutofill() {
 <script defer src="js/leads.js?v=20260622-1"></script>
 <script defer src="js/admin.js?v=20260622-4"></script>
 <script defer src="js/reports-auto.js"></script>
-<script defer src="js/captacao.js?v=20260622-5"></script>
+<script defer src="js/captacao.js?v=20260622-6"></script>
 
 <!-- Drawer Perfil do Lead (4 abas) — deve ficar no final do body para z-index funcionar -->
 <div id="leadProfileDrawer" style="position:fixed;inset:0;z-index:9999;display:none;align-items:stretch;justify-content:flex-end;background:rgba(0,0,0,0.55);" onclick="if(event.target===this)fecharPerfilLead()">

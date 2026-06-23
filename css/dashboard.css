@@ -525,6 +525,14 @@ html.light .modal { background:#fff; border-color:var(--border); }
 .cap-int-template { width:100%; min-height:150px; box-sizing:border-box; resize:vertical; padding:11px 12px; border:1px solid var(--border); border-radius:8px; background:var(--bg-secondary); color:var(--text); font-family:monospace; font-size:12px; line-height:1.45; }
 .cap-int-template:focus { outline:none; border-color:var(--blue); box-shadow:0 0 0 3px rgba(59,130,246,.12); }
 .cap-int-divider { height:1px; margin:4px 0 16px; background:var(--border); }
+.cap-int-card .cap-journey-head { margin:0 0 12px; }
+.cap-int-card .cap-journey-head .btn-primary { min-height:35px; padding:7px 13px; border-radius:8px; box-shadow:0 5px 12px rgba(37,99,235,.2); }
+.cap-int-card .cap-journey-stage { min-height:52px; padding:10px 12px; background:var(--bg-secondary); }
+.cap-int-card .cap-journey-order { width:24px; height:24px; flex-basis:24px; }
+.cap-int-card .cap-journey-actions { gap:6px; }
+.cap-int-actions { display:grid; grid-template-columns:minmax(150px,.7fr) minmax(240px,1.3fr); gap:10px; margin-top:12px; }
+.cap-int-actions .btn { min-height:44px; justify-content:center; border-radius:8px; font-weight:700; }
+.cap-int-actions .btn-confirm { min-height:44px; margin:0; text-transform:none; }
 @media(max-width:720px) {
     #modalCampanha { align-items:flex-end; }
     #modalCampanha .modal { width:100vw !important; max-width:none !important; max-height:94vh !important; border-radius:16px 16px 0 0; padding:20px 16px; }
@@ -545,6 +553,7 @@ html.light .modal { background:#fff; border-color:var(--border); }
     .cap-int-card .cap-journey-stage { align-items:flex-start; }
     .cap-int-card .cap-journey-actions { flex-wrap:wrap; justify-content:flex-end; max-width:64px; }
     #capIntForm .cap-grid-main { grid-template-columns:1fr !important; }
+    .cap-int-actions { grid-template-columns:1fr; }
     .cap-overview-grid { grid-template-columns:1fr !important; }
 }
 
