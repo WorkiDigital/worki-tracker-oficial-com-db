@@ -193,7 +193,7 @@
             <div class="input-group"><label>Cidade <span style="color:var(--muted);font-size:11px;">(Ex: Fortaleza - CE)</span></label><input type="text" id="capiCidade" placeholder="Cidade - UF"></div>
             <div class="input-group" style="grid-column:1/-1;"><label>Endereço</label><input type="text" id="capiEndereco" placeholder="Rua, número, bairro"></div>
         </div>
-        <button class="btn-confirm" id="btnConfirmarCapi" onclick="confirmarVenda()" style="margin-top:8px;">Confirmar Venda e Enviar CAPI 🚀</button>
+        <button class="btn-confirm" id="btnConfirmarCapi" onclick="confirmarVenda()" style="margin-top:8px;display:flex;align-items:center;justify-content:center;gap:8px;"><i data-lucide="send" style="width:15px;"></i> Confirmar Venda e Enviar CAPI</button>
     </div>
 </div>
 
@@ -207,7 +207,7 @@
         <p style="color:var(--muted);font-size:13px;margin-bottom:20px;">Marcar o lead <strong id="modalQualificarNome" style="color:var(--text-primary)"></strong> como Qualificado?<br>O evento será enviado para a Meta imediatamente.</p>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
             <button class="btn btn-sm" onclick="$('qualificarModal').classList.remove('open')" style="border:1px solid var(--border);background:var(--bg-secondary);color:var(--text-primary);">Cancelar</button>
-            <button class="btn btn-sm" id="btnConfirmarQualificacao" onclick="confirmarQualificacao()" style="background:#3b82f6;color:#fff;border:none;">Confirmar 🚀</button>
+            <button class="btn btn-sm" id="btnConfirmarQualificacao" onclick="confirmarQualificacao()" style="background:#3b82f6;color:#fff;border:none;display:inline-flex;align-items:center;justify-content:center;gap:6px;"><i data-lucide="check" style="width:14px;"></i> Confirmar</button>
         </div>
     </div>
 </div>
@@ -684,7 +684,7 @@
 <div class="sidebar" id="sidebar">
     <div class="logo">
         <div id="sidebar-logo" style="display:flex;align-items:center;">
-            <img src="img/logo_menu.png" alt="Logo" style="height:32px;width:auto;object-fit:contain;flex-shrink:0;" />
+            <img src="img/logo_menu.png" alt="Logo do painel" style="height:32px;width:auto;object-fit:contain;flex-shrink:0;" />
         </div>
         <div class="logo-text" id="sidebar-name" style="font-size:15px;font-weight:800;letter-spacing:-0.3px;line-height:1;">adlytics</div>
     </div>

@@ -279,7 +279,19 @@ function renderTabela() {
 
     const tbody = $('tabela-corpo');
     if (!pagina.length) {
-        tbody.innerHTML = `<tr><td colspan="13" style="text-align:center;padding:40px;color:var(--muted);">Nenhum lead encontrado.</td></tr>`;
+        const temBusca = (($('inputBusca')?.value || '').trim().length > 0);
+        const msg = temBusca
+            ? 'Nenhum lead corresponde à busca.'
+            : 'Nenhum lead neste período.';
+        const dica = temBusca
+            ? 'Tente outro nome ou telefone.'
+            : 'Ajuste o período no filtro acima ou aguarde novos contatos.';
+        tbody.innerHTML = `<tr><td colspan="13" style="text-align:center;padding:48px 20px;color:var(--muted);">
+            <i data-lucide="users-round" style="width:34px;height:34px;opacity:.4;display:block;margin:0 auto 12px;"></i>
+            <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px;">${msg}</div>
+            <div style="font-size:12px;">${dica}</div>
+        </td></tr>`;
+        if (window.lucide) lucide.createIcons({ nodes: [tbody] });
         $('paginacao').innerHTML = '';
         atualizarSelecaoLeads();
         return;
@@ -1014,6 +1026,7 @@ function qualificarLead(idx) {
     chumboQualificarId = lead.id;
     $('modalQualificarNome').textContent = lead.nome || 'desconhecido';
     $('qualificarModal').classList.add('open');
+    if (window.lucide) lucide.createIcons({ nodes: [$('qualificarModal')] });
 }
 
 async function confirmarQualificacao() {
@@ -1169,8 +1182,14 @@ function lpMudarTab(tab, renderizar = true) {
     if (renderizar && _lpDados) lucide.createIcons({ nodes: [$('leadProfileDrawer')] });
 }
 
-function lpRow(label, valor, cor) {
-    if (!valor || valor === '—') return `<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;"><span style="font-size:12px;color:var(--muted);flex-shrink:0;">${label}</span><span style="font-size:13px;color:var(--muted);font-style:italic;">—</span></div>`;
+// lpRow(label, valor, cor, sempreMostrar)
+// Por padrão, OMITE a linha quando o valor é vazio (reduz o "mar de —" no drawer).
+// Campos essenciais (Nome, Telefone, Status...) passam sempreMostrar=true para
+// exibir "—" mesmo vazios — a ausência ali é informativa.
+function lpRow(label, valor, cor, sempreMostrar) {
+    const vazio = !valor || valor === '—';
+    if (vazio && !sempreMostrar) return '';
+    if (vazio) return `<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;"><span style="font-size:12px;color:var(--muted);flex-shrink:0;">${label}</span><span style="font-size:13px;color:var(--muted);font-style:italic;">—</span></div>`;
     return `<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;"><span style="font-size:12px;color:var(--muted);flex-shrink:0;">${label}</span><span style="font-size:13px;color:${cor||'var(--text-primary)'};font-weight:500;text-align:right;word-break:break-word;">${valor}</span></div>`;
 }
 
@@ -1204,12 +1223,12 @@ function lpPreencherDados({ lead, jornada, interacoes }) {
     $('lpStatusBadge').style.borderColor = isVendido ? 'rgba(16,185,129,.3)' : isQualif ? 'rgba(99,102,241,.3)' : 'var(--border)';
 
     // ── Aba Perfil ──
-    $('lpRowNome').innerHTML     = lpRow('Nome completo', lead.nome);
-    $('lpRowTel').innerHTML      = lpRow('Telefone', lead.telefone);
+    $('lpRowNome').innerHTML     = lpRow('Nome completo', lead.nome, null, true);
+    $('lpRowTel').innerHTML      = lpRow('Telefone', lead.telefone, null, true);
     $('lpRowEmail').innerHTML    = lpRow('E-mail', lead.email);
     $('lpRowCpf').innerHTML      = lpRow('CPF', lead.cpf);
     $('lpRowEndereco').innerHTML = lpRow('Endereço', [lead.endereco, lead.cidade, lead.estado].filter(Boolean).join(', ') || null);
-    $('lpRowStatus').innerHTML   = lpRow('Status', status, badgeColor);
+    $('lpRowStatus').innerHTML   = lpRow('Status', status, badgeColor, true);
     const scoreVal = lead.lead_score || 0;
     const scoreCor = scoreVal >= 70 ? '#ef4444' : scoreVal >= 40 ? '#f59e0b' : '#6b7280';
     $('lpRowScore').innerHTML    = lpRow('Lead Score', scoreVal ? `${scoreVal} pts` : null, scoreCor);
@@ -1221,7 +1240,7 @@ function lpPreencherDados({ lead, jornada, interacoes }) {
 
     // ── Aba Anúncio ──
     const origemInfo = obterOrigemLead(lead.lead_origin);
-    $('lpRowOrigem').innerHTML    = lpRow('Origem do lead', origemInfo.label, origemInfo.color);
+    $('lpRowOrigem').innerHTML    = lpRow('Origem do lead', origemInfo.label, origemInfo.color, true);
     $('lpRowTrackingCampanha').innerHTML = lpRow('Link rastreável', lead.tracking_campaign_name);
     $('lpRowCampanha').innerHTML  = lpRow('Campanha', lead.utm_campaign, '#3b82f6');
     $('lpRowConjunto').innerHTML  = lpRow('Conjunto', lead.utm_medium, '#6366f1');
@@ -1341,7 +1360,7 @@ function lpPreencherDados({ lead, jornada, interacoes }) {
 
     $('lpCardResposta').textContent = lpFormatDuracao(diffResposta) || '—';
     $('lpCardCiclo').textContent    = lpFormatDuracao(diffCiclo) || '—';
-    $('lpRowStatusVenda').innerHTML = lpRow('Status', status, badgeColor);
+    $('lpRowStatusVenda').innerHTML = lpRow('Status', status, badgeColor, true);
     $('lpRowValor').innerHTML       = lpRow('Valor da venda', lead.valor_venda ? `R$ ${parseFloat(lead.valor_venda).toLocaleString('pt-BR',{minimumFractionDigits:2})}` : null, '#10b981');
     $('lpRowProduto').innerHTML     = lpRow('Produto', lead.produto);
     $('lpRowDataVenda').innerHTML   = lpRow('Data da venda', lpFormatData(lead.sale_closed_at));
