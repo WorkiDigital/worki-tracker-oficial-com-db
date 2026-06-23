@@ -106,7 +106,7 @@ async function carregarClientesAdmin() {
 }
 
 function switchEditTab(tab) {
-    ['dados','meta','inteligente'].forEach(t => {
+    ['dados','meta'].forEach(t => {
         const panel = $('editPanel-' + t);
         if (panel) panel.style.display = t === tab ? '' : 'none';
         const btn = $('editTab-' + t);
@@ -114,151 +114,6 @@ function switchEditTab(tab) {
         btn.style.background = t === tab ? 'var(--blue)' : 'transparent';
         btn.style.color      = t === tab ? '#fff' : 'var(--text-muted)';
     });
-    if (tab === 'inteligente') jornadaCarregar();
-}
-
-// ── Conceitos de evento Meta (fonte única no backend, via _capi.js) ──────────
-let _conceitos = null; // cache [{key,label,web,wpp}]
-async function carregarConceitos() {
-    if (_conceitos) return _conceitos;
-    try {
-        const r = await authFetch('/api/journey-stages?meta=concepts');
-        _conceitos = await r.json();
-    } catch { _conceitos = []; }
-    return _conceitos;
-}
-function conceitoLabel(key) {
-    const c = (_conceitos || []).find(x => x.key === key);
-    return c ? c.label : key;
-}
-
-// ── Rastreamento Inteligente: CRUD de etapas (jornada por palavra-chave) ─────
-let _jornadaEtapas = [];
-
-async function jornadaCarregar() {
-    const lista = $('jornadaLista');
-    if (!lista) return;
-    const clienteId = $('editCliId').value;
-    if (!clienteId) { lista.innerHTML = '<p style="font-size:12px;color:var(--muted);">Salve o cliente primeiro.</p>'; return; }
-    lista.innerHTML = '<p style="font-size:12px;color:var(--muted);">Carregando…</p>';
-    jornadaCancelarForm();
-    await carregarConceitos();
-    jornadaPopularSelect();
-    try {
-        const r = await authFetch(`/api/journey-stages?cliente_id=${clienteId}`);
-        _jornadaEtapas = await r.json();
-        if (!Array.isArray(_jornadaEtapas) || !_jornadaEtapas.length) {
-            lista.innerHTML = '<p style="font-size:12px;color:var(--muted);">Nenhuma etapa configurada. Crie a primeira abaixo.</p>';
-            return;
-        }
-        lista.innerHTML = _jornadaEtapas.map(e => `
-            <div style="display:flex;align-items:center;gap:8px;border:1px solid var(--border);border-radius:8px;padding:9px 11px;background:var(--bg-primary);">
-                <span style="font-size:11px;color:var(--muted);min-width:18px;">${e.position || 0}</span>
-                <div style="flex:1;min-width:0;">
-                    <div style="font-size:13px;font-weight:600;color:var(--text-primary);">${esc(e.name)} ${e.enabled ? '' : '<span style=\"color:var(--muted);font-weight:400;\">(inativa)</span>'}</div>
-                    <div style="font-size:11px;color:var(--muted);">${conceitoLabel(e.event_concept)} · ${(e.keywords||[]).join(', ') || 'sem palavra-chave'}</div>
-                </div>
-                <button class="btn-icon" title="Editar" onclick="jornadaEditar(${e.id})" style="background:transparent;border:none;cursor:pointer;color:var(--blue);"><i data-lucide="edit-3" style="width:15px;"></i></button>
-                <button class="btn-icon" title="Excluir" onclick="jornadaExcluir(${e.id})" style="background:transparent;border:none;cursor:pointer;color:var(--red);"><i data-lucide="trash-2" style="width:15px;"></i></button>
-            </div>`).join('');
-        if (window.lucide) lucide.createIcons();
-    } catch (e) {
-        lista.innerHTML = `<p style="font-size:12px;color:var(--red);">Erro: ${esc(e.message)}</p>`;
-    }
-}
-
-function jornadaNovaEtapa() {
-    jornadaPopularSelect();
-    $('jeId').value = '';
-    $('jeNome').value = '';
-    $('jeConcept').value = 'purchase';
-    $('jeKeywords').value = '';
-    $('jeRegex').value = '';
-    $('jeEnabled').checked = true;
-    $('jeSalvarBtn').textContent = 'Criar etapa';
-    $('jornadaForm').style.display = '';
-}
-
-function jornadaEditar(id) {
-    const e = _jornadaEtapas.find(x => Number(x.id) === Number(id));
-    if (!e) return;
-    jornadaPopularSelect();
-    $('jeId').value = e.id;
-    $('jeNome').value = e.name || '';
-    $('jeConcept').value = e.event_concept || 'purchase';
-    $('jeKeywords').value = (e.keywords || []).join(', ');
-    $('jeRegex').value = e.value_regex || '';
-    $('jeEnabled').checked = e.enabled !== false;
-    $('jeSalvarBtn').textContent = 'Salvar etapa';
-    $('jornadaForm').style.display = '';
-}
-
-function jornadaCancelarForm() {
-    const f = $('jornadaForm');
-    if (f) f.style.display = 'none';
-}
-
-async function jornadaSalvarEtapa() {
-    const clienteId = $('editCliId').value;
-    if (!clienteId) { toast('Salve o cliente primeiro.', 'error'); return; }
-    const nome = $('jeNome').value.trim();
-    if (!nome) { toast('Informe o nome da etapa.', 'error'); return; }
-    const keywords = $('jeKeywords').value.split(',').map(k => k.trim()).filter(Boolean);
-    if (!keywords.length) { toast('Informe ao menos uma palavra-chave.', 'error'); return; }
-    const body = {
-        cliente_id: clienteId,
-        id: $('jeId').value || undefined,
-        name: nome,
-        event_concept: $('jeConcept').value,
-        trigger_type: 'keyword',
-        keywords,
-        value_regex: $('jeRegex').value.trim() || null,
-        position: _jornadaEtapas.length, // novo no fim; edição mantém via reorder futuro
-        enabled: $('jeEnabled').checked,
-    };
-    // Em edição, preserva a posição original.
-    if (body.id) {
-        const orig = _jornadaEtapas.find(x => Number(x.id) === Number(body.id));
-        if (orig) body.position = orig.position;
-    }
-    try {
-        const r = await authFetch('/api/journey-stages', {
-            method: body.id ? 'PATCH' : 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body),
-        });
-        const d = await r.json();
-        if (!r.ok) throw new Error(d.error || 'Falha ao salvar etapa');
-        toast('Etapa salva.', 'success');
-        await jornadaCarregar();
-    } catch (e) {
-        toast('Erro: ' + e.message, 'error');
-    }
-}
-
-async function jornadaExcluir(id) {
-    const clienteId = $('editCliId').value;
-    if (!clienteId) return;
-    try {
-        const r = await authFetch(`/api/journey-stages?cliente_id=${clienteId}&id=${id}`, { method: 'DELETE' });
-        if (!r.ok) { const d = await r.json(); throw new Error(d.error || 'Falha'); }
-        toast('Etapa excluída.', 'success');
-        await jornadaCarregar();
-    } catch (e) {
-        toast('Erro: ' + e.message, 'error');
-    }
-}
-
-// Popula o <select id="jeConcept"> SÓ com eventos válidos no canal de mensagem
-// (WhatsApp/CTWA) — a aba Inteligente é disparada por mensagem do atendente.
-// Eventos que só existem no canal web (Contact, AddToCart, ViewContent...) NÃO
-// aparecem aqui: a Meta os rejeita em business_messaging.
-function jornadaPopularSelect() {
-    const sel = $('jeConcept');
-    if (!sel || !_conceitos) return;
-    const validos = _conceitos.filter(c => c.wpp);
-    sel.innerHTML = validos.map(c =>
-        `<option value="${c.key}">${esc(c.label)}</option>`).join('');
 }
 
 function abrirEditCliente(id) {
@@ -271,8 +126,6 @@ function abrirEditCliente(id) {
     $('editCliAccountId').value = c.account_id || '';
     $('editCliCapiPixel').value = c.capi_pixel_id || '';
     $('editCliCapiToken').value = ''; // nunca exibe o token (write-only)
-    $('editCliTemplate').value  = c.template_venda || '';
-    $('editCliTemplateQualificacao').value = c.template_qualificacao || '';
     $('editCliEmail').value     = c.email_contato || '';
     $('editCliSenha').value     = '';
     $('editCliSubtitle').textContent = c.nome || '';
@@ -300,8 +153,6 @@ async function salvarEdicaoCliente() {
         account_id:     $('editCliAccountId').value.trim() || undefined,
         capi_pixel_id:  $('editCliCapiPixel').value.trim() || undefined,
         capi_token:     $('editCliCapiToken').value.trim() || undefined,
-        template_venda: $('editCliTemplate').value.trim() || undefined,
-        template_qualificacao: $('editCliTemplateQualificacao').value.trim() || undefined,
         permissoes: {
             leads:      $('permLeads').checked,
             anuncios:   $('permAnuncios').checked,

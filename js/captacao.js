@@ -9,6 +9,8 @@ let _capInstancias  = [];   // instâncias Evolution vinculadas ao cliente
 let _capArquivarId  = null; // link aguardando confirmação no modal interno
 let _capJornadaEtapas = []; // etapas locais; persistidas junto com o link
 let _capConceitos = null;   // conceitos Meta aceitos pelo backend
+let _capIntEtapas = [];     // jornada geral CTWA do cliente selecionado
+let _capIntLoadSeq = 0;     // impede resposta antiga ao trocar de cliente
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 const baseUrl = () => window.location.origin;
@@ -103,6 +105,269 @@ async function capCopiar(text, msg) {
     toast(msg || 'Copiado!', 'success');
   } catch {
     toast('Não foi possível copiar automaticamente.', 'error');
+  }
+}
+
+async function carregarCaptacao() {
+  await Promise.allSettled([
+    carregarCampanhasLink(),
+    capIntCarregar(),
+  ]);
+}
+
+function capIntBloquear(bloqueado, mensagem) {
+  const blocked = $('capIntBlocked');
+  const content = $('capIntContent');
+  if (blocked) {
+    blocked.style.display = bloqueado ? '' : 'none';
+    if (mensagem) blocked.textContent = mensagem;
+  }
+  if (content) content.style.display = bloqueado ? 'none' : '';
+}
+
+function capIntConceitosWpp() {
+  return (_capConceitos || []).filter(conceito => conceito.wpp);
+}
+
+function capIntPopularSelect() {
+  const select = $('capIntConcept');
+  if (!select) return;
+  select.innerHTML = capIntConceitosWpp()
+    .map(conceito => `<option value="${esc(conceito.key)}">${esc(conceito.label)}</option>`)
+    .join('');
+}
+
+function capIntConceitoLabel(key) {
+  return capIntConceitosWpp().find(conceito => conceito.key === key)?.label || key || 'Evento';
+}
+
+async function capIntCarregar() {
+  const clienteId = capClienteId();
+  const seq = ++_capIntLoadSeq;
+  _capIntEtapas = [];
+  capIntCancelarForm();
+  if ($('capIntTemplate')) $('capIntTemplate').value = '';
+  if ($('capIntQualificacao')) $('capIntQualificacao').value = '';
+
+  if (!clienteId) {
+    capIntBloquear(true, 'Selecione um cliente para configurar o Rastreamento Inteligente.');
+    return;
+  }
+
+  capIntBloquear(false);
+  if ($('capIntLista')) $('capIntLista').innerHTML = '<div class="cap-journey-empty">Carregando configuração…</div>';
+
+  try {
+    const [configResponse, stagesResponse] = await Promise.all([
+      authFetch(capUrlApi('/api/journey-stages', { action: 'config' })),
+      authFetch(capUrlApi('/api/journey-stages')),
+      capCarregarConceitos(),
+    ]);
+    const config = await readApiJson(configResponse, 'Falha ao carregar a configuração inteligente');
+    const stages = await readApiJson(stagesResponse, 'Falha ao carregar as etapas da jornada');
+    if (seq !== _capIntLoadSeq || Number(capClienteId()) !== Number(clienteId)) return;
+
+    $('capIntTemplate').value = config.template_venda || '';
+    $('capIntQualificacao').value = config.template_qualificacao || '';
+    _capIntEtapas = Array.isArray(stages) ? stages : [];
+    capIntPopularSelect();
+    capIntRender();
+  } catch (e) {
+    if (seq !== _capIntLoadSeq) return;
+    _capIntEtapas = [];
+    if ($('capIntLista')) {
+      $('capIntLista').innerHTML = `<div class="cap-journey-empty" style="color:var(--red);">Erro: ${esc(e.message)}</div>`;
+    }
+  }
+}
+
+function capIntRender() {
+  const lista = $('capIntLista');
+  if (!lista) return;
+  if (!_capIntEtapas.length) {
+    lista.innerHTML = '<div class="cap-journey-empty">Nenhuma etapa configurada. Crie a primeira abaixo.</div>';
+    return;
+  }
+
+  lista.innerHTML = _capIntEtapas.map((etapa, index) => `
+    <div class="cap-journey-stage">
+      <span class="cap-journey-order">${index + 1}</span>
+      <div class="cap-journey-stage-main">
+        <strong>${esc(etapa.name)}${etapa.enabled === false ? ' · inativa' : ''}</strong>
+        <small>${esc(capIntConceitoLabel(etapa.event_concept))} · ${esc((etapa.keywords || []).join(', ') || 'sem palavra-chave')}</small>
+      </div>
+      <div class="cap-journey-actions">
+        <button type="button" onclick="capIntMover(${index}, -1)" title="Mover para cima" ${index === 0 ? 'disabled' : ''}><i data-lucide="arrow-up"></i></button>
+        <button type="button" onclick="capIntMover(${index}, 1)" title="Mover para baixo" ${index === _capIntEtapas.length - 1 ? 'disabled' : ''}><i data-lucide="arrow-down"></i></button>
+        <button type="button" onclick="capIntEditar(${Number(etapa.id)})" title="Editar etapa"><i data-lucide="edit-3"></i></button>
+        <button type="button" class="danger" onclick="capIntExcluir(${Number(etapa.id)})" title="Excluir etapa"><i data-lucide="trash-2"></i></button>
+      </div>
+    </div>`).join('');
+  if (window.lucide) lucide.createIcons({ nodes: [lista] });
+}
+
+function capIntNovaEtapa() {
+  capIntPopularSelect();
+  $('capIntEtapaId').value = '';
+  $('capIntNome').value = '';
+  $('capIntConcept').value = capIntConceitosWpp().some(c => c.key === 'qualified')
+    ? 'qualified'
+    : (capIntConceitosWpp()[0]?.key || '');
+  $('capIntKeywords').value = '';
+  $('capIntMatch').value = 'partial';
+  $('capIntRegex').value = '';
+  $('capIntEnabled').checked = true;
+  $('capIntSalvarEtapaBtn').textContent = 'Criar etapa';
+  $('capIntForm').style.display = '';
+  $('capIntNome').focus();
+}
+
+function capIntEditar(id) {
+  const etapa = _capIntEtapas.find(item => Number(item.id) === Number(id));
+  if (!etapa) return;
+  capIntPopularSelect();
+  $('capIntEtapaId').value = etapa.id;
+  $('capIntNome').value = etapa.name || '';
+  $('capIntConcept').value = etapa.event_concept || 'lead';
+  $('capIntKeywords').value = (etapa.keywords || []).join(', ');
+  $('capIntMatch').value = etapa.keyword_match === 'exact' ? 'exact' : 'partial';
+  $('capIntRegex').value = etapa.value_regex || '';
+  $('capIntEnabled').checked = etapa.enabled !== false;
+  $('capIntSalvarEtapaBtn').textContent = 'Salvar etapa';
+  $('capIntForm').style.display = '';
+  $('capIntNome').focus();
+}
+
+function capIntCancelarForm() {
+  const form = $('capIntForm');
+  if (form) form.style.display = 'none';
+}
+
+function capIntEtapaPayload(etapa, position) {
+  return capBodyCliente({
+    id: etapa.id || undefined,
+    name: etapa.name,
+    event_concept: etapa.event_concept,
+    trigger_type: 'keyword',
+    keywords: etapa.keywords || [],
+    keyword_match: etapa.keyword_match === 'exact' ? 'exact' : 'partial',
+    value_regex: etapa.value_regex || null,
+    currency: etapa.currency || 'BRL',
+    position,
+    enabled: etapa.enabled !== false,
+  });
+}
+
+async function capIntSalvarEtapa() {
+  if (!capClienteId()) return toast('Selecione um cliente.', 'error');
+  const nome = $('capIntNome')?.value.trim();
+  const keywords = ($('capIntKeywords')?.value || '').split(',').map(k => k.trim()).filter(Boolean);
+  const valueRegex = $('capIntRegex')?.value.trim() || null;
+  if (!nome) return toast('Informe o nome da etapa.', 'error');
+  if (!keywords.length) return toast('Informe ao menos uma palavra-chave.', 'error');
+  if (valueRegex) {
+    try { new RegExp(valueRegex); } catch {
+      return toast('A expressão regular de valor é inválida.', 'error');
+    }
+  }
+
+  const id = Number($('capIntEtapaId')?.value) || null;
+  const original = _capIntEtapas.find(item => Number(item.id) === id);
+  const etapa = {
+    id,
+    name: nome,
+    event_concept: $('capIntConcept')?.value || 'lead',
+    keywords,
+    keyword_match: $('capIntMatch')?.value === 'exact' ? 'exact' : 'partial',
+    value_regex: valueRegex,
+    currency: original?.currency || 'BRL',
+    enabled: $('capIntEnabled')?.checked !== false,
+  };
+  const position = original ? _capIntEtapas.indexOf(original) : _capIntEtapas.length;
+  const button = $('capIntSalvarEtapaBtn');
+  const originalText = button.textContent;
+  button.disabled = true;
+  button.textContent = 'Salvando…';
+
+  try {
+    const response = await authFetch('/api/journey-stages', {
+      method: id ? 'PATCH' : 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(capIntEtapaPayload(etapa, position)),
+    });
+    await readApiJson(response, 'Falha ao salvar a etapa');
+    toast('Etapa salva.', 'success');
+    await capIntCarregar();
+  } catch (e) {
+    toast('Erro: ' + e.message, 'error');
+  } finally {
+    button.disabled = false;
+    button.textContent = originalText;
+  }
+}
+
+async function capIntExcluir(id) {
+  if (!capClienteId() || !id) return;
+  try {
+    const response = await authFetch(capUrlApi('/api/journey-stages', { id }), { method: 'DELETE' });
+    await readApiJson(response, 'Falha ao excluir a etapa');
+    toast('Etapa excluída.', 'success');
+    await capIntCarregar();
+  } catch (e) {
+    toast('Erro: ' + e.message, 'error');
+  }
+}
+
+async function capIntMover(index, direction) {
+  const destination = index + direction;
+  if (index < 0 || destination < 0 || destination >= _capIntEtapas.length) return;
+  const anterior = [..._capIntEtapas];
+  [_capIntEtapas[index], _capIntEtapas[destination]] =
+    [_capIntEtapas[destination], _capIntEtapas[index]];
+  capIntRender();
+
+  try {
+    const response = await authFetch('/api/journey-stages', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(capBodyCliente({
+        action: 'reorder',
+        stage_ids: _capIntEtapas.map(etapa => etapa.id),
+      })),
+    });
+    await readApiJson(response, 'Falha ao ordenar a jornada');
+  } catch (e) {
+    _capIntEtapas = anterior;
+    capIntRender();
+    toast('Erro ao ordenar: ' + e.message, 'error');
+  }
+}
+
+async function capIntSalvarConfig() {
+  if (!capClienteId()) return toast('Selecione um cliente.', 'error');
+  const button = $('capIntSalvarConfigBtn');
+  const originalText = button.textContent;
+  button.disabled = true;
+  button.textContent = 'Salvando…';
+  try {
+    const response = await authFetch('/api/journey-stages', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(capBodyCliente({
+        action: 'config',
+        template_venda: $('capIntTemplate')?.value || '',
+        template_qualificacao: $('capIntQualificacao')?.value || '',
+      })),
+    });
+    const config = await readApiJson(response, 'Falha ao salvar a configuração inteligente');
+    $('capIntTemplate').value = config.template_venda || '';
+    $('capIntQualificacao').value = config.template_qualificacao || '';
+    toast('Rastreamento inteligente atualizado.', 'success');
+  } catch (e) {
+    toast('Erro: ' + e.message, 'error');
+  } finally {
+    button.disabled = false;
+    button.textContent = originalText;
   }
 }
 

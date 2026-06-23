@@ -47,6 +47,17 @@ export default async function handler(req, res) {
       const cliente_id = alvoCliente(req.query.cliente_id);
       if (!cliente_id) return res.status(400).json({ error: 'cliente_id é obrigatório para administrador.' });
 
+      if (req.query.action === 'config') {
+        const config = await pool.query(
+          `SELECT template_venda, template_qualificacao
+           FROM clientes
+           WHERE id = $1`,
+          [cliente_id]
+        );
+        if (!config.rows.length) return res.status(404).json({ error: 'Cliente não encontrado.' });
+        return res.status(200).json(config.rows[0]);
+      }
+
       if (req.query.lead_id) {
         const leadId = parseInt(req.query.lead_id, 10);
         // Garante que o lead é do cliente (isolamento).
@@ -83,6 +94,69 @@ export default async function handler(req, res) {
       // Reenvio de um evento do histórico para a Meta: PATCH com action='resend'.
       if (req.body.action === 'resend') {
         return await reenviar(req, res, pool, cliente_id);
+      }
+
+      // Configuração geral do Rastreamento Inteligente. O cliente comum sempre
+      // usa o cliente_id do token; somente o admin pode escolher outro cliente.
+      if (req.body.action === 'config') {
+        if (method !== 'PATCH') {
+          return res.status(405).json({ error: 'Use PATCH para salvar a configuração.' });
+        }
+        const template_venda = String(req.body.template_venda || '').trim().slice(0, 10000) || null;
+        const template_qualificacao = String(req.body.template_qualificacao || '').trim().slice(0, 255) || null;
+        const config = await pool.query(
+          `UPDATE clientes
+           SET template_venda = $1, template_qualificacao = $2, atualizado_em = NOW()
+           WHERE id = $3
+           RETURNING template_venda, template_qualificacao`,
+          [template_venda, template_qualificacao, cliente_id]
+        );
+        if (!config.rows.length) return res.status(404).json({ error: 'Cliente não encontrado.' });
+        return res.status(200).json(config.rows[0]);
+      }
+
+      if (req.body.action === 'reorder') {
+        if (method !== 'PATCH') {
+          return res.status(405).json({ error: 'Use PATCH para ordenar as etapas.' });
+        }
+        const ids = Array.isArray(req.body.stage_ids)
+          ? req.body.stage_ids.map(id => parseInt(id, 10)).filter(id => Number.isInteger(id) && id > 0)
+          : [];
+        if (!ids.length || new Set(ids).size !== ids.length) {
+          return res.status(400).json({ error: 'Informe uma ordem válida de etapas.' });
+        }
+
+        const client = await pool.connect();
+        try {
+          await client.query('BEGIN');
+          const pertencentes = await client.query(
+            `SELECT id
+             FROM journey_stages
+             WHERE cliente_id = $1 AND tracking_campaign_id IS NULL
+             FOR UPDATE`,
+            [cliente_id]
+          );
+          const idsDoCliente = new Set(pertencentes.rows.map(row => Number(row.id)));
+          if (idsDoCliente.size !== ids.length || ids.some(id => !idsDoCliente.has(id))) {
+            await client.query('ROLLBACK');
+            return res.status(400).json({ error: 'A ordem deve conter todas as etapas deste cliente.' });
+          }
+          for (let position = 0; position < ids.length; position++) {
+            await client.query(
+              `UPDATE journey_stages
+               SET position = $1, updated_at = NOW()
+               WHERE id = $2 AND cliente_id = $3 AND tracking_campaign_id IS NULL`,
+              [position, ids[position], cliente_id]
+            );
+          }
+          await client.query('COMMIT');
+          return res.status(200).json({ ok: true, stage_ids: ids });
+        } catch (err) {
+          await client.query('ROLLBACK');
+          throw err;
+        } finally {
+          client.release();
+        }
       }
 
       const {

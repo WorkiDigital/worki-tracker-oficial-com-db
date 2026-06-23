@@ -515,6 +515,16 @@ html.light .modal { background:#fff; border-color:var(--border); }
 .cap-journey-actions button.danger:hover { color:var(--red); background:rgba(239,68,68,.08); }
 .cap-journey-actions button:disabled { opacity:.3; cursor:default; background:transparent; }
 .cap-journey-actions svg { width:13px; height:13px; }
+.cap-int-card { width:100%; box-sizing:border-box; }
+.cap-int-header { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:18px; }
+.cap-int-title { display:flex; align-items:center; gap:8px; color:var(--text); font-size:14px; font-weight:800; }
+.cap-int-title svg { width:17px; height:17px; color:var(--blue); }
+.cap-int-header p { max-width:720px; margin:5px 0 0; color:var(--muted); font-size:11px; line-height:1.5; }
+.cap-int-channel { flex:0 0 auto; padding:4px 8px; border-radius:999px; background:rgba(37,211,102,.11); color:#10b981; font-size:10px; font-weight:700; }
+.cap-int-form-grid { display:grid; grid-template-columns:minmax(0,1.35fr) minmax(240px,.65fr); gap:16px; align-items:start; }
+.cap-int-template { width:100%; min-height:150px; box-sizing:border-box; resize:vertical; padding:11px 12px; border:1px solid var(--border); border-radius:8px; background:var(--bg-secondary); color:var(--text); font-family:monospace; font-size:12px; line-height:1.45; }
+.cap-int-template:focus { outline:none; border-color:var(--blue); box-shadow:0 0 0 3px rgba(59,130,246,.12); }
+.cap-int-divider { height:1px; margin:4px 0 16px; background:var(--border); }
 @media(max-width:720px) {
     #modalCampanha { align-items:flex-end; }
     #modalCampanha .modal { width:100vw !important; max-width:none !important; max-height:94vh !important; border-radius:16px 16px 0 0; padding:20px 16px; }
@@ -527,6 +537,14 @@ html.light .modal { background:#fff; border-color:var(--border); }
     #modalCampanha .cap-journey-head .btn { flex:0 0 auto; }
     #modalCampanha .cap-journey-stage { align-items:flex-start; }
     #modalCampanha .cap-journey-actions { flex-wrap:wrap; justify-content:flex-end; max-width:64px; }
+    .cap-int-header { flex-direction:column; }
+    .cap-int-form-grid { grid-template-columns:1fr; }
+    .cap-int-card { padding:16px !important; }
+    .cap-int-card .cap-journey-head { align-items:flex-start; }
+    .cap-int-card .cap-journey-head .btn { flex:0 0 auto; }
+    .cap-int-card .cap-journey-stage { align-items:flex-start; }
+    .cap-int-card .cap-journey-actions { flex-wrap:wrap; justify-content:flex-end; max-width:64px; }
+    #capIntForm .cap-grid-main { grid-template-columns:1fr !important; }
     .cap-overview-grid { grid-template-columns:1fr !important; }
 }
 

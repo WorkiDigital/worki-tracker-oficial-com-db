@@ -15,7 +15,7 @@
     <!-- Exportação de relatório em PDF -->
     <script defer src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-    <link rel="stylesheet" href="css/dashboard.css?v=20260622-1">
+    <link rel="stylesheet" href="css/dashboard.css?v=20260622-2">
     <link rel="stylesheet" href="css/splash.css">
     <script defer src="js/utils.js"></script>
 </head>
@@ -571,7 +571,6 @@
         <div style="display:flex;gap:4px;margin-bottom:20px;background:var(--tag);border-radius:10px;padding:4px;">
             <button id="editTab-dados"  onclick="switchEditTab('dados')"  style="flex:1;padding:8px;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;background:var(--blue);color:#fff;">Dados</button>
             <button id="editTab-meta"   onclick="switchEditTab('meta')"   style="flex:1;padding:8px;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;background:transparent;color:var(--text-muted);">Meta Ads</button>
-            <button id="editTab-inteligente" onclick="switchEditTab('inteligente')" style="flex:1;padding:8px;border:none;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;background:transparent;color:var(--text-muted);">Inteligente</button>
         </div>
         <!-- Aba: Dados -->
         <div id="editPanel-dados">
@@ -610,55 +609,6 @@
             <p style="font-size:11px;color:var(--muted);margin:0 0 10px;"><strong style="color:var(--text);">CAPI Web (links rastreáveis)</strong> — atribui leads de link à campanha do Facebook. Token gerado em <em>Eventos Manager → Conjuntos de Dados → Conversions API</em>.</p>
             <div class="input-group"><label>Pixel CAPI Web <span style="color:var(--muted);font-weight:400;font-size:11px;">(dataset)</span></label><input type="text" id="editCliCapiPixel" placeholder="Apenas números"></div>
             <div class="input-group"><label>Token CAPI Web <span style="color:var(--muted);font-weight:400;font-size:11px;">(deixe em branco p/ não alterar)</span></label><input type="text" id="editCliCapiToken" placeholder="Token de API do dataset"></div>
-        </div>
-        <!-- Aba: Rastreamento Inteligente (jornada por mensagem no WhatsApp / CTWA) -->
-        <div id="editPanel-inteligente" style="display:none;">
-            <p style="font-size:11px;color:var(--muted);margin:0 0 14px;">
-                <strong style="color:var(--text);">Rastreamento inteligente.</strong>
-                Eventos enviados à Meta quando o atendente usa a palavra-chave no WhatsApp
-                (campanhas de mensagem / CTWA). Cada etapa dispara <strong>uma vez por lead</strong>.
-            </p>
-            <!-- Template de venda + gatilho de qualificação (vindos da antiga aba Venda) -->
-            <div class="input-group">
-                <label>Template de Venda <span style="color:var(--muted);font-weight:400;font-size:11px;">(formato da mensagem do atendente)</span></label>
-                <textarea id="editCliTemplate" rows="6" placeholder="Ex:&#10;Nome completo: {nome}&#10;Produto: {produto}&#10;Valor da Compra: {valor}&#10;Endereço: {endereco}&#10;Cidade: {cidade}" class="pad-md" style="width:100%;border:1px solid var(--border);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);font-family:monospace;font-size:12px;resize:vertical;margin-top:6px;box-sizing:border-box;"></textarea>
-            </div>
-            <div style="margin-bottom:14px;">
-                <label style="font-weight:600;font-size:13px;display:block;">Gatilho de Qualificação <span style="color:var(--muted);font-weight:400;font-size:11px;">(opcional)</span></label>
-                <span style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Palavra-chave que marca o lead como Qualificado (ex: #qualificado). Se vazio, usa #qualificado.</span>
-                <input type="text" id="editCliTemplateQualificacao" placeholder="Ex: #leadbom" class="pad-md" style="width:100%;border:1px solid var(--border);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);box-sizing:border-box;">
-            </div>
-            <hr style="border:none;border-top:1px solid var(--border);margin:6px 0 14px;">
-            <p style="font-size:12px;font-weight:600;color:var(--text);margin:0 0 10px;">Etapas da jornada</p>
-            <div id="jornadaLista" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;"></div>
-            <button class="btn btn-sm" onclick="jornadaNovaEtapa()" style="width:100%;border:1px dashed var(--border);background:transparent;color:var(--blue);padding:9px;border-radius:8px;cursor:pointer;font-size:13px;">
-                <i data-lucide="plus" style="width:13px;vertical-align:-2px;"></i> Nova etapa
-            </button>
-            <!-- Mini-form de etapa (inline) -->
-            <div id="jornadaForm" style="display:none;border:1px solid var(--border);border-radius:10px;padding:14px;margin-top:12px;background:var(--bg-secondary);">
-                <input type="hidden" id="jeId">
-                <div class="input-group"><label>Nome da etapa</label><input type="text" id="jeNome" placeholder="Ex: Compra confirmada"></div>
-                <div class="input-group">
-                    <label>Evento Meta</label>
-                    <select id="jeConcept" class="pad-md" style="width:100%;border:1px solid var(--border);border-radius:8px;background:var(--bg-primary);color:var(--text-primary);box-sizing:border-box;"></select>
-                </div>
-                <div class="input-group">
-                    <label>Palavra-chave do atendente <span style="color:var(--muted);font-weight:400;font-size:11px;">(separe por vírgula)</span></label>
-                    <input type="text" id="jeKeywords" placeholder="Ex: #venda, compra confirmada">
-                </div>
-                <div class="input-group" id="jeRegexBox">
-                    <label>Regex de valor <span style="color:var(--muted);font-weight:400;font-size:11px;">(grupo (?&lt;value&gt;...) — só p/ eventos com valor)</span></label>
-                    <input type="text" id="jeRegex" placeholder="R\$\s*(?<value>\d{1,3}(?:\.\d{3})*,\d{2})">
-                </div>
-                <label class="pad-md" style="display:flex;align-items:center;gap:10px;background:var(--tag);border-radius:8px;cursor:pointer;margin-bottom:10px;">
-                    <input type="checkbox" id="jeEnabled" checked style="width:16px;height:16px;accent-color:var(--blue);">
-                    <span style="font-size:13px;">Etapa ativa</span>
-                </label>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-                    <button class="btn btn-sm" onclick="jornadaCancelarForm()" style="background:var(--tag);">Cancelar</button>
-                    <button class="btn btn-sm" id="jeSalvarBtn" onclick="jornadaSalvarEtapa()" style="background:var(--blue);color:#fff;">Salvar etapa</button>
-                </div>
-            </div>
         </div>
         <button class="btn-confirm" id="btnSalvarEditCliente" onclick="salvarEdicaoCliente()">Salvar Alterações</button>
     </div>
@@ -1731,6 +1681,75 @@
                 </div>
                 <div id="capListaLinks"><div style="text-align:center;padding:30px;color:var(--muted);">Carregando…</div></div>
             </div>
+
+            <div id="capIntCard" class="card cap-int-card" style="margin-top:18px;padding:20px;">
+                <div class="cap-int-header">
+                    <div>
+                        <div class="cap-int-title"><i data-lucide="workflow"></i> Rastreamento inteligente</div>
+                        <p>Eventos enviados à Meta quando o atendente usa a palavra-chave no WhatsApp (campanhas de mensagem / CTWA). Cada etapa dispara <strong>uma vez por lead</strong>.</p>
+                    </div>
+                    <span class="cap-int-channel">WhatsApp / CTWA</span>
+                </div>
+
+                <div id="capIntBlocked" class="cap-journey-empty" style="display:none;">Selecione um cliente para configurar o Rastreamento Inteligente.</div>
+                <div id="capIntContent">
+                    <div class="cap-int-form-grid">
+                        <div class="input-group">
+                            <label>Template de Venda <span style="color:var(--muted);font-weight:400;font-size:11px;">(formato da mensagem do atendente)</span></label>
+                            <textarea id="capIntTemplate" rows="6" maxlength="10000" placeholder="Ex:&#10;Nome completo: {nome}&#10;Produto: {produto}&#10;Valor da Compra: {valor}&#10;Endereço: {endereco}&#10;Cidade: {cidade}" class="cap-int-template"></textarea>
+                        </div>
+                        <div class="input-group">
+                            <label>Gatilho de Qualificação <span style="color:var(--muted);font-weight:400;font-size:11px;">(opcional)</span></label>
+                            <span style="font-size:11px;color:var(--muted);display:block;margin-bottom:7px;">Palavra-chave que marca o lead como Qualificado. Se vazio, usa <code>#qualificado</code>.</span>
+                            <input type="text" id="capIntQualificacao" maxlength="255" placeholder="Ex: #leadbom">
+                        </div>
+                    </div>
+
+                    <div class="cap-int-divider"></div>
+                    <div class="cap-journey-head">
+                        <div>
+                            <strong>Etapas da jornada geral</strong>
+                            <p>Válidas para campanhas de mensagem e leads sem um link rastreável específico.</p>
+                        </div>
+                        <button type="button" class="btn btn-primary btn-sm" onclick="capIntNovaEtapa()">
+                            <i data-lucide="plus" style="width:13px;"></i> Nova etapa
+                        </button>
+                    </div>
+                    <div id="capIntLista" class="cap-journey-list"><div class="cap-journey-empty">Carregando configuração…</div></div>
+
+                    <div id="capIntForm" class="cap-journey-form" style="display:none;">
+                        <input type="hidden" id="capIntEtapaId">
+                        <div class="cap-grid-main" style="display:grid;grid-template-columns:1.2fr .8fr;gap:10px;">
+                            <div class="input-group"><label>Nome da etapa</label><input type="text" id="capIntNome" maxlength="120" placeholder="Ex: Compra confirmada"></div>
+                            <div class="input-group"><label>Evento Meta</label><select id="capIntConcept" class="form-control"></select></div>
+                        </div>
+                        <div class="cap-grid-main" style="display:grid;grid-template-columns:1.2fr .8fr;gap:10px;">
+                            <div class="input-group"><label>Palavras-chave <span style="color:var(--muted);font-weight:400;">(separe por vírgula)</span></label><input type="text" id="capIntKeywords" placeholder="Ex: #venda, compra confirmada"></div>
+                            <div class="input-group">
+                                <label>Correspondência</label>
+                                <select id="capIntMatch" class="form-control">
+                                    <option value="partial">Contém a palavra</option>
+                                    <option value="exact">Mensagem exata</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <label>Regex de valor <span style="color:var(--muted);font-weight:400;">(opcional, grupo (?&lt;value&gt;...))</span></label>
+                            <input type="text" id="capIntRegex" placeholder="R\$\s*(?&lt;value&gt;\d{1,3}(?:\.\d{3})*,\d{2})">
+                        </div>
+                        <label class="cap-conversion-toggle" style="margin-bottom:12px;">
+                            <input type="checkbox" id="capIntEnabled" checked style="width:17px;height:17px;accent-color:var(--blue);">
+                            <span><strong>Etapa ativa</strong><small>Etapas inativas permanecem salvas, mas não disparam eventos.</small></span>
+                        </label>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                            <button type="button" class="btn btn-ghost" onclick="capIntCancelarForm()" style="justify-content:center;">Cancelar</button>
+                            <button type="button" class="btn btn-primary" id="capIntSalvarEtapaBtn" onclick="capIntSalvarEtapa()" style="justify-content:center;">Criar etapa</button>
+                        </div>
+                    </div>
+
+                    <button type="button" class="btn-confirm" id="capIntSalvarConfigBtn" onclick="capIntSalvarConfig()">Salvar Alterações</button>
+                </div>
+            </div>
         </div>
 
         <div id="aba-whatsapp" class="aba-oculta">
@@ -2356,7 +2375,7 @@ function trocarClienteAdmin(id) {
     if (c && c.value !== String(id ?? '')) c.value = id ?? '';
     // Leads são carregados sob demanda do backend por cliente — rebusca em vez de só refiltrar a memória.
     recarregarLeads();
-    if (!$('aba-captacao')?.classList.contains('aba-oculta')) carregarCampanhasLink();
+    if (!$('aba-captacao')?.classList.contains('aba-oculta')) carregarCaptacao();
 }
 
 // ── Anúncios — Account picker ──────────────────────────────────
@@ -4548,7 +4567,7 @@ function mudarAba(aba) {
     $('leadsControls').style.display = ['leads','relatorios'].includes(aba) ? 'flex' : 'none';
     lucide.createIcons({ nodes:[$('titulo-pagina')] });
     if (aba === 'anuncios' && !adsCarregado) carregarAnuncios();
-    if (aba === 'captacao') { carregarCampanhasLink(); }
+    if (aba === 'captacao') { carregarCaptacao(); }
     if (aba === 'conta')    { carregarMinhaConta(); }
     if (aba === 'config')   { renderConfigContas(); }
     if (aba === 'clientes') { renderShareLinks(); }
@@ -5223,9 +5242,9 @@ function resetLeadSearchAutofill() {
 }
 </script>
 <script defer src="js/leads.js?v=20260622-1"></script>
-<script defer src="js/admin.js?v=20260622-3"></script>
+<script defer src="js/admin.js?v=20260622-4"></script>
 <script defer src="js/reports-auto.js"></script>
-<script defer src="js/captacao.js?v=20260622-3"></script>
+<script defer src="js/captacao.js?v=20260622-4"></script>
 
 <!-- Drawer Perfil do Lead (4 abas) — deve ficar no final do body para z-index funcionar -->
 <div id="leadProfileDrawer" style="position:fixed;inset:0;z-index:9999;display:none;align-items:stretch;justify-content:flex-end;background:rgba(0,0,0,0.55);" onclick="if(event.target===this)fecharPerfilLead()">
