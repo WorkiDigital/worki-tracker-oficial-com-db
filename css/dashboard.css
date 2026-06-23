@@ -1,4 +1,9 @@
 :root {
+  /* ── Tokens de design (iguais em dark/light) ── */
+  --radius-sm: 6px; --radius-md: 8px; --radius-lg: 10px; --radius-xl: 14px;
+  --fs-xs: 11px; --fs-sm: 12px; --fs-md: 13px; --fs-lg: 14px; --fs-xl: 16px;
+  --color-facebook: #1877f2; --color-instagram: #e1306c;
+
   /* CORES - Top patterns found in index.html */
   --c1: #ffffff; /* text primary / icons */
   --c2: #25d366; /* whatsapp green */

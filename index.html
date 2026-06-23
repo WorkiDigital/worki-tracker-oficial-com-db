@@ -201,13 +201,13 @@
 <div id="qualificarModal" class="modal-overlay" role="dialog" aria-modal="true" onclick="if(event.target===this) this.classList.remove('open')">
     <div class="modal" style="max-width:400px;text-align:center;">
         <div class="modal-head" style="justify-content:center;margin-bottom:15px;border-bottom:none;">
-            <div class="modal-icon" style="background:rgba(59, 130, 246, 0.1);color:#3b82f6;"><i data-lucide="check-circle" style="width:24px;height:24px;"></i></div>
+            <div class="modal-icon" style="background:rgba(59, 130, 246, 0.1);color:var(--c6);"><i data-lucide="check-circle" style="width:24px;height:24px;"></i></div>
         </div>
         <h3 style="margin:0 0 10px;font-size:18px;">Qualificar Lead</h3>
         <p style="color:var(--muted);font-size:13px;margin-bottom:20px;">Marcar o lead <strong id="modalQualificarNome" style="color:var(--text-primary)"></strong> como Qualificado?<br>O evento será enviado para a Meta imediatamente.</p>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
             <button class="btn btn-sm" onclick="$('qualificarModal').classList.remove('open')" style="border:1px solid var(--border);background:var(--bg-secondary);color:var(--text-primary);">Cancelar</button>
-            <button class="btn btn-sm" id="btnConfirmarQualificacao" onclick="confirmarQualificacao()" style="background:#3b82f6;color:#fff;border:none;display:inline-flex;align-items:center;justify-content:center;gap:6px;"><i data-lucide="check" style="width:14px;"></i> Confirmar</button>
+            <button class="btn btn-sm" id="btnConfirmarQualificacao" onclick="confirmarQualificacao()" style="background:var(--c6);color:#fff;border:none;display:inline-flex;align-items:center;justify-content:center;gap:6px;"><i data-lucide="check" style="width:14px;"></i> Confirmar</button>
         </div>
     </div>
 </div>
@@ -302,7 +302,7 @@
 <div id="modalCaptura" class="modal-overlay" role="dialog" aria-modal="true" onclick="if(event.target===this) this.classList.remove('open')">
     <div class="modal" style="max-width:460px;">
         <div class="modal-head">
-            <div class="modal-icon" style="background:rgba(59,130,246,0.12);"><i data-lucide="filter" style="color:#3b82f6;width:22px;height:22px;"></i></div>
+            <div class="modal-icon" style="background:rgba(59,130,246,0.12);"><i data-lucide="filter" style="color:var(--c6);width:22px;height:22px;"></i></div>
             <div><h3>Captura de Leads</h3><p id="capturaInstanciaNome" style="font-family:monospace;font-size:12px;">—</p></div>
             <button class="modal-close" aria-label="Fechar" onclick="$('modalCaptura').classList.remove('open')"><i data-lucide="x" style="width:16px;"></i></button>
         </div>
@@ -1480,7 +1480,7 @@
                                 <div id="wlPreview" style="background:var(--card);border-radius:12px;border:1px solid var(--border);padding:16px;transition:all .3s ease;">
                                     <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border);">
                                         <div id="wlPreviewLogo" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                                            <svg width="36" height="36" viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="8" fill="#3b82f6"/><rect x="6" y="18" width="4" height="8" rx="1.5" fill="white" opacity="0.6"/><rect x="12" y="13" width="4" height="13" rx="1.5" fill="white" opacity="0.8"/><rect x="18" y="8" width="4" height="18" rx="1.5" fill="white"/></svg>
+                                            <svg width="36" height="36" viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="8" fill="var(--c6)"/><rect x="6" y="18" width="4" height="8" rx="1.5" fill="white" opacity="0.6"/><rect x="12" y="13" width="4" height="13" rx="1.5" fill="white" opacity="0.8"/><rect x="18" y="8" width="4" height="18" rx="1.5" fill="white"/></svg>
                                         </div>
                                         <div>
                                             <div id="wlPreviewName" style="font-size:14px;font-weight:800;letter-spacing:-0.3px;line-height:1;">Adlytics</div>
@@ -1606,7 +1606,7 @@
 
             <div class="charts-grid">
                 <div class="chart-card">
-                    <h3><i data-lucide="megaphone" style="width:14px;color:#3b82f6;"></i> Campanhas / Leads</h3>
+                    <h3><i data-lucide="megaphone" style="width:14px;color:var(--c6);"></i> Campanhas / Leads</h3>
                     <div class="canvas-wrap bar"><canvas id="cCampLeads"></canvas></div>
                     <div class="legend" id="lCampLeads"></div>
                 </div>
@@ -2034,7 +2034,7 @@
                     </div>
                     <div style="display:flex;gap:6px;align-items:center;">
                         <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--muted);cursor:pointer;" title="Atualizar a cada 15s">
-                            <input type="checkbox" id="log-auto-refresh" onchange="toggleLogAutoRefresh()" style="accent-color:#3b82f6;">
+                            <input type="checkbox" id="log-auto-refresh" onchange="toggleLogAutoRefresh()" style="accent-color:var(--c6);">
                             Auto
                         </label>
                         <button class="btn btn-ghost btn-sm" onclick="pruneLogs()" title="Limpar logs antigos (mais de 15 dias)">
@@ -5215,7 +5215,7 @@ function atualizarPreviewWhiteLabel() {
             previewLogo.innerHTML = `<img src="${logo}" style="width:36px;height:36px;object-fit:contain;border-radius:8px;">`;
         }
     } else if (previewLogo && !logo) {
-        previewLogo.innerHTML = `<svg width="36" height="36" viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="8" fill="#3b82f6"/><rect x="6" y="18" width="4" height="8" rx="1.5" fill="white" opacity="0.6"/><rect x="12" y="13" width="4" height="13" rx="1.5" fill="white" opacity="0.8"/><rect x="18" y="8" width="4" height="18" rx="1.5" fill="white"/></svg>`;
+        previewLogo.innerHTML = `<svg width="36" height="36" viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="8" fill="var(--c6)"/><rect x="6" y="18" width="4" height="8" rx="1.5" fill="white" opacity="0.6"/><rect x="12" y="13" width="4" height="13" rx="1.5" fill="white" opacity="0.8"/><rect x="18" y="8" width="4" height="18" rx="1.5" fill="white"/></svg>`;
     }
 }
 
@@ -5277,7 +5277,7 @@ function resetLeadSearchAutofill() {
   <div style="width:min(580px,100vw);height:100%;background:var(--bg-primary);box-shadow:-8px 0 40px rgba(0,0,0,0.3);display:flex;flex-direction:column;overflow:hidden;animation:slideInRight .25s ease;">
     <!-- Header -->
     <div style="padding:18px 22px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;flex-shrink:0;">
-      <div id="lpAvatar" style="width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#3b82f6);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:17px;color:#fff;flex-shrink:0;">?</div>
+      <div id="lpAvatar" style="width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#6366f1,var(--c6));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:17px;color:#fff;flex-shrink:0;">?</div>
       <div style="flex:1;min-width:0;">
         <div id="lpNome" style="font-size:16px;font-weight:700;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">—</div>
         <div id="lpTelefone" style="font-size:12px;color:var(--muted);margin-top:1px;">—</div>
@@ -5287,7 +5287,7 @@ function resetLeadSearchAutofill() {
     </div>
     <!-- Tabs -->
     <div style="display:flex;border-bottom:1px solid var(--border);flex-shrink:0;overflow-x:auto;">
-      <button id="lpTab-perfil"  onclick="lpMudarTab('perfil')"  style="flex:1;min-width:80px;padding:11px 6px;border:none;border-bottom:2px solid #3b82f6;background:none;cursor:pointer;font-size:12px;font-weight:600;color:#3b82f6;white-space:nowrap;">Perfil</button>
+      <button id="lpTab-perfil"  onclick="lpMudarTab('perfil')"  style="flex:1;min-width:80px;padding:11px 6px;border:none;border-bottom:2px solid var(--c6);background:none;cursor:pointer;font-size:12px;font-weight:600;color:var(--c6);white-space:nowrap;">Perfil</button>
       <button id="lpTab-anuncio" onclick="lpMudarTab('anuncio')" style="flex:1;min-width:80px;padding:11px 6px;border:none;border-bottom:2px solid transparent;background:none;cursor:pointer;font-size:12px;font-weight:600;color:var(--muted);white-space:nowrap;">Anúncio</button>
       <button id="lpTab-jornada" onclick="lpMudarTab('jornada')" style="flex:1;min-width:80px;padding:11px 6px;border:none;border-bottom:2px solid transparent;background:none;cursor:pointer;font-size:12px;font-weight:600;color:var(--muted);white-space:nowrap;">Jornada</button>
       <button id="lpTab-venda"   onclick="lpMudarTab('venda')"   style="flex:1;min-width:80px;padding:11px 6px;border:none;border-bottom:2px solid transparent;background:none;cursor:pointer;font-size:12px;font-weight:600;color:var(--muted);white-space:nowrap;">Venda</button>
@@ -5333,7 +5333,7 @@ function resetLeadSearchAutofill() {
       <div id="lpPainel-venda" style="display:none;">
         <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:18px;">
           <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center;">
-            <div id="lpCardResposta" style="font-size:20px;font-weight:800;color:#3b82f6;">—</div>
+            <div id="lpCardResposta" style="font-size:20px;font-weight:800;color:var(--c6);">—</div>
             <div style="font-size:11px;color:var(--muted);margin-top:3px;">Tempo até 1ª Resposta</div>
           </div>
           <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center;">
