@@ -988,49 +988,46 @@
                     </div>
                 </div>
 
-                <div id="modalAdsBudget" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="adsBudgetTitulo" onclick="if(event.target===this)fecharModalAdsBudget()">
-                    <div class="modal-box ads-budget-modal">
-                        <div class="modal-head">
-                            <div style="display:flex;align-items:center;gap:10px;">
-                                <div class="modal-icon" style="background:rgba(16,185,129,.12);">
-                                    <i data-lucide="circle-dollar-sign" style="color:#10b981;width:20px;height:20px;"></i>
-                                </div>
-                                <div>
-                                    <h3 id="adsBudgetTitulo" style="margin:0;font-size:15px;">Aumentar orçamento</h3>
-                                    <p id="adsBudgetSubtitulo" style="margin:3px 0 0;font-size:11px;color:var(--muted);"></p>
-                                </div>
+                <div id="modalAdsBudget" class="modal-overlay" role="dialog" aria-modal="true" onclick="if(event.target===this)fecharModalAdsBudget()">
+                    <div class="modal-box" style="width:min(360px,96vw);padding:18px 20px 16px;">
+
+                        <!-- Cabeçalho mínimo -->
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+                            <span style="font-size:13px;font-weight:700;color:var(--text);" id="adsBudgetTitulo">Orçamento</span>
+                            <button type="button" class="modal-close" style="position:static;" aria-label="Fechar" onclick="fecharModalAdsBudget()"><i data-lucide="x" style="width:15px;"></i></button>
+                        </div>
+
+                        <!-- Linha label + input (estilo Meta) -->
+                        <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+                            <span id="adsBudgetSubtitulo" style="font-size:13px;color:var(--text);min-width:90px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:0;"></span>
+                            <div style="flex:1;display:flex;align-items:center;border:1.5px solid var(--border);border-radius:6px;overflow:hidden;background:var(--tag);transition:border-color .15s;" onfocusin="this.style.borderColor='var(--blue)'" onfocusout="this.style.borderColor=''">
+                                <span style="padding:9px 10px;color:var(--muted);font-size:12px;font-weight:600;border-right:1px solid var(--border);white-space:nowrap;">R$</span>
+                                <input type="text" id="adsBudgetNovo" inputmode="decimal" placeholder="0,00"
+                                    oninput="atualizarResumoAdsBudget()"
+                                    style="flex:1;border:none;background:transparent;color:var(--text);font-size:14px;font-weight:700;padding:9px 8px;outline:none;min-width:0;">
+                                <span style="padding:9px 10px;color:var(--muted);font-size:11px;font-weight:700;border-left:1px solid var(--border);white-space:nowrap;">BRL</span>
                             </div>
-                            <button type="button" class="modal-close" aria-label="Fechar" onclick="fecharModalAdsBudget()"><i data-lucide="x" style="width:16px;"></i></button>
                         </div>
 
-                        <div class="ads-budget-summary">
-                            <div><span>Nível</span><strong id="adsBudgetNivel">—</strong></div>
-                            <div><span>Tipo</span><strong id="adsBudgetTipo">—</strong></div>
-                            <div><span>Orçamento atual</span><strong id="adsBudgetAtual">—</strong></div>
+                        <!-- Feedback atual -->
+                        <div id="adsBudgetResumo" style="font-size:11px;color:var(--muted);margin-bottom:12px;">Atual: <strong id="adsBudgetAtual" style="color:var(--text);">—</strong> <span id="adsBudgetTipo"></span></div>
+
+                        <!-- Atalhos % -->
+                        <div style="display:flex;gap:5px;margin-bottom:14px;">
+                            <button type="button" onclick="aplicarPercentualAdsBudget(10)" style="flex:1;padding:5px 2px;border:1px solid var(--border);border-radius:5px;background:transparent;color:var(--muted);font-size:11px;font-weight:700;cursor:pointer;">+10%</button>
+                            <button type="button" onclick="aplicarPercentualAdsBudget(20)" style="flex:1;padding:5px 2px;border:1px solid var(--border);border-radius:5px;background:transparent;color:var(--muted);font-size:11px;font-weight:700;cursor:pointer;">+20%</button>
+                            <button type="button" onclick="aplicarPercentualAdsBudget(30)" style="flex:1;padding:5px 2px;border:1px solid var(--border);border-radius:5px;background:transparent;color:var(--muted);font-size:11px;font-weight:700;cursor:pointer;">+30%</button>
+                            <button type="button" onclick="aplicarPercentualAdsBudget(50)" style="flex:1;padding:5px 2px;border:1px solid var(--border);border-radius:5px;background:transparent;color:var(--muted);font-size:11px;font-weight:700;cursor:pointer;">+50%</button>
                         </div>
 
-                        <div class="input-group" style="margin-bottom:10px;">
-                            <label>Novo orçamento <span id="adsBudgetMoedaLabel" style="color:var(--muted);font-weight:400;"></span></label>
-                            <input type="text" id="adsBudgetNovo" inputmode="decimal" placeholder="0,00" oninput="atualizarResumoAdsBudget()">
+                        <!-- Ações -->
+                        <div style="display:flex;gap:8px;">
+                            <button type="button" onclick="fecharModalAdsBudget()" style="flex:1;padding:8px;border:1px solid var(--border);border-radius:6px;background:transparent;color:var(--muted);font-size:12px;font-weight:600;cursor:pointer;">Cancelar</button>
+                            <button type="button" id="btnConfirmarAdsBudget" onclick="confirmarAumentoAdsBudget()" style="flex:2;padding:8px;border:none;border-radius:6px;background:var(--blue);color:#fff;font-size:12px;font-weight:700;cursor:pointer;">Salvar</button>
                         </div>
 
-                        <div class="ads-budget-presets">
-                            <button type="button" onclick="aplicarPercentualAdsBudget(10)">+10%</button>
-                            <button type="button" onclick="aplicarPercentualAdsBudget(20)">+20%</button>
-                            <button type="button" onclick="aplicarPercentualAdsBudget(30)">+30%</button>
-                            <button type="button" onclick="aplicarPercentualAdsBudget(50)">+50%</button>
-                        </div>
-
-                        <div id="adsBudgetResumo" class="ads-budget-change">Informe um valor maior que o orçamento atual.</div>
-                        <div class="ads-budget-warning">
-                            <i data-lucide="shield-alert"></i>
-                            <span>Esta ação altera o orçamento real na Meta e permite somente aumento.</span>
-                        </div>
-
-                        <div class="ads-budget-actions">
-                            <button type="button" class="btn btn-ghost" onclick="fecharModalAdsBudget()">Cancelar</button>
-                            <button type="button" class="btn-confirm" id="btnConfirmarAdsBudget" onclick="confirmarAumentoAdsBudget()">Confirmar aumento</button>
-                        </div>
+                        <!-- IDs ocultos para compatibilidade com o JS existente -->
+                        <span id="adsBudgetNivel" style="display:none;"></span>
                     </div>
                 </div>
 
@@ -3128,11 +3125,12 @@ function abrirModalAdsBudget(entityType, entityId, event) {
         entityType, entityId:String(entityId), item, budget, currency,
         accountId:$('adsAccountSelect').value,
     };
-    $('adsBudgetSubtitulo').textContent = item.name || entityId;
+    // Novo layout: título = nome da entidade; subtítulo = tipo de orçamento
+    $('adsBudgetTitulo').textContent = (item.name || entityId).length > 40 ? (item.name || entityId).slice(0,38)+'…' : (item.name || entityId);
+    $('adsBudgetSubtitulo').textContent = budget.type === 'daily' ? 'Orçamento diário' : 'Orçamento total';
     $('adsBudgetNivel').textContent = entityType === 'campaign' ? 'Campanha' : 'Conjunto';
-    $('adsBudgetTipo').textContent = budget.type === 'daily' ? 'Diário' : 'Total da vigência';
+    $('adsBudgetTipo').textContent = '';
     $('adsBudgetAtual').textContent = formatAdsMinor(budget.value, currency);
-    $('adsBudgetMoedaLabel').textContent = `(${currency})`;
     $('adsBudgetNovo').value = adsMinorToInput(budget.value, currency);
     atualizarResumoAdsBudget();
     $('modalAdsBudget').classList.add('open');
@@ -3161,22 +3159,18 @@ function atualizarResumoAdsBudget() {
     if (!box || !_adsBudgetTarget) return;
     const novo = parseAdsBudgetInput($('adsBudgetNovo')?.value, _adsBudgetTarget.currency);
     const atual = _adsBudgetTarget.budget.value;
-    box.classList.remove('valid', 'invalid');
     if (!novo) {
-        box.textContent = 'Informe um valor válido.';
-        box.classList.add('invalid');
+        box.innerHTML = `Atual: <strong style="color:var(--text);">${formatAdsMinor(atual, _adsBudgetTarget.currency)}</strong>`;
         button.disabled = true;
         return;
     }
     if (novo <= atual) {
-        box.textContent = 'O novo orçamento precisa ser maior que o atual.';
-        box.classList.add('invalid');
+        box.innerHTML = `<span style="color:var(--red);">Valor precisa ser maior que o atual (${formatAdsMinor(atual, _adsBudgetTarget.currency)})</span>`;
         button.disabled = true;
         return;
     }
     const aumento = ((novo / atual) - 1) * 100;
-    box.textContent = `${formatAdsMinor(atual, _adsBudgetTarget.currency)} → ${formatAdsMinor(novo, _adsBudgetTarget.currency)} (+${aumento.toFixed(1).replace('.', ',')}%)`;
-    box.classList.add('valid');
+    box.innerHTML = `<span style="color:#10b981;">${formatAdsMinor(atual, _adsBudgetTarget.currency)} → ${formatAdsMinor(novo, _adsBudgetTarget.currency)} <span style="color:var(--muted);">(+${aumento.toFixed(1).replace('.', ',')}%)</span></span>`;
     button.disabled = false;
 }
 
@@ -5478,6 +5472,15 @@ function atualizarPreviewWhiteLabel() {
         previewLogo.innerHTML = `<svg width="36" height="36" viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="8" fill="var(--c6)"/><rect x="6" y="18" width="4" height="8" rx="1.5" fill="white" opacity="0.6"/><rect x="12" y="13" width="4" height="13" rx="1.5" fill="white" opacity="0.8"/><rect x="18" y="8" width="4" height="18" rx="1.5" fill="white"/></svg>`;
     }
 }
+
+// Estilos compactos para o modal de orçamento
+const style = document.createElement('style');
+style.textContent = `
+    .ads-budget-modal { width:min(340px,94vw); padding:16px 18px 18px; }
+    .ads-budget-header-info { display:flex; gap:10px; font-size:12px; color:var(--muted); margin-bottom:12px; }
+    .ads-budget-btn-small { padding:6px 12px; font-size:12px; }
+`;
+document.head.appendChild(style);
 
 function resetPreviewWhiteLabel() {
     $('cfgProjetoNome').value = 'Adlytics';
