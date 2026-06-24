@@ -10,11 +10,8 @@
     <!-- defer: scripts nao bloqueiam o render; executam em ordem antes do DOMContentLoaded (onde init() roda).
          Versao do lucide fixada para evitar a latencia de resolucao do @latest na CDN. -->
     <script defer src="https://cdn.jsdelivr.net/npm/lucide@0.469.0/dist/umd/lucide.min.js"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
-    <!-- Exportação de relatório em PDF -->
-    <script defer src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+    <!-- Chart.js, html2canvas e jsPDF são carregados sob demanda via loadScript() (utils.js).
+         Não incluir aqui — evita baixar ~500KB em toda sessão mesmo sem abrir Anúncios ou exportar PDF. -->
     <link rel="stylesheet" href="css/dashboard.css?v=20260623-2">
     <link rel="stylesheet" href="css/splash.css">
     <script defer src="js/utils.js"></script>
@@ -2291,14 +2288,38 @@ function tempoRelativo(iso) {
 function brl(n) { return 'R$ ' + parseFloat(n||0).toFixed(2).replace('.',','); }
 function fmtN(n) { return parseInt(n||0).toLocaleString('pt-BR'); }
 
+// ── Lazy load de Chart.js (só na aba Anúncios) ────────────────
+const CHART_URLS = [
+    'https://cdn.jsdelivr.net/npm/chart.js',
+    'https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0',
+];
+let _chartLoaded = false;
+async function ensureChart() {
+    if (_chartLoaded) return;
+    for (const url of CHART_URLS) await loadScript(url);
+    if (typeof Chart !== 'undefined' && typeof ChartDataLabels !== 'undefined') {
+        Chart.register(ChartDataLabels);
+    }
+    _chartLoaded = true;
+}
+
+// ── Lazy load de html2canvas + jsPDF (só ao exportar PDF) ─────
+const PDF_URLS = [
+    'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js',
+    'https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js',
+];
+let _pdfLoaded = false;
+async function ensurePdf() {
+    if (_pdfLoaded) return;
+    for (const url of PDF_URLS) await loadScript(url);
+    _pdfLoaded = true;
+}
+
 // ── Init ───────────────────────────────────────────────────────
 async function init() {
     resetLeadSearchAutofill();
 
-    // Registra o plugin de datalabels agora que chart.js (deferred) já carregou.
-    if (typeof Chart !== 'undefined' && typeof ChartDataLabels !== 'undefined') {
-        Chart.register(ChartDataLabels);
-    }
+    // Chart.js e jsPDF agora são carregados sob demanda — não registrar aqui.
 
     // Render inicial dos ícones (lucide deferred já carregou neste ponto).
     if (typeof lucide !== 'undefined') lucide.createIcons();
@@ -2447,6 +2468,7 @@ async function popularSeletorAdmin() {
 }
 
 function trocarClienteAdmin(id) {
+    if (typeof _leadsCache !== 'undefined') _leadsCache.clear();
     clienteAdminSelecionado = id ? parseInt(id) : null;
     // Mantém os dois seletores (global + o da aba Captação) em sincronia.
     const g = document.getElementById('selectClienteAdmin');
@@ -2942,6 +2964,7 @@ function onAdsDateChange() {
 }
 
 async function carregarAnuncios() {
+    await ensureChart();
     const accountId  = $('adsAccountSelect').value;
     if (!accountId) { toast('Selecione uma conta', 'error'); return; }
     const dateQs = _getDateQs();

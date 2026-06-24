@@ -2,6 +2,9 @@
 let chumboAtivo = null;
 const leadsSelecionados = new Set();
 
+// Cache de leads por chave "clienteId|periodo" — evita piscar ao navegar entre abas.
+const _leadsCache = new MemCache(2 * 60 * 1000); // TTL 2 min (auto-refresh de 30s mantém fresco)
+
 async function recarregarLeads(silencioso = false) {
     const dot   = $('refreshDot');
     const label = $('refreshLabel');
@@ -11,8 +14,34 @@ async function recarregarLeads(silencioso = false) {
     const icon = $('reloadIcon');
     if (icon) icon.style.animation = 'spin 1s linear infinite';
 
+    const periodo = $('periodoSelect')?.value || 'hojeOntem';
+    const clienteKey = (typeof clienteAdminSelecionado !== 'undefined' && clienteAdminSelecionado) ? clienteAdminSelecionado : 'me';
+    const cacheKey = `${clienteKey}|${periodo}`;
+
+    // Serve cache imediatamente (sem skeleton) — evita piscar ao trocar de aba.
+    const cached = _leadsCache.get(cacheKey);
+    if (cached && !silencioso) {
+        rawData = cached;
+        window._periodoCarregado = periodo;
+        popularFiltroInstancias();
+        aplicarFiltros();
+        dot.className = 'refresh-dot';
+        label.textContent = 'do cache';
+        if (icon) icon.style.animation = '';
+        // Revalida em background sem skeleton nem spinner
+        _recarregarLeadsFetch(cacheKey, periodo, true).catch(() => {});
+        return;
+    }
+
     if (!silencioso) renderSkeleton();
 
+    await _recarregarLeadsFetch(cacheKey, periodo, silencioso);
+}
+
+async function _recarregarLeadsFetch(cacheKey, periodo, silencioso) {
+    const dot   = $('refreshDot');
+    const label = $('refreshLabel');
+    const icon  = $('reloadIcon');
     try {
         // Dispara a fase 3 (métricas) em paralelo, não bloqueia a tabela
         carregarMetricasTemporais();
@@ -22,7 +51,6 @@ async function recarregarLeads(silencioso = false) {
         if (typeof clienteAdminSelecionado !== 'undefined' && clienteAdminSelecionado) {
             params.append('cliente_id', clienteAdminSelecionado);
         }
-        const periodo = $('periodoSelect')?.value || 'hojeOntem';
         const range = (periodo && periodo !== 'todos') ? calcRange(periodo) : null;
         if (range) {
             params.append('start', range[0].toISOString());
@@ -32,6 +60,7 @@ async function recarregarLeads(silencioso = false) {
         const resp = await authFetch(url + '?' + params.toString());
         const data = await readApiJson(resp, 'Falha ao buscar leads');
         if (!Array.isArray(data)) throw new Error(data.error || 'Resposta inesperada do servidor');
+        _leadsCache.set(cacheKey, data);
         rawData = data;
         const idsAtuais = new Set(rawData.map(lead => Number(lead.id)));
         for (const id of leadsSelecionados) {
@@ -340,19 +369,19 @@ function renderTabela() {
                     onchange="toggleLeadSelecionado(${Number(lead.id)}, this.checked)"
                     aria-label="Selecionar ${esc(lead.nome || lead.telefone || 'lead')}">
             </td>
-            <td style="color:var(--text);font-weight:600;">${esc(lead.nome)||'N/A'}</td>
-            <td>${esc(lead.telefone)||'N/A'}</td>
-            <td><span class="tag" style="color:${stColor};border:${stBorder};">${esc(status)}</span></td>
-            <td><span style="font-weight:700;color:${scoreColor};">${score}</span></td>
-            <td style="max-width:160px;" title="${esc(tooltipOrig)}">
+            <td data-label="Nome" style="color:var(--text);font-weight:600;">${esc(lead.nome)||'N/A'}</td>
+            <td data-label="Telefone">${esc(lead.telefone)||'N/A'}</td>
+            <td data-label="Status"><span class="tag" style="color:${stColor};border:${stBorder};">${esc(status)}</span></td>
+            <td data-label="Score"><span style="font-weight:700;color:${scoreColor};">${score}</span></td>
+            <td data-label="Anúncio" style="max-width:160px;" title="${esc(tooltipOrig)}">
                 ${anuncio ? `<div style="font-size:11px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(anuncio)}</div>` : `<div style="font-size:11px;color:var(--muted);">—</div>`}
             </td>
-            <td>${origemBadge}</td>
-            <td title="${esc(lead.mensagem_recebida)}" style="max-width:180px;overflow:hidden;text-overflow:ellipsis;">${esc(msg)}${lead.mensagem_recebida?.length>35?'…':''}</td>
-            <td style="font-size:12px;color:var(--muted);">${esc(lead.instancia||'—')}</td>
-            <td><div class="platform-icon ${platCls}">${esc(plataformaLabel)}</div></td>
-            <td title="${esc(lead.event_time)}" style="white-space:nowrap;">${data}</td>
-            <td style="font-size:11px;font-weight:600;">${tempoFunil}</td>
+            <td data-label="Origem">${origemBadge}</td>
+            <td data-label="Mensagem" title="${esc(lead.mensagem_recebida)}" style="max-width:180px;overflow:hidden;text-overflow:ellipsis;">${esc(msg)}${lead.mensagem_recebida?.length>35?'…':''}</td>
+            <td data-label="Instância" style="font-size:12px;color:var(--muted);">${esc(lead.instancia||'—')}</td>
+            <td data-label="Plataforma"><div class="platform-icon ${platCls}">${esc(plataformaLabel)}</div></td>
+            <td data-label="Data" title="${esc(lead.event_time)}" style="white-space:nowrap;">${data}</td>
+            <td data-label="Funil" style="font-size:11px;font-weight:600;">${tempoFunil}</td>
             <td style="white-space:nowrap;"><div style="display:inline-flex;gap:4px;align-items:center;">
                 <button class="btn btn-sm" onclick="abrirPerfilLead(${lead.id})" title="Ver perfil completo do lead" style="background:rgba(99,102,241,0.1);color:#6366f1;border:1px solid rgba(99,102,241,0.3);padding:2px 8px;display:inline-flex;align-items:center;justify-content:center;"><i data-lucide="user" style="width:12px;"></i></button>
                 ${temCapi ? `<button class="btn btn-sm" style="background:rgba(59, 130, 246, 0.1);color:#3b82f6;border:1px solid rgba(59,130,246,0.3);padding:2px 8px;display:inline-flex;align-items:center;justify-content:center;" onclick="qualificarLead(${idx})" title="Marcar como Qualificado e enviar para CAPI"><i data-lucide="check-circle" style="width:12px;"></i></button><button class="btn btn-green btn-sm" onclick="abrirModal(${idx})" title="Registrar Venda e CAPI" style="margin:0;"><i data-lucide="zap" style="width:11px;"></i> Venda</button>` : ''}
@@ -631,8 +660,8 @@ async function exportarRelatorioPDF() {
     const alvo = $('relatorioConteudo');
     const btn  = $('btnExportRelatorio');
     if (!alvo) return;
-    if (typeof html2canvas === 'undefined' || !window.jspdf) {
-        toast('Bibliotecas de exportação ainda carregando, tente novamente', 'error');
+    try { await ensurePdf(); } catch {
+        toast('Falha ao carregar bibliotecas de exportação. Verifique sua conexão.', 'error');
         return;
     }
 
@@ -1193,7 +1222,7 @@ function lpRow(label, valor, cor, sempreMostrar) {
     const vazio = !valor || valor === '—';
     if (vazio && !sempreMostrar) return '';
     if (vazio) return `<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;"><span style="font-size:12px;color:var(--muted);flex-shrink:0;">${label}</span><span style="font-size:13px;color:var(--muted);font-style:italic;">—</span></div>`;
-    return `<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;"><span style="font-size:12px;color:var(--muted);flex-shrink:0;">${label}</span><span style="font-size:13px;color:${cor||'var(--text-primary)'};font-weight:500;text-align:right;word-break:break-word;">${valor}</span></div>`;
+    return `<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;"><span style="font-size:12px;color:var(--muted);flex-shrink:0;">${label}</span><span style="font-size:13px;color:${cor||'var(--text-primary)'};font-weight:500;text-align:right;word-break:break-word;">${esc(valor)}</span></div>`;
 }
 
 function lpFormatDuracao(minutos) {

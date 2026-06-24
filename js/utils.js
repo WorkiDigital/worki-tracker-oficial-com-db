@@ -1,7 +1,7 @@
 /* ── Shared Utilities ─────────────────────────────────────────── */
 
 const $ = id => document.getElementById(id);
-const esc = s => !s ? '' : String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+const esc = s => !s ? '' : String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 
 function sanitizeSvg(svgString) {
     const parser = new DOMParser();
@@ -26,7 +26,7 @@ function sanitizeImgUrl(url) {
     if (trimmed.startsWith('https://') || trimmed.startsWith('http://') || trimmed.startsWith('data:image/')) return url.trim();
     return null;
 }
-function ls(k,v) { try { if(v===undefined) return localStorage.getItem(k); localStorage.setItem(k,v); } catch(_){} }
+function ls(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (_) { } }
 
 // Meta API — soma de actions por action_type
 function getAct(ins, keys) {
@@ -34,7 +34,7 @@ function getAct(ins, keys) {
     const ks = new Set(Array.isArray(keys) ? keys : [keys]);
     return ins.actions
         .filter(a => ks.has(a.action_type))
-        .reduce((s, a) => s + parseFloat(a.value||0), 0);
+        .reduce((s, a) => s + parseFloat(a.value || 0), 0);
 }
 
 // Meta API — soma de action_values por action_type (valor monetário)
@@ -43,7 +43,7 @@ function getActVal(ins, keys) {
     const ks = new Set(Array.isArray(keys) ? keys : [keys]);
     return ins.action_values
         .filter(a => ks.has(a.action_type))
-        .reduce((s, a) => s + parseFloat(a.value||0), 0);
+        .reduce((s, a) => s + parseFloat(a.value || 0), 0);
 }
 
 // Meta API — pega o valor do PRIMEIRO action_type presente, na ordem de preferência (NÃO soma).
@@ -82,4 +82,37 @@ function getRoas(ins) {
     if (!ins?.purchase_roas) return 0;
     const entry = ins.purchase_roas.find(r => r.action_type === 'omni_purchase');
     return parseFloat(entry?.value || 0);
+}
+
+// ── Cache in-memory com TTL ───────────────────────────────────
+class MemCache {
+    constructor(ttlMs = 5 * 60 * 1000) {
+        this._ttl = ttlMs;
+        this._store = new Map();
+    }
+    set(key, value) {
+        this._store.set(key, { value, exp: Date.now() + this._ttl });
+    }
+    get(key) {
+        const entry = this._store.get(key);
+        if (!entry) return undefined;
+        if (Date.now() > entry.exp) { this._store.delete(key); return undefined; }
+        return entry.value;
+    }
+    has(key) { return this.get(key) !== undefined; }
+    del(key) { this._store.delete(key); }
+    clear() { this._store.clear(); }
+}
+
+// ── Dynamic script loader (singleton por URL) ─────────────────
+const _loadedScripts = new Set();
+function loadScript(url) {
+    if (_loadedScripts.has(url)) return Promise.resolve();
+    return new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = url;
+        s.onload  = () => { _loadedScripts.add(url); resolve(); };
+        s.onerror = () => reject(new Error(`Falha ao carregar script: ${url}`));
+        document.head.appendChild(s);
+    });
 }

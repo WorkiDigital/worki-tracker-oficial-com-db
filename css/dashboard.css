@@ -1,44 +1,49 @@
 :root {
-  /* ── Tokens de design (iguais em dark/light) ── */
+  /* ── Tokens estáticos (iguais em dark e light) ── */
   --radius-sm: 6px; --radius-md: 8px; --radius-lg: 10px; --radius-xl: 14px;
   --fs-xs: 11px; --fs-sm: 12px; --fs-md: 13px; --fs-lg: 14px; --fs-xl: 16px;
   --color-facebook: #1877f2; --color-instagram: #e1306c;
+  --color-whatsapp: #25d366;
 
-  /* CORES - Top patterns found in index.html */
-  --c1: #ffffff; /* text primary / icons */
-  --c2: #25d366; /* whatsapp green */
-  --c3: #f59e0b; /* amber / trophy */
-  --c4: #10b981; /* accent green */
-  --c5: #ef4444; /* accent red */
-  --c6: #3b82f6; /* accent blue */
-  --c7: #8b5cf6; /* accent purple */
-  --c8: #ec4899; /* accent pink */
-  --c9: #9ca3af; /* text secondary / gray-400 */
-  --c10: #6b7280; /* text muted / gray-500 */
+  /* Espaçamento em múltiplos de 4px */
+  --p1: 4px; --p2: 8px; --p3: 12px; --p4: 16px; --p5: 24px;
+  --pad-sm: 6px 10px; --pad-md: 10px 12px; --pad-lg: 20px;
 
-  /* ESPAÇAMENTOS */
-  --p1: 4px;
-  --p2: 8px;
-  --p3: 12px;
-  --p4: 16px;
-  --p5: 24px;
+  /* Transições padrão */
+  --transition-fast: all 0.15s ease;
+  --transition-base: all 0.2s ease-in-out;
 
-  /* PADDINGS COMPOSTOS - Top literal patterns */
-  --pad-sm: 6px 10px;
-  --pad-md: 10px 12px;
-  --pad-lg: 20px;
+  /* Aliases semânticos de cor (mapeados para os tokens de tema abaixo) */
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger:  #ef4444;
+
+  /* ── Tema escuro (padrão) ── */
+  --bg: #0a0f1a; --sidebar: rgba(10,15,26,0.92); --card: rgba(13,19,33,0.85);
+  --card-solid: #0d1321;
+  --text: #e2e8f0; --muted: #64748b;
+  --blue: #2563eb; --green: #4ade80; --red: #ef4444;
+  --purple: #a78bfa; --amber: #f59e0b;
+  --border: rgba(255,255,255,0.08); --hover: rgba(255,255,255,0.05); --tag: rgba(255,255,255,0.07);
+  --glow-blue: rgba(37,99,235,0.25); --glow-green: rgba(74,222,128,0.2);
+  --shadow-card: 0 1px 4px rgba(0,0,0,0.4), 0 4px 16px rgba(0,0,0,0.25);
+  --shadow-card-hover: 0 4px 24px rgba(37,99,235,0.15), 0 1px 8px rgba(0,0,0,0.4);
+  --bg-primary: #0a0f1a; --bg-secondary: #111827;
+  --text-primary: #e2e8f0;
+  --drawer-backdrop: rgba(2,6,23,0.72);
+  --scheme: dark;
 }
 
 /* Classes utilitárias */
-.bg1 { background: var(--c1); }
-.bg2 { background: var(--c2); }
-.bg3 { background: var(--c3); }
-.text1 { color: var(--c1); }
-.text2 { color: var(--c9); }
-.text3 { color: var(--c10); }
-.accent-b { color: var(--c6); }
-.accent-g { color: var(--c4); }
-.accent-r { color: var(--c5); }
+.bg1 { background: #ffffff; }
+.bg2 { background: var(--color-whatsapp); }
+.bg3 { background: var(--warning); }
+.text1 { color: #ffffff; }
+.text2 { color: #9ca3af; }
+.text3 { color: #6b7280; }
+.accent-b { color: #3b82f6; }
+.accent-g { color: var(--success); }
+.accent-r { color: var(--danger); }
 
 .pad-sm { padding: var(--pad-sm); }
 .pad-md { padding: var(--pad-md); }
@@ -56,23 +61,6 @@
 .flex-col { flex-direction: column; }
 .items-center { align-items: center; }
 .gap-2 { gap: 8px; }
-
-:root {
-    --bg: #0a0f1a; --sidebar: rgba(10,15,26,0.92); --card: rgba(13,19,33,0.85);
-    --card-solid: #0d1321;
-    --text: #e2e8f0; --muted: #64748b;
-    --blue: #2563eb; --green: #4ade80; --red: #ef4444;
-    --purple: #a78bfa; --amber: #f59e0b;
-    --border: rgba(255,255,255,0.08); --hover: rgba(255,255,255,0.05); --tag: rgba(255,255,255,0.07);
-    --glow-blue: rgba(37,99,235,0.25); --glow-green: rgba(74,222,128,0.2);
-    --shadow-card: 0 1px 4px rgba(0,0,0,0.4), 0 4px 16px rgba(0,0,0,0.25);
-    --shadow-card-hover: 0 4px 24px rgba(37,99,235,0.15), 0 1px 8px rgba(0,0,0,0.4);
-    --bg-primary: #0a0f1a;
-    --bg-secondary: #111827;
-    --text-primary: #e2e8f0;
-    --drawer-backdrop: rgba(2,6,23,0.72);
-    --scheme: dark;
-}
 html.light {
     --bg: #f0f4f8; --sidebar: rgba(255,255,255,0.95); --card: rgba(255,255,255,0.9);
     --card-solid: #ffffff;
@@ -812,6 +800,37 @@ html.light .nav-item.active { box-shadow:inset 3px 0 0 var(--blue); background:r
     /* Leads controls: wrap full width */
     #leadsControls { width:100%; }
     .ctrl-box input[type=text] { width:140px; }
+}
+
+/* ── Tabela de leads: card view em mobile ──── */
+@media(max-width:768px) {
+    .leads-table-wrap thead { display:none; }
+    .leads-table-wrap table { display:block; }
+    .leads-table-wrap tbody { display:flex; flex-direction:column; gap:10px; }
+    .leads-table-wrap tr {
+        display:grid;
+        grid-template-columns:1fr 1fr;
+        gap:4px 12px;
+        background:var(--card);
+        border:1px solid var(--border);
+        border-radius:var(--radius-lg);
+        padding:12px 14px;
+    }
+    .leads-table-wrap tr:hover { background:var(--hover); }
+    /* Primeira coluna (checkbox) ocupa linha inteira */
+    .leads-table-wrap td:first-child { grid-column:1/-1; display:flex; align-items:center; gap:8px; }
+    /* Última coluna (ações) ocupa linha inteira */
+    .leads-table-wrap td:last-child  { grid-column:1/-1; display:flex; gap:6px; flex-wrap:wrap; }
+    .leads-table-wrap td { font-size:13px; padding:2px 0; border:none; }
+    .leads-table-wrap td[data-label]::before {
+        content:attr(data-label) ": ";
+        font-size:11px;
+        color:var(--muted);
+        display:block;
+        margin-bottom:1px;
+    }
+    /* Skeleton continua funcionando normalmente */
+    .leads-table-wrap .sk-row { display:table-row; background:transparent; border:none; padding:0; }
 }
 
 /* ── Mobile pequeno 480px ─────────────────── */

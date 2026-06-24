@@ -413,6 +413,27 @@ async function carregarMetricasLink() {
 }
 
 // ── Carregar lista de campanhas ───────────────────────────────────────────────
+function _capRenderSkeleton(lista) {
+  lista.innerHTML = `
+    <div class="cap-links-table-wrap">
+      <table class="cap-links-table">
+        <thead><tr>
+          <th>Nome / Link</th><th>Modo</th><th>Cliques</th><th>Conv.</th><th>Status</th><th>Ações</th>
+        </tr></thead>
+        <tbody>${Array.from({length: 4}, () => `
+          <tr class="sk-row">
+            <td><div class="sk-line skeleton" style="width:70%"></div><div class="sk-line skeleton" style="width:45%;margin-top:6px;"></div></td>
+            <td><div class="sk-line skeleton" style="width:60%"></div></td>
+            <td><div class="sk-line skeleton" style="width:40%"></div></td>
+            <td><div class="sk-line skeleton" style="width:40%"></div></td>
+            <td><div class="sk-line skeleton" style="width:50%"></div></td>
+            <td><div class="sk-line skeleton" style="width:80%"></div></td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
 async function carregarCampanhasLink() {
   const lista = $('capListaLinks');
   if (!lista) return;
@@ -421,7 +442,7 @@ async function carregarCampanhasLink() {
     $('capMetricas').innerHTML = '';
     return;
   }
-  lista.innerHTML = '<div style="text-align:center;padding:30px;color:var(--muted);">Carregando…</div>';
+  _capRenderSkeleton(lista);
 
   await carregarMetricasLink();
 
