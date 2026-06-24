@@ -688,3 +688,38 @@ Usa o `enviarConversao` central (mesmo event_id → não duplica com o automáti
 > (2) o resto (UI, validação, histórico) deriva automaticamente da fonte única. Commits da feature:
 > `3df6332` (backend), `1fa9142` (UI v1), `ad60ebe` (link x inteligente), `4a4102c` (reorg abas +
 > caixinha auto), `c9ade87` (validação por canal).
+
+## ⚡ Otimizações de Performance e UX (2026-06-24)
+
+Commit `8c2f0c4`. Cinco melhorias implementadas após análise e validação contra o código real.
+
+### 1. Lazy load de scripts pesados (Chart.js / html2canvas / jsPDF)
+- Chart.js, chartjs-plugin-datalabels, html2canvas e jsPDF **removidos do `<head>`** — não são mais baixados em toda sessão (~500 KB a menos no carregamento inicial).
+- `loadScript(url)` em `js/utils.js` — carrega um `<script>` dinamicamente, singleton por URL (não duplica).
+- `ensureChart()` em `index.html` — chamada no início de `carregarAnuncios()`; carrega Chart.js + datalabels só ao abrir a aba Anúncios.
+- `ensurePdf()` em `index.html` — chamada no início de `exportarRelatorioPDF()` (`js/leads.js`); carrega html2canvas + jsPDF só ao exportar.
+- **Ao adicionar novo gráfico ou export:** sempre chamar `ensureChart()` / `ensurePdf()` antes de usar as libs — elas não estão mais no escopo global desde o início.
+
+### 2. Cache in-memory de leads (`js/leads.js`)
+- `MemCache` (classe com TTL configurável) em `js/utils.js`.
+- `_leadsCache` com TTL de **2 minutos** em `js/leads.js` — chave `"clienteId|periodo"`.
+- `recarregarLeads()`: se há cache válido, serve os dados imediatamente (sem skeleton, sem piscar) e dispara revalidação silenciosa em background via `_recarregarLeadsFetch()`.
+- Cache é **invalidado ao trocar de cliente** (`trocarClienteAdmin` chama `_leadsCache.clear()`).
+- O auto-refresh de 30s chama `recarregarLeads(true)` (silencioso) — sempre passa pelo fetch, mantendo o cache fresco.
+
+### 3. Skeleton na tabela de links rastreáveis (`js/captacao.js`)
+- `_capRenderSkeleton(lista)` — espelha as 6 colunas da tabela (`Nome/Link`, `Modo`, `Cliques`, `Conv.`, `Status`, `Ações`).
+- Chamada em `carregarCampanhasLink()` substituindo o texto plano "Carregando…".
+
+### 4. Card view mobile na tabela de leads
+- `@media(max-width:768px)` em `css/dashboard.css`: `.leads-table-wrap thead` oculto, linhas `<tr>` viram cards em grid 2 colunas.
+- `data-label="..."` adicionado em todas as `<td>` de `renderTabela()` (`js/leads.js`) — o CSS usa `::before { content: attr(data-label) }` para exibir o rótulo de cada campo no card.
+- Skeleton (`sk-row`) preservado: volta ao `display:table-row` em mobile para não quebrar o layout de carregamento.
+
+### 5. `:root {}` unificado no CSS (`css/dashboard.css`)
+- Os dois blocos `:root {}` separados (tokens estáticos + tema dark) foram **fundidos em um único bloco**.
+- Adicionados tokens novos: `--transition-fast: all 0.15s ease`, `--transition-base: all 0.2s ease-in-out`, `--success: #10b981`, `--warning: #f59e0b`, `--danger: #ef4444`, `--color-whatsapp: #25d366`.
+- Classes utilitárias (`.bg1`, `.text2`, `.accent-r`, etc.) atualizadas para usar variáveis em vez de valores literais hardcoded.
+
+### Fix XSS incluído no mesmo commit
+- `lpRow()` em `js/leads.js` agora chama `esc(valor)` antes de injetar no `innerHTML` do drawer de perfil do lead. A tabela principal já estava protegida; só o drawer ficava de fora.
