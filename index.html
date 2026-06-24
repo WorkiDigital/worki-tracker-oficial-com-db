@@ -590,10 +590,16 @@
                     <input class="cbx-md" type="checkbox" id="permWhatsapp"><span style="font-size:13px;">Conexão WhatsApp</span>
                 </label>
                 <label class="pad-md" style="display:flex;align-items:center;gap:10px;background:var(--tag);border-radius:8px;cursor:pointer;">
-                    <input class="cbx-md" type="checkbox" id="permConfig"><span style="font-size:13px;">Contas de Anúncio</span>
+                    <input class="cbx-md" type="checkbox" id="permCaptacao"><span style="font-size:13px;">Link de Rastreamento</span>
                 </label>
                 <label class="pad-md" style="display:flex;align-items:center;gap:10px;background:var(--tag);border-radius:8px;cursor:pointer;">
-                    <input class="cbx-md" type="checkbox" id="permClientes"><span style="font-size:13px;">Compartilhar Dash</span>
+                    <input class="cbx-md" type="checkbox" id="permInteligente"><span style="font-size:13px;">Rastreamento Inteligente</span>
+                </label>
+                <label class="pad-md" style="display:flex;align-items:center;gap:10px;background:var(--tag);border-radius:8px;cursor:pointer;">
+                    <input class="cbx-md" type="checkbox" id="permZaprelatorios"><span style="font-size:13px;">Relatórios Automáticos</span>
+                </label>
+                <label class="pad-md" style="display:flex;align-items:center;gap:10px;background:var(--tag);border-radius:8px;cursor:pointer;">
+                    <input class="cbx-md" type="checkbox" id="permConta"><span style="font-size:13px;">Minha Conta</span>
                 </label>
             </div>
         </div>
@@ -2401,14 +2407,14 @@ async function init() {
             // Aplicar permissões do cliente — ocultar abas sem acesso
             const p = user.permissoes || {};
             const tabMap = {
-                'btn-leads':      p.leads     !== false,
-                'btn-captacao':   p.leads     !== false,
-                'btn-inteligente':p.leads     !== false,
-                'btn-anuncios':   p.anuncios  !== false,
-                'btn-relatorios': p.relatorios!== false,
-                'btn-whatsapp':   p.whatsapp  !== false,
-                'btn-config':     p.config    !== false,
-                'btn-clientes':   p.clientes  !== false,
+                'btn-leads':           p.leads          !== false,
+                'btn-anuncios':        p.anuncios       !== false,
+                'btn-relatorios':      p.relatorios     !== false,
+                'btn-whatsapp':        p.whatsapp       !== false,
+                'btn-captacao':        p.captacao       !== false,
+                'btn-inteligente':     p.inteligente    !== false,
+                'btn-zaprelatorios':   p.zaprelatorios  !== false,
+                'btn-conta':           p.conta          !== false,
             };
             Object.entries(tabMap).forEach(([btnId, allowed]) => {
                 const el = $(btnId);

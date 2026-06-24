@@ -134,8 +134,10 @@ function abrirEditCliente(id) {
     $('permAnuncios').checked   = p.anuncios   !== false;
     $('permRelatorios').checked = p.relatorios !== false;
     $('permWhatsapp').checked   = p.whatsapp   !== false;
-    $('permConfig').checked     = p.config     !== false;
-    $('permClientes').checked   = p.clientes   !== false;
+    $('permCaptacao').checked      = p.captacao      !== false;
+    $('permInteligente').checked   = p.inteligente   !== false;
+    $('permZaprelatorios').checked = p.zaprelatorios !== false;
+    $('permConta').checked         = p.conta         !== false;
     $('modalEditCliente').classList.add('open');
     lucide.createIcons({ nodes: [$('modalEditCliente')] });
 }
@@ -154,12 +156,14 @@ async function salvarEdicaoCliente() {
         capi_pixel_id:  $('editCliCapiPixel').value.trim() || undefined,
         capi_token:     $('editCliCapiToken').value.trim() || undefined,
         permissoes: {
-            leads:      $('permLeads').checked,
-            anuncios:   $('permAnuncios').checked,
-            relatorios: $('permRelatorios').checked,
-            whatsapp:   $('permWhatsapp').checked,
-            config:     $('permConfig').checked,
-            clientes:   $('permClientes').checked,
+            leads:          $('permLeads').checked,
+            anuncios:       $('permAnuncios').checked,
+            relatorios:     $('permRelatorios').checked,
+            whatsapp:       $('permWhatsapp').checked,
+            zaprelatorios:  $('permZaprelatorios').checked,
+            conta:          $('permConta').checked,
+            captacao:       $('permCaptacao').checked,
+            inteligente:    $('permInteligente').checked,
         }
     };
     const senha = $('editCliSenha').value;
