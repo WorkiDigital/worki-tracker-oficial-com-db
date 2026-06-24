@@ -2387,10 +2387,26 @@ async function init() {
         }
 
         const token = localStorage.getItem('adlytics_token');
-        const user = JSON.parse(localStorage.getItem('adlytics_user'));
-        
+        let user = JSON.parse(localStorage.getItem('adlytics_user'));
+
         if (!token || !user) { window.location.href = 'login.html'; return; }
         AUTH_TOKEN = token;
+
+        // Busca permissões frescas do banco — garante que mudanças feitas pelo admin
+        // sejam aplicadas imediatamente no F5, sem exigir logout.
+        if (!user.is_admin) {
+            try {
+                const meRes = await authFetch('/api/me');
+                if (meRes.ok) {
+                    const meData = await meRes.json();
+                    if (meData.permissoes) {
+                        user.permissoes = meData.permissoes;
+                        localStorage.setItem('adlytics_user', JSON.stringify(user));
+                    }
+                }
+            } catch (_) { /* fallback silencioso: usa permissões do JWT */ }
+        }
+
         $('userEmail').textContent = user.email;
 
         if (user.is_admin) {
