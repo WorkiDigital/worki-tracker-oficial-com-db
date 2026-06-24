@@ -65,10 +65,38 @@ export default async function handler(req, res) {
       // do disparo automático da jornada → não duplica o evento na Meta). Registra
       // também em lead_journey_history para o histórico unificado do lead.
       let capi = null;
-      const lead = updateResult.rows[0];
+      let lead = updateResult.rows[0];
       let concept = null;
       if (status === 'Vendido' || status === 'Venda') concept = 'purchase';
       else if (status === 'Qualificado') concept = 'qualified';
+
+      // Enriquece o lead com dados do clique rastreável (fbc, fbp, ip, user_agent,
+      // geo_city→cidade, geo_region→estado) que ficam em tracking_clicks, não em
+      // leads_tracking. Sem isso o Advanced Matching e o canal website ficam incompletos.
+      if (lead.tracking_click_id) {
+        try {
+          const clickRes = await pool.query(
+            `SELECT fbc, fbp, ip_address, user_agent, referrer,
+                    event_source_url, geo_city, geo_region
+             FROM tracking_clicks WHERE id = $1`,
+            [lead.tracking_click_id]
+          );
+          const click = clickRes.rows[0];
+          if (click) {
+            lead = {
+              ...lead,
+              fbc:              click.fbc              || null,
+              fbp:              click.fbp              || null,
+              ip_address:       click.ip_address       || null,
+              user_agent:       click.user_agent       || null,
+              referrer:         click.referrer         || null,
+              event_source_url: lead.event_source_url  || click.event_source_url || null,
+              cidade:           lead.cidade            || click.geo_city         || null,
+              estado:           lead.estado            || click.geo_region       || null,
+            };
+          }
+        } catch (_) { /* best-effort: falha no enriquecimento não bloqueia o update */ }
+      }
 
       if (concept) {
         capi = await enviarConversao({
