@@ -723,3 +723,33 @@ Commit `8c2f0c4`. Cinco melhorias implementadas após análise e validação con
 
 ### Fix XSS incluído no mesmo commit
 - `lpRow()` em `js/leads.js` agora chama `esc(valor)` antes de injetar no `innerHTML` do drawer de perfil do lead. A tabela principal já estava protegida; só o drawer ficava de fora.
+
+## 🔐 Permissões de Abas por Cliente (2026-06-24)
+
+Commits `5eac6a3` (checkboxes) e `d30999f` (F5 sem logout).
+
+### Permissões configuráveis (modal Editar Cliente → aba Dados)
+8 checkboxes, cada um controlando uma aba independente:
+
+| Checkbox | Chave (`p.*`) | Aba controlada |
+|---|---|---|
+| Leads | `leads` | `btn-leads` |
+| Meta Ads | `anuncios` | `btn-anuncios` |
+| Relatórios | `relatorios` | `btn-relatorios` |
+| Conexão WhatsApp | `whatsapp` | `btn-whatsapp` |
+| Link de Rastreamento | `captacao` | `btn-captacao` |
+| Rastreamento Inteligente | `inteligente` | `btn-inteligente` |
+| Relatórios Automáticos | `zaprelatorios` | `btn-zaprelatorios` |
+| Minha Conta | `conta` | `btn-conta` |
+
+As permissões são salvas em `clientes.permissoes` (JSONB). O `tabMap` em `index.html` (`init()`) controla o `display` de cada `btn-*`.
+
+### Abas só-admin (nunca aparecem no tabMap de clientes)
+`btn-agencia`, `btn-ajustes`, `btn-logs` — ficam `display:none` no HTML e são exibidos via JS apenas para `is_admin`.
+
+### F5 reflete mudanças sem logout — `GET /api/me`
+**Problema:** permissões ficavam gravadas no JWT (válido 7 dias). F5 só lia o `localStorage`, nunca o banco.
+
+**Solução:** `api/me.js` (`GET /api/me`) busca `permissoes` frescas do banco. O `init()` chama esse endpoint **antes** de montar o `tabMap` e atualiza o `adlytics_user` no `localStorage`. Fallback silencioso: se `/api/me` falhar, usa as permissões do JWT sem quebrar o dashboard.
+
+> **Ao adicionar uma aba nova:** (1) criar `btn-<nome>` no menu, (2) adicionar checkbox `perm<Nome>` no formulário de Editar Cliente, (3) adicionar leitura em `admin.js` (`$('perm<Nome>').checked = p.<nome> !== false`), (4) adicionar escrita em `admin.js` (`<nome>: $('perm<Nome>').checked`), (5) adicionar entrada no `tabMap` do `init()`.
