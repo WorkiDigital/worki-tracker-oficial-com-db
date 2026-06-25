@@ -98,93 +98,93 @@ export default async function handler(req, res) {
     };
 
     if (action === 'list') {
-        const r = await fetch(`${EVO_URL}/instance/fetchInstances`, { headers });
-        const data = await r.json();
-        const instances = Array.isArray(data) ? data : [];
+      const r = await fetch(`${EVO_URL}/instance/fetchInstances`, { headers });
+      const data = await r.json();
+      const instances = Array.isArray(data) ? data : [];
 
-        const CONNECTED = ['open','connected','online','CONNECTED'];
+      const CONNECTED = ['open', 'connected', 'online', 'CONNECTED'];
 
-        // Instâncias com prefixo do usuário
-        const myInstances = instances.filter(i => {
-           const name = getInstanceName(i);
-           return name && String(name).startsWith(prefix);
-        }).map(i => {
-           const name = getInstanceName(i);
-           const rawState = i.instance?.state || i.instance?.connectionStatus || i.instance?.status || i.state || i.connectionStatus || i.status || '';
-           const state = CONNECTED.includes(rawState) ? 'open' : rawState;
-           // Extrai cliente_id do prefixo cliente_N_
-           const prefixMatch = name.match(/^cliente_(\d+)_/);
-           const cliente_id = prefixMatch ? parseInt(prefixMatch[1]) : null;
-           return { fullName: name, displayName: name.replace(prefix, ''), state, linked: false, cliente_id, whatsapp_number: getInstancePhone(i) };
-        });
+      // Instâncias com prefixo do usuário
+      const myInstances = instances.filter(i => {
+        const name = getInstanceName(i);
+        return name && String(name).startsWith(prefix);
+      }).map(i => {
+        const name = getInstanceName(i);
+        const rawState = i.instance?.state || i.instance?.connectionStatus || i.instance?.status || i.state || i.connectionStatus || i.status || '';
+        const state = CONNECTED.includes(rawState) ? 'open' : rawState;
+        // Extrai cliente_id do prefixo cliente_N_
+        const prefixMatch = name.match(/^cliente_(\d+)_/);
+        const cliente_id = prefixMatch ? parseInt(prefixMatch[1]) : null;
+        return { fullName: name, displayName: name.replace(prefix, ''), state, linked: false, cliente_id, whatsapp_number: getInstancePhone(i) };
+      });
 
-        // Busca instâncias vinculadas via tabela de mapeamento (admin: todas; cliente: só as suas)
-        try {
-            const pool = getPool();
-            const mapped = user.is_admin
-                ? (targetClienteId
-                    ? await pool.query('SELECT instance_name, cliente_id FROM instancias_mapeamento WHERE cliente_id = $1', [targetClienteId])
-                    : await pool.query('SELECT instance_name, cliente_id FROM instancias_mapeamento'))
-                : await pool.query('SELECT instance_name, cliente_id FROM instancias_mapeamento WHERE cliente_id = $1', [user.cliente_id]);
+      // Busca instâncias vinculadas via tabela de mapeamento (admin: todas; cliente: só as suas)
+      try {
+        const pool = getPool();
+        const mapped = user.is_admin
+          ? (targetClienteId
+            ? await pool.query('SELECT instance_name, cliente_id FROM instancias_mapeamento WHERE cliente_id = $1', [targetClienteId])
+            : await pool.query('SELECT instance_name, cliente_id FROM instancias_mapeamento'))
+          : await pool.query('SELECT instance_name, cliente_id FROM instancias_mapeamento WHERE cliente_id = $1', [user.cliente_id]);
 
-            for (const row of mapped.rows) {
-                    if (myInstances.find(i => i.fullName === row.instance_name)) continue; // já listada
-                    const evoInst = instances.find(i => getInstanceName(i) === row.instance_name);
-                    const rawState = evoInst ? (evoInst.instance?.state || evoInst.instance?.connectionStatus || evoInst.instance?.status || evoInst.state || evoInst.connectionStatus || '') : 'unknown';
-                    const state = CONNECTED.includes(rawState) ? 'open' : rawState;
-                    myInstances.push({ fullName: row.instance_name, displayName: row.instance_name, state, linked: true, cliente_id: row.cliente_id, whatsapp_number: getInstancePhone(evoInst) });
-                }
-
-                // Busca nomes dos clientes para agrupamento
-                const clientIds = [...new Set(myInstances.filter(i => i.cliente_id).map(i => i.cliente_id))];
-                if (clientIds.length > 0) {
-                    const clientRes = await pool.query('SELECT id, nome FROM clientes WHERE id = ANY($1)', [clientIds]);
-                    const clientMap = {};
-                    for (const row of clientRes.rows) clientMap[row.id] = row.nome;
-                    for (const inst of myInstances) {
-                        if (inst.cliente_id && clientMap[inst.cliente_id]) {
-                            inst.cliente_nome = clientMap[inst.cliente_id];
-                        }
-                    }
-                }
-        } catch (dbErr) {
-            console.warn('[evo-manager] Erro ao buscar dados do banco:', dbErr.message);
+        for (const row of mapped.rows) {
+          if (myInstances.find(i => i.fullName === row.instance_name)) continue; // já listada
+          const evoInst = instances.find(i => getInstanceName(i) === row.instance_name);
+          const rawState = evoInst ? (evoInst.instance?.state || evoInst.instance?.connectionStatus || evoInst.instance?.status || evoInst.state || evoInst.connectionStatus || '') : 'unknown';
+          const state = CONNECTED.includes(rawState) ? 'open' : rawState;
+          myInstances.push({ fullName: row.instance_name, displayName: row.instance_name, state, linked: true, cliente_id: row.cliente_id, whatsapp_number: getInstancePhone(evoInst) });
         }
 
-        return res.status(200).json(myInstances);
+        // Busca nomes dos clientes para agrupamento
+        const clientIds = [...new Set(myInstances.filter(i => i.cliente_id).map(i => i.cliente_id))];
+        if (clientIds.length > 0) {
+          const clientRes = await pool.query('SELECT id, nome FROM clientes WHERE id = ANY($1)', [clientIds]);
+          const clientMap = {};
+          for (const row of clientRes.rows) clientMap[row.id] = row.nome;
+          for (const inst of myInstances) {
+            if (inst.cliente_id && clientMap[inst.cliente_id]) {
+              inst.cliente_nome = clientMap[inst.cliente_id];
+            }
+          }
+        }
+      } catch (dbErr) {
+        console.warn('[evo-manager] Erro ao buscar dados do banco:', dbErr.message);
+      }
+
+      return res.status(200).json(myInstances);
     }
 
     if (action === 'list-all') {
-        if (!user.is_admin) return res.status(403).json({ error: 'Apenas admin pode listar todas as instâncias.' });
-        const r = await fetch(`${EVO_URL}/instance/fetchInstances`, { headers });
-        const data = await r.json();
-        const instances = Array.isArray(data) ? data : [];
-        return res.status(200).json(instances.map(i => {
-            const name = i.instance?.instanceName || i.instanceName || i.name;
-            const rawState = i.instance?.state || i.state || '';
-            const state = ['open','connected','online'].includes(rawState) ? 'open' : rawState;
-            return { fullName: name, state };
-        }));
+      if (!user.is_admin) return res.status(403).json({ error: 'Apenas admin pode listar todas as instâncias.' });
+      const r = await fetch(`${EVO_URL}/instance/fetchInstances`, { headers });
+      const data = await r.json();
+      const instances = Array.isArray(data) ? data : [];
+      return res.status(200).json(instances.map(i => {
+        const name = i.instance?.instanceName || i.instanceName || i.name;
+        const rawState = i.instance?.state || i.instance?.connectionStatus || i.instance?.status || i.state || i.connectionStatus || i.status || '';
+        const state = ['open', 'connected', 'online', 'CONNECTED', 'OPEN'].includes(rawState) || rawState.toLowerCase() === 'open' || rawState.toLowerCase() === 'connected' ? 'open' : rawState;
+        return { fullName: name, state };
+      }));
     }
 
     if (action === 'link') {
-        if (!user.is_admin) return res.status(403).json({ error: 'Apenas admin pode vincular instâncias.' });
-        const { cliente_id: cid } = req.body;
-        if (!cid) return res.status(400).json({ error: 'cliente_id obrigatório' });
-        if (!instanceName) return res.status(400).json({ error: 'instanceName obrigatório' });
+      if (!user.is_admin) return res.status(403).json({ error: 'Apenas admin pode vincular instâncias.' });
+      const { cliente_id: cid } = req.body;
+      if (!cid) return res.status(400).json({ error: 'cliente_id obrigatório' });
+      if (!instanceName) return res.status(400).json({ error: 'instanceName obrigatório' });
 
-        await configurarWebhookEvolution(EVO_URL, headers, instanceName);
+      await configurarWebhookEvolution(EVO_URL, headers, instanceName);
 
-        const pool = getPool();
-        await pool.query(
-            'INSERT INTO instancias_mapeamento (instance_name, cliente_id) VALUES ($1, $2) ON CONFLICT (instance_name) DO UPDATE SET cliente_id=$2',
-            [instanceName, cid]
-        );
+      const pool = getPool();
+      await pool.query(
+        'INSERT INTO instancias_mapeamento (instance_name, cliente_id) VALUES ($1, $2) ON CONFLICT (instance_name) DO UPDATE SET cliente_id=$2',
+        [instanceName, cid]
+      );
 
-        return res.status(200).json({
-          message: 'Instância vinculada e webhook confirmado com sucesso!',
-          webhook_configured: true
-        });
+      return res.status(200).json({
+        message: 'Instância vinculada e webhook confirmado com sucesso!',
+        webhook_configured: true
+      });
     }
 
     if (action === 'status') {
@@ -199,7 +199,7 @@ export default async function handler(req, res) {
         qrcode: true,
         integration: "WHATSAPP-BAILEYS"
       };
-      
+
       let r = await fetch(`${EVO_URL}/instance/create`, {
         method: 'POST',
         headers,
@@ -208,9 +208,9 @@ export default async function handler(req, res) {
       let data = await r.json();
 
       if (!r.ok && data.message && data.message.includes('already exists')) {
-         // Ignores and proceeds to fetch QR
+        // Ignores and proceeds to fetch QR
       } else if (!r.ok) {
-         return res.status(400).json({ error: data.message || 'Erro ao criar instância' });
+        return res.status(400).json({ error: data.message || 'Erro ao criar instância' });
       }
 
       await configurarWebhookEvolution(EVO_URL, headers, finalInstanceName);
@@ -246,13 +246,13 @@ export default async function handler(req, res) {
     if (action === 'delete') {
       const r = await fetch(`${EVO_URL}/instance/delete/${finalInstanceName}`, { method: 'DELETE', headers });
       const data = await r.json();
-      
+
       // Se não for OK e não for erro de "não encontrado", retorna erro.
       // Caso seja "não encontrado", prosseguimos para limpar do nosso banco local.
       const isNotFound = !r.ok && (data.message?.toLowerCase().includes('not found') || r.status === 404);
 
       if (!r.ok && !isNotFound) {
-          return res.status(400).json({ error: data.message || 'Erro ao excluir instância na Evolution' });
+        return res.status(400).json({ error: data.message || 'Erro ao excluir instância na Evolution' });
       }
 
       // Remove também da tabela de mapeamento (se existir)
@@ -267,7 +267,7 @@ export default async function handler(req, res) {
           ? 'DELETE FROM instancias_mapeamento WHERE instance_name = $1'
           : 'DELETE FROM instancias_mapeamento WHERE instance_name = $1 AND cliente_id = $2',
           user.is_admin ? [instanceName] : [instanceName, user.cliente_id]);
-      } catch(dbErr) { console.warn('[evo-manager] Erro ao limpar mapeamento:', dbErr.message); }
+      } catch (dbErr) { console.warn('[evo-manager] Erro ao limpar mapeamento:', dbErr.message); }
 
       return res.status(200).json(data);
     }
@@ -293,9 +293,9 @@ export default async function handler(req, res) {
       const data = await r.json();
       const grupos = Array.isArray(data) ? data : [];
       return res.status(200).json(grupos.map(g => ({
-        id:         g.id,
-        subject:    g.subject,
-        size:       g.size,
+        id: g.id,
+        subject: g.subject,
+        size: g.size,
         pictureUrl: g.pictureUrl || null,
       })));
     }
