@@ -230,7 +230,7 @@ function aplicarFiltros() {
 
     pagAtual = 1;
     renderTabela();
-    renderRelatorios();
+    renderRelatorios(); // async — Chart.js carregado sob demanda dentro dela
     
     // Atualiza as métricas do topo (cards) baseadas no filtro atual
     carregarMetricasTemporais();
@@ -560,7 +560,8 @@ function calcMetricasRelatorio(leads) {
     return { total, vendas: vendas.length, qualificados: qualificados.length, receita, conv };
 }
 
-function renderRelatorios() {
+async function renderRelatorios() {
+    if (typeof ensureChart === 'function') await ensureChart();
     const total  = dadosFiltrados.length;
     const vendas = dadosFiltrados.filter(l => (l.status||'').toLowerCase() === 'vendido');
     // Qualificados: status "Qualificado" OU que já passaram pela qualificação (qualified_at).
@@ -808,7 +809,8 @@ function renderHeatmap(tipo) {
     container.innerHTML = html;
 }
 
-function renderTimelineChart() {
+async function renderTimelineChart() {
+    if (typeof ensureChart === 'function') await ensureChart();
     const ctx = $('cTimeline');
     if (!ctx) return;
 
