@@ -44,6 +44,20 @@ export default async function handler(req, res) {
         );
         clienteId = mapped.rows[0]?.cliente_id || null;
       }
+      // Persiste o estado de conexão na tabela de mapeamento (cria coluna se não existir)
+      if (instance) {
+        try {
+          await pool.query(
+            `ALTER TABLE instancias_mapeamento ADD COLUMN IF NOT EXISTS connection_state TEXT`
+          );
+          await pool.query(
+            `UPDATE instancias_mapeamento SET connection_state=$1 WHERE instance_name=$2`,
+            [state, instance]
+          );
+        } catch (stateErr) {
+          log('warn', 'webhook_evo_state_persist_fail', { error: stateErr.message, instance, state });
+        }
+      }
       await pool.query(
         `INSERT INTO webhook_logs (cliente_id, instance, tag, level, message, data)
          VALUES ($1,$2,'connection_update',$3,$4,$5)`,

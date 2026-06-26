@@ -123,15 +123,17 @@ export default async function handler(req, res) {
         const pool = getPool();
         const mapped = user.is_admin
           ? (targetClienteId
-            ? await pool.query('SELECT instance_name, cliente_id FROM instancias_mapeamento WHERE cliente_id = $1', [targetClienteId])
-            : await pool.query('SELECT instance_name, cliente_id FROM instancias_mapeamento'))
-          : await pool.query('SELECT instance_name, cliente_id FROM instancias_mapeamento WHERE cliente_id = $1', [user.cliente_id]);
+            ? await pool.query('SELECT instance_name, cliente_id, connection_state FROM instancias_mapeamento WHERE cliente_id = $1', [targetClienteId])
+            : await pool.query('SELECT instance_name, cliente_id, connection_state FROM instancias_mapeamento'))
+          : await pool.query('SELECT instance_name, cliente_id, connection_state FROM instancias_mapeamento WHERE cliente_id = $1', [user.cliente_id]);
 
         for (const row of mapped.rows) {
           if (myInstances.find(i => i.fullName === row.instance_name)) continue; // já listada
           const evoInst = instances.find(i => getInstanceName(i) === row.instance_name);
-          const rawState = evoInst ? (evoInst.instance?.state || evoInst.instance?.connectionStatus || evoInst.instance?.status || evoInst.state || evoInst.connectionStatus || '') : 'unknown';
-          const state = CONNECTED.includes(rawState) ? 'open' : rawState;
+          const rawStateEvo = evoInst ? (evoInst.instance?.state || evoInst.instance?.connectionStatus || evoInst.instance?.status || evoInst.state || evoInst.connectionStatus || '') : '';
+          // Fallback: usa o estado salvo pelo webhook CONNECTION_UPDATE se a Evolution não trouxer estado válido
+          const rawState = CONNECTED.includes(rawStateEvo) ? rawStateEvo : (rawStateEvo || row.connection_state || 'unknown');
+          const state = CONNECTED.includes(rawState) || rawState?.toLowerCase() === 'open' ? 'open' : rawState;
           myInstances.push({ fullName: row.instance_name, displayName: row.instance_name, state, linked: true, cliente_id: row.cliente_id, whatsapp_number: getInstancePhone(evoInst) });
         }
 
