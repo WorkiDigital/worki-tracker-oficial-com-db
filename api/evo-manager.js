@@ -123,9 +123,9 @@ export default async function handler(req, res) {
         const pool = getPool();
         const mapped = user.is_admin
           ? (targetClienteId
-            ? await pool.query('SELECT instance_name, cliente_id, connection_state FROM instancias_mapeamento WHERE cliente_id = $1', [targetClienteId])
-            : await pool.query('SELECT instance_name, cliente_id, connection_state FROM instancias_mapeamento'))
-          : await pool.query('SELECT instance_name, cliente_id, connection_state FROM instancias_mapeamento WHERE cliente_id = $1', [user.cliente_id]);
+            ? await pool.query('SELECT * FROM instancias_mapeamento WHERE cliente_id = $1', [targetClienteId])
+            : await pool.query('SELECT * FROM instancias_mapeamento'))
+          : await pool.query('SELECT * FROM instancias_mapeamento WHERE cliente_id = $1', [user.cliente_id]);
 
         for (const row of mapped.rows) {
           if (myInstances.find(i => i.fullName === row.instance_name)) continue; // já listada
