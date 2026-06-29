@@ -32,7 +32,7 @@ export default async function handler(req, res) {
 
   res.setHeader('Cache-Control', 'private, max-age=5');
 
-  const { limit = 50, offset = 0, instance, level, tag, search, date_from, date_to, id } = req.query;
+  const { limit = 50, offset = 0, instance, level, tag, search, date_from, date_to, id, cliente_id: filterClienteId } = req.query;
 
   // BUSCA POR ID ÚNICO (Para o modal de detalhes)
   if (id) {
@@ -50,6 +50,9 @@ export default async function handler(req, res) {
   if (!user.is_admin) {
     where += ` AND cliente_id = $${idx++}`;
     params.push(user.cliente_id);
+  } else if (filterClienteId) {
+    where += ` AND cliente_id = $${idx++}`;
+    params.push(parseInt(filterClienteId));
   }
 
   if (instance)  { where += ` AND instance ILIKE $${idx++}`;  params.push(`%${instance}%`); }

@@ -2092,6 +2092,9 @@
                     </div>
                 </div>
                 <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">
+                    <select id="log-filter-cliente" onchange="carregarLogs()" style="display:none;background:var(--card);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px;max-width:180px;">
+                        <option value="">Todos os clientes</option>
+                    </select>
                     <input id="log-filter-search" type="text" placeholder="Buscar mensagem..." onkeyup="if(event.key==='Enter')carregarLogs()" class="bare pad-sm" style="border:1px solid var(--border);border-radius:6px;font-size:12px;width:180px;">
                     <input id="log-filter-instance" type="text" placeholder="Instância..." onkeyup="if(event.key==='Enter')carregarLogs()" class="bare pad-sm" style="border:1px solid var(--border);border-radius:6px;font-size:12px;width:140px;">
                     <input id="log-filter-date-from" type="date" onchange="carregarLogs()" class="bare pad-sm" style="border:1px solid var(--border);border-radius:6px;font-size:12px;">

@@ -819,8 +819,32 @@ function limparFiltrosLog() {
     $('log-filter-date-to').value = '';
     $('log-filter-level').value = '';
     $('log-filter-tag').value = '';
+    const selCli = $('log-filter-cliente');
+    if (selCli) selCli.value = '';
     _logPage = 1;
     carregarLogs();
+}
+
+async function _popularSelectClientesLog() {
+    const sel = $('log-filter-cliente');
+    if (!sel) return;
+    let map = window._clientesMap || {};
+    if (!Object.keys(map).length) {
+        try {
+            const r = await authFetch('/api/clientes');
+            if (r.ok) {
+                const lista = await r.json();
+                map = {};
+                (lista || []).forEach(c => { map[c.id] = c; });
+                window._clientesMap = map;
+            }
+        } catch (_) {}
+    }
+    const clientes = Object.values(map).sort((a, b) => (a.nome || '').localeCompare(b.nome || ''));
+    if (!clientes.length) return;
+    sel.innerHTML = '<option value="">Todos os clientes</option>' +
+        clientes.map(c => `<option value="${c.id}">${esc(c.nome)}</option>`).join('');
+    sel.style.display = '';
 }
 
 function logMudarPagina(dir) {
@@ -838,6 +862,7 @@ async function carregarLogs(silent) {
             const d = new Date(); d.setDate(d.getDate() - 2);
             dateFromEl.value = d.toISOString().split('T')[0];
         }
+        _popularSelectClientesLog();
     }
 
     const filters = [
@@ -856,6 +881,7 @@ async function carregarLogs(silent) {
         `).join('');
     }
 
+    const clienteFilterVal = $('log-filter-cliente')?.value || '';
     const params = new URLSearchParams({
         limit: _logPerPage,
         offset: (_logPage - 1) * _logPerPage,
@@ -866,6 +892,7 @@ async function carregarLogs(silent) {
         date_from: $(filters[4])?.value || '',
         date_to: $(filters[5])?.value || ''
     });
+    if (clienteFilterVal) params.set('cliente_id', clienteFilterVal);
 
     try {
         const r = await authFetch(`/api/logs/lite?${params.toString()}`);
