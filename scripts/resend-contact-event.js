@@ -142,10 +142,8 @@ async function main() {
           `INSERT INTO lead_journey_history
             (lead_id, cliente_id, event_concept, event_name, channel, event_id,
              meta_status, fbtrace_id, attempts, created_at, last_attempt_at)
-           SELECT $1,$2,$3,$4,'website',$5,'sent',$6,1,NOW(),NOW()
-           WHERE NOT EXISTS (
-             SELECT 1 FROM lead_journey_history WHERE lead_id=$1 AND event_id=$5
-           )`,
+           VALUES ($1,$2,$3,$4,'website',$5,'sent',$6,1,NOW(),NOW())
+           ON CONFLICT DO NOTHING`,
           [lead.id, lead.cliente_id, concept, eventName, eventId, resp.fbtrace_id || null]
         );
         ok++;
