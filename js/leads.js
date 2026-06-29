@@ -360,7 +360,10 @@ function renderTabela() {
         ].filter(Boolean).join('\n');
 
         const origemInfo = obterOrigemLead(lead.lead_origin);
-        const origemBadge = `<span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;background:${origemInfo.bg};color:${origemInfo.color};border:1px solid ${origemInfo.border};white-space:nowrap;">${origemInfo.label}</span>`;
+        const origemBadge = `<div style="display:flex;flex-direction:column;gap:2px;align-items:flex-start;">
+            <span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;background:${origemInfo.bg};color:${origemInfo.color};border:1px solid ${origemInfo.border};white-space:nowrap;">${origemInfo.label}</span>
+            ${lead.tracking_campaign_name ? `<span style="font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px;" title="${esc(lead.tracking_campaign_name)}">${esc(lead.tracking_campaign_name)}</span>` : ''}
+        </div>`;
 
         return `<tr>
             <td style="text-align:center;">
