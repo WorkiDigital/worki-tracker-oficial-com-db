@@ -76,7 +76,7 @@ async function main() {
       l.id, l.nome, l.telefone, l.cliente_id, l.tracking_click_id,
       l.created_at,
       k.fbc, k.fbp, k.ip_address, k.user_agent, k.event_source_url, k.referrer,
-      k.utm_campaign, k.utm_medium, k.utm_content
+      k.utm_campaign, k.utm_medium, k.utm_content, k.tracking_id
     FROM leads_tracking l
     JOIN tracking_clicks k ON k.id = l.tracking_click_id
     WHERE l.tracking_campaign_id = $1
@@ -104,11 +104,12 @@ async function main() {
     const ph = (lead.telefone || '').replace(/\D/g, '');
 
     const userData = {};
-    if (lead.fbc)        userData.fbc                = lead.fbc;
-    if (lead.fbp)        userData.fbp                = lead.fbp;
-    if (ph)              userData.ph                 = [hash(ph)];
-    if (lead.ip_address) userData.client_ip_address  = lead.ip_address;
-    if (lead.user_agent) userData.client_user_agent  = lead.user_agent;
+    if (lead.fbc)         userData.fbc               = lead.fbc;
+    if (lead.fbp)         userData.fbp               = lead.fbp;
+    if (ph)               userData.ph                = [hash(ph)];
+    if (lead.ip_address)  userData.client_ip_address = lead.ip_address;
+    if (lead.user_agent)  userData.client_user_agent = lead.user_agent;
+    if (lead.tracking_id) userData.external_id       = [hash(lead.tracking_id)];
 
     const payload = {
       data: [{

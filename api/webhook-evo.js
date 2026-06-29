@@ -757,7 +757,7 @@ async function processarJornadaFromMe(pool, { clienteIdFm, telefoneFm, textoFm }
   // Lead mais recente do telefone (padrão já usado no fromMe).
   const leadRes = await pool.query(
     `SELECT l.*, k.fbc, k.fbp, k.ip_address, k.user_agent, k.referrer,
-            k.event_source_url AS click_event_source_url
+            k.event_source_url AS click_event_source_url, k.tracking_id
      FROM leads_tracking l
      LEFT JOIN tracking_clicks k ON k.id = l.tracking_click_id
      WHERE l.telefone = $1 AND l.cliente_id = $2

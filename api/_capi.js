@@ -188,15 +188,17 @@ export async function enviarConversao({ lead, concept, value, currency = 'BRL', 
     if (lead.ip_address) userData.client_ip_address = lead.ip_address;
     if (lead.user_agent) userData.client_user_agent = lead.user_agent;
     if (ph) userData.ph = [hash(ph)];
+    // tracking_id do clique como external_id (igual ao tintim_gid do Tintim)
+    if (lead.tracking_id) userData.external_id = [hash(lead.tracking_id)];
   }
 
   // Advanced matching (hasheado) — vale para os dois canais.
-  if (lead.email)   userData.em          = [hash(lead.email)];
-  if (nomeParts[0]) userData.fn          = [hash(nomeParts[0])];
-  if (nomeParts[1]) userData.ln          = [hash(nomeParts.slice(1).join(' '))];
-  if (lead.cpf)     userData.external_id = [hash(lead.cpf.replace(/\D/g, ''))];
-  if (lead.cidade)  userData.ct          = [hash(lead.cidade)];
-  if (lead.estado)  userData.st          = [hash(lead.estado)];
+  if (lead.email)   userData.em = [hash(lead.email)];
+  if (nomeParts[0]) userData.fn = [hash(nomeParts[0])];
+  if (nomeParts[1]) userData.ln = [hash(nomeParts.slice(1).join(' '))];
+  if (lead.cpf && channel !== 'website') userData.external_id = [hash(lead.cpf.replace(/\D/g, ''))];
+  if (lead.cidade)  userData.ct      = [hash(lead.cidade)];
+  if (lead.estado)  userData.st      = [hash(lead.estado)];
   userData.country = [hash('br')];
 
   const evento = {
