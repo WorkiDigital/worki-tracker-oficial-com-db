@@ -331,7 +331,11 @@ function renderTabela() {
 
     tbody.innerHTML = pagina.map((lead, i) => {
         const idx      = inicio + i;
-        const plataformaLabel = lead.plataforma || ((lead.lead_origin && lead.lead_origin !== 'ctwa') ? 'whatsapp' : 'instagram');
+        const _utmSrc = (lead.utm_source || '').toLowerCase();
+        const plataformaLabel = lead.plataforma ||
+            (lead.lead_origin === 'campaign_link' || lead.lead_origin === 'bio' || lead.lead_origin === 'rotator'
+                ? (_utmSrc.includes('fb') || _utmSrc.includes('face') ? 'facebook' : _utmSrc.includes('ig') || _utmSrc.includes('insta') ? 'instagram' : 'whatsapp')
+                : (lead.lead_origin && lead.lead_origin !== 'ctwa' ? 'whatsapp' : 'instagram'));
         const plat     = plataformaLabel.toLowerCase();
         const platCls  = plat.includes('face') ? 'facebook' : plat.includes('whats') ? 'whatsapp' : 'instagram';
         const status   = (lead.status||'Lead').toLowerCase();
@@ -360,10 +364,7 @@ function renderTabela() {
         ].filter(Boolean).join('\n');
 
         const origemInfo = obterOrigemLead(lead.lead_origin);
-        const origemBadge = `<div style="display:flex;flex-direction:column;gap:2px;align-items:flex-start;">
-            <span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;background:${origemInfo.bg};color:${origemInfo.color};border:1px solid ${origemInfo.border};white-space:nowrap;">${origemInfo.label}</span>
-            ${lead.tracking_campaign_name ? `<span style="font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px;" title="${esc(lead.tracking_campaign_name)}">${esc(lead.tracking_campaign_name)}</span>` : ''}
-        </div>`;
+        const origemBadge = `<span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;background:${origemInfo.bg};color:${origemInfo.color};border:1px solid ${origemInfo.border};white-space:nowrap;">${origemInfo.label}</span>`;
 
         return `<tr>
             <td style="text-align:center;">
@@ -501,11 +502,12 @@ async function confirmarExclusaoLeads() {
 function obterOrigemLead(origem) {
     const key = String(origem || 'ctwa').toLowerCase();
     const mapa = {
-        ctwa:          { label:'Anúncio',       color:'#3b82f6', bg:'rgba(59,130,246,.12)',  border:'rgba(59,130,246,.25)' },
-        organic:       { label:'Orgânico',      color:'#f59e0b', bg:'rgba(245,158,11,.12)',  border:'rgba(245,158,11,.25)' },
-        bio:           { label:'Link da bio',   color:'#a855f7', bg:'rgba(168,85,247,.12)',  border:'rgba(168,85,247,.25)' },
-        campaign_link: { label:'Link campanha', color:'#06b6d4', bg:'rgba(6,182,212,.12)',   border:'rgba(6,182,212,.25)' },
-        rotator:       { label:'Rotador',       color:'#10b981', bg:'rgba(16,185,129,.12)',  border:'rgba(16,185,129,.25)' },
+        ctwa:          { label:'Anúncio CTWA',       color:'#3b82f6', bg:'rgba(59,130,246,.12)',  border:'rgba(59,130,246,.25)' },
+        organic:       { label:'Orgânico',           color:'#f59e0b', bg:'rgba(245,158,11,.12)',  border:'rgba(245,158,11,.25)' },
+        bio:           { label:'Link da bio',        color:'#a855f7', bg:'rgba(168,85,247,.12)',  border:'rgba(168,85,247,.25)' },
+        campaign_link: { label:'Link rastreável',    color:'#06b6d4', bg:'rgba(6,182,212,.12)',   border:'rgba(6,182,212,.25)' },
+        rotator:       { label:'Rotador',            color:'#10b981', bg:'rgba(16,185,129,.12)',  border:'rgba(16,185,129,.25)' },
+        intelligent:   { label:'Rastr. inteligente', color:'#8b5cf6', bg:'rgba(139,92,246,.12)',  border:'rgba(139,92,246,.25)' },
     };
     return mapa[key] || mapa.organic;
 }
