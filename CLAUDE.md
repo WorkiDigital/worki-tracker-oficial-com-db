@@ -753,3 +753,21 @@ As permissões são salvas em `clientes.permissoes` (JSONB). O `tabMap` em `inde
 **Solução:** `api/me.js` (`GET /api/me`) busca `permissoes` frescas do banco. O `init()` chama esse endpoint **antes** de montar o `tabMap` e atualiza o `adlytics_user` no `localStorage`. Fallback silencioso: se `/api/me` falhar, usa as permissões do JWT sem quebrar o dashboard.
 
 > **Ao adicionar uma aba nova:** (1) criar `btn-<nome>` no menu, (2) adicionar checkbox `perm<Nome>` no formulário de Editar Cliente, (3) adicionar leitura em `admin.js` (`$('perm<Nome>').checked = p.<nome> !== false`), (4) adicionar escrita em `admin.js` (`<nome>: $('perm<Nome>').checked`), (5) adicionar entrada no `tabMap` do `init()`.
+
+## 🆔 external_id no CAPI Web — tracking_id como identificador de lead (estilo tintim_gid)
+
+Para leads de **link rastreável** (`lead_origin = 'campaign_link'`), o `tracking_id` do clique (gerado pelo `redirect.js`, ex: `A3F9C2B`) é hasheado SHA-256 e enviado como `external_id` em **todos os eventos CAPI canal `website`** daquele lead.
+
+- Mesmo identificador em `Contact`, `Purchase`, `QualifiedLead`, etc. — a Meta reconhece como a mesma pessoa avançando no funil.
+- Equivalente ao `tintim_gid` do Tintim: ID gerado no clique, persistido no banco (`tracking_clicks.tracking_id`), reutilizado em cada evento.
+- **Leads CTWA** não recebem `external_id` por este caminho — já têm `ctwa_clid` como identificador forte.
+- **CPF** (`external_id` via CPF) só é enviado no canal `business_messaging` (WhatsApp), nunca sobrepõe o `tracking_id` no canal web.
+
+### Onde está implementado
+- `api/_capi.js` — bloco `website`: `if (lead.tracking_id) userData.external_id = [hash(lead.tracking_id)]`
+- `api/webhook-evo.js` — SELECT do JOIN com `tracking_clicks` inclui `k.tracking_id`
+- `scripts/resend-contact-event.js` — inclui `k.tracking_id` no SELECT e no `user_data`
+
+### Coluna de origem (`lead_origin`) e plataforma no painel
+- Badges em `js/leads.js` (`obterOrigemLead`): `ctwa`→"Anúncio CTWA", `campaign_link`→"Link rastreável", `organic`→"Orgânico", `bio`→"Link da bio", `rotator`→"Rotador", `intelligent`→"Rastr. inteligente".
+- **Plataforma** de leads `campaign_link`/`bio`/`rotator` usa `utm_source` como fallback quando `plataforma` é NULL: `ig`→instagram, `fb`→facebook.
