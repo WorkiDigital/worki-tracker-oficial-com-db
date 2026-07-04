@@ -9,6 +9,10 @@
  *  2. Registra um PageView (/api/site-pageview) e guarda o visitor_id.
  *  3. Nos botões [data-wapptrack-button], intercepta o clique, resolve o
  *     destino do WhatsApp (/api/site-whatsapp-click) e abre o WhatsApp.
+ *  4. Se a campanha tiver um texto de botão configurado no painel, escreve
+ *     esse texto no botão automaticamente. Em botões com ícone + texto (ex:
+ *     <button><Icon/><span>Falar</span></button>), marque o texto com
+ *     data-wapptrack-label para o script trocar só ele, preservando o ícone.
  *
  * A conversão (clique → lead) continua sendo feita pelo webhook existente
  * quando a mensagem chega no WhatsApp — este script só origina o clique.
@@ -113,6 +117,19 @@
     } catch (e) { /* best-effort */ }
   }
 
+  // Escreve o texto configurado na campanha nos botões [data-wapptrack-button].
+  // Não sobrescreve botões com filhos HTML (ícone + texto) a menos que exista um
+  // sub-elemento [data-wapptrack-label] marcado explicitamente — evita apagar ícones.
+  function aplicarTextoBotao(texto) {
+    if (!texto) return;
+    var botoes = document.querySelectorAll('[data-wapptrack-button]');
+    for (var i = 0; i < botoes.length; i++) {
+      var alvo = botoes[i].querySelector('[data-wapptrack-label]');
+      if (alvo) { alvo.textContent = texto; continue; }
+      if (botoes[i].children.length === 0) botoes[i].textContent = texto;
+    }
+  }
+
   function registrarPageview() {
     var params = collectParams();
     if (visitorId) params.visitor_id = visitorId;
@@ -123,6 +140,9 @@
       }
       if (data && data.pixel_id && data.pageview_event_id) {
         ensurePixel(data.pixel_id, data.pageview_event_id);
+      }
+      if (data && data.button_text) {
+        aplicarTextoBotao(data.button_text);
       }
     }).catch(function () { /* best-effort: falha de rede não deve travar o site */ });
   }

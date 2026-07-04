@@ -248,6 +248,12 @@ async function createTrackingSchema() {
       ALTER TABLE public.tracking_campaigns
       ADD COLUMN IF NOT EXISTS allowed_domains TEXT[] DEFAULT '{}';
 
+      -- Texto do botão do WhatsApp no script de site (opcional). Se preenchido, o
+      -- wapptrack.js escreve esse texto no botão automaticamente; NULL preserva o
+      -- texto que o cliente já escreveu manualmente no HTML/JSX do site.
+      ALTER TABLE public.tracking_campaigns
+      ADD COLUMN IF NOT EXISTS button_text VARCHAR(80);
+
       -- Vincula o clique nascido do script de site ao visitor_id do PageView,
       -- permitindo correlacionar PageView → clique → lead na jornada.
       ALTER TABLE public.tracking_clicks

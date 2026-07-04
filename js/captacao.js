@@ -648,20 +648,23 @@ function capSwitchModalTab(tab) {
 
 // ── Script para site (Anúncio > Site > WhatsApp) ────────────────────────────────
 function capAtualizarScriptSnippet() {
-  const slug = _capEditId ? (_capCampanhas.find(c => Number(c.id) === Number(_capEditId))?.slug) : null;
+  const campanha = _capEditId ? _capCampanhas.find(c => Number(c.id) === Number(_capEditId)) : null;
+  const slug = campanha?.slug || null;
   const origin = window.location.origin;
   if (!slug) {
     $('capScriptSnippet').value = 'Salve o link primeiro para gerar o slug e o script correspondente.';
     $('capScriptBotaoExemplo').value = '';
     return;
   }
+  // Usa o valor atual do campo (pode ainda não ter sido salvo) em vez do snapshot da campanha.
+  const textoBotao = $('capButtonText')?.value.trim() || 'Chamar no WhatsApp';
   $('capScriptSnippet').value =
 `<script src="${origin}/js/wapptrack.js" data-campaign="${slug}"></script>`;
   $('capScriptBotaoExemplo').value =
-`<a href="#" data-wapptrack-button>Chamar no WhatsApp</a>
+`<a href="#" data-wapptrack-button>${textoBotao}</a>
 
 <!-- Mensagem específica deste botão (opcional): -->
-<a href="#" data-wapptrack-button data-wapp-message="Olá! Vim da página {{page_title}}.">Chamar no WhatsApp</a>`;
+<a href="#" data-wapptrack-button data-wapp-message="Olá! Vim da página {{page_title}}.">${textoBotao}</a>`;
 }
 
 function capCopiarScriptSnippet() {
@@ -800,7 +803,7 @@ async function abrirModalCampanha(id, duplicar = false) {
   _capJornadaEtapas = [];
 
   // Reset form
-  ['capNome','capMensagem','capUtmSource','capUtmMedium','capUtmCampaign','capUtmContent','capAllowedDomains'].forEach(i => {
+  ['capNome','capMensagem','capUtmSource','capUtmMedium','capUtmCampaign','capUtmContent','capAllowedDomains','capButtonText'].forEach(i => {
     const el = $(i); if (el) el.value = '';
   });
   const modeEl = $('capModo'); if (modeEl) modeEl.value = 'single';
@@ -836,6 +839,7 @@ async function abrirModalCampanha(id, duplicar = false) {
       $('capConversionAuto').checked = c.conversion_auto === true;
       $('capConversionEvent').value = c.conversion_event || 'lead';
       $('capAllowedDomains').value = Array.isArray(c.allowed_domains) ? c.allowed_domains.join(', ') : '';
+      $('capButtonText').value = c.button_text || '';
       _capDestinos = (c.destinations || []).map(d => {
         const copia = { ...d };
         if (duplicar) delete copia.id;
@@ -1127,6 +1131,7 @@ async function salvarCampanha() {
     conversion_auto: $('capConversionAuto')?.checked === true,
     conversion_event:$('capConversionEvent')?.value || 'lead',
     allowed_domains: ($('capAllowedDomains')?.value || '').split(',').map(s => s.trim()).filter(Boolean),
+    button_text:     $('capButtonText')?.value.trim() || null,
     destinations:    _capDestinos,
     journey_stages:  _capJornadaEtapas.map((stage, position) => ({ ...stage, position })),
   });

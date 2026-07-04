@@ -122,5 +122,6 @@ export default async function handler(req, res) {
     visitor_id: visitorId,
     pageview_event_id: pageviewEventId,
     pixel_id: capiPixelId,
+    button_text: campaign.button_text || null,
   });
 }

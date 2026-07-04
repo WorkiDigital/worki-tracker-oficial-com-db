@@ -547,9 +547,15 @@
             </div>
 
             <div class="input-group">
+                <label>Texto do botão <span style="color:var(--muted);font-weight:400;">(opcional)</span></label>
+                <input id="capButtonText" type="text" maxlength="80" placeholder="Ex: Falar no WhatsApp">
+                <p style="font-size:11px;color:var(--muted);margin-top:6px;">Se preenchido, o script escreve este texto automaticamente no(s) botão(ões) do site ao carregar a página — sem precisar editar o HTML/JSX. Deixe vazio para manter o texto que já está escrito no botão do site.</p>
+            </div>
+
+            <div class="input-group">
                 <label>Exemplo de botão do WhatsApp</label>
                 <textarea id="capScriptBotaoExemplo" readonly rows="3" style="width:100%;font-family:monospace;font-size:12px;resize:vertical;"></textarea>
-                <p style="font-size:11px;color:var(--muted);margin-top:6px;">O script intercepta o clique nesse botão e abre o WhatsApp com a mensagem do link. Para uma mensagem diferente por botão, use o atributo <code>data-wapp-message</code>.</p>
+                <p style="font-size:11px;color:var(--muted);margin-top:6px;">O script intercepta o clique nesse botão e abre o WhatsApp com a mensagem do link. Para uma mensagem diferente por botão, use o atributo <code>data-wapp-message</code>. Se o botão tiver ícone, marque o texto com <code>data-wapptrack-label</code> para o texto configurado acima trocar só o texto, preservando o ícone.</p>
             </div>
 
             <div class="input-group">
