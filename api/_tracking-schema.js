@@ -213,6 +213,46 @@ async function createTrackingSchema() {
         ON public.lead_journey_history(lead_id);
       CREATE INDEX IF NOT EXISTS idx_lead_journey_hist_status
         ON public.lead_journey_history(cliente_id, meta_status);
+
+      -- ── Script para site (wapptrack.js) — PageViews de páginas externas ──
+      -- Separado de tracking_clicks (que representa clique real no botão WhatsApp),
+      -- para não inflar a métrica de Cliques com simples visualizações de página.
+      CREATE TABLE IF NOT EXISTS public.tracking_pageviews (
+        id SERIAL PRIMARY KEY,
+        visitor_id VARCHAR(60) NOT NULL,
+        campaign_id INTEGER REFERENCES public.tracking_campaigns(id) ON DELETE CASCADE,
+        cliente_id INTEGER REFERENCES public.clientes(id) ON DELETE CASCADE,
+        page_url TEXT,
+        page_title VARCHAR(500),
+        referrer TEXT,
+        utm_source VARCHAR(255),
+        utm_medium VARCHAR(255),
+        utm_campaign VARCHAR(255),
+        utm_content VARCHAR(255),
+        fbclid VARCHAR(512),
+        fbc VARCHAR(512),
+        fbp VARCHAR(255),
+        ip_address VARCHAR(64),
+        user_agent TEXT,
+        pageview_event_id VARCHAR(60),
+        capi_web_status VARCHAR(20),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_tracking_pageviews_campaign
+        ON public.tracking_pageviews(campaign_id, created_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_tracking_pageviews_visitor
+        ON public.tracking_pageviews(visitor_id);
+
+      -- Domínios autorizados a usar o script por campanha (opcional; vazio = qualquer domínio).
+      ALTER TABLE public.tracking_campaigns
+      ADD COLUMN IF NOT EXISTS allowed_domains TEXT[] DEFAULT '{}';
+
+      -- Vincula o clique nascido do script de site ao visitor_id do PageView,
+      -- permitindo correlacionar PageView → clique → lead na jornada.
+      ALTER TABLE public.tracking_clicks
+      ADD COLUMN IF NOT EXISTS visitor_id VARCHAR(60),
+      ADD COLUMN IF NOT EXISTS source VARCHAR(20) DEFAULT 'redirect';
     `);
 
     // Integridade da atribuição: um clique que já virou lead (status='converted')

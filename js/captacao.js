@@ -634,15 +634,40 @@ function capPopularEventosJornada() {
 }
 
 function capSwitchModalTab(tab) {
-  const atual = tab === 'jornada' ? 'jornada' : 'config';
-  ['config', 'jornada'].forEach(nome => {
+  const atual = ['jornada', 'script'].includes(tab) ? tab : 'config';
+  ['config', 'jornada', 'script'].forEach(nome => {
     const panel = $(`capPanel-${nome}`);
     const button = $(`capTab-${nome}`);
     if (panel) panel.style.display = nome === atual ? '' : 'none';
     if (button) button.classList.toggle('active', nome === atual);
   });
   capJornadaCancelarForm();
+  if (atual === 'script') capAtualizarScriptSnippet();
   if (window.lucide) lucide.createIcons({ nodes: [$('modalCampanha')] });
+}
+
+// ── Script para site (Anúncio > Site > WhatsApp) ────────────────────────────────
+function capAtualizarScriptSnippet() {
+  const slug = _capEditId ? (_capCampanhas.find(c => Number(c.id) === Number(_capEditId))?.slug) : null;
+  const origin = window.location.origin;
+  if (!slug) {
+    $('capScriptSnippet').value = 'Salve o link primeiro para gerar o slug e o script correspondente.';
+    $('capScriptBotaoExemplo').value = '';
+    return;
+  }
+  $('capScriptSnippet').value =
+`<script src="${origin}/js/wapptrack.js" data-campaign="${slug}"></script>`;
+  $('capScriptBotaoExemplo').value =
+`<a href="#" data-wapptrack-button>Chamar no WhatsApp</a>
+
+<!-- Mensagem específica deste botão (opcional): -->
+<a href="#" data-wapptrack-button data-wapp-message="Olá! Vim da página {{page_title}}.">Chamar no WhatsApp</a>`;
+}
+
+function capCopiarScriptSnippet() {
+  const val = $('capScriptSnippet')?.value || '';
+  if (!val || val.startsWith('Salve o link')) return toast('Salve o link antes de copiar o script.', 'error');
+  capCopiar(val, 'Script copiado!');
 }
 
 function capToggleConversionAuto() {
@@ -775,7 +800,7 @@ async function abrirModalCampanha(id, duplicar = false) {
   _capJornadaEtapas = [];
 
   // Reset form
-  ['capNome','capMensagem','capUtmSource','capUtmMedium','capUtmCampaign','capUtmContent'].forEach(i => {
+  ['capNome','capMensagem','capUtmSource','capUtmMedium','capUtmCampaign','capUtmContent','capAllowedDomains'].forEach(i => {
     const el = $(i); if (el) el.value = '';
   });
   const modeEl = $('capModo'); if (modeEl) modeEl.value = 'single';
@@ -810,6 +835,7 @@ async function abrirModalCampanha(id, duplicar = false) {
       $('capUtmContent').value  = c.utm_content  || '';
       $('capConversionAuto').checked = c.conversion_auto === true;
       $('capConversionEvent').value = c.conversion_event || 'lead';
+      $('capAllowedDomains').value = Array.isArray(c.allowed_domains) ? c.allowed_domains.join(', ') : '';
       _capDestinos = (c.destinations || []).map(d => {
         const copia = { ...d };
         if (duplicar) delete copia.id;
@@ -1100,6 +1126,7 @@ async function salvarCampanha() {
     utm_content:     $('capUtmContent')?.value.trim()  || null,
     conversion_auto: $('capConversionAuto')?.checked === true,
     conversion_event:$('capConversionEvent')?.value || 'lead',
+    allowed_domains: ($('capAllowedDomains')?.value || '').split(',').map(s => s.trim()).filter(Boolean),
     destinations:    _capDestinos,
     journey_stages:  _capJornadaEtapas.map((stage, position) => ({ ...stage, position })),
   });

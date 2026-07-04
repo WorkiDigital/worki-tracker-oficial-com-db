@@ -325,7 +325,7 @@ export default async function handler(req, res) {
       if (!cliente_id) return res.status(400).json({ error: 'cliente_id é obrigatório para administrador.' });
       const { name, origin_type = 'bio', rotation_mode = 'single',
               default_message, utm_source, utm_medium, utm_campaign, utm_content,
-              conversion_event = 'lead', conversion_auto = false,
+              conversion_event = 'lead', conversion_auto = false, allowed_domains = [],
               destinations = [], journey_stages = [] } = req.body;
       if (!name) return res.status(400).json({ error: 'name é obrigatório.' });
       if (!ORIGIN_TYPES.has(origin_type)) return res.status(400).json({ error: 'origin_type inválido.' });
@@ -345,11 +345,13 @@ export default async function handler(req, res) {
         const camp = await client.query(
           `INSERT INTO tracking_campaigns
             (cliente_id, name, slug, origin_type, rotation_mode, default_message,
-             utm_source, utm_medium, utm_campaign, utm_content, conversion_event, conversion_auto)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *`,
+             utm_source, utm_medium, utm_campaign, utm_content, conversion_event, conversion_auto,
+             allowed_domains)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING *`,
           [cliente_id, String(name).trim().slice(0, 255), slug, origin_type, rotation_mode,
            default_message || null, utm_source || null, utm_medium || null, utm_campaign || null,
-           utm_content || null, conversion_event, conversion_auto === true]
+           utm_content || null, conversion_event, conversion_auto === true,
+           Array.isArray(allowed_domains) ? allowed_domains.filter(Boolean).slice(0, 20) : []]
         );
         const campaign = camp.rows[0];
         await sincronizarDestinos(client, campaign.id, cliente_id, destinations);
@@ -408,12 +410,15 @@ export default async function handler(req, res) {
         const bodyAtualizacao = { ...req.body };
         delete bodyAtualizacao.slug;
 
-        const campos = ['name','origin_type','rotation_mode','default_message','utm_source','utm_medium','utm_campaign','utm_content','enabled','conversion_event','conversion_auto'];
+        const campos = ['name','origin_type','rotation_mode','default_message','utm_source','utm_medium','utm_campaign','utm_content','enabled','conversion_event','conversion_auto','allowed_domains'];
         const sets = [], vals = []; let i = 1;
         for (const campo of campos) {
           if (campo in bodyAtualizacao) {
             sets.push(`${campo}=$${i++}`);
-            vals.push(campo === 'name' ? String(bodyAtualizacao[campo] || '').trim().slice(0, 255) : bodyAtualizacao[campo]);
+            let valor = bodyAtualizacao[campo];
+            if (campo === 'name') valor = String(valor || '').trim().slice(0, 255);
+            if (campo === 'allowed_domains') valor = Array.isArray(valor) ? valor.filter(Boolean).slice(0, 20) : [];
+            vals.push(valor);
           }
         }
         if (sets.length) {

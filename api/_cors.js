@@ -30,18 +30,24 @@ function isOriginAllowed(origin) {
  * @param {object} req
  * @param {object} res
  * @param {string[]} methods - Allowed methods, e.g. ['GET'] or ['POST','PATCH']
- * @param {{ public?: boolean }} opts - If public, only Content-Type header is allowed (no Authorization)
+ * @param {{ public?: boolean, openOrigin?: boolean }} opts - `public`: only Content-Type header
+ *   is allowed (no Authorization). `openOrigin`: reflete qualquer Origin em vez de usar a
+ *   whitelist de ALLOWED_ORIGINS — para endpoints públicos e sem sessão/cookie chamados por
+ *   scripts instalados em domínios de terceiros (ex: wapptrack.js), cuja segurança real vem
+ *   de outro mecanismo (ex: slug de campanha + allowed_domains), não da origin do fetch.
  * @returns {boolean} true if the request was fully handled (OPTIONS or 405) — caller should return early
  */
 export function cors(req, res, methods = ['GET'], opts = {}) {
   const origin = req.headers?.origin || '*';
-  const allowed = isOriginAllowed(origin) ? origin : ALLOWED_ORIGINS[0] || '*';
+  const allowed = opts.openOrigin
+    ? (origin || '*')
+    : (isOriginAllowed(origin) ? origin : ALLOWED_ORIGINS[0] || '*');
 
   res.setHeader('Access-Control-Allow-Origin', allowed);
   res.setHeader('Access-Control-Allow-Methods', [...methods, 'OPTIONS'].join(', '));
   res.setHeader('Access-Control-Allow-Headers', opts.public ? 'Content-Type' : 'Authorization, Content-Type');
 
-  if (ALLOWED_ORIGINS.length && !ALLOWED_ORIGINS.includes('*')) {
+  if (opts.openOrigin || (ALLOWED_ORIGINS.length && !ALLOWED_ORIGINS.includes('*'))) {
     res.setHeader('Vary', 'Origin');
   }
 

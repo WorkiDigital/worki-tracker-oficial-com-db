@@ -365,6 +365,9 @@
             <button type="button" id="capTab-jornada" class="cap-modal-tab" onclick="capSwitchModalTab('jornada')">
                 <i data-lucide="git-branch"></i> Jornada
             </button>
+            <button type="button" id="capTab-script" class="cap-modal-tab" onclick="capSwitchModalTab('script')">
+                <i data-lucide="code-2"></i> Script para site
+            </button>
         </div>
 
         <div id="capPanel-config">
@@ -523,6 +526,36 @@
                     <button type="button" class="btn btn-ghost" onclick="capJornadaCancelarForm()" style="justify-content:center;">Cancelar</button>
                     <button type="button" class="btn btn-primary" id="capJeSalvarBtn" onclick="capJornadaSalvarEtapa()" style="justify-content:center;">Adicionar etapa</button>
                 </div>
+            </div>
+        </div>
+
+        <div id="capPanel-script" style="display:none;">
+            <div class="cap-journey-intro">
+                <div>
+                    <strong>Use este link em páginas externas ao painel</strong>
+                    <p>Instale o script abaixo em qualquer página (landing page, site institucional) para rastrear visitas e cliques no botão do WhatsApp com a mesma atribuição deste link.</p>
+                </div>
+                <i data-lucide="code-2"></i>
+            </div>
+
+            <div class="input-group">
+                <label>Snippet do script <span style="color:var(--muted);font-weight:400;">(cole antes do <code>&lt;/body&gt;</code>)</span></label>
+                <textarea id="capScriptSnippet" readonly rows="5" style="width:100%;font-family:monospace;font-size:12px;resize:vertical;"></textarea>
+                <button type="button" class="btn btn-ghost btn-sm" style="margin-top:6px;" onclick="capCopiarScriptSnippet()">
+                    <i data-lucide="copy" style="width:13px;"></i> Copiar script
+                </button>
+            </div>
+
+            <div class="input-group">
+                <label>Exemplo de botão do WhatsApp</label>
+                <textarea id="capScriptBotaoExemplo" readonly rows="3" style="width:100%;font-family:monospace;font-size:12px;resize:vertical;"></textarea>
+                <p style="font-size:11px;color:var(--muted);margin-top:6px;">O script intercepta o clique nesse botão e abre o WhatsApp com a mensagem do link. Para uma mensagem diferente por botão, use o atributo <code>data-wapp-message</code>.</p>
+            </div>
+
+            <div class="input-group">
+                <label>Domínios autorizados <span style="color:var(--muted);font-weight:400;">(opcional)</span></label>
+                <input id="capAllowedDomains" type="text" placeholder="ex: meusite.com.br, outrapagina.com.br">
+                <p style="font-size:11px;color:var(--muted);margin-top:6px;">Separe por vírgula. Deixe vazio para permitir qualquer domínio. Recomendado para evitar uso indevido do script em sites não autorizados.</p>
             </div>
         </div>
 
