@@ -180,9 +180,11 @@ async function setup() {
     // Migração: coluna account_id em zap_agendamentos
     await client.query(`
       ALTER TABLE public.zap_agendamentos
-      ADD COLUMN IF NOT EXISTS account_id VARCHAR(255);
+      ADD COLUMN IF NOT EXISTS account_id VARCHAR(255),
+      ADD COLUMN IF NOT EXISTS campaign_filter_text TEXT,
+      ADD COLUMN IF NOT EXISTS campaign_objectives TEXT[] DEFAULT '{}';
     `);
-    console.log('✅ Coluna "account_id" injetada na tabela "zap_agendamentos".');
+    console.log('Colunas de conta e filtro injetadas na tabela zap_agendamentos.');
 
     // Controle de idempotência do cron de relatórios Zap
     await client.query(`

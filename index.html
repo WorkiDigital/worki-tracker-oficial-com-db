@@ -1991,6 +1991,29 @@
                         </select>
                     </div>
 
+                    <div style="display:flex;align-items:center;gap:8px;margin:18px 0 12px;">
+                        <span style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;white-space:nowrap;">Filtro de campanhas</span>
+                        <div style="flex:1;height:1px;background:var(--border);"></div>
+                    </div>
+
+                    <div style="display:grid;grid-template-columns:1.2fr .8fr;gap:10px;margin-bottom:16px;">
+                        <div>
+                            <label style="display:block;font-size:12px;font-weight:600;color:var(--text,#f0f4ff);margin-bottom:6px;">Nome contem</label>
+                            <input type="text" id="zapCampaignFilterText" class="form-control" maxlength="255" placeholder="Ex: sofa, remarketing" style="width:100%;" oninput="zapAtualizarPreview()">
+                        </div>
+                        <div>
+                            <label style="display:block;font-size:12px;font-weight:600;color:var(--text,#f0f4ff);margin-bottom:6px;">Objetivo</label>
+                            <select id="zapCampaignObjective" class="form-control" style="width:100%;" onchange="zapAtualizarPreview()">
+                                <option value="">Todos</option>
+                                <option value="OUTCOME_SALES">Vendas</option>
+                                <option value="OUTCOME_LEADS">Leads</option>
+                                <option value="OUTCOME_TRAFFIC">Trafego</option>
+                                <option value="OUTCOME_ENGAGEMENT">Engajamento</option>
+                                <option value="OUTCOME_AWARENESS">Reconhecimento</option>
+                                <option value="OUTCOME_APP_PROMOTION">App</option>
+                            </select>
+                        </div>
+                    </div>
                     <div style="margin-bottom:16px;">
                         <label style="display:block;font-size:12px;font-weight:600;color:var(--text,#f0f4ff);margin-bottom:6px;">Instância WhatsApp <span style="color:#ef4444;">*</span></label>
                         <select id="zapModalInstancia" class="form-control" style="width:100%;" onchange="zapModalOnInstanciaChange();zapVerificarCampos();">
@@ -5002,6 +5025,15 @@ async function carregarZapRelatorios() {
     await _renderZapTabela();
 }
 
+const _ZAP_OBJECTIVE_LABEL = {
+    OUTCOME_SALES: 'Vendas',
+    OUTCOME_LEADS: 'Leads',
+    OUTCOME_TRAFFIC: 'Trafego',
+    OUTCOME_ENGAGEMENT: 'Engajamento',
+    OUTCOME_AWARENESS: 'Reconhecimento',
+    OUTCOME_APP_PROMOTION: 'App',
+};
+
 const _ZAP_PERIODO_LABEL = {
     yesterday:      'Ontem',
     last_7_days:    'Últ. 7 dias',
@@ -5204,6 +5236,8 @@ function abrirModalZapNovo() {
     const pa   = $('zapPreviewArea');  if (pa)   pa.style.display = 'none';
     const tit  = $('zapModalTitulo');  if (tit)  tit.textContent = 'Agendar Relatório';
     const cta  = $('zapModalConta');   if (cta)  cta.innerHTML = '<option value="">Carregando contas...</option>';
+    const cf   = $('zapCampaignFilterText'); if (cf) cf.value = '';
+    const co   = $('zapCampaignObjective');  if (co) co.value = '';
 
     $('modalZapRelatorio').classList.add('open');
     lucide.createIcons({ nodes:[$('modalZapRelatorio')] });
@@ -5259,7 +5293,8 @@ function zapAtualizarPreview() {
     const periodoLabel = _ZAP_PERIODO_LABEL[$('zapPeriodo')?.value || 'yesterday'] || 'Ontem';
     const periodo = $('zapPeriodo')?.value || 'yesterday';
     const conta   = $('zapModalConta')?.value || '';
-
+    const campaignFilterText = ($('zapCampaignFilterText')?.value || '').trim();
+    const campaignObjective  = $('zapCampaignObjective')?.value || '';
     const hoje = new Date();
     const fmtDate = d => d.toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric' });
     const getPeriodoDatas = (p) => {
@@ -5301,7 +5336,10 @@ function zapAtualizarPreview() {
     const reqId = ++_zapPreviewReqId;
     _zapPreviewTimer = setTimeout(async () => {
         try {
-            const r = await authFetch(`/api/zap-preview-metrics?account_id=${encodeURIComponent(conta)}&periodo=${encodeURIComponent(periodo)}`);
+            const params = new URLSearchParams({ account_id: conta, periodo });
+            if (campaignFilterText) params.set('campaign_filter_text', campaignFilterText);
+            if (campaignObjective) params.set('campaign_objectives', campaignObjective);
+            const r = await authFetch(`/api/zap-preview-metrics?${params.toString()}`);
             if (!r.ok) {
                 let msg = 'Falha ao buscar métricas';
                 try {
@@ -5368,6 +5406,8 @@ async function salvarAgendamentoZap() {
         horario:       $('zapHorario')?.value    || '08:00',
         periodo:       $('zapPeriodo')?.value    || 'yesterday',
         account_id:    $('zapModalConta')?.value || null,
+        campaign_filter_text: ($('zapCampaignFilterText')?.value || '').trim() || null,
+        campaign_objectives: $('zapCampaignObjective')?.value ? [$('zapCampaignObjective').value] : [],
     };
 
     if (_zapEditingId) body.id = _zapEditingId;
@@ -5434,6 +5474,8 @@ async function abrirModalZapEditar(row) {
     const tmpl = $('zapTemplate');     if (tmpl) { tmpl.value = row.template || ''; }
     const ci   = $('zapContatoInput');
     if (!isGrupo && ci) ci.value = (row.destino_jid || '').replace(/@s\.whatsapp\.net$/, '');
+    const cf = $('zapCampaignFilterText'); if (cf) cf.value = row.campaign_filter_text || '';
+    const co = $('zapCampaignObjective'); if (co) co.value = (row.campaign_objectives || [])[0] || '';
 
     const tit = $('zapModalTitulo'); if (tit) tit.textContent = 'Editar Agendamento';
     const btn = $('zapBtnSalvar');
@@ -5501,6 +5543,8 @@ async function duplicarAgendamentoZap(row) {
             horario:       row.horario,
             periodo:       row.periodo,
             account_id:    row.account_id || null,
+            campaign_filter_text: row.campaign_filter_text || null,
+            campaign_objectives: row.campaign_objectives || [],
         };
         const r = await authFetch('/api/zap-reports', {
             method: 'POST',

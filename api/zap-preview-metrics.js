@@ -4,6 +4,7 @@ import { cacheGet, cacheSet, userCacheKey } from './_cache.js';
 import { fetchMeta } from './_meta-client.js';
 import { cors } from './_cors.js';
 import { rateLimit } from './_rate-limit.js';
+import { normalizeCampaignFilters, summarizeZapCampaigns } from './_zap-report-metrics.js';
 
 export default async function handler(req, res) {
     if (cors(req, res, ['GET'])) return;
@@ -13,12 +14,12 @@ export default async function handler(req, res) {
     if (await rateLimit(req, res, user)) return;
 
     const token = await getTokenForUser(user);
-    if (!token) return res.status(403).json({ error: 'Token Meta não configurado.' });
+    if (!token) return res.status(403).json({ error: 'Token Meta nao configurado.' });
 
     const { account_id, periodo } = req.query;
-    if (!account_id) return res.status(400).json({ error: 'account_id obrigatório' });
+    if (!account_id) return res.status(400).json({ error: 'account_id obrigatorio' });
     if (!(await verifyAccountAccess(user, account_id))) {
-        return res.status(403).json({ error: 'Acesso negado a esta conta de anúncios.' });
+        return res.status(403).json({ error: 'Acesso negado a esta conta de anuncios.' });
     }
 
     const periodoMap = {
@@ -27,12 +28,20 @@ export default async function handler(req, res) {
     };
     const datePreset = periodoMap[periodo] || 'yesterday';
     const acctId = String(account_id).replace(/^act_/, '');
-    const cacheKey = userCacheKey(user, 'zap-preview-metrics', acctId, datePreset);
+    const filters = normalizeCampaignFilters(req.query);
+    const cacheKey = userCacheKey(
+        user,
+        'zap-preview-metrics',
+        acctId,
+        datePreset,
+        filters.text,
+        filters.objectives.join('|')
+    );
     const cached = await cacheGet(cacheKey);
     if (cached) return res.status(200).json(cached);
 
     const insightFields = 'spend,impressions,clicks,reach,cpm,cpc,actions,purchase_roas';
-    const fields = `name,status,insights.date_preset(${datePreset}){${insightFields}}`;
+    const fields = `name,status,objective,insights.date_preset(${datePreset}){${insightFields}}`;
     const url = `https://graph.facebook.com/v20.0/act_${acctId}/campaigns?fields=${encodeURIComponent(fields)}&limit=200&access_token=${token}`;
 
     try {
@@ -45,34 +54,7 @@ export default async function handler(req, res) {
             nextUrl = data.paging?.next || null;
         }
 
-        let spend = 0, impressions = 0, clicks = 0, leads = 0, msgs = 0,
-            reach = 0, roasValue = 0;
-
-        for (const c of allCampaigns) {
-            const ins = c.insights?.data?.[0];
-            if (!ins) continue;
-            spend       += parseFloat(ins.spend       || 0);
-            impressions += parseInt(ins.impressions   || 0);
-            clicks      += parseInt(ins.clicks        || 0);
-            reach       += parseInt(ins.reach         || 0);
-            for (const a of (ins.actions || [])) {
-                if (a.action_type === 'lead') leads += parseInt(a.value || 0);
-                if (a.action_type === 'onsite_conversion.messaging_conversation_started_7d')
-                    msgs += parseInt(a.value || 0);
-            }
-            for (const r of (ins.purchase_roas || [])) {
-                if (r.action_type === 'omni_purchase') roasValue += parseFloat(r.value || 0);
-            }
-        }
-
-        const cpl  = leads      > 0 ? spend / leads      : 0;
-        const cpr  = msgs       > 0 ? spend / msgs        : 0;
-        const cpc  = clicks     > 0 ? spend / clicks      : 0;
-        const cpm  = impressions > 0 ? (spend / impressions) * 1000 : 0;
-        const ctr  = impressions > 0 ? (clicks / impressions) * 100 : 0;
-        const roas = spend      > 0 ? roasValue / spend   : 0;
-
-        const result = { spend, impressions, clicks, reach, leads, msgs, cpl, cpr, cpc, cpm, ctr, roas };
+        const result = summarizeZapCampaigns(allCampaigns, filters);
         await cacheSet(cacheKey, result, 60000);
         return res.status(200).json(result);
     } catch (e) {

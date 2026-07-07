@@ -1,6 +1,7 @@
 import { getPool } from '../_db.js';
 import { fetchMeta } from '../_meta-client.js';
 import { decryptToken } from '../_crypto.js';
+import { normalizeCampaignFilters, summarizeZapCampaigns } from '../_zap-report-metrics.js';
 
 function hhmmToMinutes(value) {
     const match = String(value || '').match(/^(\d{2}):(\d{2})$/);
@@ -34,6 +35,8 @@ export async function runCronJob() {
     await pool.query(`
         ALTER TABLE zap_agendamentos
         ADD COLUMN IF NOT EXISTS account_id VARCHAR(255),
+        ADD COLUMN IF NOT EXISTS campaign_filter_text TEXT,
+        ADD COLUMN IF NOT EXISTS campaign_objectives TEXT[] DEFAULT '{}',
         ADD COLUMN IF NOT EXISTS ultimo_envio_chave VARCHAR(32),
         ADD COLUMN IF NOT EXISTS ultimo_envio_em TIMESTAMPTZ
     `).catch(() => {});
@@ -80,7 +83,7 @@ export async function runCronJob() {
         };
         const datePreset    = periodoMap[ag.periodo] || 'yesterday';
         const insightFields = 'spend,impressions,clicks,reach,actions,purchase_roas';
-        const fields        = `name,status,insights.date_preset(${datePreset}){${insightFields}}`;
+        const fields        = `name,status,objective,insights.date_preset(${datePreset}){${insightFields}}`;
         let url = `https://graph.facebook.com/v20.0/act_${accountId}/campaigns?fields=${encodeURIComponent(fields)}&limit=200&access_token=${token}`;
 
         let allCampaigns = [];
@@ -96,27 +99,18 @@ export async function runCronJob() {
             console.error(`[CronZap] Meta Ads #${ag.id}: ${e.message}`);
             continue;
         }
-
-        let totalSpend = 0, totalImps = 0, totalClicks = 0, totalLeads = 0,
-            totalMsgs  = 0, totalReach = 0, totalRoasValue = 0;
-
-        for (const c of allCampaigns) {
-            const ins = c.insights?.data?.[0];
-            if (!ins) continue;
-            totalSpend  += parseFloat(ins.spend       || 0);
-            totalImps   += parseInt(ins.impressions   || 0);
-            totalClicks += parseInt(ins.clicks        || 0);
-            totalReach  += parseInt(ins.reach         || 0);
-            for (const a of (ins.actions || [])) {
-                if (a.action_type === 'lead')
-                    totalLeads += parseInt(a.value || 0);
-                if (a.action_type === 'onsite_conversion.messaging_conversation_started_7d')
-                    totalMsgs += parseInt(a.value || 0);
-            }
-            for (const r of (ins.purchase_roas || [])) {
-                if (r.action_type === 'omni_purchase') totalRoasValue += parseFloat(r.value || 0);
-            }
-        }
+        const filters = normalizeCampaignFilters({
+            campaign_filter_text: ag.campaign_filter_text,
+            campaign_objectives: ag.campaign_objectives,
+        });
+        const totals = summarizeZapCampaigns(allCampaigns, filters);
+        const totalSpend = totals.spend;
+        const totalImps = totals.impressions;
+        const totalClicks = totals.clicks;
+        const totalLeads = totals.leads;
+        const totalMsgs = totals.msgs;
+        const totalReach = totals.reach;
+        const totalRoas = totals.roas;
 
         const fmtBrl = v => new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' }).format(v);
         // fmtVal: valor monetário SEM prefixo R$ (para templates onde o usuário já escreveu "R$ {gasto}")
@@ -128,7 +122,7 @@ export async function runCronJob() {
         const cpc  = totalClicks > 0 ? totalSpend / totalClicks : 0;
         const cpm  = totalImps   > 0 ? (totalSpend / totalImps) * 1000 : 0;
         const ctr  = totalImps   > 0 ? (totalClicks / totalImps) * 100  : 0;
-        const roas = totalSpend  > 0 ? totalRoasValue / totalSpend : 0;
+        const roas = totalRoas;
 
         const periodoLabels = {
             yesterday: 'Ontem', last_7_days: 'Últimos 7 dias',
