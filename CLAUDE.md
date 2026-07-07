@@ -380,6 +380,25 @@ Botão de perfil (ícone `user` roxo) em cada linha da tabela de leads abre um d
 - Sem Pixel/CAPI Web configurado, o redirecionamento continua funcionando com atraso mínimo e sem bloquear o clique.
 - Quando o clique vira lead, `api/webhook-evo.js` envia também o evento web `Lead`, associado ao clique rastreável.
 
+### Script para site externo (`js/wapptrack.js`)
+- Fluxo validado em producao no site `https://www.frigorificooeron.com.br/#localizacao`:
+  1. o HTML carrega `<script src="https://adlyticspro.workidigital.tech/js/wapptrack.js" data-campaign="220e0098-3534-4e3c-bc23-9f5265feac1f"></script>`;
+  2. `/api/site-pageview` registra PageView e devolve `visitor_id`, `pageview_event_id`, `pixel_id` e `button_text`;
+  3. `/api/site-whatsapp-click` gera `tracking_id`, grava `tracking_clicks` com `source='site'` e devolve a URL final do WhatsApp com token invisivel;
+  4. a conversao continua no `api/webhook-evo.js`, quando a mensagem chega com o token.
+- Todo botao do site externo que deve abrir WhatsApp precisa ter `data-wapptrack-button`. Se o botao tiver icone + texto, marcar o texto com `data-wapptrack-label` para o texto configurado (`tracking_campaigns.button_text`) trocar so o label.
+- Exemplo React correto:
+  ```jsx
+  <button type="button" data-wapptrack-button>
+    <WhatsAppIcon />
+    <span data-wapptrack-label>Falar no WhatsApp</span>
+  </button>
+  ```
+- Nao usar link fixo `wa.me`/`api.whatsapp.com` nesses botoes quando o objetivo for rastrear. O script precisa interceptar o clique para chamar `/api/site-whatsapp-click`.
+- Em sites React/lazy/scroll, botoes renderizados depois do carregamento inicial podem ficar sem listener. Depois de renderizar componentes tardios, chamar `window.wapptrackRefresh?.()`. Alternativa mais robusta: evoluir `js/wapptrack.js` com `MutationObserver` para religar botoes adicionados dinamicamente.
+- No teste do Frigorifico O Eron, a API estava OK; o problema era front: botoes como menu, flutuante e rodape eram `<button>` sem `href`, sem `onClick` e sem `data-wapptrack-button`. A correcao foi marcar todos eles.
+- Se a mensagem do WhatsApp sair com prefixo estranho como `[] Opa...`, isso vem do texto configurado da campanha (`default_message`), nao do redirect. Limpar a mensagem no painel.
+
 ### Logs do rastreamento
 - O redirecionador grava diagnósticos em `webhook_logs`, visíveis na aba **Logs do Sistema**:
   - `tracking_click`: clique, campanha, destino, presença de `fbclid`/`fbc`/`fbp` e configuração de pixel;
@@ -771,3 +790,63 @@ Para leads de **link rastreável** (`lead_origin = 'campaign_link'`), o `trackin
 ### Coluna de origem (`lead_origin`) e plataforma no painel
 - Badges em `js/leads.js` (`obterOrigemLead`): `ctwa`→"Anúncio CTWA", `campaign_link`→"Link rastreável", `organic`→"Orgânico", `bio`→"Link da bio", `rotator`→"Rotador", `intelligent`→"Rastr. inteligente".
 - **Plataforma** de leads `campaign_link`/`bio`/`rotator` usa `utm_source` como fallback quando `plataforma` é NULL: `ig`→instagram, `fb`→facebook.
+
+## 🚀 Script de site externo — botões dinâmicos e MutationObserver (2026-07)
+
+Em sites React/Next com lazy loading (componentes carregados via `React.lazy`/`next/dynamic`, seções
+que só renderizam ao rolar), o `wapptrack.js` pode rodar `ligarBotoes()` ANTES do React montar
+botões de componentes tardios (ex: `FloatingWhatsAppButton`, menu mobile) — esses ficam sem listener.
+
+**Solução:** no componente raiz do site (`App.tsx`), um `MutationObserver` no `document.body` chama
+`window.wapptrackRefresh?.()` sempre que qualquer nó novo é adicionado ao DOM. Cobre automaticamente
+qualquer botão que apareça depois do carregamento inicial, sem precisar chamar `wapptrackRefresh()`
+manualmente em cada componente.
+```jsx
+useEffect(() => {
+  window.wapptrackRefresh?.();
+  const observer = new MutationObserver((mutations) => {
+    if (mutations.some(m => m.addedNodes.length > 0)) window.wapptrackRefresh?.();
+  });
+  observer.observe(document.body, { childList: true, subtree: true });
+  return () => observer.disconnect();
+}, []);
+```
+Validado em produção no site do Frigorífico O Eron — resolveu o botão Hero/menu/flutuante que não
+abria o WhatsApp ao clicar (o clique simulado via `.click()` não disparava nenhum fetch porque o
+listener nunca tinha sido religado após o lazy-render).
+
+### Checklist de instalação em site novo
+1. Colar o `<script src=".../js/wapptrack.js" data-campaign="slug">` antes do `</body>`.
+2. Todo botão de WhatsApp precisa de `data-wapptrack-button`; se tiver ícone+texto, marcar o texto
+   com `data-wapptrack-label` (senão o script não mexe, para não apagar o ícone — ver seção anterior).
+3. Remover qualquer `href="wa.me/..."` ou `onClick` fixo do botão — só o script deve controlar o clique.
+4. **Se o site usa lazy loading/scroll reveal**, adicionar o `MutationObserver` acima no componente
+   raiz. Sites HTML puro (sem framework) não precisam desse passo.
+5. Testar no Console: `document.querySelectorAll('[data-wapptrack-button]').length` deve bater com o
+   número de botões esperado; `document.querySelector('[data-wapptrack-button]').click()` deve gerar
+   uma chamada de rede para `/api/site-whatsapp-click` (verificar na aba Network, filtro Fetch/XHR —
+   os pixels do Facebook (`SubscribedButtonClick`) aparecem à parte e não são o teste relevante).
+
+## ⚡ Gzip + Cache-Control nos arquivos estáticos (`server.js`)
+
+`index.html` (340KB) e os `.js`/`.css` do painel eram servidos crus, sem `Cache-Control` nem
+compressão — toda visita/F5 baixava tudo de novo. Corrigido no bloco de estáticos do `server.js`
+(usa `zlib` nativo do Node, nenhuma dependência nova).
+
+- **Gzip**: só tipos texto (`.html/.js/.css/.json/.svg`) e só quando o cliente envia
+  `Accept-Encoding: gzip`; imagens não são comprimidas (já vêm comprimidas no formato).
+- **Cache-Control por categoria** (checar `path.basename` e `url.searchParams.has('v')` da
+  REQUISIÇÃO, não do nome do arquivo):
+  - Shell do SPA (`index.html`, `login.html`, `share.html`): **`no-cache`** — sempre revalida, nunca
+    fica preso numa versão antiga após deploy.
+  - `wapptrack.js` (roda em sites de TERCEIROS, sem `?v=` — clientes colam a URL fixa no site deles):
+    **`max-age=300, must-revalidate`** (5 min) — cache longo aqui prenderia clientes numa versão velha.
+  - Demais assets em `/js/`/`/css/` **com `?v=` na query** (ex: `leads.js?v=20260622-1`): **1 ano
+    `immutable`** — o `index.html` já versiona `dashboard.css`, `leads.js`, `admin.js`, `captacao.js`
+    dessa forma; trocar o `?v=` invalida o cache automaticamente.
+  - Assets **sem `?v=`** (ex: `utils.js`, `reports-auto.js` — ainda não versionados): **5 min** —
+    fallback seguro, evita ficar preso caso um arquivo não versionado mude.
+  - Imagens (`/img/`, `.png/.jpg/.webp/.ico`): **1 dia**.
+- Resultado medido: `index.html` 340KB → ~70KB com gzip (queda de ~79%).
+- **Ao adicionar um JS/CSS novo no `index.html`:** sempre referenciar com `?v=<data>-<seq>` (padrão já
+  usado) para poder usar cache longo com segurança; sem isso cai automaticamente no fallback de 5 min.
