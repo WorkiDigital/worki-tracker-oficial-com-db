@@ -850,3 +850,6 @@ compressão — toda visita/F5 baixava tudo de novo. Corrigido no bloco de está
 - Resultado medido: `index.html` 340KB → ~70KB com gzip (queda de ~79%).
 - **Ao adicionar um JS/CSS novo no `index.html`:** sempre referenciar com `?v=<data>-<seq>` (padrão já
   usado) para poder usar cache longo com segurança; sem isso cai automaticamente no fallback de 5 min.
+- **Confirmado em produção** (commit `edd46a9`): `index.html` 340.538 → 70.422 bytes com gzip,
+  `Cache-Control: no-cache` no shell, `max-age=31536000, immutable` em asset versionado (`leads.js?v=`),
+  `max-age=300, must-revalidate` no `wapptrack.js`, `/health` e `index.html` seguem 200 (sem regressão).
