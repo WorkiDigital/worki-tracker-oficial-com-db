@@ -4,6 +4,7 @@ import 'dotenv/config';
 import http from 'http';
 import fs from 'fs';
 import path from 'path';
+import zlib from 'zlib';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -236,15 +237,52 @@ const server = http.createServer(async (req, res) => {
             '.webp':'image/webp',
             '.ico':'image/x-icon',
         };
-        res.writeHead(200, {
+
+        // Cache-Control por categoria. O shell do SPA nunca pode ficar preso em
+        // cache (precisa refletir o deploy mais novo); wapptrack.js roda em sites
+        // de terceiros sem versionamento (?v=), então usa cache curto; demais
+        // assets só ganham cache longo quando a própria requisição tem ?v=
+        // (senão um arquivo sem versão ficaria preso após deploy).
+        const isShell = PUBLIC_ROOT_FILES.has(publicPath);
+        const isWapptrack = path.basename(filePath) === 'wapptrack.js';
+        const isImage = ['.png', '.jpg', '.jpeg', '.webp', '.ico'].includes(ext);
+        let cacheControl;
+        if (isShell) {
+            cacheControl = 'no-cache';
+        } else if (isWapptrack) {
+            cacheControl = 'public, max-age=300, must-revalidate';
+        } else if (isImage) {
+            cacheControl = 'public, max-age=86400';
+        } else if (url.searchParams.has('v')) {
+            cacheControl = 'public, max-age=31536000, immutable';
+        } else {
+            cacheControl = 'public, max-age=300';
+        }
+
+        const headers = {
             'Content-Type': types[ext] || 'application/octet-stream',
             'X-Content-Type-Options': 'nosniff',
             'X-Frame-Options': 'DENY',
             'X-XSS-Protection': '1; mode=block',
             'Referrer-Policy': 'strict-origin-when-cross-origin',
             'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
-        });
-        fs.createReadStream(filePath).pipe(res);
+            'Cache-Control': cacheControl,
+        };
+
+        // Gzip só para tipos texto e só quando o cliente aceita — binários (imagens)
+        // já são comprimidos no próprio formato, gzip neles não ajuda e pode até piorar.
+        const isCompressible = ['.html', '.js', '.css', '.json', '.svg'].includes(ext);
+        const acceptsGzip = (req.headers['accept-encoding'] || '').includes('gzip');
+
+        if (isCompressible && acceptsGzip) {
+            headers['Content-Encoding'] = 'gzip';
+            headers['Vary'] = 'Accept-Encoding';
+            res.writeHead(200, headers);
+            fs.createReadStream(filePath).pipe(zlib.createGzip()).pipe(res);
+        } else {
+            res.writeHead(200, headers);
+            fs.createReadStream(filePath).pipe(res);
+        }
     } else {
         res.writeHead(404); res.end('Not found');
     }
