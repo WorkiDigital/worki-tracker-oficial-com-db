@@ -853,3 +853,54 @@ compressão — toda visita/F5 baixava tudo de novo. Corrigido no bloco de está
 - **Confirmado em produção** (commit `edd46a9`): `index.html` 340.538 → 70.422 bytes com gzip,
   `Cache-Control: no-cache` no shell, `max-age=31536000, immutable` em asset versionado (`leads.js?v=`),
   `max-age=300, must-revalidate` no `wapptrack.js`, `/health` e `index.html` seguem 200 (sem regressão).
+
+## 📋 Relatórios Automáticos (Zap) em 2 níveis: Agendamento → Relatórios (2026-07)
+
+Reestruturado de 1 nível (cada linha = tudo junto: conta+destino+filtro+mensagem) para 2 níveis,
+porque um cliente com 3 campanhas de objetivos diferentes precisava de 3 linhas soltas e
+visualmente idênticas na tabela — sem escalar bem com muitos clientes/campanhas.
+
+### Nível 1 — Agendamento (`zap_destinos`, novo)
+Representa o canal/destino de um cliente: **nome livre** (novo, ex: "Rodrigo Mendanha 2"), conta
+de anúncios e destino WhatsApp — todos **fixos**. Criado uma vez por cliente/canal. CRUD em
+`api/zap-destinos.js`. `DELETE` usa `ON DELETE CASCADE` — apagar o agendamento apaga os relatórios
+filhos automaticamente (mesmo padrão de `tracking_campaigns`→`tracking_destinations`).
+
+### Nível 2 — Relatório (`zap_agendamentos`, reaproveitada, N por agendamento)
+A tabela `zap_agendamentos` **manteve o nome** mas agora representa o "relatório": filtro de
+campanha/objetivo, mensagem/template, frequência, horário, período, status — vinculado ao pai via
+`destino_id` (FK nullable, para não quebrar linhas legadas). CRUD em `api/zap-reports.js`, que
+aceita `?destino_id=X` no GET para listar só os relatórios de um agendamento.
+
+### Migração de dados (produção já tinha configurações reais)
+`scripts/migrate-zap-destinos.js` — agrupa linhas de `zap_agendamentos` sem `destino_id` por
+`(cliente_id, instance_name, destino_tipo, destino_jid, account_id)`, cria 1 `zap_destinos` por
+grupo distinto e vincula todas as linhas daquele grupo. Idempotente (só processa `destino_id IS
+NULL`), aditivo (nunca apaga as colunas antigas de `zap_agendamentos`). Rodar uma vez em produção:
+```bash
+node -r dotenv/config scripts/migrate-zap-destinos.js
+```
+
+### Cron (`api/cron/send-reports.js`)
+Query agora faz `LEFT JOIN zap_destinos d ON d.id = r.destino_id` — o corpo do loop continua usando
+`ag.instance_name`/`ag.destino_jid`/etc. sem mudança (os nomes de coluna do JOIN são idênticos aos
+antigos). Único ajuste: `ag.account_id` → `ag.destino_account_id` (evita colisão de alias com
+`cliente_account_id`). Linhas legadas sem `destino_id` (pré-migração) são puladas com log de aviso.
+
+### UI (`index.html`)
+- Lista principal (`zapDestinosLista`/`_renderZapDestinos`) — cards expansíveis por agendamento
+  (clique no card expande/recolhe, `_zapExpandido` guarda quais estão abertos); dentro de cada um,
+  a lista de relatórios (`_renderZapRelatoriosLista`) com badge de campanha (reaproveitando
+  `_zapCampanhaLabel`) + botão "Criar Relatório".
+- **`#modalZapDestino`** (nível 1): nome, conta de anúncios, instância, destino (grupo/contato).
+  Funções: `abrirModalZapDestinoNovo/Editar`, `salvarZapDestino`, `zapVerificarCamposDestino`.
+- **`#modalZapRelatorio`** (nível 2, reduzido): filtro de campanha, frequência/horário/período,
+  mensagem+preview. Funções: `abrirModalRelatorioNovo/Editar`, `salvarZapRelatorio`.
+- **Preview (`zapAtualizarPreview`) herda o `account_id` do agendamento pai** via
+  `_zapDestinosCache[_zapRelatorioDestinoId]?.account_id` — não pede a conta de novo no modal de
+  Relatório, porque ela é fixa no nível 1.
+- `_carregarInstanciasZap`/`_carregarContasZap`/`zapModalOnInstanciaChange`/`zapOnTipoChange`
+  continuam os mesmos (só chamam `zapVerificarCamposDestino` em vez do antigo `zapVerificarCampos`).
+
+> Existe uma tabela/feature paralela morta (`relatorios_agendados`, `setup-reports-db.js`,
+> `api/reports-config.js`) — não referenciada no `index.html` atual, não faz parte deste fluxo.

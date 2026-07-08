@@ -194,6 +194,31 @@ async function setup() {
     `);
     console.log('✅ Controle de último envio injetado na tabela "zap_agendamentos".');
 
+    // Zap Reports em 2 níveis: zap_destinos (canal/conta/destino, fixo) e
+    // zap_agendamentos (vira o "relatório" filho: filtro/mensagem/frequência).
+    // destino_id fica nullable para não quebrar linhas já existentes — a migração
+    // de dados (scripts/migrate-zap-destinos.js) preenche o vínculo depois.
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS public.zap_destinos (
+        id            SERIAL PRIMARY KEY,
+        cliente_id    INTEGER REFERENCES public.clientes(id) ON DELETE CASCADE,
+        nome          VARCHAR(255) NOT NULL,
+        account_id    VARCHAR(255),
+        instance_name VARCHAR(255) NOT NULL,
+        destino_tipo  VARCHAR(20)  DEFAULT 'grupo',
+        destino_jid   VARCHAR(255) NOT NULL,
+        destino_nome  VARCHAR(255),
+        criado_em     TIMESTAMP    DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    console.log('✅ Tabela "zap_destinos" verificada/criada.');
+
+    await client.query(`
+      ALTER TABLE public.zap_agendamentos
+      ADD COLUMN IF NOT EXISTS destino_id INTEGER REFERENCES public.zap_destinos(id) ON DELETE CASCADE;
+    `);
+    console.log('✅ Coluna "destino_id" injetada na tabela "zap_agendamentos".');
+
     // Migração: ampliar ctw_aci_id para TEXT (ctwaClid pode ter >255 chars)
     await client.query(`
       ALTER TABLE public.leads_tracking

@@ -31,27 +31,51 @@ export async function runCronJob() {
     const toleranciaMin = Math.max(0, parseInt(process.env.ZAP_CRON_TOLERANCE_MINUTES || '2', 10));
     const minutosAgora  = hhmmToMinutes(horarioAtual);
 
-    // Garante colunas (migrações automáticas)
+    // Garante colunas/tabelas (migrações automáticas)
     await pool.query(`
+        CREATE TABLE IF NOT EXISTS public.zap_destinos (
+            id            SERIAL PRIMARY KEY,
+            cliente_id    INTEGER REFERENCES public.clientes(id) ON DELETE CASCADE,
+            nome          VARCHAR(255) NOT NULL,
+            account_id    VARCHAR(255),
+            instance_name VARCHAR(255) NOT NULL,
+            destino_tipo  VARCHAR(20)  DEFAULT 'grupo',
+            destino_jid   VARCHAR(255) NOT NULL,
+            destino_nome  VARCHAR(255),
+            criado_em     TIMESTAMP    DEFAULT CURRENT_TIMESTAMP
+        );
         ALTER TABLE zap_agendamentos
         ADD COLUMN IF NOT EXISTS account_id VARCHAR(255),
         ADD COLUMN IF NOT EXISTS campaign_filter_text TEXT,
         ADD COLUMN IF NOT EXISTS campaign_objectives TEXT[] DEFAULT '{}',
         ADD COLUMN IF NOT EXISTS ultimo_envio_chave VARCHAR(32),
-        ADD COLUMN IF NOT EXISTS ultimo_envio_em TIMESTAMPTZ
+        ADD COLUMN IF NOT EXISTS ultimo_envio_em TIMESTAMPTZ,
+        ADD COLUMN IF NOT EXISTS destino_id INTEGER REFERENCES public.zap_destinos(id) ON DELETE CASCADE
     `).catch(() => {});
 
+    // JOIN com zap_destinos (nível 1: conta/instância/destino fixos) — zap_agendamentos
+    // agora é o "relatório" (nível 2: filtro/mensagem/frequência). Linhas legadas ainda
+    // sem destino_id (pré-migração) caem no LEFT JOIN com d.* nulo e são puladas abaixo
+    // por falta de instance_name/destino_jid resolvidos.
     const { rows: agendamentos } = await pool.query(`
-        SELECT z.*, c.token_meta, c.token_meta_enc,
+        SELECT r.*,
+               d.instance_name, d.destino_tipo, d.destino_jid, d.destino_nome,
+               d.account_id AS destino_account_id,
+               c.token_meta, c.token_meta_enc,
                c.account_id AS cliente_account_id
-        FROM zap_agendamentos z
-        LEFT JOIN clientes c ON c.id = z.cliente_id
-        WHERE z.status = 'ativo'
+        FROM zap_agendamentos r
+        LEFT JOIN zap_destinos d ON d.id = r.destino_id
+        LEFT JOIN clientes c ON c.id = r.cliente_id
+        WHERE r.status = 'ativo'
     `);
 
     let enviados = 0, elegiveis = 0;
 
     for (const ag of agendamentos) {
+        if (!ag.instance_name || !ag.destino_jid) {
+            console.warn(`[CronZap] #${ag.id} sem destino vinculado (destino_id ausente) — pulando`);
+            continue;
+        }
         if (ag.frequencia === 'semanal' && diaSemana !== 1) continue;
         if (ag.frequencia === 'mensal'  && diaDoMes  !== 1) continue;
 
@@ -70,7 +94,7 @@ export async function runCronJob() {
         if (ag.token_meta_enc) {
             try { token = decryptToken(ag.token_meta_enc); } catch (e) { console.error(`[CronZap] Erro ao descriptografar token #${ag.id}:`, e.message); }
         }
-        const accountId = String(ag.account_id || ag.cliente_account_id || '').replace(/^act_/, '');
+        const accountId = String(ag.destino_account_id || ag.cliente_account_id || '').replace(/^act_/, '');
 
         if (!token || !accountId) {
             console.warn(`[CronZap] #${ag.id} sem token ou account_id — pulando`);

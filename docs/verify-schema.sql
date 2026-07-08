@@ -18,7 +18,7 @@
 WITH esperadas(tabela) AS (
   VALUES
     ('usuarios'), ('leads_tracking'), ('clientes'), ('share_tokens'),
-    ('instancias_mapeamento'), ('zap_agendamentos'), ('configuracoes_sistema'),
+    ('instancias_mapeamento'), ('zap_agendamentos'), ('zap_destinos'), ('configuracoes_sistema'),
     ('dashboard_settings'), ('metrics_cache'), ('webhook_logs'),
     ('relatorios_agendados')
 )
@@ -127,6 +127,18 @@ WITH esperadas(tabela, coluna, tipo_esperado) AS (
     ('zap_agendamentos','account_id','character varying'),
     ('zap_agendamentos','ultimo_envio_chave','character varying'),
     ('zap_agendamentos','ultimo_envio_em','timestamp with time zone'),
+    ('zap_agendamentos','destino_id','integer'),
+    -- zap_destinos (nível 1: canal fixo — conta + destino WhatsApp; zap_agendamentos
+    -- é o "relatório" filho, N por destino, vinculado via destino_id)
+    ('zap_destinos','id','integer'),
+    ('zap_destinos','cliente_id','integer'),
+    ('zap_destinos','nome','character varying'),
+    ('zap_destinos','account_id','character varying'),
+    ('zap_destinos','instance_name','character varying'),
+    ('zap_destinos','destino_tipo','character varying'),
+    ('zap_destinos','destino_jid','character varying'),
+    ('zap_destinos','destino_nome','character varying'),
+    ('zap_destinos','criado_em','timestamp without time zone'),
     -- configuracoes_sistema
     ('configuracoes_sistema','id','integer'),
     ('configuracoes_sistema','chave','character varying'),
