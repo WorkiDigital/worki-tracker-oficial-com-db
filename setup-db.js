@@ -219,6 +219,17 @@ async function setup() {
     `);
     console.log('✅ Coluna "destino_id" injetada na tabela "zap_agendamentos".');
 
+    // zap_agendamentos deixou de gravar instance_name/destino_jid diretamente (isso
+    // agora vive em zap_destinos, nível 1) — mas o schema original as criou NOT NULL.
+    // Sem soltar essa restrição, todo INSERT novo (que já não envia esses campos)
+    // falha com "null value in column instance_name violates not-null constraint".
+    await client.query(`
+      ALTER TABLE public.zap_agendamentos
+      ALTER COLUMN instance_name DROP NOT NULL,
+      ALTER COLUMN destino_jid DROP NOT NULL;
+    `);
+    console.log('✅ Restrições NOT NULL legadas removidas de "zap_agendamentos" (instance_name/destino_jid).');
+
     // Migração: ampliar ctw_aci_id para TEXT (ctwaClid pode ter >255 chars)
     await client.query(`
       ALTER TABLE public.leads_tracking

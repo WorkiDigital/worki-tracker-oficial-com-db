@@ -50,7 +50,10 @@ export async function runCronJob() {
         ADD COLUMN IF NOT EXISTS campaign_objectives TEXT[] DEFAULT '{}',
         ADD COLUMN IF NOT EXISTS ultimo_envio_chave VARCHAR(32),
         ADD COLUMN IF NOT EXISTS ultimo_envio_em TIMESTAMPTZ,
-        ADD COLUMN IF NOT EXISTS destino_id INTEGER REFERENCES public.zap_destinos(id) ON DELETE CASCADE
+        ADD COLUMN IF NOT EXISTS destino_id INTEGER REFERENCES public.zap_destinos(id) ON DELETE CASCADE;
+        ALTER TABLE zap_agendamentos
+        ALTER COLUMN instance_name DROP NOT NULL,
+        ALTER COLUMN destino_jid DROP NOT NULL
     `).catch(() => {});
 
     // JOIN com zap_destinos (nível 1: conta/instância/destino fixos) — zap_agendamentos

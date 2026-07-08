@@ -19,6 +19,9 @@ async function ensureZapDestinosSchema(pool) {
     );
     ALTER TABLE public.zap_agendamentos
     ADD COLUMN IF NOT EXISTS destino_id INTEGER REFERENCES public.zap_destinos(id) ON DELETE CASCADE;
+    ALTER TABLE public.zap_agendamentos
+    ALTER COLUMN instance_name DROP NOT NULL,
+    ALTER COLUMN destino_jid DROP NOT NULL;
   `);
   _zapDestinosSchemaEnsured = true;
 }
