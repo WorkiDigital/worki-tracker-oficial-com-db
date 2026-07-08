@@ -2026,7 +2026,7 @@
 
         <!-- MODAL: RELATÓRIO ZAP (nível 2 — N por agendamento: filtro, mensagem, frequência) -->
         <div id="modalZapRelatorio" class="modal-overlay" role="dialog" aria-modal="true" onclick="if(event.target===this)fecharModalZap()">
-            <div class="modal-box" style="max-width:500px;width:100%;max-height:92vh;overflow-y:auto;">
+            <div class="modal-box" style="max-width:920px;width:100%;max-height:92vh;overflow-y:auto;">
                 <div class="modal-head" style="position:sticky;top:0;background:var(--card,#0d1117);z-index:1;padding-bottom:12px;border-bottom:1px solid var(--border);">
                     <span style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;background:rgba(37,211,102,.12);border-radius:8px;flex-shrink:0;">
                         <i data-lucide="send" style="color:#25D366;width:16px;height:16px;"></i>
@@ -2096,51 +2096,67 @@
                         </div>
                     </div>
 
-                    <!-- ── MENSAGEM ── -->
+                    <!-- ── MENSAGEM + PREVIEW LADO A LADO ── -->
                     <div style="display:flex;align-items:center;gap:8px;margin:20px 0 12px;">
                         <span style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;white-space:nowrap;">Mensagem</span>
                         <div style="flex:1;height:1px;background:var(--border);"></div>
                         <span style="font-size:10px;color:var(--muted);font-weight:400;white-space:nowrap;">opcional</span>
                     </div>
 
-                    <textarea id="zapTemplate" class="form-control" rows="6" style="width:100%;resize:vertical;font-size:13px;line-height:1.6;margin-bottom:8px;"
-                        oninput="zapAtualizarPreview()"
-                        placeholder="Ex:&#10;📊 Resumo — {periodo}&#10;&#10;💰 Gasto: {gasto}&#10;🎯 Leads: {leads}&#10;📉 CPL: {cpl}&#10;📈 ROAS: {roas}"></textarea>
+                    <div class="zap-msg-preview-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;">
+                        <div style="min-width:0;">
+                            <textarea id="zapTemplate" class="form-control" rows="14" style="width:100%;resize:vertical;font-size:13px;line-height:1.6;margin-bottom:8px;"
+                                oninput="zapAtualizarPreview()"
+                                placeholder="Ex:&#10;📊 Resumo — {periodo}&#10;&#10;💰 Gasto: {gasto}&#10;🎯 Leads: {leads}&#10;📉 CPL: {cpl}&#10;📈 ROAS: {roas}"></textarea>
 
-                    <!-- Tags chips -->
-                    <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:12px;align-items:center;">
-                        <span style="font-size:10px;color:var(--muted);margin-right:2px;">Inserir:</span>
-                        <button class="zap-tag-chip" title="Período selecionado (ex: Últimos 7 dias)" onclick="zapInserirTag('{periodo}')">{periodo}</button>
-                        <button class="zap-tag-chip" title="Data de início do período" onclick="zapInserirTag('{data_inicio}')">{data_inicio}</button>
-                        <button class="zap-tag-chip" title="Data de fim do período" onclick="zapInserirTag('{data_fim}')">{data_fim}</button>
-                        <button class="zap-tag-chip" title="Gasto total em reais" onclick="zapInserirTag('{gasto}')">{gasto}</button>
-                        <button class="zap-tag-chip" title="Quantidade de leads" onclick="zapInserirTag('{leads}')">{leads}</button>
-                        <button class="zap-tag-chip" title="Custo por lead" onclick="zapInserirTag('{cpl}')">{cpl}</button>
-                        <button class="zap-tag-chip" title="Mensagens recebidas" onclick="zapInserirTag('{msgs}')">{msgs}</button>
-                        <button class="zap-tag-chip" title="Custo por resultado" onclick="zapInserirTag('{cpr}')">{cpr}</button>
-                        <button class="zap-tag-chip" title="Cliques no anúncio" onclick="zapInserirTag('{cliques}')">{cliques}</button>
-                        <button class="zap-tag-chip" title="Taxa de cliques (%)" onclick="zapInserirTag('{ctr}')">{ctr}</button>
-                        <button class="zap-tag-chip" title="Retorno sobre investimento em ads" onclick="zapInserirTag('{roas}')">{roas}</button>
-                        <button class="zap-tag-chip" title="Custo por clique" onclick="zapInserirTag('{cpc}')">{cpc}</button>
-                        <button class="zap-tag-chip" title="Custo por 1000 impressões" onclick="zapInserirTag('{cpm}')">{cpm}</button>
-                        <button class="zap-tag-chip" title="Alcance de pessoas únicas" onclick="zapInserirTag('{alcance}')">{alcance}</button>
-                        <button class="zap-tag-chip" title="Total de impressões" onclick="zapInserirTag('{impressoes}')">{impressoes}</button>
-                    </div>
-
-                    <!-- Preview em tempo real -->
-                    <div id="zapPreviewArea" style="display:none;margin-bottom:16px;border:1px solid var(--border);border-radius:8px;padding:12px 14px;background:rgba(37,211,102,.04);">
-                        <div style="font-size:10px;font-weight:700;color:#25D366;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;display:flex;align-items:center;gap:5px;">
-                            <i data-lucide="eye" style="width:11px;"></i> Preview
+                            <!-- Tags chips -->
+                            <div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center;">
+                                <span style="font-size:10px;color:var(--muted);margin-right:2px;">Inserir:</span>
+                                <button class="zap-tag-chip" title="Período selecionado (ex: Últimos 7 dias)" onclick="zapInserirTag('{periodo}')">{periodo}</button>
+                                <button class="zap-tag-chip" title="Data de início do período" onclick="zapInserirTag('{data_inicio}')">{data_inicio}</button>
+                                <button class="zap-tag-chip" title="Data de fim do período" onclick="zapInserirTag('{data_fim}')">{data_fim}</button>
+                                <button class="zap-tag-chip" title="Gasto total em reais" onclick="zapInserirTag('{gasto}')">{gasto}</button>
+                                <button class="zap-tag-chip" title="Quantidade de leads" onclick="zapInserirTag('{leads}')">{leads}</button>
+                                <button class="zap-tag-chip" title="Custo por lead" onclick="zapInserirTag('{cpl}')">{cpl}</button>
+                                <button class="zap-tag-chip" title="Mensagens recebidas" onclick="zapInserirTag('{msgs}')">{msgs}</button>
+                                <button class="zap-tag-chip" title="Custo por resultado" onclick="zapInserirTag('{cpr}')">{cpr}</button>
+                                <button class="zap-tag-chip" title="Cliques no anúncio" onclick="zapInserirTag('{cliques}')">{cliques}</button>
+                                <button class="zap-tag-chip" title="Taxa de cliques (%)" onclick="zapInserirTag('{ctr}')">{ctr}</button>
+                                <button class="zap-tag-chip" title="Retorno sobre investimento em ads" onclick="zapInserirTag('{roas}')">{roas}</button>
+                                <button class="zap-tag-chip" title="Custo por clique" onclick="zapInserirTag('{cpc}')">{cpc}</button>
+                                <button class="zap-tag-chip" title="Custo por 1000 impressões" onclick="zapInserirTag('{cpm}')">{cpm}</button>
+                                <button class="zap-tag-chip" title="Alcance de pessoas únicas" onclick="zapInserirTag('{alcance}')">{alcance}</button>
+                                <button class="zap-tag-chip" title="Total de impressões" onclick="zapInserirTag('{impressoes}')">{impressoes}</button>
+                            </div>
                         </div>
-                        <pre id="zapPreviewText" style="margin:0;font-size:12px;line-height:1.7;color:var(--text,#f0f4ff);white-space:pre-wrap;word-break:break-word;font-family:inherit;"></pre>
+
+                        <!-- Preview em tempo real -->
+                        <div style="min-width:0;position:sticky;top:8px;">
+                            <div id="zapPreviewArea" style="display:none;border:1px solid var(--border);border-radius:8px;padding:12px 14px;background:rgba(37,211,102,.04);max-height:420px;overflow-y:auto;">
+                                <div style="font-size:10px;font-weight:700;color:#25D366;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;display:flex;align-items:center;gap:5px;">
+                                    <i data-lucide="eye" style="width:11px;"></i> Preview
+                                </div>
+                                <pre id="zapPreviewText" style="margin:0;font-size:12px;line-height:1.7;color:var(--text,#f0f4ff);white-space:pre-wrap;word-break:break-word;font-family:inherit;"></pre>
+                            </div>
+                            <div id="zapPreviewVazio" style="border:1px dashed var(--border);border-radius:8px;padding:20px 14px;text-align:center;color:var(--muted);font-size:12px;">
+                                <i data-lucide="eye-off" style="width:18px;margin-bottom:6px;"></i><br>
+                                Digite uma mensagem para ver o preview aqui.
+                            </div>
+                        </div>
                     </div>
 
-                    <button id="zapBtnSalvar" class="btn-confirm" onclick="salvarZapRelatorio()" style="margin-bottom:4px;" disabled>
+                    <button id="zapBtnSalvar" class="btn-confirm" onclick="salvarZapRelatorio()" style="margin:16px 0 4px;" disabled>
                         <i data-lucide="check" style="width:14px;display:inline;vertical-align:-2px;margin-right:6px;"></i> Salvar Relatório
                     </button>
                 </div>
             </div>
         </div>
+
+        <style>
+            @media (max-width: 720px) {
+                .zap-msg-preview-grid { grid-template-columns: 1fr !important; }
+            }
+        </style>
 
         <!-- ABA: LOGS -->
         <div id="aba-logs" class="aba-oculta">
@@ -5470,6 +5486,7 @@ function abrirModalRelatorioNovo(destinoId) {
     const per  = $('zapPeriodo');      if (per)  per.value  = 'yesterday';
     const btn  = $('zapBtnSalvar');    if (btn)  { btn.disabled = false; btn.innerHTML = '<i data-lucide="check" style="width:14px;display:inline;vertical-align:-2px;margin-right:6px;"></i> Salvar Relatório'; }
     const pa   = $('zapPreviewArea');  if (pa)   pa.style.display = 'none';
+    const pv   = $('zapPreviewVazio'); if (pv)   pv.style.display = '';
     const tit  = $('zapModalTitulo');  if (tit)  tit.textContent = 'Novo Relatório';
     const cf   = $('zapCampaignFilterText'); if (cf) cf.value = '';
     const co   = $('zapCampaignObjective');  if (co) co.value = '';
@@ -5499,14 +5516,17 @@ function zapAtualizarPreview() {
     const ta = $('zapTemplate');
     const pa = $('zapPreviewArea');
     const pt = $('zapPreviewText');
+    const pv = $('zapPreviewVazio');
     if (!ta || !pa || !pt) return;
     const txt = ta.value.trim();
     if (!txt) {
         clearTimeout(_zapPreviewTimer);
         _zapPreviewReqId++;
         pa.style.display = 'none';
+        if (pv) pv.style.display = '';
         return;
     }
+    if (pv) pv.style.display = 'none';
 
     const periodoLabel = _ZAP_PERIODO_LABEL[$('zapPeriodo')?.value || 'yesterday'] || 'Ontem';
     const periodo = $('zapPeriodo')?.value || 'yesterday';
