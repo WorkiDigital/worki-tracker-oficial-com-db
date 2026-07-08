@@ -904,3 +904,15 @@ antigos). Único ajuste: `ag.account_id` → `ag.destino_account_id` (evita coli
 
 > Existe uma tabela/feature paralela morta (`relatorios_agendados`, `setup-reports-db.js`,
 > `api/reports-config.js`) — não referenciada no `index.html` atual, não faz parte deste fluxo.
+
+### Preview lado a lado + fix de NOT NULL legado (2026-07)
+- Modal do Relatório alargado (920px) com grid de 2 colunas: mensagem+chips à esquerda, preview
+  sticky à direita (`zapPreviewArea`/`zapPreviewVazio` alternam visibilidade em `zapAtualizarPreview`).
+  Responsivo: empilha em telas <720px.
+- **Bug corrigido:** ao reestruturar em 2 níveis, `zap_agendamentos.instance_name` e `destino_jid`
+  continuavam `NOT NULL` (herdado do schema de 1 nível), mas o INSERT novo de relatório não envia
+  mais esses campos (migraram para `zap_destinos`) → erro `null value in column "instance_name"
+  violates not-null constraint` ao criar relatório. Corrigido com `ALTER COLUMN ... DROP NOT NULL`
+  nos 3 pontos de auto-migração (`setup-db.js`, `api/zap-reports.js`, `api/zap-destinos.js`,
+  `api/cron/send-reports.js`). **Se reaparecer esse erro em outro ambiente/banco não migrado,
+  é sinal de que essa migração específica não rodou** — conferir se os 3 arquivos estão atualizados.
