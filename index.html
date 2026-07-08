@@ -1946,6 +1946,7 @@
                                 <th style="padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">Destino</th>
                                 <th style="padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">Tipo</th>
                                 <th style="padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">Instância</th>
+                                <th style="padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">Campanha(s)</th>
                                 <th style="padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">Frequência</th>
                                 <th style="padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">Período</th>
                                 <th style="padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">Horário</th>
@@ -1954,9 +1955,9 @@
                             </tr>
                         </thead>
                         <tbody id="zapRelatoriosTbody">
-                            <tr class="sk-row"><td colspan="8"><div class="sk-line skeleton" style="width:100%;height:14px;margin:4px 0;"></div></td></tr>
-                            <tr class="sk-row"><td colspan="8"><div class="sk-line skeleton" style="width:80%;height:14px;margin:4px 0;"></div></td></tr>
-                            <tr class="sk-row"><td colspan="8"><div class="sk-line skeleton" style="width:90%;height:14px;margin:4px 0;"></div></td></tr>
+                            <tr class="sk-row"><td colspan="9"><div class="sk-line skeleton" style="width:100%;height:14px;margin:4px 0;"></div></td></tr>
+                            <tr class="sk-row"><td colspan="9"><div class="sk-line skeleton" style="width:80%;height:14px;margin:4px 0;"></div></td></tr>
+                            <tr class="sk-row"><td colspan="9"><div class="sk-line skeleton" style="width:90%;height:14px;margin:4px 0;"></div></td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -5046,14 +5047,14 @@ const _ZAP_PERIODO_LABEL = {
 async function _renderZapTabela() {
     const tbody = $('zapRelatoriosTbody');
     if (!tbody) return;
-    tbody.innerHTML = `<tr><td colspan="8" style="padding:48px;text-align:center;color:var(--muted);font-size:13px;">Carregando...</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="9" style="padding:48px;text-align:center;color:var(--muted);font-size:13px;">Carregando...</td></tr>`;
     try {
         const r = await authFetch('/api/zap-reports');
         if (!r.ok) throw new Error('Falha ao carregar');
         const rows = await r.json();
         if (!Array.isArray(rows) || rows.length === 0) {
             tbody.innerHTML = `
-                <tr><td colspan="8" style="padding:56px 24px;text-align:center;">
+                <tr><td colspan="9" style="padding:56px 24px;text-align:center;">
                     <div style="display:flex;flex-direction:column;align-items:center;gap:10px;">
                         <i data-lucide="calendar-x" style="width:32px;height:32px;color:var(--muted);opacity:.4;"></i>
                         <span style="color:var(--muted);font-size:13px;">Nenhum relatório agendado ainda.</span>
@@ -5069,6 +5070,15 @@ async function _renderZapTabela() {
         tbody.innerHTML = rows.map(row => {
             const isAtivo = row.status === 'ativo';
             const periodoLabel = _ZAP_PERIODO_LABEL[row.periodo] || row.periodo || 'Ontem';
+            const objetivos = Array.isArray(row.campaign_objectives) ? row.campaign_objectives : [];
+            let campanhaLabel;
+            if (row.campaign_filter_text) {
+                campanhaLabel = esc(row.campaign_filter_text);
+            } else if (objetivos.length) {
+                campanhaLabel = esc(objetivos.map(o => _ZAP_OBJECTIVE_LABEL[o] || o).join(', '));
+            } else {
+                campanhaLabel = '<span style="color:var(--muted);">Todas as campanhas</span>';
+            }
             return `
             <tr style="border-bottom:1px solid var(--border);transition:background .1s;" onmouseenter="this.style.background='rgba(255,255,255,.03)'" onmouseleave="this.style.background=''">
                 <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;">
@@ -5076,6 +5086,7 @@ async function _renderZapTabela() {
                 </td>
                 <td style="font-size:11px;color:var(--muted);">${row.destino_tipo === 'grupo' ? '👥 Grupo' : '👤 Contato'}</td>
                 <td style="font-size:11px;color:var(--muted);max-width:160px;overflow:hidden;text-overflow:ellipsis;" title="${esc(row.instance_name)}">${esc(row.instance_name)}</td>
+                <td style="font-size:11px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(row.campaign_filter_text || objetivos.join(', ') || 'Todas as campanhas')}">${campanhaLabel}</td>
                 <td style="font-size:13px;">${FREQ[row.frequencia] || row.frequencia}</td>
                 <td style="font-size:12px;color:var(--muted);">${esc(periodoLabel)}</td>
                 <td style="font-size:13px;font-variant-numeric:tabular-nums;">${esc(row.horario)}</td>
@@ -5104,7 +5115,7 @@ async function _renderZapTabela() {
         }).join('');
         lucide.createIcons({ nodes:[tbody] });
     } catch(e) {
-        tbody.innerHTML = `<tr><td colspan="8" style="padding:40px;text-align:center;color:var(--red);font-size:13px;">Erro ao carregar agendamentos: ${esc(e.message)}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9" style="padding:40px;text-align:center;color:var(--red);font-size:13px;">Erro ao carregar agendamentos: ${esc(e.message)}</td></tr>`;
     }
 }
 
