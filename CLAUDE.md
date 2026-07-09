@@ -916,3 +916,39 @@ antigos). Único ajuste: `ag.account_id` → `ag.destino_account_id` (evita coli
   nos 3 pontos de auto-migração (`setup-db.js`, `api/zap-reports.js`, `api/zap-destinos.js`,
   `api/cron/send-reports.js`). **Se reaparecer esse erro em outro ambiente/banco não migrado,
   é sinal de que essa migração específica não rodou** — conferir se os 3 arquivos estão atualizados.
+
+## 🎯 Conversão Google Ads no link rastreável (2026-07)
+
+Paralelo ao CAPI Web da Meta, mas **arquitetura deliberadamente diferente**: Google Ads não tem um
+equivalente simples ao CAPI server-side da Meta sem OAuth2/developer token (e a Google Ads API
+legada de conversões offline está sendo restringida/migrada para a Data Manager API a partir de
+15/06/2026). Por isso a integração é **100% client-side via `gtag.js`** — sem GTM, sem token
+secreto, sem chamada server-side.
+
+### Como funciona
+- `gclid` já era capturado desde antes (`api/redirect.js` linha ~247, `api/site-whatsapp-click.js`)
+  e salvo em `tracking_clicks.gclid`, mas nunca disparava nada — só ficava armazenado/exibido no
+  perfil do lead. Agora fecha o ciclo.
+- 2 campos novos em `clientes` (**sem criptografia** — são públicos por natureza, ficam expostos no
+  HTML do navegador de qualquer forma): `google_ads_conversion_id` (`AW-XXXXXXXXX`) e
+  `google_ads_conversion_label`. Cadastrados na aba **"Google Ads"** do modal Editar Cliente —
+  aba **separada** de "Meta Ads" (decisão do usuário, não juntar os dois provedores na mesma aba).
+- Em `api/redirect.js`, `htmlPagePixel()` injeta o snippet `gtag.js` (paralelo ao `pixelSnippet` do
+  Meta) **somente quando**: o cliente tem `google_ads_conversion_id` E `google_ads_conversion_label`
+  configurados **E** o clique veio com `?gclid=...` na URL. Sem qualquer uma dessas 3 condições,
+  nada muda no HTML servido — zero risco de regressão no fluxo Meta existente.
+- Evento único fixo "conversion" (não replica a flexibilidade de múltiplos conceitos do Meta —
+  `LeadSubmitted`/`Purchase`/etc). Decisão deliberada para a primeira entrega.
+
+### Limitação aceita (diferença importante vs. Meta)
+A conversão dispara **no momento do clique** (página intermediária do redirect), não quando o lead
+responde de fato no WhatsApp — diferente do Meta, que tem uma segunda conversão ("Lead") disparada
+pelo `webhook-evo.js` quando o clique vira lead confirmado. **Não há disparo no webhook para Google
+Ads.** Se no futuro for necessário atribuir só quando o lead responder de verdade, seria preciso
+migrar para a Google Ads API server-side (Enhanced Conversions) — infraestrutura mais pesada, fora
+do escopo desta entrega.
+
+### Diagnóstico
+Logs em `webhook_logs` (tag `google_ads_click`): `info` quando o snippet foi injetado com sucesso,
+`warn` quando havia `gclid` no clique mas o cliente não tinha ID/label configurado (sinal de que
+falta cadastrar). Visível na aba Logs do Sistema, mesmo padrão da tag `capi_web` da Meta.

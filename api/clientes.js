@@ -21,7 +21,7 @@ export default async function handler(req, res) {
   if (req.method === 'GET') {
       try {
           // Lista todos os clientes para montar o painel Admin (EXCLUI token_meta por segurança)
-          const result = await pool.query('SELECT id, nome, email_contato, pixel_padrao, account_id, permissoes, template_venda, template_qualificacao, capi_pixel_id, criado_em FROM clientes ORDER BY id DESC');
+          const result = await pool.query('SELECT id, nome, email_contato, pixel_padrao, account_id, permissoes, template_venda, template_qualificacao, capi_pixel_id, google_ads_conversion_id, google_ads_conversion_label, criado_em FROM clientes ORDER BY id DESC');
           return res.status(200).json(result.rows);
       } catch (err) {
           console.error(err);
@@ -71,7 +71,7 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'PATCH') {
-      const { id, nome, email_contato, pixel_padrao, token_meta, account_id, senha_acesso, permissoes, template_venda, template_qualificacao, capi_pixel_id, capi_token } = req.body;
+      const { id, nome, email_contato, pixel_padrao, token_meta, account_id, senha_acesso, permissoes, template_venda, template_qualificacao, capi_pixel_id, capi_token, google_ads_conversion_id, google_ads_conversion_label } = req.body;
       if (!id) return res.status(400).json({ error: 'ID do cliente é obrigatório' });
 
       try {
@@ -97,6 +97,10 @@ export default async function handler(req, res) {
               fields.push(`capi_token_updated_at=$${idx++}`); values.push(new Date());
           }
           if (account_id !== undefined) { fields.push(`account_id=$${idx++}`); values.push(account_id || null); }
+          // Google Ads (conversão via clique no link rastreável) — campos públicos,
+          // sem token secreto: disparo é 100% client-side (gtag.js).
+          if (google_ads_conversion_id !== undefined) { fields.push(`google_ads_conversion_id=$${idx++}`); values.push(google_ads_conversion_id || null); }
+          if (google_ads_conversion_label !== undefined) { fields.push(`google_ads_conversion_label=$${idx++}`); values.push(google_ads_conversion_label || null); }
           if (permissoes)   { fields.push(`permissoes=$${idx++}`);   values.push(JSON.stringify(permissoes)); }
           if (template_venda !== undefined) { fields.push(`template_venda=$${idx++}`); values.push(template_venda || null); }
           if (template_qualificacao !== undefined) { fields.push(`template_qualificacao=$${idx++}`); values.push(template_qualificacao || null); }

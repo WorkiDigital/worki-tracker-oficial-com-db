@@ -106,7 +106,7 @@ async function carregarClientesAdmin() {
 }
 
 function switchEditTab(tab) {
-    ['dados','meta'].forEach(t => {
+    ['dados','meta','google'].forEach(t => {
         const panel = $('editPanel-' + t);
         if (panel) panel.style.display = t === tab ? '' : 'none';
         const btn = $('editTab-' + t);
@@ -126,6 +126,8 @@ function abrirEditCliente(id) {
     $('editCliAccountId').value = c.account_id || '';
     $('editCliCapiPixel').value = c.capi_pixel_id || '';
     $('editCliCapiToken').value = ''; // nunca exibe o token (write-only)
+    $('editCliGoogleAdsId').value    = c.google_ads_conversion_id || '';
+    $('editCliGoogleAdsLabel').value = c.google_ads_conversion_label || '';
     $('editCliEmail').value     = c.email_contato || '';
     $('editCliSenha').value     = '';
     $('editCliSubtitle').textContent = c.nome || '';
@@ -155,6 +157,8 @@ async function salvarEdicaoCliente() {
         account_id:     $('editCliAccountId').value.trim() || undefined,
         capi_pixel_id:  $('editCliCapiPixel').value.trim() || undefined,
         capi_token:     $('editCliCapiToken').value.trim() || undefined,
+        google_ads_conversion_id:    $('editCliGoogleAdsId').value.trim() || undefined,
+        google_ads_conversion_label: $('editCliGoogleAdsLabel').value.trim() || undefined,
         permissoes: {
             leads:          $('permLeads').checked,
             anuncios:       $('permAnuncios').checked,

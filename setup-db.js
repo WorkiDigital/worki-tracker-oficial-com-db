@@ -123,6 +123,16 @@ async function setup() {
     `);
     console.log('✅ Colunas CAPI web (capi_pixel_id, capi_token_enc, ...) injetadas na tabela "clientes".');
 
+    // Google Ads (conversão via clique no link rastreável) — 100% client-side (gtag.js),
+    // sem token secreto: são campos públicos por natureza (ficam expostos no HTML do
+    // navegador de qualquer forma), então sem criptografia, diferente do CAPI web da Meta.
+    await client.query(`
+      ALTER TABLE public.clientes
+      ADD COLUMN IF NOT EXISTS google_ads_conversion_id    VARCHAR(20),
+      ADD COLUMN IF NOT EXISTS google_ads_conversion_label VARCHAR(255);
+    `);
+    console.log('✅ Colunas Google Ads (google_ads_conversion_id, google_ads_conversion_label) injetadas na tabela "clientes".');
+
     // Criação da tabela de Tokens de Compartilhamento
     await client.query(`
       CREATE TABLE IF NOT EXISTS public.share_tokens (

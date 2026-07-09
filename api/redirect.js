@@ -113,7 +113,7 @@ async function gravarLog(pool, { cliente_id, instance, tag, level, message, data
 // Página intermediária: dispara o Pixel (PageView) no navegador com o mesmo
 // event_id do CAPI server-side (dedup), espera ~1.5s e redireciona pro WhatsApp.
 // Spinner discreto para o usuário entender que é rápido.
-function htmlPagePixel({ waUrl, pixelId, eventId, fbc, fbp }) {
+function htmlPagePixel({ waUrl, pixelId, eventId, fbc, fbp, googleAdsId, googleAdsLabel, gclid }) {
   const safeUrl = waUrl.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
   const pixelSnippet = pixelId ? `
   <script>
@@ -127,6 +127,25 @@ function htmlPagePixel({ waUrl, pixelId, eventId, fbc, fbp }) {
       fbq('track', 'PageView', {}, { eventID: ${jsStr(eventId)} });
     } catch(e) {}
   </script>` : '';
+  // Google Ads (conversão via clique) — 100% client-side (gtag.js), sem GTM. Só
+  // dispara quando o cliente tem o ID/label configurados E o clique veio com gclid
+  // (senão não há anúncio Google para atribuir).
+  const gtagSnippet = (googleAdsId && googleAdsLabel && gclid) ? `
+  <script async src="https://www.googletagmanager.com/gtag/js?id=${jsStr(googleAdsId)}"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', ${jsStr(googleAdsId)});
+    try {
+      gtag('event', 'conversion', {
+        'send_to': ${jsStr(googleAdsId + '/' + googleAdsLabel)},
+        'value': 1.0,
+        'currency': 'BRL',
+      });
+    } catch(e) {}
+  </script>` : '';
+  const delayMs = (pixelId || gtagSnippet) ? 1400 : 300;
   return `<!DOCTYPE html><html lang="pt-br"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
@@ -147,10 +166,11 @@ function htmlPagePixel({ waUrl, pixelId, eventId, fbc, fbp }) {
   <p>Redirecionando para o WhatsApp…</p>
   <a id="manual" href="${safeUrl}">Abrir agora</a>
   ${pixelSnippet}
+  ${gtagSnippet}
   <script>
     var dest = ${jsStr(waUrl)};
-    // Delay curto para o Pixel disparar o PageView antes de sair da página.
-    setTimeout(function(){ window.location.replace(dest); }, ${pixelId ? 1400 : 300});
+    // Delay curto para o Pixel/gtag disparar antes de sair da página.
+    setTimeout(function(){ window.location.replace(dest); }, ${delayMs});
   </script>
 </body></html>`;
 }
@@ -264,11 +284,19 @@ export default async function handler(req, res) {
 
     await client.query('COMMIT');
 
-    // Busca o pixel CAPI Web do cliente (para o Pixel JS no navegador e o CAPI server).
+    // Busca o pixel CAPI Web e as credenciais de Google Ads do cliente (uma única
+    // consulta, reaproveitada tanto pro Pixel JS/CAPI server quanto pro gtag.js).
     let capiPixelId = null;
+    let googleAdsId = null;
+    let googleAdsLabel = null;
     try {
-      const px = await pool.query('SELECT capi_pixel_id FROM clientes WHERE id = $1', [campaign.cliente_id]);
-      capiPixelId = px.rows[0]?.capi_pixel_id || null;
+      const cli = await pool.query(
+        'SELECT capi_pixel_id, google_ads_conversion_id, google_ads_conversion_label FROM clientes WHERE id = $1',
+        [campaign.cliente_id]
+      );
+      capiPixelId = cli.rows[0]?.capi_pixel_id || null;
+      googleAdsId = cli.rows[0]?.google_ads_conversion_id || null;
+      googleAdsLabel = cli.rows[0]?.google_ads_conversion_label || null;
     } catch (_) {}
 
     // Log do clique (sempre) — visível na aba Logs do Sistema.
@@ -278,9 +306,28 @@ export default async function handler(req, res) {
       message: `Clique no link "${campaign.name}" → ${destino.whatsapp_number}`,
       data: { tracking_id: trackingId, campaign_id: campaign.id, destino: destino.whatsapp_number,
               fbclid: !!fbclid, fbc: !!fbc, fbp: !!fbp, capi_pixel: !!capiPixelId,
+              gclid: !!gclid, google_ads_configurado: !!(googleAdsId && googleAdsLabel),
               geo_city: geo?.city || null, geo_region: geo?.region || null,
               geo_country: geo?.country || null },
     });
+
+    // Log dedicado do disparo Google Ads (paridade com o log capi_web da Meta) —
+    // best-effort, só quando o snippet realmente foi/seria injetado.
+    if (gclid && googleAdsId && googleAdsLabel) {
+      await gravarLog(pool, {
+        cliente_id: campaign.cliente_id, instance: `link:${slug}`,
+        tag: 'google_ads_click', level: 'info',
+        message: `Conversão Google Ads disparada (client-side) no clique.`,
+        data: { tracking_id: trackingId, google_ads_conversion_id: googleAdsId },
+      });
+    } else if (gclid && (!googleAdsId || !googleAdsLabel)) {
+      await gravarLog(pool, {
+        cliente_id: campaign.cliente_id, instance: `link:${slug}`,
+        tag: 'google_ads_click', level: 'warn',
+        message: `Clique com gclid mas cliente sem ID/label de conversão Google Ads configurado.`,
+        data: { tracking_id: trackingId },
+      });
+    }
 
     // PageView server-side (CAPI) com o MESMO event_id do Pixel → Meta deduplica.
     // Aguardamos a chamada antes de encerrar o handler para ambientes serverless
@@ -325,6 +372,7 @@ export default async function handler(req, res) {
     });
     return res.end(htmlPagePixel({
       waUrl, pixelId: capiPixelId, eventId: pageviewEventId, fbc, fbp,
+      googleAdsId, googleAdsLabel, gclid,
     }));
 
   } catch (err) {

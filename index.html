@@ -607,6 +607,7 @@
         <div style="display:flex;gap:4px;margin-bottom:20px;background:var(--tag);border-radius:10px;padding:4px;">
             <button id="editTab-dados"  onclick="switchEditTab('dados')"  style="flex:1;padding:8px;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;background:var(--blue);color:#fff;">Dados</button>
             <button id="editTab-meta"   onclick="switchEditTab('meta')"   style="flex:1;padding:8px;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;background:transparent;color:var(--text-muted);">Meta Ads</button>
+            <button id="editTab-google" onclick="switchEditTab('google')" style="flex:1;padding:8px;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;background:transparent;color:var(--text-muted);">Google Ads</button>
         </div>
         <!-- Aba: Dados -->
         <div id="editPanel-dados">
@@ -651,6 +652,12 @@
             <p style="font-size:11px;color:var(--muted);margin:0 0 10px;"><strong style="color:var(--text);">CAPI Web (links rastreáveis)</strong> — atribui leads de link à campanha do Facebook. Token gerado em <em>Eventos Manager → Conjuntos de Dados → Conversions API</em>.</p>
             <div class="input-group"><label>Pixel CAPI Web <span style="color:var(--muted);font-weight:400;font-size:11px;">(dataset)</span></label><input type="text" id="editCliCapiPixel" placeholder="Apenas números"></div>
             <div class="input-group"><label>Token CAPI Web <span style="color:var(--muted);font-weight:400;font-size:11px;">(deixe em branco p/ não alterar)</span></label><input type="text" id="editCliCapiToken" placeholder="Token de API do dataset"></div>
+        </div>
+        <!-- Aba: Google Ads -->
+        <div id="editPanel-google" style="display:none;">
+            <p style="font-size:11px;color:var(--muted);margin:0 0 10px;">Dispara conversão quando o clique no link vier de anúncio do Google (<code>?gclid=...</code>). Encontre em <em>Ferramentas → Conversões → [ação] → Configuração da tag</em>.</p>
+            <div class="input-group"><label>ID de conversão <span style="color:var(--muted);font-weight:400;font-size:11px;">(ex: AW-123456789)</span></label><input type="text" id="editCliGoogleAdsId" placeholder="AW-XXXXXXXXX"></div>
+            <div class="input-group"><label>Label da conversão</label><input type="text" id="editCliGoogleAdsLabel" placeholder="AbCdEfGhIjKlMnOp"></div>
         </div>
         <button class="btn-confirm" id="btnSalvarEditCliente" onclick="salvarEdicaoCliente()">Salvar Alterações</button>
     </div>
