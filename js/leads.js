@@ -334,10 +334,13 @@ function renderTabela() {
         const _utmSrc = (lead.utm_source || '').toLowerCase();
         const plataformaLabel = lead.plataforma ||
             (lead.lead_origin === 'campaign_link' || lead.lead_origin === 'bio' || lead.lead_origin === 'rotator'
-                ? (_utmSrc.includes('fb') || _utmSrc.includes('face') ? 'facebook' : _utmSrc.includes('ig') || _utmSrc.includes('insta') ? 'instagram' : 'whatsapp')
+                ? (_utmSrc.includes('fb') || _utmSrc.includes('face') ? 'facebook'
+                   : _utmSrc.includes('ig') || _utmSrc.includes('insta') ? 'instagram'
+                   : _utmSrc.includes('google') || _utmSrc.includes('adwords') ? 'google'
+                   : 'whatsapp')
                 : (lead.lead_origin && lead.lead_origin !== 'ctwa' ? 'whatsapp' : 'instagram'));
         const plat     = plataformaLabel.toLowerCase();
-        const platCls  = plat.includes('face') ? 'facebook' : plat.includes('whats') ? 'whatsapp' : 'instagram';
+        const platCls  = plat.includes('face') ? 'facebook' : plat.includes('google') ? 'google' : plat.includes('whats') ? 'whatsapp' : 'instagram';
         const status   = (lead.status||'Lead').toLowerCase();
         const purchase = status === 'venda_fechada' || status === 'vendido';
         const stColor  = purchase ? '#10b981' : '';

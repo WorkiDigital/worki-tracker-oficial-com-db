@@ -222,6 +222,7 @@ html.light .tag { color:#374151; }
 .platform-icon.facebook  { color:#1877f2; }
 .platform-icon.instagram { color:#e1306c; }
 .platform-icon.whatsapp  { color:#25D366; }
+.platform-icon.google    { color:#4285F4; }
 
 /* ── Pagination ──────────────────────────── */
 .pagination { display:flex; align-items:center; justify-content:space-between; padding:14px 20px; border-top:1px solid var(--border); }
