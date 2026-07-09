@@ -992,3 +992,15 @@ o delay de ~1.4s que o `redirect.js` usa para o Pixel/gtag terem tempo de dispar
   CLEAN_DRY_RUN=false node -r dotenv/config scripts/clean-lead-names.js   # aplica
   CLEAN_INSTANCIA=nome-instancia node -r dotenv/config scripts/clean-lead-names.js  # filtra 1 instância
   ```
+
+## 📈 external_id no canal WhatsApp (Event Match Quality) — 2026-07
+
+O Gerenciador de Eventos da Meta reportava "Identificação externa" como parâmetro **não enviado**
+no canal `business_messaging` (WhatsApp) — a Meta estima +15.6% de conversões adicionais relatadas
+com esse parâmetro. Antes, `external_id` só era preenchido ali quando o lead tinha CPF (raro).
+
+`api/_capi.js`, dentro do bloco `business_messaging`: `external_id` agora usa CPF quando existir,
+senão cai no telefone hasheado como fallback — cobre 100% dos leads (todos têm telefone). Removida
+a linha duplicada de CPF que ficava fora do bloco condicional (redundante, já resolvida dentro do
+próprio bloco de canal). O canal `website` continua intocado (`tracking_id` como `external_id`, CPF
+nunca sobrepõe ali — ver seção "external_id no CAPI Web").

@@ -181,6 +181,11 @@ export async function enviarConversao({ lead, concept, value, currency = 'BRL', 
     if (lead.ctw_aci_id) userData.ctwa_clid = lead.ctw_aci_id; // cru
     userData.page_id = finalPageId;                            // cru
     if (ph) userData.ph = [hash(ph)];
+    // external_id: CPF quando existir (poucos leads têm), senão o telefone
+    // hasheado como fallback — cobre 100% dos leads e melhora o Event Match
+    // Quality (parâmetro "Identificação externa" no Gerenciador de Eventos).
+    if (lead.cpf) userData.external_id = [hash(lead.cpf.replace(/\D/g, ''))];
+    else if (ph) userData.external_id = [hash(ph)];
   } else {
     // website: fbc/fbp/ip/ua crus (contexto web). Sem page_id/ctwa_clid.
     if (lead.fbc) userData.fbc = lead.fbc;
@@ -196,7 +201,6 @@ export async function enviarConversao({ lead, concept, value, currency = 'BRL', 
   if (lead.email)   userData.em = [hash(lead.email)];
   if (nomeParts[0]) userData.fn = [hash(nomeParts[0])];
   if (nomeParts[1]) userData.ln = [hash(nomeParts.slice(1).join(' '))];
-  if (lead.cpf && channel !== 'website') userData.external_id = [hash(lead.cpf.replace(/\D/g, ''))];
   if (lead.cidade)  userData.ct      = [hash(lead.cidade)];
   if (lead.estado)  userData.st      = [hash(lead.estado)];
   userData.country = [hash('br')];
