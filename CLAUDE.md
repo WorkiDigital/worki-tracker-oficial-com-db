@@ -952,3 +952,20 @@ do escopo desta entrega.
 Logs em `webhook_logs` (tag `google_ads_click`): `info` quando o snippet foi injetado com sucesso,
 `warn` quando havia `gclid` no clique mas o cliente não tinha ID/label configurado (sinal de que
 falta cadastrar). Visível na aba Logs do Sistema, mesmo padrão da tag `capi_web` da Meta.
+
+### Extensão para o script de site externo (`wapptrack.js`) — 2026-07
+A conversão Google Ads acima cobre só o link rastreável interno (`/r/<slug>`). Estendida também
+para o `js/wapptrack.js` (sites externos, ex: Frigorífico O Eron), com uma diferença importante de
+timing: **aqui não existe página intermediária** — o clique no botão já abre o WhatsApp direto, sem
+o delay de ~1.4s que o `redirect.js` usa para o Pixel/gtag terem tempo de disparar.
+
+- `api/site-pageview.js`: devolve `google_ads_id`/`google_ads_label` na resposta do PageView — só
+  preenchidos quando o clique teve `?gclid=...` **e** o cliente tem os 2 campos configurados (mesma
+  regra condicional do `redirect.js`, decidida no backend).
+- `js/wapptrack.js`: guarda essas credenciais (variáveis `googleAdsId`/`googleAdsLabel`, preenchidas
+  na resposta de `registrarPageview()`) e dispara a conversão dentro de `abrirWhatsapp()` — **no
+  clique do botão**, não no PageView, já que aqui o clique é o próprio evento de conversão (sem
+  página intermediária para aguardar). `ensureGtagLib()`/`dispararConversaoGoogleAds()` seguem o
+  mesmo padrão de `ensurePixel()` (Meta) já existente no arquivo.
+- `gclid` já era capturado em `collectParams()` desde antes — nenhuma mudança na captura, só no que
+  é feito com o dado depois de chegar no backend.

@@ -13,9 +13,14 @@
  *     esse texto no botão automaticamente. Em botões com ícone + texto (ex:
  *     <button><Icon/><span>Falar</span></button>), marque o texto com
  *     data-wapptrack-label para o script trocar só ele, preservando o ícone.
+ *  5. Se o cliente tiver ID/label de conversão do Google Ads configurados E o
+ *     clique tiver vindo com ?gclid=... na URL, dispara a conversão via gtag.js
+ *     (client-side, sem GTM) no momento do clique no botão.
  *
- * A conversão (clique → lead) continua sendo feita pelo webhook existente
- * quando a mensagem chega no WhatsApp — este script só origina o clique.
+ * A conversão de LEAD (clique → lead) continua sendo feita pelo webhook existente
+ * quando a mensagem chega no WhatsApp — este script só origina o clique. A conversão
+ * de Google Ads é exceção: dispara no clique mesmo, pois aqui não há página
+ * intermediária (diferente do link /r/<slug>, que tem tempo de sobra para o gtag).
  */
 (function () {
   'use strict';
@@ -117,6 +122,37 @@
     } catch (e) { /* best-effort */ }
   }
 
+  // Guarda as credenciais Google Ads (devolvidas pelo /api/site-pageview, já filtradas
+  // pelo backend: só vêm preenchidas quando o clique teve gclid E o cliente configurou
+  // ID/label) para disparar a conversão no CLIQUE do botão — não no PageView, porque
+  // aqui não existe página intermediária: o clique já abre o WhatsApp diretamente.
+  var googleAdsId = null, googleAdsLabel = null, gtagReady = null;
+
+  function ensureGtagLib(conversionId) {
+    if (gtagReady) return;
+    gtagReady = true;
+    window.dataLayer = window.dataLayer || [];
+    window.gtag = window.gtag || function () { window.dataLayer.push(arguments); };
+    var s = document.createElement('script');
+    s.async = true;
+    s.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(conversionId);
+    document.head.appendChild(s);
+    window.gtag('js', new Date());
+    window.gtag('config', conversionId);
+  }
+
+  function dispararConversaoGoogleAds() {
+    if (!googleAdsId || !googleAdsLabel) return;
+    ensureGtagLib(googleAdsId);
+    try {
+      window.gtag('event', 'conversion', {
+        'send_to': googleAdsId + '/' + googleAdsLabel,
+        'value': 1.0,
+        'currency': 'BRL',
+      });
+    } catch (e) { /* best-effort */ }
+  }
+
   // Escreve o texto configurado na campanha nos botões [data-wapptrack-button].
   // Não sobrescreve botões com filhos HTML (ícone + texto) a menos que exista um
   // sub-elemento [data-wapptrack-label] marcado explicitamente — evita apagar ícones.
@@ -144,6 +180,10 @@
       if (data && data.button_text) {
         aplicarTextoBotao(data.button_text);
       }
+      if (data && data.google_ads_id && data.google_ads_label) {
+        googleAdsId = data.google_ads_id;
+        googleAdsLabel = data.google_ads_label;
+      }
     }).catch(function () { /* best-effort: falha de rede não deve travar o site */ });
   }
 
@@ -153,6 +193,10 @@
     params.visitor_id = visitorId;
     var msg = botao.getAttribute('data-wapp-message');
     if (msg) params.message = msg;
+
+    // Conversão Google Ads dispara aqui (não há página intermediária neste fluxo —
+    // o clique já abre o WhatsApp direto).
+    dispararConversaoGoogleAds();
 
     postJson('/api/site-whatsapp-click', params).then(function (data) {
       if (data && data.url) {

@@ -80,6 +80,7 @@ export default async function handler(req, res) {
   const fbclid = clean(body.fbclid, 512);
   const fbp = clean(body.fbp, 255);
   const fbc = fbclid ? `fb.1.${Date.now()}.${fbclid}` : (clean(body.fbc, 512));
+  const gclid = clean(body.gclid, 512);
   const pageviewEventId = `pv_${visitorId}_${Date.now().toString(36)}`;
 
   await pool.query(
@@ -95,11 +96,20 @@ export default async function handler(req, res) {
 
   // PageView server-side via CAPI Web (best-effort) + devolve o pixel_id para o
   // script disparar o Pixel no navegador com o MESMO event_id → Meta deduplica.
+  // Também devolve as credenciais Google Ads (client-side only, sem servidor) para
+  // o wapptrack.js disparar o gtag.js quando o clique vier com gclid.
   let capiSent = false;
   let capiPixelId = null;
+  let googleAdsId = null;
+  let googleAdsLabel = null;
   try {
-    const px = await pool.query('SELECT capi_pixel_id FROM clientes WHERE id = $1', [campaign.cliente_id]);
+    const px = await pool.query(
+      'SELECT capi_pixel_id, google_ads_conversion_id, google_ads_conversion_label FROM clientes WHERE id = $1',
+      [campaign.cliente_id]
+    );
     capiPixelId = px.rows[0]?.capi_pixel_id || null;
+    googleAdsId = px.rows[0]?.google_ads_conversion_id || null;
+    googleAdsLabel = px.rows[0]?.google_ads_conversion_label || null;
     if (capiPixelId) {
       const r = await enviarCapiWebPageView(pool, {
         cliente_id: campaign.cliente_id,
@@ -115,7 +125,8 @@ export default async function handler(req, res) {
   await gravarLog(pool, {
     cliente_id: campaign.cliente_id, tag: 'site_pageview', level: 'info',
     message: `PageView do site (campanha "${campaign.name}")`,
-    data: { visitor_id: visitorId, page_url: pageUrl, capi_sent: capiSent, fbclid: !!fbclid },
+    data: { visitor_id: visitorId, page_url: pageUrl, capi_sent: capiSent, fbclid: !!fbclid,
+            gclid: !!gclid, google_ads_configurado: !!(googleAdsId && googleAdsLabel) },
   });
 
   return res.status(200).json({
@@ -123,5 +134,7 @@ export default async function handler(req, res) {
     pageview_event_id: pageviewEventId,
     pixel_id: capiPixelId,
     button_text: campaign.button_text || null,
+    google_ads_id: (gclid && googleAdsId && googleAdsLabel) ? googleAdsId : null,
+    google_ads_label: (gclid && googleAdsId && googleAdsLabel) ? googleAdsLabel : null,
   });
 }
