@@ -969,3 +969,26 @@ o delay de ~1.4s que o `redirect.js` usa para o Pixel/gtag terem tempo de dispar
   mesmo padrão de `ensurePixel()` (Meta) já existente no arquivo.
 - `gclid` já era capturado em `collectParams()` desde antes — nenhuma mudança na captura, só no que
   é feito com o dado depois de chegar no backend.
+
+## 🧹 Limpeza de emojis/símbolos no nome dos leads (2026-07)
+
+`leads_tracking.nome` (vindo de `pushName` do WhatsApp) às vezes chega decorado com emojis (ex:
+"🔥 João 🔥"). Adicionada sanitização — **só no campo `nome`**, nunca em `mensagem_recebida`
+(conteúdo histórico da conversa, usado no matching de keywords da jornada inteligente,
+`mensagemBateKeyword` em `api/webhook-evo.js`).
+
+- `api/_text-sanitize.js` — `limparTextoDecorativo(texto)`: remove emojis (`\p{Extended_Pictographic}`),
+  bandeiras (`\p{Regional_Indicator}`) e variation selectors/ZWJ residuais; preserva letras
+  acentuadas, números, hífen, parênteses. **Não remove ideogramas CJK** (ex: 彡) — risco de apagar
+  nomes legítimos em chinês/japonês, fora do escopo (só emoji "de verdade").
+- `api/webhook-evo.js`: aplicado só no momento do INSERT do lead novo (`limparTextoDecorativo(pushName)`)
+  — a variável `pushName` original não é alterada mais cedo no fluxo, então logs técnicos anteriores
+  ao INSERT continuam com o nome bruto.
+- `scripts/clean-lead-names.js` (novo): corrige retroativamente os leads já salvos. Idempotente
+  (só altera o que realmente muda após sanitizar — comparação em memória, não precisa de flag de
+  "já processado"). Dry-run por padrão:
+  ```bash
+  node -r dotenv/config scripts/clean-lead-names.js                       # dry-run
+  CLEAN_DRY_RUN=false node -r dotenv/config scripts/clean-lead-names.js   # aplica
+  CLEAN_INSTANCIA=nome-instancia node -r dotenv/config scripts/clean-lead-names.js  # filtra 1 instância
+  ```

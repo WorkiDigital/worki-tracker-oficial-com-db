@@ -6,6 +6,7 @@ import { decodeToken } from './_invisible-token.js';
 import { ensureTrackingSchema } from './_tracking-schema.js';
 import { enviarConversao, extrairValor } from './_capi.js';
 import { log } from './_logger.js';
+import { limparTextoDecorativo } from './_text-sanitize.js';
 
 // ── Handler principal — recebe payload bruto da Evolution API ──
 export default async function handler(req, res) {
@@ -519,7 +520,7 @@ export default async function handler(req, res) {
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'Lead', NOW(), $10, $11, $12, $13, $14, $15)
         RETURNING *
       `, [
-        cliente_id, pushName || '', telefone, mensagem_recebida, ctwaClid, sourceId,
+        cliente_id, limparTextoDecorativo(pushName) || '', telefone, mensagem_recebida, ctwaClid, sourceId,
         event_source_url, anuncio_thumbnail_url, instance, page_id, plataforma,
         utm_campaign, utm_medium, utm_content, lead_origin
       ]);
