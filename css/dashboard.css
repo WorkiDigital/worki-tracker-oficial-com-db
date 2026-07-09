@@ -219,6 +219,7 @@ html.light tbody td { color:#475569; }
 .tag { display:inline-flex; align-items:center; gap:4px; background:var(--tag); color:var(--text); padding:4px 10px; border-radius:20px; font-size:11px; font-weight:600; white-space:nowrap; }
 html.light .tag { color:#374151; }
 .platform-icon { display:flex; align-items:center; gap:6px; font-weight:600; font-size:13px; }
+.platform-icon svg { flex-shrink:0; }
 .platform-icon.facebook  { color:#1877f2; }
 .platform-icon.instagram { color:#e1306c; }
 .platform-icon.whatsapp  { color:#25D366; }
