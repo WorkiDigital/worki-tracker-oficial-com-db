@@ -239,16 +239,60 @@ function chatRenderMessages(messages) {
 function chatRenderMedia(message) {
     const url = chatSafeUrl(message.media_url);
     if (!url) return message.body ? '' : `<div class="chat-media-chip">${esc(chatMediaLabel(message.message_type))}</div>`;
-    if (message.message_type === 'image' || message.message_type === 'sticker') {
-        return `<a href="${esc(url)}" target="_blank" rel="noopener"><img class="chat-media-image" src="${esc(url)}" alt=""></a>`;
-    }
     if (message.message_type === 'audio') {
-        return `<audio class="chat-media-audio" controls src="${esc(url)}"></audio>`;
+        return `<div class="chat-media-audio-wrap" id="chat-audio-${message.id}">
+            <button type="button" class="chat-media-audio-play" onclick="chatLoadMedia(${message.id}, this)">
+                <i data-lucide="play"></i><span>Ouvir audio</span>
+            </button>
+        </div>`;
+    }
+    if (message.message_type === 'image' || message.message_type === 'sticker') {
+        return `<div class="chat-media-image-wrap" id="chat-media-${message.id}">
+            <button type="button" class="chat-media-load-btn" onclick="chatLoadMedia(${message.id}, this)">
+                <i data-lucide="image"></i><span>Ver imagem</span>
+            </button>
+        </div>`;
     }
     if (message.message_type === 'video') {
-        return `<video class="chat-media-video" controls src="${esc(url)}"></video>`;
+        return `<div class="chat-media-video-wrap" id="chat-media-${message.id}">
+            <button type="button" class="chat-media-load-btn" onclick="chatLoadMedia(${message.id}, this)">
+                <i data-lucide="video"></i><span>Ver video</span>
+            </button>
+        </div>`;
     }
-    return `<a class="chat-media-link" href="${esc(url)}" target="_blank" rel="noopener"><i data-lucide="paperclip"></i>${esc(chatMediaLabel(message.message_type))}</a>`;
+    return `<div class="chat-media-chip">${esc(chatMediaLabel(message.message_type))}</div>`;
+}
+
+async function chatLoadMedia(messageId, btn) {
+    const wrap = btn.closest('[id^="chat-audio-"], [id^="chat-media-"]');
+    if (!wrap) return;
+    btn.disabled = true;
+    const originalHtml = btn.innerHTML;
+    btn.innerHTML = '<i data-lucide="loader-2" class="spinner"></i><span>Carregando...</span>';
+    lucide.createIcons({ nodes: [wrap] });
+    try {
+        const params = new URLSearchParams({ action: 'get_media', id: messageId });
+        const cliente = $('chatClienteFilter')?.value || '';
+        if (cliente) params.set('cliente_id', cliente);
+        const res = await authFetch(`/api/chat-messages?${params.toString()}`);
+        const data = await readApiJson(res, 'Falha ao carregar midia');
+        const isAudio = wrap.id.startsWith('chat-audio-');
+        if (isAudio) {
+            wrap.innerHTML = `<audio class="chat-media-audio" controls autoplay src="${esc(data.dataUrl)}"></audio>`;
+        } else if (data.dataUrl.startsWith('data:image')) {
+            wrap.innerHTML = `<a href="${esc(data.dataUrl)}" target="_blank" rel="noopener"><img class="chat-media-image" src="${esc(data.dataUrl)}" alt=""></a>`;
+        } else if (data.dataUrl.startsWith('data:video')) {
+            wrap.innerHTML = `<video class="chat-media-video" controls src="${esc(data.dataUrl)}"></video>`;
+        } else {
+            wrap.innerHTML = `<a class="chat-media-link" href="${esc(data.dataUrl)}" target="_blank" rel="noopener"><i data-lucide="paperclip"></i>Baixar arquivo</a>`;
+            lucide.createIcons({ nodes: [wrap] });
+        }
+    } catch (e) {
+        btn.disabled = false;
+        btn.innerHTML = originalHtml;
+        lucide.createIcons({ nodes: [wrap] });
+        toast(e.message || 'Falha ao carregar midia', 'error');
+    }
 }
 
 async function chatLoadLead(conversation) {
@@ -368,3 +412,4 @@ window.chatMonitorInit = chatMonitorInit;
 window.chatMonitorRefresh = chatMonitorRefresh;
 window.chatStopPolling = chatStopPolling;
 window.chatSelectConversation = chatSelectConversation;
+window.chatLoadMedia = chatLoadMedia;
