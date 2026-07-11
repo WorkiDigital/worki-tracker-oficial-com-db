@@ -343,6 +343,7 @@ function chatRenderLead(lead, conversation) {
         </div>
         <div class="chat-lead-rows">
             ${chatLeadRow('Status', lead.status)}
+            ${chatLeadRow('Valor', chatFormatMoney(lead.valor_venda))}
             ${chatLeadRow('Origem', lead.lead_origin)}
             ${chatLeadRow('Campanha', lead.utm_campaign)}
             ${chatLeadRow('Conjunto', lead.utm_medium)}
@@ -359,6 +360,12 @@ function chatRenderLead(lead, conversation) {
 function chatLeadRow(label, value) {
     if (!value) return '';
     return `<div><span>${esc(label)}</span><strong>${esc(value)}</strong></div>`;
+}
+
+function chatFormatMoney(value) {
+    const n = Number(value);
+    if (!Number.isFinite(n) || n <= 0) return '';
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(n);
 }
 
 function chatRenderEmptyThread() {

@@ -876,10 +876,22 @@ async function processarJornadaFromMe(pool, { clienteIdFm, telefoneFm, textoFm }
 
   // Já existe histórico dessa etapa para esse lead? (idempotência app-level)
   const jaRes = await pool.query(
-    'SELECT 1 FROM lead_journey_history WHERE lead_id = $1 AND stage_id = $2 LIMIT 1',
+    'SELECT value FROM lead_journey_history WHERE lead_id = $1 AND stage_id = $2 LIMIT 1',
     [lead.id, alvo.id]
   );
-  if (jaRes.rows.length) return; // etapa já disparada — não repete (bot/mensagem repetida)
+  if (jaRes.rows.length) {
+    if (alvo.event_concept === 'purchase' && lead.valor_venda == null && jaRes.rows[0].value != null) {
+      await pool.query(
+        `UPDATE leads_tracking
+         SET sale_closed_at = COALESCE(sale_closed_at, NOW()),
+             status = 'Vendido',
+             valor_venda = COALESCE(valor_venda, $2)
+         WHERE id = $1`,
+        [lead.id, jaRes.rows[0].value]
+      );
+    }
+    return;
+  }
 
   // Sequencial permitindo pular: etapas ANTERIORES (position menor) ainda sem
   // histórico viram 'skipped' (concluídas sem reenviar evento à Meta).
@@ -929,14 +941,16 @@ async function processarJornadaFromMe(pool, { clienteIdFm, telefoneFm, textoFm }
   );
 
   // Atualiza a etapa atual do lead (e scheduled_at p/ agendamento).
+  const updateLeadParams = [alvo.id, lead.id];
+  if (alvo.event_concept === 'purchase') updateLeadParams.push(value);
   await pool.query(
     `UPDATE leads_tracking
      SET current_stage_id = $1, stage_changed_at = NOW()
          ${alvo.event_concept === 'appointment' ? ', scheduled_at = NOW()' : ''}
          ${alvo.event_concept === 'qualified' ? ', qualified_at = COALESCE(qualified_at, NOW())' : ''}
-         ${alvo.event_concept === 'purchase' ? ", sale_closed_at = COALESCE(sale_closed_at, NOW()), status = 'Vendido'" : ''}
+         ${alvo.event_concept === 'purchase' ? ", sale_closed_at = COALESCE(sale_closed_at, NOW()), status = 'Vendido', valor_venda = COALESCE(valor_venda, $3)" : ''}
      WHERE id = $2`,
-    [alvo.id, lead.id]
+    updateLeadParams
   );
 
   log('info', 'webhook_evo_journey', { lead_id: lead.id, stage: alvo.name, concept: alvo.event_concept, sent: r.sent });
