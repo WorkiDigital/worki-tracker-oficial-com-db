@@ -201,10 +201,23 @@ async function chatSelectConversation(index) {
     if (!conversation) return;
     chatState.selected = conversation;
     chatRenderConversations();
+    chatMobileShowThread();
     await Promise.all([
         chatLoadMessages(conversation),
         chatLoadLead(conversation)
     ]);
+}
+
+// ── Navegacao mobile (lista / conversa / lead como telas separadas) ──
+function chatMobileShowList() {
+    $('chatMonitorShell')?.classList.remove('mobile-show-thread', 'mobile-show-lead');
+}
+function chatMobileShowThread() {
+    $('chatMonitorShell')?.classList.remove('mobile-show-lead');
+    $('chatMonitorShell')?.classList.add('mobile-show-thread');
+}
+function chatMobileShowLead() {
+    $('chatMonitorShell')?.classList.add('mobile-show-thread', 'mobile-show-lead');
 }
 
 async function chatLoadMessages(conversation) {
@@ -472,3 +485,6 @@ window.chatMonitorRefresh = chatMonitorRefresh;
 window.chatStopPolling = chatStopPolling;
 window.chatSelectConversation = chatSelectConversation;
 window.chatLoadMedia = chatLoadMedia;
+window.chatMobileShowList = chatMobileShowList;
+window.chatMobileShowThread = chatMobileShowThread;
+window.chatMobileShowLead = chatMobileShowLead;

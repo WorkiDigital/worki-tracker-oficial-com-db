@@ -989,7 +989,7 @@
                 </div>
             </div>
 
-            <div class="chat-monitor-shell">
+            <div class="chat-monitor-shell" id="chatMonitorShell">
                 <aside class="chat-panel chat-list-panel">
                     <div class="chat-panel-head">
                         <div class="chat-panel-title">
@@ -1005,10 +1005,16 @@
 
                 <section class="chat-panel chat-thread-panel">
                     <div class="chat-panel-head">
+                        <button type="button" class="chat-mobile-back" id="chatMobileBack" onclick="chatMobileShowList()" title="Voltar">
+                            <i data-lucide="arrow-left"></i>
+                        </button>
                         <div class="chat-panel-title">
                             <strong id="chatThreadTitle">Conversa</strong>
                             <span id="chatThreadMeta">Retencao de 15 dias</span>
                         </div>
+                        <button type="button" class="chat-mobile-lead-btn" id="chatMobileLeadBtn" onclick="chatMobileShowLead()" title="Ver dados do lead">
+                            <i data-lucide="user-round"></i>
+                        </button>
                     </div>
                     <div class="chat-messages-list" id="chatMessagesList">
                         <div class="chat-empty"><i data-lucide="messages-square"></i><span>Selecione uma conversa</span></div>
@@ -1017,6 +1023,9 @@
 
                 <aside class="chat-panel chat-lead-panel">
                     <div class="chat-panel-head">
+                        <button type="button" class="chat-mobile-back chat-mobile-back-lead" onclick="chatMobileShowThread()" title="Voltar">
+                            <i data-lucide="arrow-left"></i>
+                        </button>
                         <div class="chat-panel-title">
                             <strong>Lead</strong>
                             <span>Dados vinculados</span>
