@@ -56,16 +56,27 @@ async function chatLoadClientFilter() {
     if (!select) return;
     if (!user.is_admin) {
         select.style.display = 'none';
+        select.disabled = true;
         return;
     }
     select.style.display = '';
-    select.innerHTML = '<option value="">Todos os clientes</option>';
+    select.disabled = false;
+    const previous = select.value;
+    select.innerHTML = '<option value="">Carregando clientes...</option>';
     try {
-        const res = await authFetch('/api/clientes');
-        const clients = await readApiJson(res, 'Falha ao carregar clientes');
-        select.innerHTML += clients.map(c => `<option value="${esc(c.id)}">${esc(c.nome || c.email_contato || c.id)}</option>`).join('');
+        const res = await authFetch('/api/chat-messages?action=list_clients');
+        const clients = await readApiJson(res, 'Falha ao carregar clientes com conversas');
+        if (!Array.isArray(clients) || !clients.length) {
+            select.innerHTML = '<option value="">Sem clientes com conversas</option>';
+            select.disabled = true;
+            return;
+        }
+        select.innerHTML = clients.map(c => `<option value="${esc(c.id)}">${esc(c.nome || c.id)}</option>`).join('');
+        const stillExists = clients.some(c => String(c.id) === String(previous));
+        select.value = stillExists ? previous : String(clients[0].id);
     } catch (e) {
         select.innerHTML = '<option value="">Clientes indisponiveis</option>';
+        select.disabled = true;
     }
 }
 
@@ -109,6 +120,7 @@ function chatStopPolling() {
 }
 
 async function chatMonitorRefresh() {
+    await chatLoadClientFilter();
     await chatLoadInstances();
     await chatLoadConversations(false);
 }

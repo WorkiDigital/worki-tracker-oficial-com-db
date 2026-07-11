@@ -40,6 +40,29 @@ export default async function handler(req, res) {
   try {
     await ensureChatMessagesSchema();
 
+    if (action === 'list_clients') {
+      const where = [`m.message_at >= NOW() - INTERVAL '15 days'`];
+      const params = [];
+      if (!user.is_admin) {
+        params.push(user.cliente_id);
+        where.push(`m.cliente_id = $${params.length}`);
+      }
+
+      const result = await pool.query(`
+        SELECT
+          m.cliente_id AS id,
+          COALESCE(NULLIF(cli.nome, ''), cli.email_contato, m.cliente_id::text) AS nome,
+          COUNT(*)::int AS message_count,
+          MAX(m.message_at) AS last_message_at
+        FROM public.chat_messages m
+        LEFT JOIN public.clientes cli ON cli.id = m.cliente_id
+        WHERE ${where.join(' AND ')}
+        GROUP BY m.cliente_id, cli.nome, cli.email_contato
+        ORDER BY MAX(m.message_at) DESC, nome ASC
+      `, params);
+
+      return res.status(200).json(result.rows);
+    }
     if (action === 'list_conversations') {
       const where = [`m.message_at >= NOW() - INTERVAL '15 days'`];
       const params = [];
