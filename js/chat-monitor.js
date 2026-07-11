@@ -221,6 +221,22 @@ async function chatLoadMessages(conversation) {
 }
 
 const CHAT_AUTOLOAD_TYPES = new Set(['audio', 'image', 'sticker', 'video']);
+const CHAT_AUTOLOAD_CONCURRENCY = 2;
+let chatAutoloadToken = 0;
+
+async function chatAutoloadMediaQueue(messages, token) {
+    const queue = messages.filter(m => CHAT_AUTOLOAD_TYPES.has(m.message_type) && chatSafeUrl(m.media_url));
+    let cursor = 0;
+    async function worker() {
+        while (cursor < queue.length) {
+            if (token !== chatAutoloadToken) return; // conversa trocou, aborta fila
+            const m = queue[cursor++];
+            await chatLoadMedia(m.id, null, m.message_type);
+        }
+    }
+    const workers = Array.from({ length: Math.min(CHAT_AUTOLOAD_CONCURRENCY, queue.length) }, worker);
+    await Promise.all(workers);
+}
 
 function chatRenderMessages(messages) {
     const box = $('chatMessagesList');
@@ -242,11 +258,8 @@ function chatRenderMessages(messages) {
     box.scrollTop = box.scrollHeight;
     lucide.createIcons({ nodes: [box] });
 
-    messages.forEach(m => {
-        if (CHAT_AUTOLOAD_TYPES.has(m.message_type) && chatSafeUrl(m.media_url)) {
-            chatLoadMedia(m.id, null, m.message_type);
-        }
-    });
+    const token = ++chatAutoloadToken;
+    chatAutoloadMediaQueue(messages, token);
 }
 
 function chatRenderMedia(message) {
