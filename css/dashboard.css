@@ -938,6 +938,13 @@ html.light .chat-media-audio-play, html.light .chat-media-load-btn { background:
 html.light .chat-media-audio-play:hover, html.light .chat-media-load-btn:hover { background:rgba(0,0,0,.09); }
 .chat-media-audio-play i, .chat-media-load-btn i { width:14px; height:14px; flex-shrink:0; }
 .chat-media-audio-play .spinner, .chat-media-load-btn .spinner { animation:spin 1s linear infinite; }
+.chat-media-loading, .chat-media-error {
+  display:inline-flex; align-items:center; gap:8px;
+  opacity:.75; font-size:12.5px; padding:7px 2px;
+}
+.chat-media-error { color:#ef4444; opacity:1; }
+.chat-media-loading i, .chat-media-error i { width:14px; height:14px; flex-shrink:0; }
+.chat-media-loading .spinner { animation:spin 1s linear infinite; }
 .chat-lead-card { padding:14px; }
 .chat-lead-head { display:flex; align-items:center; gap:10px; padding-bottom:14px; border-bottom:1px solid var(--border); margin-bottom:14px; }
 .chat-lead-head div { min-width:0; display:flex; flex-direction:column; gap:3px; }
