@@ -24,6 +24,17 @@ export async function ensureChatMessagesSchema() {
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
 
+        ALTER TABLE public.chat_messages
+          ADD COLUMN IF NOT EXISTS lead_id INTEGER REFERENCES public.leads_tracking(id) ON DELETE SET NULL,
+          ADD COLUMN IF NOT EXISTS remote_jid VARCHAR(255),
+          ADD COLUMN IF NOT EXISTS push_name VARCHAR(255),
+          ADD COLUMN IF NOT EXISTS from_me BOOLEAN NOT NULL DEFAULT FALSE,
+          ADD COLUMN IF NOT EXISTS message_id VARCHAR(255),
+          ADD COLUMN IF NOT EXISTS body TEXT,
+          ADD COLUMN IF NOT EXISTS message_type VARCHAR(50) DEFAULT 'text',
+          ADD COLUMN IF NOT EXISTS media_url TEXT,
+          ADD COLUMN IF NOT EXISTS message_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
         CREATE INDEX IF NOT EXISTS idx_chat_messages_cliente_instance
           ON public.chat_messages(cliente_id, instance, message_at DESC);
         CREATE INDEX IF NOT EXISTS idx_chat_messages_thread
