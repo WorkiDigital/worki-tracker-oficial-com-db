@@ -966,14 +966,10 @@ html.light .chat-media-audio-play:hover, html.light .chat-media-load-btn:hover {
 .spinner { animation:spin 1s linear infinite; }
 html.light .chat-monitor-shell, html.light .chat-monitor-select, html.light .chat-monitor-search { background:#fff; }
 html.light .chat-bubble.from-them { background:#f8fafc; }
-@media(max-width:1180px) {
-  .chat-monitor-shell { height:auto; min-height:0; grid-template-columns:minmax(240px, 300px) minmax(320px, 1fr); }
-  .chat-lead-panel { grid-column:1/-1; min-height:260px; border-left:0 !important; border-top:1px solid var(--border); }
-}
 .chat-mobile-back, .chat-mobile-lead-btn { display:none; background:none; border:none; color:var(--text); cursor:pointer; padding:6px; border-radius:8px; flex-shrink:0; align-items:center; justify-content:center; }
 .chat-mobile-back:hover, .chat-mobile-lead-btn:hover { background:var(--hover); }
 .chat-mobile-back i, .chat-mobile-lead-btn i { width:19px; height:19px; }
-@media(max-width:780px) {
+@media(max-width:1180px) {
   .chat-monitor-toolbar { align-items:stretch; }
   .chat-monitor-filters, .chat-monitor-search, .chat-monitor-select { width:100%; max-width:none; }
   .chat-monitor-note { white-space:normal; }
