@@ -743,6 +743,9 @@
         <a id="btn-leads"      class="nav-item active"  onclick="mudarAba('leads')">
             <i data-lucide="users"       style="width:17px;flex-shrink:0;"></i><span>Leads</span>
         </a>
+        <a id="btn-conversas" class="nav-item" onclick="mudarAba('conversas')">
+            <i data-lucide="messages-square" style="width:17px;flex-shrink:0;"></i><span>Conversas</span>
+        </a>
         <a id="btn-relatorios" class="nav-item"          onclick="mudarAba('relatorios')">
             <i data-lucide="bar-chart-2" style="width:17px;flex-shrink:0;"></i><span>Relatórios</span>
         </a>
@@ -960,6 +963,66 @@
             </div>
         </div>
 
+        <!-- ABA: CONVERSAS -->
+        <div id="aba-conversas" class="aba-oculta">
+            <div class="chat-monitor-toolbar">
+                <div class="chat-monitor-filters">
+                    <select id="chatClienteFilter" class="chat-monitor-select" aria-label="Cliente"></select>
+                    <select id="chatInstanceFilter" class="chat-monitor-select" aria-label="Instancia">
+                        <option value="">Todas as instancias</option>
+                    </select>
+                    <div class="chat-monitor-search">
+                        <i data-lucide="search" style="width:14px;height:14px;flex-shrink:0;"></i>
+                        <input id="chatSearchInput" type="search" placeholder="Buscar contato ou telefone..." autocomplete="off" spellcheck="false">
+                    </div>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                    <span class="chat-monitor-note"><i data-lucide="clock" style="width:14px;height:14px;"></i> Retencao: 15 dias</span>
+                    <button class="btn btn-ghost btn-sm" onclick="chatMonitorRefresh()" title="Atualizar conversas">
+                        <i data-lucide="refresh-cw" style="width:12px;"></i> Atualizar
+                    </button>
+                </div>
+            </div>
+
+            <div class="chat-monitor-shell">
+                <aside class="chat-panel chat-list-panel">
+                    <div class="chat-panel-head">
+                        <div class="chat-panel-title">
+                            <strong>Conversas</strong>
+                            <span>WhatsApp comercial</span>
+                        </div>
+                        <span class="chat-count-badge" id="chatConversationCount">0</span>
+                    </div>
+                    <div class="chat-conversations-list" id="chatConversationsList">
+                        <div class="chat-empty"><i data-lucide="inbox"></i><span>Nenhuma conversa carregada</span></div>
+                    </div>
+                </aside>
+
+                <section class="chat-panel chat-thread-panel">
+                    <div class="chat-panel-head">
+                        <div class="chat-panel-title">
+                            <strong id="chatThreadTitle">Conversa</strong>
+                            <span id="chatThreadMeta">Retencao de 15 dias</span>
+                        </div>
+                    </div>
+                    <div class="chat-messages-list" id="chatMessagesList">
+                        <div class="chat-empty"><i data-lucide="messages-square"></i><span>Selecione uma conversa</span></div>
+                    </div>
+                </section>
+
+                <aside class="chat-panel chat-lead-panel">
+                    <div class="chat-panel-head">
+                        <div class="chat-panel-title">
+                            <strong>Lead</strong>
+                            <span>Dados vinculados</span>
+                        </div>
+                    </div>
+                    <div class="chat-lead-card" id="chatLeadCard">
+                        <div class="chat-empty compact"><i data-lucide="user-round"></i><span>Nenhum lead selecionado</span></div>
+                    </div>
+                </aside>
+            </div>
+        </div>
         <!-- ABA: ANÚNCIOS -->
         <div id="aba-anuncios" class="aba-oculta">
             <div class="ads-error" id="ads-error"></div>
@@ -2522,6 +2585,7 @@ async function init() {
             const p = user.permissoes || {};
             const tabMap = {
                 'btn-leads':           p.leads          !== false,
+                'btn-conversas':       p.whatsapp       !== false,
                 'btn-anuncios':        p.anuncios       !== false,
                 'btn-relatorios':      p.relatorios     !== false,
                 'btn-whatsapp':        p.whatsapp       !== false,
@@ -4960,9 +5024,10 @@ document.addEventListener('keydown', e => {
 });
 
 // ── Abas ───────────────────────────────────────────────────────
-const ABAS = ['leads','relatorios','anuncios','captacao','inteligente','clientes','conta','config','ajustes','agencia','whatsapp','zaprelatorios','logs'];
+const ABAS = ['leads','conversas','relatorios','anuncios','captacao','inteligente','clientes','conta','config','ajustes','agencia','whatsapp','zaprelatorios','logs'];
 const TITULOS = {
     leads:          '<i data-lucide="users" style="color:var(--blue);"></i> Leads',
+    conversas:      '<i data-lucide="messages-square" style="color:#25D366;"></i> Conversas',
     relatorios:     '<i data-lucide="bar-chart-2" style="color:var(--blue);"></i> Relatórios',
     anuncios:       '<img src="https://cdn.simpleicons.org/meta/0082FB" style="width:16px;height:16px;display:inline;vertical-align:-2px;margin-right:6px;" alt="Meta"> Meta Ads',
     captacao:       '<i data-lucide="link" style="color:var(--blue);"></i> Link de rastreamento',
@@ -4979,6 +5044,7 @@ const TITULOS = {
 
 function mudarAba(aba) {
     if (typeof waPollTimer !== 'undefined' && waPollTimer) { clearInterval(waPollTimer); waPollTimer = null; }
+    if (aba !== 'conversas' && typeof chatStopPolling === 'function') chatStopPolling();
     ABAS.forEach(a => {
         const el = $('aba-'+a); if(el) el.classList.add('aba-oculta');
         const btn = $('btn-'+a); if(btn) btn.classList.remove('active');
@@ -4988,6 +5054,7 @@ function mudarAba(aba) {
     $('titulo-pagina').innerHTML = TITULOS[aba]||'';
     $('leadsControls').style.display = ['leads','relatorios'].includes(aba) ? 'flex' : 'none';
     lucide.createIcons({ nodes:[$('titulo-pagina')] });
+    if (aba === 'conversas' && typeof chatMonitorInit === 'function') { chatMonitorInit(); }
     if (aba === 'anuncios' && !adsCarregado) carregarAnuncios();
     if (aba === 'captacao') { carregarCampanhasLink(); }
     if (aba === 'inteligente') { capIntCarregar(); }
@@ -5833,6 +5900,7 @@ function resetLeadSearchAutofill() {
 }
 </script>
 <script defer src="js/leads.js?v=20260622-1"></script>
+<script defer src="js/chat-monitor.js?v=20260710-1"></script>
 <script defer src="js/admin.js?v=20260622-4"></script>
 <script defer src="js/reports-auto.js"></script>
 <script defer src="js/captacao.js?v=20260622-6"></script>

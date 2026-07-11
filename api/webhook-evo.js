@@ -7,6 +7,7 @@ import { ensureTrackingSchema } from './_tracking-schema.js';
 import { enviarConversao, extrairValor } from './_capi.js';
 import { log } from './_logger.js';
 import { limparTextoDecorativo } from './_text-sanitize.js';
+import { ensureChatMessagesSchema } from './_chat-schema.js';
 
 // ── Handler principal — recebe payload bruto da Evolution API ──
 export default async function handler(req, res) {
@@ -98,101 +99,75 @@ export default async function handler(req, res) {
   const message = msgData.message || {};
   const pushName = msgData.pushName || msgData.pushname || '';
 
-  // ── 4. Mensagens enviadas pelo próprio número (fromMe) ──
-  // Em vez de ignorar, aproveita para registrar a primeira resposta da empresa ao lead.
-  if (key.fromMe === true) {
-    const remoteJidFm = key.remoteJid || '';
-    if (!remoteJidFm.includes('@g.us') && !remoteJidFm.includes('@broadcast')) {
-      const telefoneFm = remoteJidFm.replace(/@s\.whatsapp\.net$/, '').replace(/\D/g, '');
-      if (telefoneFm) {
-        try {
-          const pool = getPool();
-          // Extrai instância aqui pois ainda não foi declarada no escopo principal
-          const instanceFm = body.instance || body.instanceName || body.sender?.instance || body.apiType || '';
-          // Resolve cliente_id pela instância
-          let clienteIdFm = null;
-          const matchFm = String(instanceFm).match(/^cliente_(\d+)_/);
-          if (matchFm) clienteIdFm = parseInt(matchFm[1]);
-          if (!clienteIdFm && instanceFm) {
-            const mapFm = await pool.query(
-              'SELECT cliente_id FROM instancias_mapeamento WHERE instance_name = $1', [instanceFm]
-            );
-            if (mapFm.rows.length > 0) clienteIdFm = mapFm.rows[0].cliente_id;
-          }
-          if (clienteIdFm) {
-            // Preenche first_response_at apenas no lead mais recente sem resposta
-            const upd = await pool.query(`
-              UPDATE leads_tracking
-              SET first_response_at = NOW()
-              WHERE id = (
-                SELECT id FROM leads_tracking
-                WHERE telefone = $1 AND cliente_id = $2 AND first_response_at IS NULL
-                ORDER BY created_at DESC
-                LIMIT 1
-              )
-              RETURNING id
-            `, [telefoneFm, clienteIdFm]);
-            if (upd.rows.length > 0) {
-              log('info', 'webhook_evo_first_response', { lead_id: upd.rows[0].id, telefoneFm });
-            }
+  const instance = extrairInstancia(body);
+  const remoteJid = key.remoteJid || '';
+  const isMensagemPrivada = !remoteJid.includes('@g.us') && !remoteJid.includes('@broadcast');
+  const telefone = isMensagemPrivada
+    ? remoteJid.replace(/@s\.whatsapp\.net$/, '').replace(/\D/g, '')
+    : '';
+  const mensagem_bruta = extrairTextoMensagem(message);
+  const { trackingId: clickTrackingId, cleanMessage: mensagem_recebida } = decodeToken(mensagem_bruta);
+  let cliente_id = await resolverClienteIdPorInstancia(instance);
 
-            // ── Jornada de conversões: gatilho por palavra-chave do comercial ──
-            // Best-effort e isolado: qualquer falha aqui NUNCA derruba o webhook.
-            // Usa SOMENTE variáveis locais (clienteIdFm/telefoneFm) — 'instance'
-            // não existe neste escopo (roda antes da declaração principal).
-            try {
-              const textoFm = (
-                message.conversation ||
-                message.extendedTextMessage?.text ||
-                message.imageMessage?.caption ||
-                message.videoMessage?.caption ||
-                message.documentMessage?.caption ||
-                message.buttonsResponseMessage?.selectedDisplayText ||
-                message.listResponseMessage?.title || ''
-              );
-              if (textoFm.trim()) {
-                await processarJornadaFromMe(pool, { clienteIdFm, telefoneFm, textoFm });
-              }
-            } catch (e) {
-              log('warn', 'webhook_evo_journey_fail', { error: e.message });
-            }
+  if (isMensagemPrivada && telefone && cliente_id) {
+    await salvarChatMessageBestEffort({
+      cliente_id,
+      instance,
+      telefone,
+      remoteJid,
+      pushName,
+      fromMe: key.fromMe === true,
+      messageId: key.id || msgData.messageId || msgData.id || null,
+      body: mensagem_recebida || mensagem_bruta || null,
+      messageType: detectarTipoMensagem(message),
+      mediaUrl: extrairMediaUrl(message),
+      messageAt: extrairDataMensagem(msgData)
+    });
+  }
+  // ── 4. Mensagens enviadas pelo próprio número (fromMe) ──
+  // -- 4. Mensagens enviadas pelo proprio numero (fromMe) --
+  // Tambem entram no monitor de conversa; depois disso mantemos o fluxo atual.
+  if (key.fromMe === true) {
+    if (isMensagemPrivada && telefone && cliente_id) {
+      try {
+        const pool = getPool();
+        const upd = await pool.query(`
+          UPDATE leads_tracking
+          SET first_response_at = NOW()
+          WHERE id = (
+            SELECT id FROM leads_tracking
+            WHERE telefone = $1 AND cliente_id = $2 AND first_response_at IS NULL
+            ORDER BY created_at DESC
+            LIMIT 1
+          )
+          RETURNING id
+        `, [telefone, cliente_id]);
+        if (upd.rows.length > 0) {
+          log('info', 'webhook_evo_first_response', { lead_id: upd.rows[0].id, telefone });
+        }
+
+        try {
+          const textoFm = mensagem_recebida || mensagem_bruta || '';
+          if (textoFm.trim()) {
+            await processarJornadaFromMe(pool, { clienteIdFm: cliente_id, telefoneFm: telefone, textoFm });
           }
         } catch (e) {
-          log('warn', 'webhook_evo_first_response_fail', { error: e.message });
+          log('warn', 'webhook_evo_journey_fail', { error: e.message });
         }
+      } catch (e) {
+        log('warn', 'webhook_evo_first_response_fail', { error: e.message });
       }
     }
-    return res.status(200).json({ ignored: true, reason: 'Mensagem enviada (fromMe) — first_response_at atualizado se aplicável.' });
+    return res.status(200).json({ ignored: true, reason: 'Mensagem enviada (fromMe) - first_response_at atualizado se aplicavel.' });
   }
-
   // ── 5. Extrair telefone do remoteJid ──
-  const remoteJid = key.remoteJid || '';
-  // Ignora grupos (g.us) e broadcasts
-  if (remoteJid.includes('@g.us') || remoteJid.includes('@broadcast')) {
+  // -- 5/6. Validar conversa privada e telefone ja normalizados --
+  if (!isMensagemPrivada) {
     return res.status(200).json({ ignored: true, reason: 'Mensagem de grupo/broadcast ignorada.' });
   }
-  const telefone = remoteJid.replace(/@s\.whatsapp\.net$/, '').replace(/\D/g, '');
   if (!telefone) {
-    return res.status(200).json({ ignored: true, reason: 'Sem telefone válido.' });
+    return res.status(200).json({ ignored: true, reason: 'Sem telefone valido.' });
   }
-
-  // ── 6. Extrair texto da mensagem ──
-  const mensagem_bruta =
-    message.conversation ||
-    message.extendedTextMessage?.text ||
-    message.imageMessage?.caption ||
-    message.videoMessage?.caption ||
-    message.documentMessage?.caption ||
-    message.buttonsResponseMessage?.selectedDisplayText ||
-    message.listResponseMessage?.title ||
-    '';
-
-  // ── 6b. Decodificar token invisível (link rastreável, Fase 2) ──
-  // Extrai o tracking_id (se houver) e limpa o bloco invisível da mensagem.
-  // A mensagem salva/exibida é a versão limpa.
-  const { trackingId: clickTrackingId, cleanMessage: mensagem_recebida } = decodeToken(mensagem_bruta);
-
-  // ── 7. Extrair dados CTWA (Click-to-WhatsApp Ads) ──
   // A Evolution manda o contextInfo em locais diferentes conforme a versão.
   // Em algumas versões vem direto em body.data.contextInfo (msgData.contextInfo),
   // em outras dentro de message.* — por isso checamos todos.
@@ -229,37 +204,7 @@ export default async function handler(req, res) {
     externalAdReply.thumbnail ||
     '';
 
-  // ── 8. Extrair nome da instância ──
-  const instance =
-    body.instance ||
-    body.instanceName ||
-    body.sender?.instance ||
-    body.apiType ||
-    '';
-
-  // ── 9. Resolver cliente_id ──
-  let cliente_id = null;
-
-  // 9a. Tentar pelo prefixo da instância (ex: "cliente_7_Loja" → 7)
-  if (instance) {
-    const match = String(instance).match(/^cliente_(\d+)_/);
-    if (match) cliente_id = parseInt(match[1]);
-  }
-
-  // 9b. Fallback: buscar na tabela de mapeamento
-  if (!cliente_id && instance) {
-    try {
-      const pool = getPool();
-      const map = await pool.query(
-        'SELECT cliente_id FROM instancias_mapeamento WHERE instance_name = $1',
-        [instance]
-      );
-      if (map.rows.length > 0) cliente_id = map.rows[0].cliente_id;
-    } catch (e) {
-      log('warn', 'webhook_evo_db_lookup_fail', { instance, error: e.message });
-    }
-  }
-
+  // -- 8/9. Instancia e cliente_id ja foram resolvidos acima para salvar o chat --
   if (!cliente_id) {
     log('warn', 'webhook_evo_no_client', { instance, telefone });
     return res.status(400).json({
@@ -470,6 +415,7 @@ export default async function handler(req, res) {
             [lead.id]
           );
           await writeClient.query('COMMIT');
+          await vincularChatAoLeadBestEffort({ cliente_id, telefone, leadId: lead.id });
           return res.status(200).json({
             ok: true,
             interaction: true,
@@ -505,6 +451,7 @@ export default async function handler(req, res) {
 
       if (dupeCheck.rows.length > 0) {
         await writeClient.query('ROLLBACK');
+        await vincularChatAoLeadBestEffort({ cliente_id, telefone, leadId: dupeCheck.rows[0].id });
         return res.status(200).json({
           ignored: true,
           reason: `Lead duplicado (${lead_origin}).`,
@@ -550,6 +497,10 @@ export default async function handler(req, res) {
       throw e;
     } finally {
       writeClient.release();
+    }
+
+    if (lead?.id) {
+      await vincularChatAoLeadBestEffort({ cliente_id, telefone, leadId: lead.id });
     }
 
     // CAPI Web (conversão do link) roda depois do COMMIT; falha externa nunca
@@ -651,6 +602,138 @@ export default async function handler(req, res) {
   }
 }
 
+function extrairInstancia(body) {
+  return body.instance || body.instanceName || body.sender?.instance || body.apiType || '';
+}
+
+async function resolverClienteIdPorInstancia(instance) {
+  let clienteId = null;
+  if (instance) {
+    const match = String(instance).match(/^cliente_(\d+)_/);
+    if (match) clienteId = parseInt(match[1], 10);
+  }
+  if (!clienteId && instance) {
+    try {
+      const map = await getPool().query(
+        'SELECT cliente_id FROM instancias_mapeamento WHERE instance_name = $1',
+        [instance]
+      );
+      clienteId = map.rows[0]?.cliente_id || null;
+    } catch (e) {
+      log('warn', 'webhook_evo_db_lookup_fail', { instance, error: e.message });
+    }
+  }
+  return clienteId;
+}
+
+function extrairTextoMensagem(message = {}) {
+  return message.conversation ||
+    message.extendedTextMessage?.text ||
+    message.imageMessage?.caption ||
+    message.videoMessage?.caption ||
+    message.documentMessage?.caption ||
+    message.buttonsResponseMessage?.selectedDisplayText ||
+    message.listResponseMessage?.title ||
+    '';
+}
+
+function detectarTipoMensagem(message = {}) {
+  if (message.imageMessage) return 'image';
+  if (message.audioMessage) return 'audio';
+  if (message.videoMessage) return 'video';
+  if (message.documentMessage) return 'document';
+  if (message.stickerMessage) return 'sticker';
+  if (message.buttonsResponseMessage) return 'button';
+  if (message.listResponseMessage) return 'list';
+  if (message.conversation || message.extendedTextMessage) return 'text';
+  return 'unknown';
+}
+
+function extrairMediaUrl(message = {}) {
+  return message.imageMessage?.url || message.imageMessage?.mediaUrl ||
+    message.audioMessage?.url || message.audioMessage?.mediaUrl ||
+    message.videoMessage?.url || message.videoMessage?.mediaUrl ||
+    message.documentMessage?.url || message.documentMessage?.mediaUrl ||
+    message.stickerMessage?.url || message.stickerMessage?.mediaUrl ||
+    null;
+}
+
+function extrairDataMensagem(msgData = {}) {
+  const raw = msgData.messageTimestamp || msgData.timestamp || msgData.date_time || msgData.createdAt;
+  if (!raw) return new Date();
+  if (raw instanceof Date) return raw;
+  const numeric = Number(raw);
+  if (Number.isFinite(numeric)) {
+    return new Date(numeric > 1e12 ? numeric : numeric * 1000);
+  }
+  const parsed = Date.parse(raw);
+  return Number.isFinite(parsed) ? new Date(parsed) : new Date();
+}
+
+async function salvarChatMessageBestEffort({
+  cliente_id, instance, telefone, remoteJid, pushName, fromMe, messageId,
+  body, messageType, mediaUrl, messageAt
+}) {
+  try {
+    await ensureChatMessagesSchema();
+    const pool = getPool();
+    const leadRes = await pool.query(
+      `SELECT id FROM leads_tracking
+       WHERE cliente_id = $1 AND telefone = $2
+       ORDER BY created_at DESC NULLS LAST, id DESC
+       LIMIT 1`,
+      [cliente_id, telefone]
+    );
+    const leadId = leadRes.rows[0]?.id || null;
+
+    await pool.query(`
+      INSERT INTO public.chat_messages
+        (cliente_id, lead_id, instance, telefone, remote_jid, push_name, from_me,
+         message_id, body, message_type, media_url, message_at)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+      ON CONFLICT (instance, message_id) WHERE message_id IS NOT NULL
+      DO UPDATE SET
+        lead_id = COALESCE(public.chat_messages.lead_id, EXCLUDED.lead_id),
+        push_name = COALESCE(NULLIF(EXCLUDED.push_name, ''), public.chat_messages.push_name),
+        body = COALESCE(EXCLUDED.body, public.chat_messages.body),
+        message_type = COALESCE(EXCLUDED.message_type, public.chat_messages.message_type),
+        media_url = COALESCE(EXCLUDED.media_url, public.chat_messages.media_url)
+    `, [
+      cliente_id,
+      leadId,
+      instance,
+      telefone,
+      remoteJid,
+      limparTextoDecorativo(pushName) || null,
+      !!fromMe,
+      messageId,
+      body,
+      messageType || 'unknown',
+      mediaUrl || null,
+      messageAt || new Date()
+    ]);
+  } catch (e) {
+    log('warn', 'webhook_evo_chat_save_fail', { error: e.message, instance, telefone });
+  }
+}
+
+async function vincularChatAoLeadBestEffort({ cliente_id, telefone, leadId }) {
+  if (!cliente_id || !telefone || !leadId) return;
+  try {
+    await ensureChatMessagesSchema();
+    await getPool().query(
+      `UPDATE public.chat_messages
+       SET lead_id = $1
+       WHERE cliente_id = $2
+         AND telefone = $3
+         AND lead_id IS NULL
+         AND message_at >= NOW() - INTERVAL '15 days'`,
+      [leadId, cliente_id, telefone]
+    );
+  } catch (e) {
+    log('warn', 'webhook_evo_chat_link_fail', { error: e.message, leadId, telefone });
+  }
+}
 async function gravarLogWebhook({ cliente_id, instance, tag, level, message, data }) {
   try {
     await getPool().query(

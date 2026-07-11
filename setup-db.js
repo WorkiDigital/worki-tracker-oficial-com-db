@@ -472,6 +472,37 @@ async function setup() {
     await client.query(`CREATE INDEX IF NOT EXISTS idx_logs_tag ON webhook_logs(tag);`);
     console.log('✅ Tabela "webhook_logs" e índices verificados/criados.');
 
+    // Monitor de Conversas WhatsApp: mensagens retidas por ate 15 dias
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS public.chat_messages (
+        id SERIAL PRIMARY KEY,
+        cliente_id INTEGER NOT NULL REFERENCES public.clientes(id) ON DELETE CASCADE,
+        lead_id INTEGER REFERENCES public.leads_tracking(id) ON DELETE SET NULL,
+        instance VARCHAR(255) NOT NULL,
+        telefone VARCHAR(50) NOT NULL,
+        remote_jid VARCHAR(255),
+        push_name VARCHAR(255),
+        from_me BOOLEAN NOT NULL DEFAULT FALSE,
+        message_id VARCHAR(255),
+        body TEXT,
+        message_type VARCHAR(50) DEFAULT 'text',
+        media_url TEXT,
+        message_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_chat_messages_cliente_instance
+        ON public.chat_messages(cliente_id, instance, message_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_chat_messages_thread
+        ON public.chat_messages(cliente_id, instance, telefone, message_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_chat_messages_ttl
+        ON public.chat_messages(message_at);
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_chat_messages_dedup
+        ON public.chat_messages(instance, message_id)
+        WHERE message_id IS NOT NULL;
+    `);
+    console.log('✅ Tabela "chat_messages" e índices verificados/criados.');
     // Dados iniciais de White-label (apenas se não existirem)
     const currentLogo = `<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0"><rect width="32" height="32" rx="8" fill="#3b82f6"/><rect x="6" y="18" width="4" height="8" rx="1.5" fill="white" opacity="0.6"/><rect x="12" y="13" width="4" height="13" rx="1.5" fill="white" opacity="0.8"/><rect x="18" y="8" width="4" height="18" rx="1.5" fill="white"/><polyline points="21,6 25,6 25,10" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/><line x1="18" y1="9" x2="25" y2="6" stroke="white" stroke-width="1.8" stroke-linecap round/></svg>`;
     

@@ -294,6 +294,7 @@ server.listen(PORT, () => {
     console.log(`✅ Dev server running at http://localhost:${PORT}`);
     console.log(`   API routes: /api/leads, /api/config, /api/ads, /api/ads-accounts`);
     iniciarCronZap();
+    iniciarCronChatCleanup();
 });
 
 async function iniciarCronZap() {
@@ -304,17 +305,32 @@ async function iniciarCronZap() {
             catch (e) { console.error('[CronZap]', e.message); }
         };
         setInterval(tick, 60_000);
-        console.log('⏰ CronZap iniciado — verifica agendamentos a cada 60s');
+        console.log('[CronZap] iniciado - verifica agendamentos a cada 60s');
     } catch (e) {
         console.error('[CronZap] Falha ao iniciar:', e.message);
     }
 }
 
-// ── Graceful shutdown (evita "npm error signal SIGTERM" no EasyPanel) ──
+async function iniciarCronChatCleanup() {
+    try {
+        const { runChatCleanup } = await import('./api/cron/chat-cleanup.js');
+        const tick = async () => {
+            try { await runChatCleanup(); }
+            catch (e) { console.error('[ChatCleanup]', e.message); }
+        };
+        setInterval(tick, 60 * 60_000);
+        tick();
+        console.log('[ChatCleanup] iniciado - remove mensagens com mais de 15 dias a cada 1h');
+    } catch (e) {
+        console.error('[ChatCleanup] Falha ao iniciar:', e.message);
+    }
+}
+
+// Graceful shutdown
 function shutdown(signal) {
-    console.log(`\n⏹ ${signal} received — shutting down gracefully…`);
+    console.log(`\n${signal} received - shutting down gracefully...`);
     server.close(() => {
-        console.log('✅ HTTP server closed');
+        console.log('HTTP server closed');
         process.exit(0);
     });
     // Force exit after 5s if connections don't close
