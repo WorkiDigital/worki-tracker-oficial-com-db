@@ -165,6 +165,7 @@ function chatRenderConversations() {
         const active = selectedKey === chatConversationKey(c);
         const title = c.lead_nome || c.push_name || c.telefone;
         const preview = c.body || chatMediaLabel(c.message_type);
+        const origemBadge = chatOrigemBadge(c.lead_origin);
         return `<button type="button" class="chat-conversation ${active ? 'active' : ''}" onclick="chatSelectConversation(${idx})">
             <span class="chat-avatar">${esc(chatInitials(title))}</span>
             <span class="chat-conversation-main">
@@ -173,7 +174,10 @@ function chatRenderConversations() {
                     <small>${esc(chatRelativeTime(c.message_at))}</small>
                 </span>
                 <span class="chat-conversation-preview">${c.from_me ? 'Voce: ' : ''}${esc(preview)}</span>
-                <span class="chat-conversation-meta">${esc(c.telefone)} - ${esc(c.instance)}</span>
+                <span class="chat-conversation-meta">
+                    <span>${esc(c.telefone)} - ${esc(c.instance)}</span>
+                    ${origemBadge}
+                </span>
             </span>
         </button>`;
     }).join('');
@@ -367,6 +371,12 @@ function chatRenderEmptyThread() {
     if (box) box.innerHTML = '<div class="chat-empty"><i data-lucide="messages-square"></i><span>Selecione uma conversa</span></div>';
     if (lead) lead.innerHTML = '<div class="chat-empty compact"><i data-lucide="user-round"></i><span>Nenhum lead selecionado</span></div>';
     lucide.createIcons();
+}
+
+function chatOrigemBadge(origem) {
+    if (!origem || typeof obterOrigemLead !== 'function') return '';
+    const info = obterOrigemLead(origem);
+    return `<span class="chat-origem-badge" style="background:${info.bg};color:${info.color};border-color:${info.border};">${esc(info.label)}</span>`;
 }
 
 function chatInitials(value) {
