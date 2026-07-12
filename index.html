@@ -2661,6 +2661,18 @@ async function init() {
     }
 
     carregarMetricsCfg();
+    // Restaura o cliente admin salvo ANTES da primeira busca de leads — sem
+    // isso, o primeiro recarregarLeads() saia sem filtro de cliente (admin ve
+    // todos misturados por uma fracao de segundo) ate popularSeletorAdmin()
+    // terminar de buscar /api/clientes e so entao aplicar o filtro certo.
+    try {
+        const savedUser = JSON.parse(localStorage.getItem('adlytics_user') || '{}');
+        const savedClienteId = localStorage.getItem('wt_admin_cliente_id');
+        if (savedUser?.is_admin && savedClienteId) {
+            clienteAdminSelecionado = parseInt(savedClienteId);
+        }
+    } catch (_) { /* melhor esforço — segue sem filtro se algo der errado */ }
+
     await recarregarLeads();
     await carregarContasAds();
     popularSeletorAdmin();
@@ -2696,14 +2708,23 @@ async function popularSeletorAdmin() {
         sel.appendChild(opt);
     });
     if (clientes.length > 0) {
-        sel.value = clientes[0].id;
-        trocarClienteAdmin(clientes[0].id);
+        // Restaura o cliente que estava selecionado antes do F5 (se ele ainda
+        // existir na lista); senão cai no primeiro. Sem isso, todo reload
+        // forçava de volta pro primeiro cliente da lista, mesmo que outro
+        // estivesse selecionado — sobrescrevendo a tela ~1s depois do carregamento inicial.
+        const savedId = localStorage.getItem('wt_admin_cliente_id');
+        const savedExists = savedId && clientes.some(c => String(c.id) === savedId);
+        const targetId = savedExists ? savedId : clientes[0].id;
+        sel.value = targetId;
+        trocarClienteAdmin(targetId);
     }
 }
 
 function trocarClienteAdmin(id) {
     if (typeof _leadsCache !== 'undefined') _leadsCache.clear();
     clienteAdminSelecionado = id ? parseInt(id) : null;
+    if (id) localStorage.setItem('wt_admin_cliente_id', String(id));
+    else localStorage.removeItem('wt_admin_cliente_id');
     // Mantém os dois seletores (global + o da aba Captação) em sincronia.
     const g = document.getElementById('selectClienteAdmin');
     const c = document.getElementById('capSelectCliente');
