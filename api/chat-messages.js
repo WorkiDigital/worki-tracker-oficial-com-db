@@ -28,13 +28,13 @@ function addInstanceFilter(where, params, instance) {
 }
 
 export default async function handler(req, res) {
-  if (cors(req, res, ['GET'])) return;
+  if (cors(req, res, ['GET', 'POST'])) return;
 
   const user = await verifyAuth(req, res);
   if (!user) return;
   if (await rateLimit(req, res, user)) return;
 
-  const action = req.query?.action || 'list_conversations';
+  const action = req.query?.action || req.body?.action || 'list_conversations';
   const pool = getPool();
 
   try {
@@ -240,6 +240,109 @@ export default async function handler(req, res) {
 
       if (!result.rows.length) return res.status(200).json({ lead: null });
       return res.status(200).json({ lead: result.rows[0] });
+    }
+
+    if (action === 'send_message') {
+      const instance = String(req.body?.instance || '').trim();
+      const telefone = String(req.body?.telefone || '').replace(/\D/g, '');
+      const messageType = String(req.body?.message_type || 'text').trim();
+      if (!instance) return res.status(400).json({ error: 'instance obrigatoria' });
+      if (!telefone) return res.status(400).json({ error: 'telefone obrigatorio' });
+
+      // Escopo do cliente: mesma regra de addScopedClient, mas cliente_id vem do body em POST.
+      const clienteId = user.is_admin
+        ? (parseClienteId(req.body?.cliente_id) || null)
+        : user.cliente_id;
+      if (!clienteId) return res.status(400).json({ error: 'cliente_id obrigatorio' });
+
+      // Validacao de escopo da INSTANCIA (padrao mais rigoroso do projeto, ver
+      // api/evo-groups.js): cliente comum so pode usar instancia com seu prefixo
+      // OU vinculada a ele em instancias_mapeamento.
+      if (!user.is_admin) {
+        const prefix = `cliente_${user.cliente_id}_`;
+        if (!instance.startsWith(prefix)) {
+          const linked = await pool.query(
+            'SELECT id FROM instancias_mapeamento WHERE instance_name = $1 AND cliente_id = $2',
+            [instance, user.cliente_id]
+          );
+          if (linked.rowCount === 0) {
+            return res.status(403).json({ error: 'Acesso negado a esta instancia.' });
+          }
+        }
+      }
+
+      const EVO_URL = process.env.EVOLUTION_API_URL;
+      const EVO_KEY = process.env.EVOLUTION_GLOBAL_KEY;
+      if (!EVO_URL || !EVO_KEY) {
+        return res.status(500).json({ error: 'Configuracao da Evolution API ausente no servidor.' });
+      }
+      const evoHeaders = { 'apikey': EVO_KEY, 'Content-Type': 'application/json' };
+      const number = telefone;
+
+      let evoUrl, evoBody;
+      const caption = req.body?.caption ? String(req.body.caption).trim().slice(0, 4096) : undefined;
+
+      if (messageType === 'text') {
+        const text = String(req.body?.text || '').trim();
+        if (!text) return res.status(400).json({ error: 'text obrigatorio' });
+        evoUrl = `${EVO_URL}/message/sendText/${encodeURIComponent(instance)}`;
+        evoBody = { number, text };
+      } else {
+        const base64 = String(req.body?.media_base64 || '');
+        if (!base64) return res.status(400).json({ error: 'media_base64 obrigatorio' });
+        const mimeType = String(req.body?.mime_type || '').trim();
+        const fileName = String(req.body?.file_name || '').trim().slice(0, 255) || 'arquivo';
+
+        if (messageType === 'audio' && (req.body?.audio_mode || 'file') === 'ptt') {
+          // Nota de voz: endpoint dedicado da Evolution, sem mediatype/fileName.
+          evoUrl = `${EVO_URL}/message/sendWhatsAppAudio/${encodeURIComponent(instance)}`;
+          evoBody = { number, audio: base64 };
+        } else {
+          const mediatype = ['image', 'video', 'audio', 'document'].includes(messageType)
+            ? messageType : 'document';
+          evoUrl = `${EVO_URL}/message/sendMedia/${encodeURIComponent(instance)}`;
+          evoBody = { number, mediatype, media: base64, fileName, mimetype: mimeType || undefined };
+          if (caption) evoBody.caption = caption;
+        }
+      }
+
+      let evoData;
+      try {
+        const evoRes = await fetch(evoUrl, { method: 'POST', headers: evoHeaders, body: JSON.stringify(evoBody) });
+        if (!evoRes.ok) {
+          const text = await evoRes.text().catch(() => '');
+          return res.status(502).json({ error: `Evolution API respondeu ${evoRes.status}: ${text.slice(0, 200)}` });
+        }
+        evoData = await evoRes.json();
+      } catch (evoError) {
+        console.error('[chat-messages] send_message', evoError);
+        return res.status(502).json({ error: 'Falha ao enviar mensagem via Evolution API' });
+      }
+
+      // Evolution retorna key.id da mensagem criada — usar como message_id para
+      // deduplicar com o eco que o webhook eventualmente vai gravar via
+      // salvarChatMessageBestEffort (ON CONFLICT (instance, message_id)).
+      const messageId = evoData?.key?.id || evoData?.message?.key?.id || null;
+      const body = messageType === 'text' ? req.body.text : (caption || null);
+
+      const leadRes = await pool.query(
+        `SELECT id FROM leads_tracking WHERE cliente_id = $1 AND telefone = $2
+         ORDER BY created_at DESC NULLS LAST, id DESC LIMIT 1`,
+        [clienteId, telefone]
+      );
+      const leadId = leadRes.rows[0]?.id || null;
+
+      const insertRes = await pool.query(`
+        INSERT INTO public.chat_messages
+          (cliente_id, lead_id, instance, telefone, from_me, message_id, body, message_type, media_url, message_at)
+        VALUES ($1,$2,$3,$4,true,$5,$6,$7,NULL,NOW())
+        ON CONFLICT (instance, message_id) WHERE message_id IS NOT NULL
+        DO UPDATE SET body = COALESCE(EXCLUDED.body, public.chat_messages.body)
+        RETURNING id, cliente_id, lead_id, instance, telefone, remote_jid, push_name,
+                  from_me, message_id, body, message_type, media_url, message_at, created_at
+      `, [clienteId, leadId, instance, telefone, messageId, body, messageType]);
+
+      return res.status(200).json({ message: insertRes.rows[0] });
     }
 
     return res.status(400).json({ error: 'action invalida' });

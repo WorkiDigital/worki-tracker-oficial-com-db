@@ -5,6 +5,15 @@ const chatState = {
     pollTimer: null,
     searchTimer: null,
     loadingList: false,
+    // Composer
+    currentThreadMessages: [],
+    optimisticMessages: [],
+    pendingAttachment: null,
+    mediaRecorder: null,
+    recordedChunks: [],
+    recordingStartedAt: null,
+    recordingTimerInterval: null,
+    recordingStream: null,
 };
 
 function chatCurrentUser() {
@@ -47,6 +56,30 @@ function chatBindEvents() {
         chatState.selected = null;
         await chatLoadInstances();
         await chatLoadConversations(false);
+    });
+    chatBindComposerEvents();
+}
+
+function chatBindComposerEvents() {
+    const input = $('chatComposerInput');
+    if (!input) return;
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            chatSendComposerMessage();
+        }
+    });
+    input.addEventListener('input', () => {
+        input.style.height = 'auto';
+        input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+        chatUpdateSendButtonState();
+    });
+    document.addEventListener('click', (e) => {
+        const picker = $('chatEmojiPicker');
+        const btn = $('chatEmojiBtn');
+        if (picker && picker.style.display !== 'none' && !picker.contains(e.target) && e.target !== btn && !btn?.contains(e.target)) {
+            picker.style.display = 'none';
+        }
     });
 }
 
@@ -149,6 +182,10 @@ async function chatLoadConversations(silent = false) {
         } else if (!chatState.conversations.length) {
             chatState.selected = null;
             chatRenderEmptyThread();
+        } else if (silent && stillExists) {
+            // Poll silencioso (10s) com conversa ja aberta: recarrega so as mensagens,
+            // sem re-selecionar o card na lista (evita "piscar" a lista lateral).
+            await chatLoadMessages(chatState.selected, true);
         }
     } catch (e) {
         if (!silent) {
@@ -220,15 +257,17 @@ function chatMobileShowLead() {
     $('chatMonitorShell')?.classList.add('mobile-show-thread', 'mobile-show-lead');
 }
 
-async function chatLoadMessages(conversation) {
+async function chatLoadMessages(conversation, silent = false) {
     const box = $('chatMessagesList');
     const title = $('chatThreadTitle');
     const meta = $('chatThreadMeta');
     if (!box) return;
     if (title) title.textContent = conversation.lead_nome || conversation.push_name || conversation.telefone;
     if (meta) meta.textContent = `${conversation.telefone} - ${conversation.instance}`;
-    box.innerHTML = '<div class="chat-empty"><i data-lucide="loader-2" class="spinner"></i><span>Carregando...</span></div>';
-    lucide.createIcons({ nodes: [box] });
+    if (!silent) {
+        box.innerHTML = '<div class="chat-empty"><i data-lucide="loader-2" class="spinner"></i><span>Carregando...</span></div>';
+        lucide.createIcons({ nodes: [box] });
+    }
     try {
         const params = new URLSearchParams({
             action: 'get_messages',
@@ -238,8 +277,11 @@ async function chatLoadMessages(conversation) {
         });
         const res = await authFetch(`/api/chat-messages?${params.toString()}`);
         const messages = await readApiJson(res, 'Falha ao carregar mensagens');
-        chatRenderMessages(messages);
+        chatState.currentThreadMessages = Array.isArray(messages) ? messages : [];
+        chatState.optimisticMessages = [];
+        chatRenderMessages(chatMergeMessagesForRender());
     } catch (e) {
+        if (silent) return;
         box.innerHTML = `<div class="chat-empty"><i data-lucide="alert-triangle"></i><span>${esc(e.message)}</span></div>`;
         lucide.createIcons({ nodes: [box] });
     }
@@ -263,6 +305,10 @@ async function chatAutoloadMediaQueue(messages, token) {
     await Promise.all(workers);
 }
 
+function chatMergeMessagesForRender() {
+    return [...(chatState.currentThreadMessages || []), ...chatState.optimisticMessages];
+}
+
 function chatRenderMessages(messages) {
     const box = $('chatMessagesList');
     if (!box) return;
@@ -273,10 +319,13 @@ function chatRenderMessages(messages) {
     }
     box.innerHTML = messages.map(m => `
         <div class="chat-message-row ${m.from_me ? 'from-me' : 'from-them'}">
-            <div class="chat-bubble ${m.from_me ? 'from-me' : 'from-them'}">
-                ${chatRenderMedia(m)}
+            <div class="chat-bubble ${m.from_me ? 'from-me' : 'from-them'} ${m.__tempId ? 'optimistic' : ''}">
+                ${m.__tempId ? chatRenderOptimisticMedia(m) : chatRenderMedia(m)}
                 ${m.body ? `<div class="chat-bubble-text">${esc(m.body)}</div>` : ''}
-                <div class="chat-bubble-time">${esc(chatFormatTime(m.message_at))}</div>
+                <div class="chat-bubble-time">
+                    ${esc(chatFormatTime(m.message_at))}
+                    ${m.from_me ? chatRenderStatusIcon(m) : ''}
+                </div>
             </div>
         </div>
     `).join('');
@@ -284,7 +333,25 @@ function chatRenderMessages(messages) {
     lucide.createIcons({ nodes: [box] });
 
     const token = ++chatAutoloadToken;
-    chatAutoloadMediaQueue(messages, token);
+    chatAutoloadMediaQueue(messages.filter(m => !m.__tempId), token);
+}
+
+function chatRenderStatusIcon(m) {
+    if (!m.__tempId) return `<span class="chat-bubble-status sent"><i data-lucide="check-check"></i></span>`;
+    if (m.__status === 'failed') {
+        return `<span class="chat-bubble-status failed" onclick="chatRetryOptimisticMessage('${m.__tempId}')" title="${esc(m.__errorMessage || 'Falha ao enviar. Clique para tentar novamente.')}">
+            <i data-lucide="alert-circle"></i>
+        </span>`;
+    }
+    return `<span class="chat-bubble-status pending"><i data-lucide="clock"></i></span>`;
+}
+
+function chatRenderOptimisticMedia(m) {
+    if (!m.__previewDataUrl) return '';
+    if (m.message_type === 'image') return `<img class="chat-media-image" src="${esc(m.__previewDataUrl)}" alt="">`;
+    if (m.message_type === 'video') return `<video class="chat-media-video" src="${esc(m.__previewDataUrl)}" controls></video>`;
+    if (m.message_type === 'audio') return `<audio class="chat-media-audio" src="${esc(m.__previewDataUrl)}" controls></audio>`;
+    return `<div class="chat-media-chip"><i data-lucide="paperclip"></i>${esc(m.__previewFileName || 'Arquivo')}</div>`;
 }
 
 function chatRenderMedia(message) {
@@ -423,6 +490,301 @@ function chatFormatMoney(value) {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(n);
 }
 
+// ── Composer: emoji picker ───────────────────────────────────────
+const CHAT_COMMON_EMOJIS = [
+    '😀','😁','😂','🤣','😊','😍','😘','😉','😎','🤔',
+    '😅','😢','😭','😡','👍','👎','👏','🙏','💪','🤝',
+    '❤️','💙','💚','💛','🧡','💜','🔥','✨','🎉','🎊',
+    '✅','❌','⚠️','❓','❗','💯','👋','🙌','🤞','🫡',
+    '📌','📅','📞','💬','📸','🎥','🎵','📄','💰','💵',
+    '🛒','📦','🚀','⏰','⭐','😴','🤗','😇','🙄','😬',
+];
+
+function chatToggleEmojiPicker() {
+    const picker = $('chatEmojiPicker');
+    if (!picker) return;
+    if (picker.style.display === 'none') {
+        picker.innerHTML = CHAT_COMMON_EMOJIS.map(em =>
+            `<button type="button" onclick="chatInsertEmoji('${em}')">${em}</button>`
+        ).join('');
+        picker.style.display = 'grid';
+    } else {
+        picker.style.display = 'none';
+    }
+}
+
+function chatInsertEmoji(emoji) {
+    const input = $('chatComposerInput');
+    if (!input) return;
+    const start = input.selectionStart ?? input.value.length;
+    const end = input.selectionEnd ?? input.value.length;
+    input.value = input.value.slice(0, start) + emoji + input.value.slice(end);
+    input.selectionStart = input.selectionEnd = start + emoji.length;
+    input.focus();
+    chatUpdateSendButtonState();
+}
+
+// ── Composer: selecao de anexo ───────────────────────────────────
+const CHAT_MAX_ATTACHMENT_BYTES = 20 * 1024 * 1024;
+
+function chatFileKind(file) {
+    if (file.type.startsWith('image/')) return 'image';
+    if (file.type.startsWith('video/')) return 'video';
+    if (file.type.startsWith('audio/')) return 'audio';
+    return 'document';
+}
+
+function chatFileToDataUrl(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(file);
+    });
+}
+
+async function chatHandleFileSelected(event) {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    if (file.size > CHAT_MAX_ATTACHMENT_BYTES) {
+        toast('Arquivo excede o limite de 20MB.', 'error');
+        return;
+    }
+    try {
+        const dataUrl = await chatFileToDataUrl(file);
+        const [, base64] = dataUrl.split(',', 2);
+        chatState.pendingAttachment = {
+            dataUrl, base64,
+            mimeType: file.type || 'application/octet-stream',
+            kind: chatFileKind(file),
+            fileName: file.name,
+            fileSize: file.size,
+            audioMode: 'file',
+        };
+        chatRenderComposerPreview();
+        chatUpdateSendButtonState();
+    } catch (e) {
+        toast('Falha ao ler o arquivo selecionado.', 'error');
+    }
+}
+
+function chatFormatFileSize(bytes) {
+    if (!bytes) return '';
+    if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function chatRenderComposerPreview() {
+    const box = $('chatComposerPreview');
+    const att = chatState.pendingAttachment;
+    if (!box) return;
+    if (!att) { box.style.display = 'none'; box.innerHTML = ''; return; }
+    box.style.display = 'flex';
+    let mediaHtml = '<i data-lucide="paperclip"></i>';
+    if (att.kind === 'image') mediaHtml = `<img src="${esc(att.dataUrl)}" alt="">`;
+    else if (att.kind === 'video') mediaHtml = `<video src="${esc(att.dataUrl)}" muted></video>`;
+    box.innerHTML = `
+        ${mediaHtml}
+        <div class="chat-composer-preview-info">
+            <strong>${esc(att.fileName || chatMediaLabel(att.kind))}</strong>
+            <span>${chatFormatFileSize(att.fileSize)}</span>
+        </div>
+        <button type="button" class="chat-composer-preview-remove" onclick="chatClearAttachment()">
+            <i data-lucide="x"></i>
+        </button>`;
+    lucide.createIcons({ nodes: [box] });
+}
+
+function chatClearAttachment() {
+    chatState.pendingAttachment = null;
+    chatRenderComposerPreview();
+    chatUpdateSendButtonState();
+}
+
+// ── Composer: gravacao de audio ──────────────────────────────────
+async function chatToggleAudioRecording() {
+    if (chatState.mediaRecorder && chatState.mediaRecorder.state === 'recording') return;
+    if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
+        toast('Gravacao de audio nao suportada neste navegador.', 'error');
+        return;
+    }
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        chatState.recordingStream = stream;
+        const mimeType = MediaRecorder.isTypeSupported('audio/ogg;codecs=opus')
+            ? 'audio/ogg;codecs=opus'
+            : (MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : '');
+        const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+        chatState.recordedChunks = [];
+        recorder.ondataavailable = (e) => { if (e.data.size > 0) chatState.recordedChunks.push(e.data); };
+        recorder.start();
+        chatState.mediaRecorder = recorder;
+        chatState.recordingStartedAt = Date.now();
+        chatShowRecordingBar();
+    } catch (e) {
+        toast('Permissao de microfone negada ou indisponivel.', 'error');
+    }
+}
+
+function chatShowRecordingBar() {
+    $('chatMicBtn')?.classList.add('recording');
+    const bar = $('chatRecordingBar');
+    if (bar) bar.style.display = 'flex';
+    const row = $('chatComposer')?.querySelector('.chat-composer-row');
+    if (row) row.style.display = 'none';
+    chatState.recordingTimerInterval = setInterval(() => {
+        const secs = Math.floor((Date.now() - chatState.recordingStartedAt) / 1000);
+        const m = Math.floor(secs / 60);
+        const s = String(secs % 60).padStart(2, '0');
+        const timer = $('chatRecordingTimer');
+        if (timer) timer.textContent = `${m}:${s}`;
+    }, 250);
+}
+
+function chatHideRecordingBar() {
+    clearInterval(chatState.recordingTimerInterval);
+    $('chatMicBtn')?.classList.remove('recording');
+    const bar = $('chatRecordingBar');
+    if (bar) bar.style.display = 'none';
+    const row = $('chatComposer')?.querySelector('.chat-composer-row');
+    if (row) row.style.display = 'flex';
+}
+
+function chatStopRecordingStream() {
+    chatState.recordingStream?.getTracks().forEach(t => t.stop());
+    chatState.recordingStream = null;
+}
+
+function chatCancelAudioRecording() {
+    if (chatState.mediaRecorder && chatState.mediaRecorder.state === 'recording') {
+        chatState.mediaRecorder.onstop = null;
+        chatState.mediaRecorder.stop();
+    }
+    chatStopRecordingStream();
+    chatState.mediaRecorder = null;
+    chatState.recordedChunks = [];
+    chatHideRecordingBar();
+}
+
+function chatStopAudioRecording() {
+    const recorder = chatState.mediaRecorder;
+    if (!recorder || recorder.state !== 'recording') return;
+    recorder.onstop = async () => {
+        chatStopRecordingStream();
+        const mimeType = recorder.mimeType || 'audio/webm';
+        const blob = new Blob(chatState.recordedChunks, { type: mimeType });
+        chatState.mediaRecorder = null;
+        chatState.recordedChunks = [];
+        chatHideRecordingBar();
+        try {
+            const dataUrl = await chatFileToDataUrl(blob);
+            const [, base64] = dataUrl.split(',', 2);
+            chatState.pendingAttachment = {
+                dataUrl, base64, mimeType,
+                kind: 'audio', fileName: 'audio-mensagem.ogg',
+                fileSize: blob.size, audioMode: 'ptt',
+            };
+            await chatSendComposerMessage();
+        } catch (e) {
+            toast('Falha ao processar o audio gravado.', 'error');
+        }
+    };
+    recorder.stop();
+}
+
+// ── Composer: envio e reenvio ─────────────────────────────────────
+async function chatHandleComposerSubmit(event) {
+    event.preventDefault();
+    await chatSendComposerMessage();
+    return false;
+}
+
+function chatUpdateSendButtonState() {
+    const btn = $('chatSendBtn');
+    if (!btn) return;
+    const hasText = ($('chatComposerInput')?.value || '').trim().length > 0;
+    btn.disabled = !hasText && !chatState.pendingAttachment;
+}
+
+async function chatSendComposerMessage() {
+    const conversation = chatState.selected;
+    if (!conversation) { toast('Selecione uma conversa antes de enviar.', 'error'); return; }
+
+    const input = $('chatComposerInput');
+    const text = (input?.value || '').trim();
+    const attachment = chatState.pendingAttachment;
+    if (!text && !attachment) return;
+
+    const messageType = attachment ? attachment.kind : 'text';
+    const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+    const payload = {
+        action: 'send_message',
+        instance: conversation.instance,
+        telefone: conversation.telefone,
+        cliente_id: conversation.cliente_id,
+        message_type: messageType,
+    };
+    if (messageType === 'text') {
+        payload.text = text;
+    } else {
+        payload.media_base64 = attachment.base64;
+        payload.mime_type = attachment.mimeType;
+        payload.file_name = attachment.fileName;
+        if (text) payload.caption = text;
+        if (messageType === 'audio') payload.audio_mode = attachment.audioMode || 'file';
+    }
+
+    const optimistic = {
+        __tempId: tempId,
+        __status: 'pending',
+        __payload: payload,
+        from_me: true,
+        body: attachment ? (attachment.kind === 'image' || attachment.kind === 'video' ? text || null : null) : text,
+        message_type: messageType,
+        message_at: new Date().toISOString(),
+        __previewDataUrl: attachment ? attachment.dataUrl : null,
+        __previewFileName: attachment ? attachment.fileName : null,
+    };
+    chatState.optimisticMessages.push(optimistic);
+    chatRenderMessages(chatMergeMessagesForRender());
+
+    if (input) { input.value = ''; input.style.height = 'auto'; }
+    chatClearAttachment();
+    chatUpdateSendButtonState();
+
+    await chatResendOptimistic(optimistic);
+}
+
+async function chatResendOptimistic(msg) {
+    msg.__status = 'pending';
+    msg.__errorMessage = null;
+    chatRenderMessages(chatMergeMessagesForRender());
+    try {
+        const res = await authFetch('/api/chat-messages', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(msg.__payload)
+        });
+        const data = await readApiJson(res, 'Falha ao enviar mensagem');
+        chatState.optimisticMessages = chatState.optimisticMessages.filter(m => m.__tempId !== msg.__tempId);
+        if (data.message && !(chatState.currentThreadMessages || []).some(m => m.id === data.message.id)) {
+            chatState.currentThreadMessages = [...(chatState.currentThreadMessages || []), data.message];
+        }
+    } catch (e) {
+        msg.__status = 'failed';
+        msg.__errorMessage = e.message;
+        toast(e.message || 'Falha ao enviar mensagem', 'error');
+    }
+    chatRenderMessages(chatMergeMessagesForRender());
+}
+
+async function chatRetryOptimisticMessage(tempId) {
+    const msg = chatState.optimisticMessages.find(m => m.__tempId === tempId);
+    if (msg) await chatResendOptimistic(msg);
+}
+
 function chatRenderEmptyThread() {
     const box = $('chatMessagesList');
     const title = $('chatThreadTitle');
@@ -488,3 +850,12 @@ window.chatLoadMedia = chatLoadMedia;
 window.chatMobileShowList = chatMobileShowList;
 window.chatMobileShowThread = chatMobileShowThread;
 window.chatMobileShowLead = chatMobileShowLead;
+window.chatHandleComposerSubmit = chatHandleComposerSubmit;
+window.chatToggleEmojiPicker = chatToggleEmojiPicker;
+window.chatInsertEmoji = chatInsertEmoji;
+window.chatHandleFileSelected = chatHandleFileSelected;
+window.chatClearAttachment = chatClearAttachment;
+window.chatToggleAudioRecording = chatToggleAudioRecording;
+window.chatStopAudioRecording = chatStopAudioRecording;
+window.chatCancelAudioRecording = chatCancelAudioRecording;
+window.chatRetryOptimisticMessage = chatRetryOptimisticMessage;

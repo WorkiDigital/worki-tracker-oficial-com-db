@@ -1019,6 +1019,42 @@
                     <div class="chat-messages-list" id="chatMessagesList">
                         <div class="chat-empty"><i data-lucide="messages-square"></i><span>Selecione uma conversa</span></div>
                     </div>
+                    <form class="chat-composer" id="chatComposer" onsubmit="return chatHandleComposerSubmit(event)">
+                        <div class="chat-composer-preview" id="chatComposerPreview" style="display:none;"></div>
+                        <div class="chat-recording-bar" id="chatRecordingBar" style="display:none;">
+                            <span class="chat-recording-dot"></span>
+                            <span id="chatRecordingTimer">0:00</span>
+                            <span class="chat-recording-hint">Gravando audio...</span>
+                            <button type="button" class="chat-composer-btn" onclick="chatCancelAudioRecording()" title="Cancelar">
+                                <i data-lucide="trash-2"></i>
+                            </button>
+                            <button type="button" class="chat-composer-btn chat-composer-send" onclick="chatStopAudioRecording()" title="Enviar">
+                                <i data-lucide="send"></i>
+                            </button>
+                        </div>
+                        <div class="chat-composer-row">
+                            <button type="button" class="chat-composer-btn" id="chatEmojiBtn" onclick="chatToggleEmojiPicker()" title="Emoji">
+                                <i data-lucide="smile"></i>
+                            </button>
+                            <div class="chat-emoji-picker" id="chatEmojiPicker" style="display:none;"></div>
+
+                            <button type="button" class="chat-composer-btn" onclick="$('chatFileInput').click()" title="Anexar">
+                                <i data-lucide="paperclip"></i>
+                            </button>
+                            <input type="file" id="chatFileInput" style="display:none;" onchange="chatHandleFileSelected(event)"
+                                   accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.zip,.txt">
+
+                            <textarea id="chatComposerInput" class="chat-composer-input" placeholder="Digite uma mensagem..."
+                                      rows="1" maxlength="4096"></textarea>
+
+                            <button type="button" class="chat-composer-btn" id="chatMicBtn" onclick="chatToggleAudioRecording()" title="Gravar audio">
+                                <i data-lucide="mic"></i>
+                            </button>
+                            <button type="submit" class="chat-composer-btn chat-composer-send" id="chatSendBtn" disabled title="Enviar">
+                                <i data-lucide="send"></i>
+                            </button>
+                        </div>
+                    </form>
                 </section>
 
                 <aside class="chat-panel chat-lead-panel">
@@ -5914,7 +5950,7 @@ function resetLeadSearchAutofill() {
 }
 </script>
 <script defer src="js/leads.js?v=20260622-1"></script>
-<script defer src="js/chat-monitor.js?v=20260710-1"></script>
+<script defer src="js/chat-monitor.js?v=20260711-1"></script>
 <script defer src="js/admin.js?v=20260622-4"></script>
 <script defer src="js/reports-auto.js"></script>
 <script defer src="js/captacao.js?v=20260622-6"></script>
