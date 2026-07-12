@@ -188,6 +188,11 @@ async function chatLoadConversations(silent = false) {
 
         const selectedKey = chatState.selected && chatConversationKey(chatState.selected);
         const stillExists = selectedKey && chatState.conversations.find(c => chatConversationKey(c) === selectedKey);
+        if (chatState.openingByPhone) {
+            // chatAbrirConversaPorTelefone vai selecionar a conversa exata logo abaixo.
+            // Auto-selecionar a primeira aqui causa flash da conversa errada.
+            return;
+        }
         if (!stillExists && chatState.conversations.length) {
             await chatSelectConversation(0);
         } else if (!chatState.conversations.length) {
@@ -322,6 +327,10 @@ async function chatSelectConversation(index) {
     }
 
     chatState.selected = conversation;
+    chatState.currentThreadMessages = [];
+    chatState.optimisticMessages = [];
+    chatAutoloadedIds.clear();
+    chatRenderThreadLoading(conversation);
     chatRenderConversations();
     chatMobileShowThread();
     await Promise.all([
@@ -350,8 +359,7 @@ async function chatLoadMessages(conversation, silent = false) {
     if (title) title.textContent = conversation.lead_nome || conversation.push_name || conversation.telefone;
     if (meta) meta.textContent = `${conversation.telefone} - ${conversation.instance}`;
     if (!silent) {
-        box.innerHTML = '<div class="chat-empty"><i data-lucide="loader-2" class="spinner"></i><span>Carregando...</span></div>';
-        lucide.createIcons({ nodes: [box] });
+        chatRenderThreadLoading(conversation);
         chatAutoloadedIds.clear(); // troca de conversa: o DOM foi zerado, midia precisa recarregar
     }
     try {
@@ -364,6 +372,7 @@ async function chatLoadMessages(conversation, silent = false) {
         const res = await authFetch(`/api/chat-messages?${params.toString()}`);
         const messages = await readApiJson(res, 'Falha ao carregar mensagens');
         const nextMessages = Array.isArray(messages) ? messages : [];
+        if (!chatIsActiveConversation(chatConversationKey(conversation))) return;
 
         if (silent) {
             // Poll silencioso: se as mensagens nao mudaram desde o ultimo render,
@@ -387,7 +396,20 @@ async function chatLoadMessages(conversation, silent = false) {
         chatRenderMessages(chatMergeMessagesForRender());
     } catch (e) {
         if (silent) return;
+        if (!chatIsActiveConversation(chatConversationKey(conversation))) return;
         box.innerHTML = `<div class="chat-empty"><i data-lucide="alert-triangle"></i><span>${esc(e.message)}</span></div>`;
+        lucide.createIcons({ nodes: [box] });
+    }
+}
+
+function chatRenderThreadLoading(conversation) {
+    const box = $('chatMessagesList');
+    const title = $('chatThreadTitle');
+    const meta = $('chatThreadMeta');
+    if (title) title.textContent = conversation.lead_nome || conversation.push_name || conversation.telefone;
+    if (meta) meta.textContent = `${conversation.telefone} - ${conversation.instance}`;
+    if (box) {
+        box.innerHTML = '<div class="chat-empty"><i data-lucide="loader-2" class="spinner"></i><span>Carregando...</span></div>';
         lucide.createIcons({ nodes: [box] });
     }
 }
@@ -584,8 +606,10 @@ async function chatLoadLead(conversation) {
         });
         const res = await authFetch(`/api/chat-messages?${params.toString()}`);
         const data = await readApiJson(res, 'Falha ao carregar lead');
+        if (!chatIsActiveConversation(chatConversationKey(conversation))) return;
         chatRenderLead(data.lead, conversation);
     } catch (e) {
+        if (!chatIsActiveConversation(chatConversationKey(conversation))) return;
         box.innerHTML = `<div class="chat-empty compact"><i data-lucide="alert-triangle"></i><span>${esc(e.message)}</span></div>`;
         lucide.createIcons({ nodes: [box] });
     }
