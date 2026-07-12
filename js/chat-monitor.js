@@ -204,6 +204,16 @@ function chatConversationKey(c) {
     return `${c.cliente_id}|${c.instance}|${c.telefone}`;
 }
 
+// Assinatura leve para detectar se a lista de mensagens de uma thread mudou entre
+// dois polls, sem precisar comparar objeto a objeto (usa quantidade + id/status da
+// ultima mensagem, suficiente porque mensagens antigas nunca mudam de conteudo).
+function chatThreadSignature(messages) {
+    const list = Array.isArray(messages) ? messages : [];
+    if (!list.length) return '0';
+    const last = list[list.length - 1];
+    return `${list.length}|${last.id}|${last.message_at}`;
+}
+
 function chatRenderConversations() {
     const list = $('chatConversationsList');
     if (!list) return;
@@ -289,8 +299,17 @@ async function chatLoadMessages(conversation, silent = false) {
         });
         const res = await authFetch(`/api/chat-messages?${params.toString()}`);
         const messages = await readApiJson(res, 'Falha ao carregar mensagens');
-        chatState.currentThreadMessages = Array.isArray(messages) ? messages : [];
-        if (!silent) {
+        const nextMessages = Array.isArray(messages) ? messages : [];
+
+        if (silent) {
+            // Poll silencioso: se as mensagens nao mudaram desde o ultimo render,
+            // NAO re-renderiza. Reescrever o DOM do zero a cada 10s reseta o scroll
+            // do usuario (parece "travar" ao rolar) e recria os elementos de midia
+            // ja carregados, disparando get_media de novo em massa (429).
+            if (chatThreadSignature(nextMessages) === chatThreadSignature(chatState.currentThreadMessages)) {
+                return;
+            }
+        } else {
             // Troca de conversa: restaura bolhas otimistas guardadas para esta
             // conversa especifica (chatResendOptimistic so guarda ali quando o envio
             // falhou enquanto o usuario estava em outra tela — sucesso remove a
@@ -300,6 +319,7 @@ async function chatLoadMessages(conversation, silent = false) {
             chatState.optimisticByConversation.delete(conversationKey);
             chatState.optimisticMessages = saved;
         }
+        chatState.currentThreadMessages = nextMessages;
         chatRenderMessages(chatMergeMessagesForRender());
     } catch (e) {
         if (silent) return;
@@ -348,6 +368,12 @@ function chatRenderMessages(messages) {
         lucide.createIcons({ nodes: [box] });
         return;
     }
+    // So gruda o scroll no fim se o usuario ja estava perto do fim (ou e o
+    // primeiro render). Se ele rolou pra cima pra ler historico, um poll novo
+    // nao deve arrancar a tela dele de volta pro final.
+    const wasNearBottom = box.scrollHeight === 0 ||
+        (box.scrollHeight - box.scrollTop - box.clientHeight) < 80;
+
     box.innerHTML = messages.map(m => `
         <div class="chat-message-row ${m.from_me ? 'from-me' : 'from-them'}">
             <div class="chat-bubble ${m.from_me ? 'from-me' : 'from-them'} ${m.__tempId ? 'optimistic' : ''}">
@@ -360,7 +386,7 @@ function chatRenderMessages(messages) {
             </div>
         </div>
     `).join('');
-    box.scrollTop = box.scrollHeight;
+    if (wasNearBottom) box.scrollTop = box.scrollHeight;
     lucide.createIcons({ nodes: [box] });
 
     const token = ++chatAutoloadToken;

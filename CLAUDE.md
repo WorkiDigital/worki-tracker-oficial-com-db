@@ -1004,3 +1004,88 @@ senão cai no telefone hasheado como fallback — cobre 100% dos leads (todos t�
 a linha duplicada de CPF que ficava fora do bloco condicional (redundante, já resolvida dentro do
 próprio bloco de canal). O canal `website` continua intocado (`tracking_id` como `external_id`, CPF
 nunca sobrepõe ali — ver seção "external_id no CAPI Web").
+
+## 💬 Monitor de Conversas (aba "Conversas") — 2026-07
+
+Nova aba que espelha o WhatsApp dentro do painel: lista de conversas, thread com bolhas estilo
+WhatsApp real (verde/branco, "rabinho"), mídia (áudio/imagem/vídeo/documento) e **envio** de
+mensagens direto pelo painel (texto, emoji, anexos, gravação de áudio).
+
+### Arquivos principais
+- `api/_chat-schema.js`: schema da tabela `chat_messages` (migração idempotente, `IF NOT EXISTS`).
+- `api/chat-messages.js`: endpoint único com todas as actions (`list_conversations`, `get_messages`,
+  `get_media`, `get_lead`, `send_message`).
+- `js/chat-monitor.js`: toda a lógica de frontend (polling, renderização, composer, envio, áudio).
+- `api/webhook-evo.js` (`salvarChatMessageBestEffort`): grava mensagens **recebidas** na mesma
+  tabela — todo envio (painel ou webhook) converge para `chat_messages`.
+
+### Retenção e leitura
+- Mensagens retidas por **15 dias** (`message_at >= NOW() - INTERVAL '15 days'` em toda query;
+  `api/cron/chat-cleanup.js` deleta as mais antigas a cada 1h).
+- Mídia (áudio/imagem/vídeo) **não é salva no banco** — a `media_url` do webhook é a URL
+  **criptografada** do próprio WhatsApp, ilegível direto por um `<audio src>`. A `action=get_media`
+  busca o base64 já descriptografado via Evolution (`POST /chat/getBase64FromMediaMessage/{instance}`),
+  sob demanda, a cada visualização (sem cache em disco/banco — decisão deliberada, ver abaixo).
+- Áudio/imagem/vídeo carregam **automaticamente** ao abrir a conversa (fila com concorrência
+  máxima de 2, `chatAutoloadMediaQueue`); documento exige clique manual ("Ver documento") para não
+  baixar arquivos grandes sem necessidade.
+- **Polling de 10s**: atualiza a lista de conversas sempre; se uma conversa já estiver aberta,
+  recarrega silenciosamente as mensagens dela também (reflete resposta dada por outro canal, ex.:
+  o próprio atendente respondendo pelo celular físico).
+
+### Envio de mensagens (`action=send_message`)
+- Reaproveita a mesma API key global da Evolution (`EVOLUTION_API_URL`/`EVOLUTION_GLOBAL_KEY`) e o
+  padrão de validação de escopo por instância mais rigoroso do projeto (`api/evo-groups.js`): cliente
+  comum só envia por instância com seu prefixo (`cliente_{id}_`) ou vinculada a ele em
+  `instancias_mapeamento`.
+- Endpoints Evolution por tipo: `sendText` (texto), `sendMedia` (imagem/vídeo/documento/áudio-arquivo,
+  `mediatype` variável), `sendWhatsAppAudio` (nota de voz/PTT).
+- **Upload de mídia é base64 inline no JSON** (`FileReader.readAsDataURL()` no browser) — mesmo
+  padrão já usado pelo logo do white-label (`api/config.js`). Não há multipart/disco/S3 no projeto.
+  `MAX_BODY_BYTES` (`server.js`) foi de 2MB → **20MB** para caber vídeo/áudio.
+- **Feedback otimista**: a bolha aparece na hora com status pendente (relógio) → enviado (check
+  duplo) ou erro (ícone vermelho clicável = reenviar). **Falha não é persistida no banco** — só na
+  tela, decisão deliberada (menos escrita, menos complexidade).
+- Dedup com o eco do webhook via `ON CONFLICT (instance, message_id) WHERE message_id IS NOT NULL`
+  — o `message_id` usado é o que a Evolution retorna na resposta do envio (`evoData.key.id`, com
+  fallbacks para outros formatos de resposta conhecidos).
+- Emoji: campo de texto aceita emoji nativo do teclado do SO sem tratamento algum (UTF-8 puro); o
+  botão de emoji no composer é só um atalho complementar (grid fixo de ~64 emojis comuns, sem lib).
+- Gravação de áudio via `MediaRecorder` nativo (sem lib) — grava `ogg/opus` (Firefox) ou `webm/opus`
+  (Chrome/Edge); a normalização para o formato nativo do WhatsApp é responsabilidade da própria
+  Evolution/Baileys (que já faz isso para toda mídia recebida). Se o áudio gravado não tocar
+  corretamente no destino, o problema é FFmpeg ausente na instância Evolution, não deste código.
+
+### ⚠️ Armadilhas já corrigidas (não reintroduzir)
+1. **Coluna faltando (`message_at does not exist`)**: a tabela já existia em produção sem uma coluna
+   nova adicionada só no `CREATE TABLE IF NOT EXISTS` (que não faz nada se a tabela já existe).
+   Corrigido com `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` para toda coluna em `_chat-schema.js` —
+   **sempre usar esse padrão ao adicionar coluna nova**, nunca confiar só no `CREATE TABLE`.
+2. **429 (rate limit) por auto-load de mídia em rajada**: o polling de 10s recarregando a conversa
+   aberta disparava a busca de TODA mídia de novo a cada ciclo, mesmo a já carregada. Corrigido com
+   `chatAutoloadedIds` (Set local, só marca em caso de **sucesso** confirmado — uma falha permite
+   nova tentativa no próximo poll) + concorrência limitada a 2 requisições simultâneas.
+3. **Vazamento de bolha otimista entre conversas**: se o usuário trocasse de conversa antes do envio
+   anterior resolver, o status (pendente/erro) e o toast apareciam na conversa nova, e "reenviar"
+   mandava para o destinatário errado. Corrigido isolando mensagens otimistas por conversa
+   (`chatState.optimisticByConversation`, chave = `chatConversationKey`) — só afeta a tela se ainda
+   for a conversa ativa; senão fica guardada e reaparece ao reabrir aquela conversa específica.
+4. **Scroll "travando" + nova rajada de 429 no poll silencioso**: `chatRenderMessages` reescrevia o
+   `innerHTML` inteiro da thread a cada poll de 10s, **mesmo sem mensagem nova**. Isso (a) forçava
+   `scrollTop = scrollHeight` toda vez, arrancando o usuário de volta pro fim sempre que tentava rolar
+   pra cima pra ler histórico, e (b) recriava os elementos de mídia do zero (voltando pra
+   "Carregando..." visualmente), e como a conversa tinha muita mídia, a fila de auto-load da rodada
+   anterior nunca terminava antes do próximo poll empilhar uma fila nova por cima → rajada de `get_media`.
+   Corrigido com `chatThreadSignature()` (compara quantidade + última mensagem): poll silencioso só
+   re-renderiza se algo realmente mudou. Scroll só gruda no fim se o usuário já estava perto do fim
+   (`wasNearBottom`, tolerância de 80px) — não interrompe quem está lendo mensagens antigas.
+
+### Badge de origem na lista
+Cada conversa mostra a tag de canal do lead vinculado (Anúncio CTWA, Orgânico, Link da bio, Link
+rastreável, Rotador, Rastr. inteligente) — reaproveita `obterOrigemLead` de `js/leads.js` (mesmo
+mapa de cores/labels do painel de Leads). Sem lead vinculado, sem badge.
+
+### Layout mobile
+Abaixo de 1180px, os 3 painéis (lista/conversa/lead) viram telas cheias com slide (`translateX`) e
+botões de voltar — um único breakpoint, sem faixa intermediária (já existiu uma entre 780-1180px
+que duplicava as setas de navegação; removida).
