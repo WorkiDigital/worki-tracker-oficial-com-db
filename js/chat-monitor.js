@@ -36,6 +36,10 @@ function chatBuildParams(extra = {}) {
 }
 
 async function chatMonitorInit() {
+    // Quando a aba é aberta por um atalho de lead, chatAbrirConversaPorTelefone
+    // assume o controle da carga (com o filtro de cliente certo). Evita a carga
+    // dupla/flash que aconteceria se o init padrão do mudarAba rodasse junto.
+    if (chatState.openingByPhone) return;
     if (!chatState.initialized) {
         chatState.initialized = true;
         chatBindEvents();
@@ -244,6 +248,62 @@ function chatRenderConversations() {
         </button>`;
     }).join('');
     lucide.createIcons({ nodes: [list] });
+}
+
+// Atalho vindo da aba Leads: abre a conversa de um telefone/instância específicos.
+// Orquestra init + filtros + carga da lista + seleção, com fallback se não houver
+// conversa recente (retenção de 15 dias). É chamada logo após mudarAba('conversas'),
+// que já dispara chatMonitorInit() em paralelo — por isso aqui aguardamos o init
+// completo (idempotente) e recarregamos a lista com o filtro certo, evitando corrida.
+async function chatAbrirConversaPorTelefone(telefone, instance, clienteId) {
+    const tel = String(telefone || '').replace(/\D/g, '');
+    if (!tel) { toast('Lead sem telefone válido.', 'error'); return; }
+
+    chatState.openingByPhone = true;
+    try {
+        // Garante bind/filtros carregados uma vez (mesma guarda de chatMonitorInit).
+        if (!chatState.initialized) {
+            chatState.initialized = true;
+            chatBindEvents();
+            await chatLoadClientFilter();
+            await chatLoadInstances();
+        }
+
+        // Admin: aponta o filtro de cliente para o cliente do lead (não-admin já é
+        // travado no próprio cliente pelo backend). Zera o filtro de instância para
+        // "Todas" — a conversa pode estar em qualquer instância daquele cliente.
+        const user = chatCurrentUser();
+        if (user.is_admin && clienteId != null) {
+            const cf = $('chatClienteFilter');
+            if (cf) cf.value = String(clienteId);
+        }
+        const inst = $('chatInstanceFilter');
+        if (inst) inst.value = '';
+
+        chatState.selected = null;
+        await chatLoadConversations(false);
+        chatStartPolling();
+
+        // Localiza a conversa exata (cliente|instance|telefone). Se a instância não
+        // bater (ex: lead antigo com instância diferente da conversa atual), tenta
+        // por cliente+telefone ignorando a instância.
+        const wantKey = `${clienteId}|${instance}|${tel}`;
+        let idx = chatState.conversations.findIndex(c => chatConversationKey(c) === wantKey);
+        if (idx === -1) {
+            idx = chatState.conversations.findIndex(c =>
+                String(c.telefone).replace(/\D/g, '') === tel &&
+                (clienteId == null || String(c.cliente_id) === String(clienteId))
+            );
+        }
+
+        if (idx === -1) {
+            toast('Sem conversa recente para este lead (retenção de 15 dias).', 'warning');
+            return;
+        }
+        await chatSelectConversation(idx);
+    } finally {
+        chatState.openingByPhone = false;
+    }
 }
 
 async function chatSelectConversation(index) {
@@ -968,6 +1028,7 @@ window.chatMonitorInit = chatMonitorInit;
 window.chatMonitorRefresh = chatMonitorRefresh;
 window.chatStopPolling = chatStopPolling;
 window.chatSelectConversation = chatSelectConversation;
+window.chatAbrirConversaPorTelefone = chatAbrirConversaPorTelefone;
 window.chatLoadMedia = chatLoadMedia;
 window.chatMobileShowList = chatMobileShowList;
 window.chatMobileShowThread = chatMobileShowThread;

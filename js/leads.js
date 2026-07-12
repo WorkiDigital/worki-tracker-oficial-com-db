@@ -391,6 +391,7 @@ function renderTabela() {
             <td data-label="Funil" style="font-size:11px;font-weight:600;">${tempoFunil}</td>
             <td style="white-space:nowrap;"><div style="display:inline-flex;gap:4px;align-items:center;">
                 <button class="btn btn-sm" onclick="abrirPerfilLead(${lead.id})" title="Ver perfil completo do lead" style="background:rgba(99,102,241,0.1);color:#6366f1;border:1px solid rgba(99,102,241,0.3);padding:2px 8px;display:inline-flex;align-items:center;justify-content:center;"><i data-lucide="user" style="width:12px;"></i></button>
+                <button class="btn btn-sm" onclick="abrirConversaDoLead(${lead.id})" title="Abrir conversa no WhatsApp" style="background:rgba(37,211,102,0.1);color:#128c4a;border:1px solid rgba(37,211,102,0.35);padding:2px 8px;display:inline-flex;align-items:center;justify-content:center;"><i data-lucide="message-circle" style="width:12px;"></i></button>
                 ${temCapi ? `<button class="btn btn-sm" style="background:rgba(59, 130, 246, 0.1);color:#3b82f6;border:1px solid rgba(59,130,246,0.3);padding:2px 8px;display:inline-flex;align-items:center;justify-content:center;" onclick="qualificarLead(${idx})" title="Marcar como Qualificado e enviar para CAPI"><i data-lucide="check-circle" style="width:12px;"></i></button><button class="btn btn-green btn-sm" onclick="abrirModal(${idx})" title="Registrar Venda e CAPI" style="margin:0;"><i data-lucide="zap" style="width:11px;"></i> Venda</button>` : ''}
             </div></td>
         </tr>`;
@@ -1124,6 +1125,24 @@ async function confirmarQualificacao() {
 
 let _lpTabAtual = 'perfil';
 let _lpDados = null;
+
+// Atalho: abre a conversa do lead direto no Monitor de Conversas (aba Conversas).
+function abrirConversaDoLead(leadId) {
+    const lead = (rawData || []).find(l => Number(l.id) === Number(leadId));
+    if (!lead) { toast('Lead não encontrado.', 'error'); return; }
+    const telefone = String(lead.telefone || '').replace(/\D/g, '');
+    if (!telefone) { toast('Lead sem telefone válido.', 'error'); return; }
+    if (typeof chatAbrirConversaPorTelefone !== 'function') {
+        toast('Monitor de conversas indisponível.', 'error');
+        return;
+    }
+    // Sinaliza a abertura-por-telefone ANTES de trocar de aba, para o
+    // chatMonitorInit() disparado por mudarAba('conversas') nao rodar uma
+    // carga duplicada — chatAbrirConversaPorTelefone assume o controle.
+    if (typeof chatState !== 'undefined') chatState.openingByPhone = true;
+    if (typeof mudarAba === 'function') mudarAba('conversas');
+    chatAbrirConversaPorTelefone(telefone, lead.instancia || '', lead.cliente_id ?? null);
+}
 
 async function abrirPerfilLead(leadId) {
     const drawer = $('leadProfileDrawer');
