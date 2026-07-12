@@ -267,6 +267,7 @@ async function chatLoadMessages(conversation, silent = false) {
     if (!silent) {
         box.innerHTML = '<div class="chat-empty"><i data-lucide="loader-2" class="spinner"></i><span>Carregando...</span></div>';
         lucide.createIcons({ nodes: [box] });
+        chatAutoloadedIds.clear(); // troca de conversa: o DOM foi zerado, midia precisa recarregar
     }
     try {
         const params = new URLSearchParams({
@@ -290,14 +291,22 @@ async function chatLoadMessages(conversation, silent = false) {
 const CHAT_AUTOLOAD_TYPES = new Set(['audio', 'image', 'sticker', 'video']);
 const CHAT_AUTOLOAD_CONCURRENCY = 2;
 let chatAutoloadToken = 0;
+// Rastreia mensagens ja buscadas (ou em busca) via get_media, para o poll de 10s
+// nao re-disparar a mesma midia a cada recarga silenciosa da thread.
+const chatAutoloadedIds = new Set();
 
 async function chatAutoloadMediaQueue(messages, token) {
-    const queue = messages.filter(m => CHAT_AUTOLOAD_TYPES.has(m.message_type) && chatSafeUrl(m.media_url));
+    const queue = messages.filter(m =>
+        CHAT_AUTOLOAD_TYPES.has(m.message_type) &&
+        chatSafeUrl(m.media_url) &&
+        !chatAutoloadedIds.has(m.id)
+    );
     let cursor = 0;
     async function worker() {
         while (cursor < queue.length) {
             if (token !== chatAutoloadToken) return; // conversa trocou, aborta fila
             const m = queue[cursor++];
+            chatAutoloadedIds.add(m.id);
             await chatLoadMedia(m.id, null, m.message_type);
         }
     }
