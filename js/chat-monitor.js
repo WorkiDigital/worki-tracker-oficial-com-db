@@ -648,7 +648,7 @@ function chatHideRecordingBar() {
     const bar = $('chatRecordingBar');
     if (bar) bar.style.display = 'none';
     const row = $('chatComposer')?.querySelector('.chat-composer-row');
-    if (row) row.style.display = 'flex';
+    if (row) row.style.display = '';
 }
 
 function chatStopRecordingStream() {
