@@ -339,6 +339,10 @@ async function chatAutoloadMediaQueue(messages, token) {
     const queue = messages.filter(m =>
         CHAT_AUTOLOAD_TYPES.has(m.message_type) &&
         chatSafeUrl(m.media_url) &&
+        !m.from_me && // midia ENVIADA pelo painel: a Evolution getBase64FromMediaMessage
+                      // e pensada pra midia RECEBIDA, e sistematicamente falha pra mensagens
+                      // proprias — tentar de novo a cada poll so gera rajada de 429 sem nunca
+                      // conseguir carregar. O preview otimista ja mostrou a midia no envio.
         !chatAutoloadedIds.has(m.id)
     );
     let cursor = 0;
@@ -346,10 +350,12 @@ async function chatAutoloadMediaQueue(messages, token) {
         while (cursor < queue.length) {
             if (token !== chatAutoloadToken) return; // conversa trocou, aborta fila
             const m = queue[cursor++];
-            const ok = await chatLoadMedia(m.id, null, m.message_type);
-            // So marca como carregada em caso de sucesso — se falhar (Evolution
-            // fora do ar/timeout), o proximo poll de 10s tenta buscar de novo.
-            if (ok) chatAutoloadedIds.add(m.id);
+            // Marca ANTES da tentativa (sucesso ou falha): nunca reintentar a mesma
+            // mensagem automaticamente — evita loop infinito de get_media a cada poll.
+            // O usuario ainda pode reabrir a conversa (chatAutoloadedIds.clear()) ou,
+            // pra documento, clicar manualmente pra tentar de novo.
+            chatAutoloadedIds.add(m.id);
+            await chatLoadMedia(m.id, null, m.message_type);
         }
     }
     const workers = Array.from({ length: Math.min(CHAT_AUTOLOAD_CONCURRENCY, queue.length) }, worker);
@@ -414,6 +420,27 @@ function chatRenderOptimisticMedia(m) {
 function chatRenderMedia(message) {
     const url = chatSafeUrl(message.media_url);
     if (!url) return message.body ? '' : `<div class="chat-media-chip">${esc(chatMediaLabel(message.message_type))}</div>`;
+
+    // Midia ENVIADA pelo painel: nao auto-carrega (ver chatAutoloadMediaQueue) porque
+    // a Evolution sistematicamente nao consegue servir de volta midia propria via
+    // get_media. Mostra botao manual em vez do spinner que nunca resolveria sozinho.
+    if (message.from_me) {
+        const icon = message.message_type === 'audio' ? 'volume-2'
+            : message.message_type === 'video' ? 'video'
+            : message.message_type === 'image' || message.message_type === 'sticker' ? 'image'
+            : 'paperclip';
+        const label = message.message_type === 'audio' ? 'Ouvir audio'
+            : message.message_type === 'video' ? 'Ver video'
+            : message.message_type === 'image' || message.message_type === 'sticker' ? 'Ver imagem'
+            : 'Ver documento';
+        const wrapId = message.message_type === 'audio' ? `chat-audio-${message.id}` : `chat-media-${message.id}`;
+        return `<div class="chat-media-doc-wrap" id="${wrapId}">
+            <button type="button" class="chat-media-load-btn" onclick="chatLoadMedia(${message.id}, this)">
+                <i data-lucide="${icon}"></i><span>${label}</span>
+            </button>
+        </div>`;
+    }
+
     if (message.message_type === 'audio') {
         return `<div class="chat-media-audio-wrap" id="chat-audio-${message.id}">
             <span class="chat-media-loading"><i data-lucide="loader-2" class="spinner"></i><span>Carregando audio...</span></span>
