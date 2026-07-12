@@ -1126,8 +1126,10 @@ async function confirmarQualificacao() {
 let _lpTabAtual = 'perfil';
 let _lpDados = null;
 
-// Atalho: abre a conversa do lead direto no Monitor de Conversas (aba Conversas).
-function abrirConversaDoLead(leadId) {
+// Atalho: abre a conversa do lead num POPUP (modal) sobre a aba Leads, sem
+// trocar de aba. Reaproveita os paineis do monitor (thread + lead), movendo-os
+// temporariamente para dentro do modal e devolvendo-os ao fechar.
+async function abrirConversaDoLead(leadId) {
     const lead = (rawData || []).find(l => Number(l.id) === Number(leadId));
     if (!lead) { toast('Lead não encontrado.', 'error'); return; }
     const telefone = String(lead.telefone || '').replace(/\D/g, '');
@@ -1136,12 +1138,46 @@ function abrirConversaDoLead(leadId) {
         toast('Monitor de conversas indisponível.', 'error');
         return;
     }
-    // Sinaliza a abertura-por-telefone ANTES de trocar de aba, para o
-    // chatMonitorInit() disparado por mudarAba('conversas') nao rodar uma
-    // carga duplicada — chatAbrirConversaPorTelefone assume o controle.
+
+    const slot = $('chatModalSlot');
+    const overlay = $('chatModalOverlay');
+    const thread = document.querySelector('.chat-thread-panel');
+    const leadPanel = document.querySelector('.chat-lead-panel');
+    if (!slot || !overlay || !thread) { toast('Não foi possível abrir a conversa.', 'error'); return; }
+
+    // Move os paineis do monitor para dentro do modal (preserva IDs e listeners).
+    slot.appendChild(thread);
+    if (leadPanel) slot.appendChild(leadPanel);
+    slot.classList.add('chat-modal-loaded');
+    overlay.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    if (window.lucide?.createIcons) lucide.createIcons({ nodes: [overlay] });
+
+    // Carrega/seleciona a conversa (assume o controle da carga, sem trocar de aba).
     if (typeof chatState !== 'undefined') chatState.openingByPhone = true;
-    if (typeof mudarAba === 'function') mudarAba('conversas');
-    chatAbrirConversaPorTelefone(telefone, lead.instancia || '', lead.cliente_id ?? null);
+    await chatAbrirConversaPorTelefone(telefone, lead.instancia || '', lead.cliente_id ?? null);
+}
+
+// Fecha o popup e devolve os paineis do monitor ao seu lugar original (a shell da aba Conversas).
+function fecharConversaModal() {
+    const overlay = $('chatModalOverlay');
+    const shell = $('chatMonitorShell');
+    const thread = document.querySelector('.chat-modal-slot .chat-thread-panel');
+    const leadPanel = document.querySelector('.chat-modal-slot .chat-lead-panel');
+    if (overlay) overlay.style.display = 'none';
+    document.body.style.overflow = '';
+    // Se a aba Conversas nao estiver aberta, para o polling que a abertura ligou.
+    const conversasVisivel = !$('aba-conversas')?.classList.contains('aba-oculta');
+    if (!conversasVisivel && typeof chatStopPolling === 'function') chatStopPolling();
+    // Devolve os paineis para a shell, na ordem correta (thread depois da lista,
+    // lead por ultimo) — a chat-list-panel nunca sai da shell.
+    if (shell && thread) {
+        const listPanel = shell.querySelector('.chat-list-panel');
+        if (listPanel && listPanel.nextSibling) shell.insertBefore(thread, listPanel.nextSibling);
+        else shell.appendChild(thread);
+        if (leadPanel) shell.appendChild(leadPanel);
+    }
+    if (typeof chatState !== 'undefined') chatState.openingByPhone = false;
 }
 
 async function abrirPerfilLead(leadId) {

@@ -12,7 +12,7 @@
     <script defer src="https://cdn.jsdelivr.net/npm/lucide@0.469.0/dist/umd/lucide.min.js"></script>
     <!-- Chart.js, html2canvas e jsPDF são carregados sob demanda via loadScript() (utils.js).
          Não incluir aqui — evita baixar ~500KB em toda sessão mesmo sem abrir Anúncios ou exportar PDF. -->
-    <link rel="stylesheet" href="css/dashboard.css?v=20260712-1">
+    <link rel="stylesheet" href="css/dashboard.css?v=20260712-4">
     <link rel="stylesheet" href="css/splash.css?v=20260712-1">
     <script defer src="js/utils.js?v=20260712-1"></script>
 </head>
@@ -1073,6 +1073,18 @@
                 </aside>
             </div>
         </div>
+
+        <!-- MODAL: Conversa do lead (popup sobre a aba Leads) -->
+        <div class="chat-modal-overlay" id="chatModalOverlay" style="display:none;" onclick="if(event.target===this)fecharConversaModal()">
+            <div class="chat-modal-box" id="chatModalBox">
+                <button type="button" class="chat-modal-close" onclick="fecharConversaModal()" title="Fechar">
+                    <i data-lucide="x"></i>
+                </button>
+                <!-- A .chat-thread-panel do monitor é movida para cá ao abrir e devolvida ao fechar. -->
+                <div class="chat-modal-slot" id="chatModalSlot"></div>
+            </div>
+        </div>
+
         <!-- ABA: ANÚNCIOS -->
         <div id="aba-anuncios" class="aba-oculta">
             <div class="ads-error" id="ads-error"></div>
@@ -5085,7 +5097,9 @@ async function abrirAdMedia(adId) {
 
 // Close modal on Escape key
 document.addEventListener('keydown', e => {
-    if (e.key === 'Escape' && document.getElementById('adMediaOverlay')?.classList.contains('open')) {
+    if (e.key === 'Escape' && document.getElementById('chatModalOverlay')?.style.display === 'flex') {
+        if (typeof fecharConversaModal === 'function') fecharConversaModal();
+    } else if (e.key === 'Escape' && document.getElementById('adMediaOverlay')?.classList.contains('open')) {
         fecharAdMedia(null);
     } else if (e.key === 'Escape' && document.getElementById('modalAdsBudget')?.classList.contains('open')) {
         fecharModalAdsBudget();
@@ -5125,7 +5139,12 @@ function mudarAba(aba) {
     $('titulo-pagina').innerHTML = TITULOS[aba]||'';
     $('leadsControls').style.display = ['leads','relatorios'].includes(aba) ? 'flex' : 'none';
     lucide.createIcons({ nodes:[$('titulo-pagina')] });
-    if (aba === 'conversas' && typeof chatMonitorInit === 'function') { chatMonitorInit(); }
+    if (aba === 'conversas') {
+        // Se o popup de conversa estiver aberto, devolve os paineis para a shell
+        // antes de mostrar a aba (senao a shell apareceria sem thread/lead).
+        if ($('chatModalOverlay')?.style.display === 'flex' && typeof fecharConversaModal === 'function') fecharConversaModal();
+        if (typeof chatMonitorInit === 'function') chatMonitorInit();
+    }
     if (aba === 'anuncios' && !adsCarregado) carregarAnuncios();
     if (aba === 'captacao') { carregarCampanhasLink(); }
     if (aba === 'inteligente') { capIntCarregar(); }
@@ -5970,8 +5989,8 @@ function resetLeadSearchAutofill() {
     input.defaultValue = '';
 }
 </script>
-<script defer src="js/leads.js?v=20260712-3"></script>
-<script defer src="js/chat-monitor.js?v=20260712-3"></script>
+<script defer src="js/leads.js?v=20260712-4"></script>
+<script defer src="js/chat-monitor.js?v=20260712-4"></script>
 <script defer src="js/admin.js?v=20260622-4"></script>
 <script defer src="js/reports-auto.js?v=20260712-1"></script>
 <script defer src="js/captacao.js?v=20260622-6"></script>

@@ -146,7 +146,11 @@ async function chatLoadInstances() {
 function chatStartPolling() {
     chatStopPolling();
     chatState.pollTimer = setInterval(() => {
-        if (!$('aba-conversas')?.classList.contains('aba-oculta')) {
+        // Roda quando a aba Conversas esta visivel OU quando o popup de conversa
+        // (atalho da aba Leads) esta aberto — senao a thread do modal nao atualiza.
+        const abaVisivel = !$('aba-conversas')?.classList.contains('aba-oculta');
+        const modalAberto = $('chatModalOverlay')?.style.display === 'flex';
+        if (abaVisivel || modalAberto) {
             chatLoadConversations(true);
         }
     }, 10000);

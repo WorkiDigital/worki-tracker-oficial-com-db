@@ -1045,3 +1045,22 @@ html:not(.light) .chat-composer-preview, html:not(.light) .chat-recording-bar { 
 @media(max-width:1180px) {
   .chat-emoji-picker { width:calc(100% - 20px); }
 }
+
+/* Popup de conversa (aberto pelo atalho na aba Leads) */
+.chat-modal-overlay { position:fixed; inset:0; z-index:1200; background:rgba(15,23,42,.55); backdrop-filter:blur(3px); display:flex; align-items:center; justify-content:center; padding:24px; }
+.chat-modal-box { position:relative; width:min(1040px, 96vw); height:min(84vh, 760px); background:var(--card); border:1px solid var(--border); border-radius:14px; box-shadow:0 24px 64px rgba(0,0,0,.4); overflow:hidden; display:flex; }
+.chat-modal-close { position:absolute; top:10px; right:12px; z-index:5; width:34px; height:34px; border-radius:50%; border:none; background:rgba(148,163,184,.16); color:var(--text); cursor:pointer; display:inline-flex; align-items:center; justify-content:center; }
+.chat-modal-close:hover { background:rgba(148,163,184,.3); }
+.chat-modal-close i { width:18px; height:18px; }
+.chat-modal-slot { flex:1; min-width:0; display:grid; grid-template-columns:minmax(0,1fr) minmax(240px,300px); }
+.chat-modal-slot .chat-thread-panel,
+.chat-modal-slot .chat-lead-panel { min-height:0; height:100%; display:flex; flex-direction:column; }
+.chat-modal-slot .chat-lead-panel { border-left:1px solid var(--border); }
+/* No modal a lista lateral nao existe; o botao "voltar" da thread nao faz sentido. */
+.chat-modal-slot .chat-mobile-back { display:none !important; }
+@media(max-width:820px) {
+  .chat-modal-box { width:100vw; height:100dvh; border-radius:0; padding:0; }
+  .chat-modal-overlay { padding:0; }
+  .chat-modal-slot { grid-template-columns:1fr; }
+  .chat-modal-slot .chat-lead-panel { display:none; }
+}
