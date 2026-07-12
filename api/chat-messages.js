@@ -321,8 +321,19 @@ export default async function handler(req, res) {
 
       // Evolution retorna key.id da mensagem criada — usar como message_id para
       // deduplicar com o eco que o webhook eventualmente vai gravar via
-      // salvarChatMessageBestEffort (ON CONFLICT (instance, message_id)).
-      const messageId = evoData?.key?.id || evoData?.message?.key?.id || null;
+      // salvarChatMessageBestEffort (ON CONFLICT (instance, message_id)). O shape
+      // de resposta varia por endpoint/versao da Evolution (sendText/sendMedia/
+      // sendWhatsAppAudio) — tenta todos os caminhos conhecidos antes de desistir.
+      const messageId = evoData?.key?.id
+        || evoData?.message?.key?.id
+        || evoData?.data?.key?.id
+        || evoData?.messageId
+        || null;
+      if (!messageId) {
+        console.warn('[chat-messages] send_message: Evolution nao retornou message_id', {
+          instance, messageType, evoBodyKeys: Object.keys(evoData || {})
+        });
+      }
       const body = messageType === 'text' ? req.body.text : (caption || null);
 
       const leadRes = await pool.query(

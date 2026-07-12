@@ -8,6 +8,9 @@ const chatState = {
     // Composer
     currentThreadMessages: [],
     optimisticMessages: [],
+    // Bolhas otimistas de conversas que NAO estao abertas no momento (ex: usuario
+    // trocou de conversa antes do envio anterior resolver). Chave = chatConversationKey.
+    optimisticByConversation: new Map(),
     pendingAttachment: null,
     mediaRecorder: null,
     recordedChunks: [],
@@ -236,6 +239,14 @@ function chatRenderConversations() {
 async function chatSelectConversation(index) {
     const conversation = chatState.conversations[index];
     if (!conversation) return;
+
+    // Preserva bolhas otimistas ainda em voo/com erro da conversa que esta
+    // fechando, para nao vazarem para a tela da nova conversa nem se perderem.
+    if (chatState.selected && chatState.optimisticMessages.length) {
+        const previousKey = chatConversationKey(chatState.selected);
+        chatState.optimisticByConversation.set(previousKey, [...chatState.optimisticMessages]);
+    }
+
     chatState.selected = conversation;
     chatRenderConversations();
     chatMobileShowThread();
@@ -279,7 +290,16 @@ async function chatLoadMessages(conversation, silent = false) {
         const res = await authFetch(`/api/chat-messages?${params.toString()}`);
         const messages = await readApiJson(res, 'Falha ao carregar mensagens');
         chatState.currentThreadMessages = Array.isArray(messages) ? messages : [];
-        chatState.optimisticMessages = [];
+        if (!silent) {
+            // Troca de conversa: restaura bolhas otimistas guardadas para esta
+            // conversa especifica (chatResendOptimistic so guarda ali quando o envio
+            // falhou enquanto o usuario estava em outra tela — sucesso remove a
+            // bolha e a mensagem real ja vem no `messages` buscado acima).
+            const conversationKey = chatConversationKey(conversation);
+            const saved = chatState.optimisticByConversation.get(conversationKey) || [];
+            chatState.optimisticByConversation.delete(conversationKey);
+            chatState.optimisticMessages = saved;
+        }
         chatRenderMessages(chatMergeMessagesForRender());
     } catch (e) {
         if (silent) return;
@@ -306,8 +326,10 @@ async function chatAutoloadMediaQueue(messages, token) {
         while (cursor < queue.length) {
             if (token !== chatAutoloadToken) return; // conversa trocou, aborta fila
             const m = queue[cursor++];
-            chatAutoloadedIds.add(m.id);
-            await chatLoadMedia(m.id, null, m.message_type);
+            const ok = await chatLoadMedia(m.id, null, m.message_type);
+            // So marca como carregada em caso de sucesso — se falhar (Evolution
+            // fora do ar/timeout), o proximo poll de 10s tenta buscar de novo.
+            if (ok) chatAutoloadedIds.add(m.id);
         }
     }
     const workers = Array.from({ length: Math.min(CHAT_AUTOLOAD_CONCURRENCY, queue.length) }, worker);
@@ -417,6 +439,7 @@ async function chatLoadMedia(messageId, btn, messageType) {
             wrap.innerHTML = `<a class="chat-media-link" href="${esc(data.dataUrl)}" target="_blank" rel="noopener"><i data-lucide="paperclip"></i>Baixar arquivo</a>`;
             lucide.createIcons({ nodes: [wrap] });
         }
+        return true;
     } catch (e) {
         if (btn) {
             btn.disabled = false;
@@ -427,6 +450,7 @@ async function chatLoadMedia(messageId, btn, messageType) {
             lucide.createIcons({ nodes: [wrap] });
         }
         if (btn) toast(e.message || 'Falha ao carregar midia', 'error');
+        return false;
     }
 }
 
@@ -727,6 +751,7 @@ async function chatSendComposerMessage() {
 
     const messageType = attachment ? attachment.kind : 'text';
     const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const conversationKey = chatConversationKey(conversation);
 
     const payload = {
         action: 'send_message',
@@ -749,6 +774,7 @@ async function chatSendComposerMessage() {
         __tempId: tempId,
         __status: 'pending',
         __payload: payload,
+        __conversationKey: conversationKey,
         from_me: true,
         body: attachment ? (attachment.kind === 'image' || attachment.kind === 'video' ? text || null : null) : text,
         message_type: messageType,
@@ -766,10 +792,28 @@ async function chatSendComposerMessage() {
     await chatResendOptimistic(optimistic);
 }
 
+// Retorna true se `key` corresponde a conversa atualmente aberta (chatState.selected).
+function chatIsActiveConversation(key) {
+    return !!(chatState.selected && chatConversationKey(chatState.selected) === key);
+}
+
+// Remove uma bolha otimista de onde quer que ela esteja (thread ativa ou de outra
+// conversa) e devolve o array/Map de onde ela veio, para o chamador decidir o que fazer.
+function chatRemoveOptimisticEverywhere(tempId) {
+    chatState.optimisticMessages = chatState.optimisticMessages.filter(m => m.__tempId !== tempId);
+    for (const [key, list] of chatState.optimisticByConversation) {
+        const filtered = list.filter(m => m.__tempId !== tempId);
+        if (filtered.length) chatState.optimisticByConversation.set(key, filtered);
+        else chatState.optimisticByConversation.delete(key);
+    }
+}
+
 async function chatResendOptimistic(msg) {
     msg.__status = 'pending';
     msg.__errorMessage = null;
-    chatRenderMessages(chatMergeMessagesForRender());
+    if (chatIsActiveConversation(msg.__conversationKey)) {
+        chatRenderMessages(chatMergeMessagesForRender());
+    }
     try {
         const res = await authFetch('/api/chat-messages', {
             method: 'POST',
@@ -777,16 +821,32 @@ async function chatResendOptimistic(msg) {
             body: JSON.stringify(msg.__payload)
         });
         const data = await readApiJson(res, 'Falha ao enviar mensagem');
-        chatState.optimisticMessages = chatState.optimisticMessages.filter(m => m.__tempId !== msg.__tempId);
-        if (data.message && !(chatState.currentThreadMessages || []).some(m => m.id === data.message.id)) {
+        chatRemoveOptimisticEverywhere(msg.__tempId);
+        // So injeta a mensagem confirmada na thread em memoria se ainda for a
+        // conversa aberta — senao ela sera buscada normalmente quando o usuario
+        // reabrir aquela conversa (chatLoadMessages busca do servidor de novo).
+        if (chatIsActiveConversation(msg.__conversationKey) && data.message &&
+            !(chatState.currentThreadMessages || []).some(m => m.id === data.message.id)) {
             chatState.currentThreadMessages = [...(chatState.currentThreadMessages || []), data.message];
         }
     } catch (e) {
         msg.__status = 'failed';
         msg.__errorMessage = e.message;
-        toast(e.message || 'Falha ao enviar mensagem', 'error');
+        // Só incomoda o usuário com o toast se ele ainda estiver olhando essa conversa.
+        if (chatIsActiveConversation(msg.__conversationKey)) {
+            toast(e.message || 'Falha ao enviar mensagem', 'error');
+        } else {
+            // Conversa nao esta mais aberta: guarda a bolha (com erro) para
+            // reaparecer quando o usuario reabrir aquela conversa.
+            const existing = chatState.optimisticByConversation.get(msg.__conversationKey) || [];
+            if (!existing.some(m => m.__tempId === msg.__tempId)) {
+                chatState.optimisticByConversation.set(msg.__conversationKey, [...existing, msg]);
+            }
+        }
     }
-    chatRenderMessages(chatMergeMessagesForRender());
+    if (chatIsActiveConversation(msg.__conversationKey)) {
+        chatRenderMessages(chatMergeMessagesForRender());
+    }
 }
 
 async function chatRetryOptimisticMessage(tempId) {
