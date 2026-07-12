@@ -13,8 +13,8 @@
     <!-- Chart.js, html2canvas e jsPDF são carregados sob demanda via loadScript() (utils.js).
          Não incluir aqui — evita baixar ~500KB em toda sessão mesmo sem abrir Anúncios ou exportar PDF. -->
     <link rel="stylesheet" href="css/dashboard.css?v=20260712-1">
-    <link rel="stylesheet" href="css/splash.css">
-    <script defer src="js/utils.js"></script>
+    <link rel="stylesheet" href="css/splash.css?v=20260712-1">
+    <script defer src="js/utils.js?v=20260712-1"></script>
 </head>
 <body>
 
@@ -2507,8 +2507,8 @@ function fmtN(n) { return parseInt(n||0).toLocaleString('pt-BR'); }
 
 // ── Lazy load de Chart.js (só na aba Anúncios) ────────────────
 const CHART_URLS = [
-    'https://cdn.jsdelivr.net/npm/chart.js',
-    'https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0',
+    'https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js',
+    'https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js',
 ];
 let _chartLoaded = false;
 async function ensureChart() {
@@ -5973,7 +5973,7 @@ function resetLeadSearchAutofill() {
 <script defer src="js/leads.js?v=20260622-1"></script>
 <script defer src="js/chat-monitor.js?v=20260711-1"></script>
 <script defer src="js/admin.js?v=20260622-4"></script>
-<script defer src="js/reports-auto.js"></script>
+<script defer src="js/reports-auto.js?v=20260712-1"></script>
 <script defer src="js/captacao.js?v=20260622-6"></script>
 
 <!-- Drawer Perfil do Lead (4 abas) — deve ficar no final do body para z-index funcionar -->

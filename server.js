@@ -223,7 +223,8 @@ const server = http.createServer(async (req, res) => {
         return;
     }
 
-    if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+    const stat = fs.existsSync(filePath) ? fs.statSync(filePath) : null;
+    if (stat?.isFile()) {
         const ext = path.extname(filePath);
         const types = {
             '.html':'text/html; charset=utf-8',
@@ -267,16 +268,29 @@ const server = http.createServer(async (req, res) => {
             'Referrer-Policy': 'strict-origin-when-cross-origin',
             'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
             'Cache-Control': cacheControl,
+            'Last-Modified': stat.mtime.toUTCString(),
+            'ETag': `W/"${stat.size.toString(16)}-${Math.floor(stat.mtimeMs).toString(16)}"`,
         };
 
         // Gzip só para tipos texto e só quando o cliente aceita — binários (imagens)
         // já são comprimidos no próprio formato, gzip neles não ajuda e pode até piorar.
         const isCompressible = ['.html', '.js', '.css', '.json', '.svg'].includes(ext);
         const acceptsGzip = (req.headers['accept-encoding'] || '').includes('gzip');
+        if (isCompressible) headers['Vary'] = 'Accept-Encoding';
+
+        const ifNoneMatch = String(req.headers['if-none-match'] || '');
+        const ifModifiedSince = Date.parse(req.headers['if-modified-since'] || '');
+        const fileMtimeSeconds = Math.floor(stat.mtimeMs / 1000) * 1000;
+        const isFreshByEtag = ifNoneMatch.split(',').map(v => v.trim()).includes(headers.ETag);
+        const isFreshByDate = !ifNoneMatch && Number.isFinite(ifModifiedSince) && ifModifiedSince >= fileMtimeSeconds;
+        if (isFreshByEtag || isFreshByDate) {
+            res.writeHead(304, headers);
+            res.end();
+            return;
+        }
 
         if (isCompressible && acceptsGzip) {
             headers['Content-Encoding'] = 'gzip';
-            headers['Vary'] = 'Accept-Encoding';
             res.writeHead(200, headers);
             fs.createReadStream(filePath).pipe(zlib.createGzip()).pipe(res);
         } else {
