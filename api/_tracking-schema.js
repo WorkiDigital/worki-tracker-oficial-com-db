@@ -89,6 +89,7 @@ async function createTrackingSchema() {
         adset_id VARCHAR(64),
         meta_campaign_id VARCHAR(64),
         gclid VARCHAR(512),
+        google_ads_keyword VARCHAR(255),
         whatsapp_number VARCHAR(30),
         instance_name VARCHAR(100),
         clicked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -127,7 +128,8 @@ async function createTrackingSchema() {
       ADD COLUMN IF NOT EXISTS ad_id VARCHAR(64),
       ADD COLUMN IF NOT EXISTS adset_id VARCHAR(64),
       ADD COLUMN IF NOT EXISTS meta_campaign_id VARCHAR(64),
-      ADD COLUMN IF NOT EXISTS gclid VARCHAR(512);
+      ADD COLUMN IF NOT EXISTS gclid VARCHAR(512),
+      ADD COLUMN IF NOT EXISTS google_ads_keyword VARCHAR(255);
 
       ALTER TABLE public.tracking_campaigns
       ADD COLUMN IF NOT EXISTS utm_content VARCHAR(255),

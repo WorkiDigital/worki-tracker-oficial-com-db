@@ -125,6 +125,7 @@ export default async function handler(req, res) {
     const adset_id       = clean(body.adset_id, 64);
     const metaCampaignId = clean(body.meta_campaign_id, 64);
     const gclid          = clean(body.gclid, 512);
+    const googleAdsKeyword = clean(body.keyword || body.utm_term, 255);
 
     await client.query(
       `INSERT INTO tracking_clicks
@@ -132,14 +133,14 @@ export default async function handler(req, res) {
          utm_source, utm_medium, utm_campaign, utm_content, referrer, ip_address, user_agent,
          whatsapp_number, instance_name, fbclid, fbc, fbp, event_source_url,
          geo_city, geo_region, geo_region_code, geo_country, geo_country_code,
-         placement, ad_id, adset_id, meta_campaign_id, gclid, visitor_id, source, expires_at)
-       VALUES ($1,$2,$3,$4,'clicked',$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,'site', NOW() + INTERVAL '72 hours')`,
+         placement, ad_id, adset_id, meta_campaign_id, gclid, google_ads_keyword, visitor_id, source, expires_at)
+       VALUES ($1,$2,$3,$4,'clicked',$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,'site', NOW() + INTERVAL '72 hours')`,
       [trackingId, campaign.id, destino.id, campaign.cliente_id,
        utm_source, utm_medium, utm_campaign, utm_content, referrer, ip, userAgent,
        destino.whatsapp_number, destino.instance_name, fbclid, fbc, fbp, pageUrl,
        geo?.city || null, geo?.region || null, geo?.region_code || null,
        geo?.country || null, geo?.country_code || null,
-       placement, ad_id, adset_id, metaCampaignId, gclid, visitorId]
+       placement, ad_id, adset_id, metaCampaignId, gclid, googleAdsKeyword, visitorId]
     );
 
     await client.query('COMMIT');

@@ -65,7 +65,7 @@ export default async function handler(req, res) {
           k.utm_content, k.utm_source, k.user_agent, k.fbc, k.lead_id,
           k.ip_address, k.geo_city, k.geo_region, k.geo_region_code,
           k.geo_country, k.geo_country_code,
-          k.placement, k.ad_id, k.adset_id, k.meta_campaign_id, k.gclid,
+          k.placement, k.ad_id, k.adset_id, k.meta_campaign_id, k.gclid, k.google_ads_keyword,
           k.campaign_id AS tracking_campaign_id,
           c.name AS tracking_campaign_name, c.origin_type
         FROM tracking_clicks k
@@ -105,6 +105,7 @@ export default async function handler(req, res) {
       adset_id: principalClick.adset_id || null,
       meta_campaign_id: principalClick.meta_campaign_id || null,
       gclid: principalClick.gclid || null,
+      google_ads_keyword: principalClick.google_ads_keyword || null,
     } : null;
 
     return res.status(200).json({

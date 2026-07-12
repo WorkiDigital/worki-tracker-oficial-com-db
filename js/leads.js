@@ -1318,6 +1318,7 @@ function lpPreencherDados({ lead, jornada, interacoes }) {
     $('lpRowAdsetId').innerHTML        = lpRow('Conjunto ID (Meta)', clickAd.adset_id);
     $('lpRowMetaCampaignId').innerHTML = lpRow('Campanha ID (Meta)', clickAd.meta_campaign_id);
     $('lpRowGclid').innerHTML          = lpRow('Google Click ID', clickAd.gclid ? clickAd.gclid.substring(0,24)+'…' : null);
+    $('lpRowGoogleKeyword').innerHTML  = lpRow('Palavra-chave (Google Ads)', clickAd.google_ads_keyword);
 
     // ── Aba Jornada ──
     // No modelo de contato único, cada TOQUE é um clique no link (tracking_clicks),

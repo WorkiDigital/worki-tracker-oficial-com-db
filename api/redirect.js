@@ -265,6 +265,9 @@ export default async function handler(req, res) {
     const adset_id       = adParam(q.adset_id, 64);
     const metaCampaignId = adParam(q.meta_campaign_id || q.campaign_id, 64);
     const gclid          = adParam(q.gclid, 512);
+    // Palavra-chave do Google Ads: variável dinâmica {keyword} do próprio Google.
+    // Aceita nomes alternativos (keyword, utm_term) para robustez.
+    const googleAdsKeyword = adParam(q.keyword || q.utm_term, 255);
 
     await client.query(
       `INSERT INTO tracking_clicks
@@ -272,14 +275,14 @@ export default async function handler(req, res) {
          utm_source, utm_medium, utm_campaign, utm_content, referrer, ip_address, user_agent,
          whatsapp_number, instance_name, fbclid, fbc, fbp, pageview_event_id, event_source_url,
          geo_city, geo_region, geo_region_code, geo_country, geo_country_code,
-         placement, ad_id, adset_id, meta_campaign_id, gclid, expires_at)
-       VALUES ($1,$2,$3,$4,'clicked',$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28, NOW() + INTERVAL '72 hours')`,
+         placement, ad_id, adset_id, meta_campaign_id, gclid, google_ads_keyword, expires_at)
+       VALUES ($1,$2,$3,$4,'clicked',$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29, NOW() + INTERVAL '72 hours')`,
       [trackingId, campaign.id, destino.id, campaign.cliente_id,
        utm_source, utm_medium, utm_campaign, utm_content, referrer, ip, userAgent,
        destino.whatsapp_number, destino.instance_name, fbclid, fbc, fbp, pageviewEventId, eventSourceUrl,
        geo?.city || null, geo?.region || null, geo?.region_code || null,
        geo?.country || null, geo?.country_code || null,
-       placement, ad_id, adset_id, metaCampaignId, gclid]
+       placement, ad_id, adset_id, metaCampaignId, gclid, googleAdsKeyword]
     );
 
     await client.query('COMMIT');
@@ -306,7 +309,8 @@ export default async function handler(req, res) {
       message: `Clique no link "${campaign.name}" → ${destino.whatsapp_number}`,
       data: { tracking_id: trackingId, campaign_id: campaign.id, destino: destino.whatsapp_number,
               fbclid: !!fbclid, fbc: !!fbc, fbp: !!fbp, capi_pixel: !!capiPixelId,
-              gclid: !!gclid, google_ads_configurado: !!(googleAdsId && googleAdsLabel),
+              gclid: !!gclid, google_ads_keyword: googleAdsKeyword,
+              google_ads_configurado: !!(googleAdsId && googleAdsLabel),
               geo_city: geo?.city || null, geo_region: geo?.region || null,
               geo_country: geo?.country || null },
     });

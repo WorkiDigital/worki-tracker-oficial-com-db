@@ -89,6 +89,7 @@
       adset_id: qs('adset_id'),
       meta_campaign_id: qs('meta_campaign_id') || qs('campaign_id'),
       gclid: qs('gclid'),
+      keyword: qs('keyword') || qs('utm_term'),
     };
   }
 
