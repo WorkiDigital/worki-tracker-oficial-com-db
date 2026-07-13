@@ -12,11 +12,11 @@
     <script defer src="https://cdn.jsdelivr.net/npm/lucide@0.469.0/dist/umd/lucide.min.js"></script>
     <!-- Chart.js, html2canvas e jsPDF são carregados sob demanda via loadScript() (utils.js).
          Não incluir aqui — evita baixar ~500KB em toda sessão mesmo sem abrir Anúncios ou exportar PDF. -->
-    <link rel="stylesheet" href="css/dashboard.css?v=20260713-kanban2">
+    <link rel="stylesheet" href="css/dashboard.css?v=20260713-kanban3">
     <link rel="stylesheet" href="css/splash.css?v=20260712-1">
-    <link rel="stylesheet" href="css/funil.css?v=20260713-1">
+    <link rel="stylesheet" href="css/funil.css?v=20260713-2">
     <script defer src="js/utils.js?v=20260712-1"></script>
-    <script defer src="js/funil.js?v=20260713-2"></script>
+    <script defer src="js/funil.js?v=20260713-3"></script>
 </head>
 <body>
 
@@ -2133,6 +2133,26 @@
                             <label>Regex de valor <span style="color:var(--muted);font-weight:400;">(opcional, grupo (?&lt;value&gt;...))</span></label>
                             <input type="text" id="capIntRegex" placeholder="R\$\s*(?&lt;value&gt;\d{1,3}(?:\.\d{3})*,\d{2})">
                         </div>
+                        <div class="input-group">
+                            <label>Cor da coluna no Kanban</label>
+                            <div id="capIntColorPicker" class="cap-color-picker">
+                                <label class="cap-color-swatch cap-color-neutral"><input type="radio" name="capIntColor" value="neutral" checked><span></span></label>
+                                <label class="cap-color-swatch cap-color-blue"><input type="radio" name="capIntColor" value="blue"><span></span></label>
+                                <label class="cap-color-swatch cap-color-amber"><input type="radio" name="capIntColor" value="amber"><span></span></label>
+                                <label class="cap-color-swatch cap-color-green"><input type="radio" name="capIntColor" value="green"><span></span></label>
+                                <label class="cap-color-swatch cap-color-red"><input type="radio" name="capIntColor" value="red"><span></span></label>
+                            </div>
+                        </div>
+                        <div class="cap-grid-main" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+                            <label class="cap-conversion-toggle">
+                                <input class="cbx-lg" type="checkbox" id="capIntTriggerKeyword" checked onchange="capIntAtualizarVisibilidadeGatilho()">
+                                <span><strong>Disparar por palavra-chave</strong><small>O atendente digita a palavra e a etapa dispara.</small></span>
+                            </label>
+                            <label class="cap-conversion-toggle">
+                                <input class="cbx-lg" type="checkbox" id="capIntTriggerDrag">
+                                <span><strong>Disparar ao arrastar no Kanban</strong><small>Mover o card do lead para esta coluna dispara a etapa.</small></span>
+                            </label>
+                        </div>
                         <label class="cap-conversion-toggle" style="margin-bottom:12px;">
                             <input class="cbx-lg" type="checkbox" id="capIntEnabled" checked>
                             <span><strong>Etapa ativa</strong><small>Etapas inativas permanecem salvas, mas não disparam eventos.</small></span>
@@ -2895,6 +2915,7 @@ async function popularSeletorAdmin() {
 
 function trocarClienteAdmin(id) {
     if (typeof _leadsCache !== 'undefined') _leadsCache.clear();
+    if (typeof invalidarKanbanStages === 'function') invalidarKanbanStages();
     clienteAdminSelecionado = id ? parseInt(id) : null;
     if (id) localStorage.setItem('wt_admin_cliente_id', String(id));
     else localStorage.removeItem('wt_admin_cliente_id');
@@ -6153,11 +6174,11 @@ function resetLeadSearchAutofill() {
     input.defaultValue = '';
 }
 </script>
-<script defer src="js/leads.js?v=20260713-kanban2"></script>
+<script defer src="js/leads.js?v=20260713-kanban3"></script>
 <script defer src="js/chat-monitor.js?v=20260712-5"></script>
 <script defer src="js/admin.js?v=20260622-4"></script>
 <script defer src="js/reports-auto.js?v=20260712-1"></script>
-<script defer src="js/captacao.js?v=20260712-7"></script>
+<script defer src="js/captacao.js?v=20260713-1"></script>
 
 <!-- Drawer Perfil do Lead (4 abas) — deve ficar no final do body para z-index funcionar -->
 <div id="leadProfileDrawer" style="position:fixed;inset:0;z-index:9999;display:none;align-items:stretch;justify-content:flex-end;background:rgba(0,0,0,0.55);" onclick="if(event.target===this)fecharPerfilLead()">

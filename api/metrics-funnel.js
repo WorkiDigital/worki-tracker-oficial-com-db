@@ -26,7 +26,8 @@ function mockFunnelMetrics() {
       { date_label: '02 Jul', date_val: '2026-07-02', count: 2, revenue: 994 },
       { date_label: '04 Jul', date_val: '2026-07-04', count: 1, revenue: 797 },
       { date_label: '05 Jul', date_val: '2026-07-05', count: 3, revenue: 1791 }
-    ]
+    ],
+    stages: []
   };
 }
 
@@ -88,7 +89,7 @@ export default async function handler(req, res) {
 
     // 3. Timeline de Vendas e Faturamento
     const salesQ = await pool.query(`
-      SELECT 
+      SELECT
         TO_CHAR(sale_closed_at, 'DD Mon') as date_label,
         DATE(sale_closed_at) as date_val,
         COUNT(*) as count,
@@ -100,10 +101,31 @@ export default async function handler(req, res) {
       ORDER BY DATE(sale_closed_at) ASC
     `, params);
 
+    // 4. Funil por etapa do pipeline configurado (journey_stages) — mesma fonte
+    // do Kanban. Contagem cumulativa via lead_journey_history: uma etapa conta
+    // quem chegou nela OU foi marcado 'skipped' por já ter avançado além dela
+    // (ver dispararEtapaJornada em api/_journey-trigger.js). Sem etapas
+    // configuradas, stages vem vazio — front cai no fallback (ver js/funil.js).
+    let stagesQ = { rows: [] };
+    if (cliente_id) {
+      stagesQ = await pool.query(`
+        SELECT s.id, s.name, s.position, s.color, s.event_concept,
+               COUNT(DISTINCT h.lead_id) FILTER (WHERE h.meta_status IN ('sent','skipped')) AS leads_na_etapa
+        FROM journey_stages s
+        LEFT JOIN lead_journey_history h
+          ON h.stage_id = s.id
+         AND h.created_at > NOW() - INTERVAL '1 day' * $2
+        WHERE s.cliente_id = $1 AND s.tracking_campaign_id IS NULL AND s.enabled = true
+        GROUP BY s.id, s.name, s.position, s.color, s.event_concept
+        ORDER BY s.position ASC, s.id ASC
+      `, [cliente_id, parseInt(periodo, 10)]);
+    }
+
     res.status(200).json({
       overview: overviewQ.rows[0],
       timeline: timelineQ.rows,
-      sales_timeline: salesQ.rows
+      sales_timeline: salesQ.rows,
+      stages: stagesQ.rows
     });
 
   } catch (error) {

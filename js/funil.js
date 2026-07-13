@@ -47,7 +47,7 @@ async function funilCarregar() {
         // Render functions
         _funilRenderVisaoGeral(data.overview);
         _funilRenderOrigens(data.timeline);
-        _funilRenderJornada(data.overview);
+        _funilRenderJornada(data.overview, data.stages);
         _funilRenderFaturamento(data.sales_timeline);
         
     } catch (e) {
@@ -174,17 +174,25 @@ function _funilRenderOrigens(timeline) {
     }
 }
 
-// 3. Funil da Jornada de Compra
-function _funilRenderJornada(ov) {
-    const total = parseInt(ov.total_leads) || 0;
-    const contato = parseInt(ov.first_contact) || 0;
-    const venda = parseInt(ov.sales) || 0;
+// Mesmos tons de cor usados no Kanban (css/dashboard.css .kanban-{tone}).
+const FUNIL_TONE_HEX = {
+    neutral: '#94a3b8', blue: '#3b82f6', amber: '#f59e0b', green: '#10b981', red: '#ef4444',
+};
 
-    const pctContato = total > 0 ? ((contato / total) * 100).toFixed(2) : 0;
-    const pctVenda = total > 0 ? ((venda / total) * 100).toFixed(2) : 0;
-
+// 3. Funil da Jornada de Compra — uma barra por etapa do pipeline configurado
+// (journey_stages, mesma fonte do Kanban). Sem etapas configuradas, cai no
+// fallback fixo (Fez Contato / Comprou) usando as colunas legadas de overview.
+function _funilRenderJornada(ov, stages) {
     const fjWrap = document.getElementById('fjWrap');
-    if (fjWrap) {
+    if (!fjWrap) return;
+
+    const total = parseInt(ov.total_leads) || 0;
+
+    if (!Array.isArray(stages) || !stages.length) {
+        const contato = parseInt(ov.first_contact) || 0;
+        const venda = parseInt(ov.sales) || 0;
+        const pctContato = total > 0 ? ((contato / total) * 100).toFixed(2) : 0;
+        const pctVenda = total > 0 ? ((venda / total) * 100).toFixed(2) : 0;
         fjWrap.innerHTML = `
             <div class="fj-bar" style="width: 100%; background-color: #bae6fd; color: #0284c7;">
                 <div class="fj-label">Fez Contato</div>
@@ -194,8 +202,24 @@ function _funilRenderJornada(ov) {
                 <div class="fj-label">Comprou</div>
                 <div class="fj-val">${pctVenda}% (${venda})</div>
             </div>
+            <div class="fj-empty-hint">Configure seu pipeline na aba Rastreamento Inteligente para ver o funil por etapas.</div>
         `;
+        return;
     }
+
+    const maxCount = Math.max(1, ...stages.map(s => parseInt(s.leads_na_etapa) || 0));
+    fjWrap.innerHTML = stages.map(stage => {
+        const count = parseInt(stage.leads_na_etapa) || 0;
+        const pct = total > 0 ? ((count / total) * 100).toFixed(2) : 0;
+        const largura = count > 0 ? Math.max((count / maxCount) * 100, 10) : 0;
+        const cor = FUNIL_TONE_HEX[stage.color] || FUNIL_TONE_HEX.neutral;
+        return `
+            <div class="fj-bar" style="width: ${largura}%; background-color: ${cor}22; color: ${cor};">
+                <div class="fj-label">${esc(stage.name)}</div>
+                <div class="fj-val">${pct}% (${count})</div>
+            </div>
+        `;
+    }).join('');
 }
 
 // 4. Faturamento Total (Bar Timeline)

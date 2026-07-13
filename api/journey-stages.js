@@ -3,6 +3,9 @@ import { getPool } from './_db.js';
 import { cors } from './_cors.js';
 import { ensureTrackingSchema } from './_tracking-schema.js';
 import { enviarConversao, CONCEPT_KEYS_WPP, CONCEPTS } from './_capi.js';
+import { dispararEtapaJornada } from './_journey-trigger.js';
+
+const CORES_VALIDAS = ['neutral', 'blue', 'amber', 'green', 'red'];
 
 // CRUD da Jornada geral CTWA/WhatsApp (tracking_campaign_id NULL) + histórico.
 // Jornadas de links são salvas transacionalmente por /api/tracking-campaigns.
@@ -13,7 +16,6 @@ import { enviarConversao, CONCEPT_KEYS_WPP, CONCEPTS } from './_capi.js';
 // conceitos válidos nesse canal. Eventos só-web (Contact, ViewContent...) ficam
 // na Jornada de cada link em Captação e Links, não aqui.
 const CONCEITOS = CONCEPT_KEYS_WPP;
-const TRIGGERS  = ['first_message', 'keyword'];
 
 // Valida que um regex compila (evita salvar regex inválida).
 function regexValido(str) {
@@ -115,6 +117,15 @@ export default async function handler(req, res) {
         return res.status(200).json(config.rows[0]);
       }
 
+      // Mover um lead de etapa arrastando o card no Kanban. stage_id=null volta
+      // o lead para a etapa virtual "Novo" (current_stage_id NULL, sem CAPI).
+      if (req.body.action === 'move_lead') {
+        if (method !== 'PATCH') {
+          return res.status(405).json({ error: 'Use PATCH para mover um lead.' });
+        }
+        return await moverLead(req, res, pool, cliente_id);
+      }
+
       if (req.body.action === 'reorder') {
         if (method !== 'PATCH') {
           return res.status(405).json({ error: 'Use PATCH para ordenar as etapas.' });
@@ -160,22 +171,28 @@ export default async function handler(req, res) {
       }
 
       const {
-        id, name, event_concept, trigger_type = 'keyword',
+        id, name, event_concept,
         keywords = [], keyword_match = 'partial', value_regex = null,
         currency = 'BRL', position = 0, enabled = true,
       } = req.body;
+
+      // Gatilhos independentes: uma etapa pode disparar por palavra-chave, por
+      // arraste no Kanban, ou ambos ao mesmo tempo (não é mais um enum exclusivo).
+      const trigger_keyword = req.body.trigger_keyword !== false;
+      const trigger_kanban_drag = req.body.trigger_kanban_drag === true;
+      const color = CORES_VALIDAS.includes(req.body.color) ? req.body.color : 'neutral';
 
       if (!name || !String(name).trim()) return res.status(400).json({ error: 'Nome da etapa é obrigatório.' });
       if (!CONCEITOS.includes(event_concept)) {
         return res.status(400).json({ error: `event_concept inválido. Use: ${CONCEITOS.join(', ')}` });
       }
-      if (!TRIGGERS.includes(trigger_type)) {
-        return res.status(400).json({ error: `trigger_type inválido. Use: ${TRIGGERS.join(', ')}` });
+      if (!trigger_keyword && !trigger_kanban_drag) {
+        return res.status(400).json({ error: 'Ative ao menos um gatilho: palavra-chave ou arraste no Kanban.' });
       }
       const kwArray = Array.isArray(keywords)
         ? keywords.map(k => String(k).trim()).filter(Boolean)
         : String(keywords).split(',').map(k => k.trim()).filter(Boolean);
-      if (trigger_type === 'keyword' && !kwArray.length) {
+      if (trigger_keyword && !kwArray.length) {
         return res.status(400).json({ error: 'Informe pelo menos uma palavra-chave para o gatilho.' });
       }
       if (!regexValido(value_regex)) {
@@ -186,14 +203,15 @@ export default async function handler(req, res) {
         // Editar (garante que a etapa é do cliente).
         const r = await pool.query(
           `UPDATE journey_stages SET
-             name=$1, event_concept=$2, trigger_type=$3, keywords=$4, keyword_match=$5,
-             value_regex=$6, currency=$7, position=$8, enabled=$9, updated_at=NOW()
-           WHERE id=$10 AND cliente_id=$11 AND tracking_campaign_id IS NULL
+             name=$1, event_concept=$2, trigger_keyword=$3, trigger_kanban_drag=$4, keywords=$5,
+             keyword_match=$6, value_regex=$7, currency=$8, position=$9, enabled=$10, color=$11,
+             updated_at=NOW()
+           WHERE id=$12 AND cliente_id=$13 AND tracking_campaign_id IS NULL
            RETURNING *`,
-          [name.trim(), event_concept, trigger_type, kwArray,
+          [name.trim(), event_concept, trigger_keyword, trigger_kanban_drag, kwArray,
            keyword_match === 'exact' ? 'exact' : 'partial',
            value_regex || null, currency || 'BRL', parseInt(position, 10) || 0,
-           enabled !== false, parseInt(id, 10), cliente_id]
+           enabled !== false, color, parseInt(id, 10), cliente_id]
         );
         if (!r.rows.length) return res.status(404).json({ error: 'Etapa não encontrada.' });
         return res.status(200).json(r.rows[0]);
@@ -201,12 +219,12 @@ export default async function handler(req, res) {
 
       const r = await pool.query(
         `INSERT INTO journey_stages
-           (cliente_id, name, event_concept, trigger_type, keywords, keyword_match,
-            value_regex, currency, position, enabled)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
-        [cliente_id, name.trim(), event_concept, trigger_type, kwArray,
+           (cliente_id, name, event_concept, trigger_keyword, trigger_kanban_drag, keywords,
+            keyword_match, value_regex, currency, position, enabled, color)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *`,
+        [cliente_id, name.trim(), event_concept, trigger_keyword, trigger_kanban_drag, kwArray,
          keyword_match === 'exact' ? 'exact' : 'partial',
-         value_regex || null, currency || 'BRL', parseInt(position, 10) || 0, enabled !== false]
+         value_regex || null, currency || 'BRL', parseInt(position, 10) || 0, enabled !== false, color]
       );
       return res.status(200).json(r.rows[0]);
     }
@@ -265,4 +283,73 @@ async function reenviar(req, res, pool, cliente_id) {
   );
 
   return res.status(200).json({ ok: true, capi: { sent: capi.sent, error: capi.error } });
+}
+
+// Move um lead para outra etapa arrastando o card no Kanban. stage_id=null volta
+// o lead para a etapa virtual "Novo" (sem CAPI). Etapa precisa ter
+// trigger_kanban_drag=true — senão o gatilho de arraste não está habilitado nela.
+async function moverLead(req, res, pool, cliente_id) {
+  const leadId = parseInt(req.body.lead_id, 10);
+  if (!leadId) return res.status(400).json({ error: 'lead_id é obrigatório.' });
+  const stageId = req.body.stage_id === null || req.body.stage_id === undefined || req.body.stage_id === ''
+    ? null
+    : parseInt(req.body.stage_id, 10);
+
+  const leadRes = await pool.query(
+    `SELECT l.*, k.fbc, k.fbp, k.ip_address, k.user_agent, k.referrer,
+            k.event_source_url AS click_event_source_url, k.tracking_id
+     FROM leads_tracking l
+     LEFT JOIN tracking_clicks k ON k.id = l.tracking_click_id
+     WHERE l.id = $1 AND l.cliente_id = $2`,
+    [leadId, cliente_id]
+  );
+  if (!leadRes.rows.length) return res.status(404).json({ error: 'Lead não encontrado.' });
+  const lead = leadRes.rows[0];
+  if (lead.click_event_source_url) lead.event_source_url = lead.click_event_source_url;
+
+  if (stageId === null) {
+    const upd = await pool.query(
+      `UPDATE leads_tracking SET current_stage_id = NULL, stage_changed_at = NOW()
+       WHERE id = $1 RETURNING status, current_stage_id`,
+      [leadId]
+    );
+    return res.status(200).json({ ok: true, capi: null, lead: upd.rows[0] });
+  }
+
+  const stagesRes = await pool.query(
+    `SELECT * FROM journey_stages
+     WHERE cliente_id = $1 AND tracking_campaign_id IS NULL
+     ORDER BY position ASC, id ASC`,
+    [cliente_id]
+  );
+  const stage = stagesRes.rows.find(s => Number(s.id) === stageId);
+  if (!stage) return res.status(404).json({ error: 'Etapa não encontrada.' });
+  if (!stage.trigger_kanban_drag) {
+    return res.status(400).json({
+      error: 'Esta etapa não aceita mover por arraste; ative o gatilho de arraste na configuração da etapa.',
+    });
+  }
+  if (stage.event_concept === 'purchase' || stage.event_concept === 'checkout') {
+    return res.status(400).json({
+      error: 'Etapas de compra/checkout exigem valor — use o botão "Venda" para registrar esta etapa.',
+    });
+  }
+
+  const r = await dispararEtapaJornada({
+    lead, stage, allStages: stagesRes.rows, pool, textoOrigem: null, origem: 'kanban_drag',
+  });
+
+  if (r.alreadyProcessed) {
+    const atual = await pool.query(
+      'SELECT status, current_stage_id FROM leads_tracking WHERE id = $1',
+      [leadId]
+    );
+    return res.status(200).json({ ok: true, capi: { sent: true, error: null }, lead: atual.rows[0] });
+  }
+
+  return res.status(200).json({
+    ok: true,
+    capi: { sent: r.sent, error: r.error },
+    lead: r.lead || null,
+  });
 }
