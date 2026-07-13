@@ -28,9 +28,11 @@ function chatBuildParams(extra = {}) {
     const params = new URLSearchParams(extra);
     const cliente = $('chatClienteFilter')?.value || '';
     const instance = $('chatInstanceFilter')?.value || '';
+    const origem = $('chatOrigemFilter')?.value || '';
     const search = $('chatSearchInput')?.value?.trim() || '';
     if (cliente) params.set('cliente_id', cliente);
     if (instance) params.set('instance', instance);
+    if (origem) params.set('origem', origem);
     if (search) params.set('search', search);
     return params;
 }
@@ -56,6 +58,10 @@ function chatBindEvents() {
         chatState.searchTimer = setTimeout(() => chatLoadConversations(false), 300);
     });
     $('chatInstanceFilter')?.addEventListener('change', () => {
+        chatState.selected = null;
+        chatLoadConversations(false);
+    });
+    $('chatOrigemFilter')?.addEventListener('change', () => {
         chatState.selected = null;
         chatLoadConversations(false);
     });

@@ -26,6 +26,11 @@ function addInstanceFilter(where, params, instance) {
   params.push(instance);
   where.push(`m.instance = $${params.length}`);
 }
+function addOrigemFilter(havingWhere, params, origem) {
+  if (!origem) return;
+  params.push(origem);
+  havingWhere.push(`lead.lead_origin = $${params.length}`);
+}
 
 export default async function handler(req, res) {
   if (cors(req, res, ['GET', 'POST'])) return;
@@ -68,6 +73,8 @@ export default async function handler(req, res) {
       const params = [];
       addScopedClient(where, params, user, req.query.cliente_id);
       addInstanceFilter(where, params, req.query.instance);
+      const origemWhere = [];
+      addOrigemFilter(origemWhere, params, req.query.origem);
 
       const search = String(req.query.search || '').trim();
       const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
@@ -118,9 +125,11 @@ export default async function handler(req, res) {
           ORDER BY l.created_at DESC NULLS LAST, l.id DESC
           LIMIT 1
         ) lead ON true
-        ${searchParam ? `WHERE lm.telefone ILIKE $${searchIdx}
+        WHERE TRUE
+          ${origemWhere.length ? `AND ${origemWhere.join(' AND ')}` : ''}
+          ${searchParam ? `AND (lm.telefone ILIKE $${searchIdx}
            OR lm.push_name ILIKE $${searchIdx}
-           OR lead.nome ILIKE $${searchIdx}` : ''}
+           OR lead.nome ILIKE $${searchIdx})` : ''}
         ORDER BY lm.message_at DESC, lm.id DESC
         LIMIT 200
       `, params);
