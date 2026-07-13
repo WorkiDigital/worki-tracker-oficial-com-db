@@ -106,7 +106,8 @@ function _funilRenderVisaoGeral(ov) {
                     cutout: '80%',
                     plugins: {
                         legend: { display: false },
-                        tooltip: { enabled: true }
+                        tooltip: { enabled: true },
+                        datalabels: { display: false }
                     }
                 }
             });
@@ -154,7 +155,18 @@ function _funilRenderOrigens(timeline) {
                         y: { stacked: true, border: { display: false } }
                     },
                     plugins: {
-                        legend: { position: 'bottom', labels: { boxWidth: 10, usePointStyle: true } }
+                        legend: { position: 'bottom', labels: { boxWidth: 10, usePointStyle: true } },
+                        // Sem isso o datalabels (registrado globalmente) usa o default preto,
+                        // ilegivel sobre azul/cinza em ambos os temas. Branco + contorno escuro
+                        // garante contraste nas duas paletas; oculta quando o segmento e 0 (o
+                        // "0" flutuando sobre a barra vizinha era so ruido visual).
+                        datalabels: {
+                            display: (ctx) => (ctx.dataset.data[ctx.dataIndex] || 0) > 0,
+                            color: '#fff',
+                            font: { weight: '700', size: 11 },
+                            textStrokeColor: 'rgba(0,0,0,.55)',
+                            textStrokeWidth: 2,
+                        }
                     }
                 }
             });
@@ -219,7 +231,20 @@ function _funilRenderFaturamento(sales) {
                         y: { border: { display: false }, ticks: { precision: 0 } }
                     },
                     plugins: {
-                        legend: { display: false }
+                        legend: { display: false },
+                        // anchor/align 'start' desenha o numero DENTRO da barra (perto do
+                        // topo), sempre sobre o azul — branco+contorno da contraste nos
+                        // dois temas sem depender da cor de fundo do card por tras da barra.
+                        datalabels: {
+                            display: (ctx) => (ctx.dataset.data[ctx.dataIndex] || 0) > 0,
+                            color: '#fff',
+                            anchor: 'end',
+                            align: 'start',
+                            offset: 4,
+                            font: { weight: '700', size: 11 },
+                            textStrokeColor: 'rgba(0,0,0,.55)',
+                            textStrokeWidth: 2,
+                        }
                     }
                 }
             });
