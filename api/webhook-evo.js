@@ -850,8 +850,16 @@ async function processarJornadaFromMe(pool, { clienteIdFm, telefoneFm, textoFm }
   );
   const lead = leadRes.rows[0];
   if (!lead) {
+    // Diagnostico: mostra o cliente_id usado na busca E quais cliente_id o
+    // telefone realmente tem, para revelar mismatch de cliente/instancia.
+    let telefonesNoBanco = [];
+    try {
+      const dbg = await pool.query('SELECT id, cliente_id FROM leads_tracking WHERE telefone = $1 LIMIT 5', [telefoneFm]);
+      telefonesNoBanco = dbg.rows;
+    } catch (_) {}
     await gravarLogWebhook({ cliente_id: clienteIdFm, instance: 'jornada', tag: 'journey_debug', level: 'warn',
-      message: 'Jornada: lead nao encontrado por telefone+cliente', data: { telefone: telefoneFm, texto: textoFm.slice(0, 80) } });
+      message: 'Jornada: lead nao encontrado por telefone+cliente',
+      data: { telefone: telefoneFm, cliente_id_buscado: clienteIdFm, leads_com_esse_telefone: telefonesNoBanco, texto: textoFm.slice(0, 80) } });
     return;
   }
   if (lead.click_event_source_url) lead.event_source_url = lead.click_event_source_url;

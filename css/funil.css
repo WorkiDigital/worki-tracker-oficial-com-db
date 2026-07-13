@@ -1,0 +1,142 @@
+/* css/funil.css */
+
+#aba-funil {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.funil-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.funil-grid {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 24px;
+}
+
+.funil-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    padding: 24px;
+    box-shadow: var(--shadow-card);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+
+.funil-card-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 20px;
+}
+
+/* Gauge area */
+.funil-gauge-wrap {
+    position: relative;
+    width: 100%;
+    height: 180px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    margin-top: auto;
+}
+.funil-gauge-center {
+    position: absolute;
+    bottom: 10px;
+    font-size: 32px;
+    font-weight: 800;
+    color: var(--text-primary);
+    text-align: center;
+    line-height: 1;
+}
+
+/* Legend items */
+.funil-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 24px;
+}
+.funil-legend-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--bg-secondary);
+    padding: 10px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+}
+.funil-legend-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--text-primary);
+    font-weight: 500;
+}
+.funil-legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+.funil-legend-val {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+.funil-legend-pct {
+    font-size: 12px;
+    color: var(--muted);
+    margin-left: 6px;
+}
+
+/* Horizontal Funnel Bars */
+.fj-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 20px 0;
+}
+.fj-bar {
+    border-radius: 4px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    transition: width 0.5s ease;
+    min-width: 120px;
+}
+.fj-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 700;
+    opacity: 0.8;
+}
+.fj-val {
+    font-size: 16px;
+    font-weight: 800;
+    margin-top: 4px;
+}
+
+/* Chart containers */
+.chart-container {
+    position: relative;
+    height: 250px;
+    width: 100%;
+}
+
+.funil-loading .funil-card {
+    opacity: 0.6;
+    pointer-events: none;
+}

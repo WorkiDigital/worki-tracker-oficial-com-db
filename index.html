@@ -14,7 +14,9 @@
          Não incluir aqui — evita baixar ~500KB em toda sessão mesmo sem abrir Anúncios ou exportar PDF. -->
     <link rel="stylesheet" href="css/dashboard.css?v=20260712-4">
     <link rel="stylesheet" href="css/splash.css?v=20260712-1">
+    <link rel="stylesheet" href="css/funil.css">
     <script defer src="js/utils.js?v=20260712-1"></script>
+    <script defer src="js/funil.js"></script>
 </head>
 <body>
 
@@ -782,6 +784,9 @@
         </a>
 
         <div class="nav-sep"><span>An&aacute;lise</span></div>
+        <a id="btn-funil" class="nav-item" onclick="mudarAba('funil')">
+            <i data-lucide="filter" style="width:17px;flex-shrink:0;"></i><span>Funil de Vendas</span>
+        </a>
         <a id="btn-relatorios" class="nav-item" onclick="mudarAba('relatorios')">
             <i data-lucide="bar-chart-2" style="width:17px;flex-shrink:0;"></i><span>Relat&oacute;rios</span>
         </a>
@@ -1110,6 +1115,136 @@
                 </button>
                 <!-- A .chat-thread-panel do monitor é movida para cá ao abrir e devolvida ao fechar. -->
                 <div class="chat-modal-slot" id="chatModalSlot"></div>
+            </div>
+        </div>
+
+        <!-- ABA: FUNIL DE VENDAS -->
+        <div id="aba-funil" class="aba-oculta">
+            <div class="funil-header">
+                <div></div>
+                <div class="input-group" style="width:200px;">
+                    <select id="funilPeriodo" class="bare pad-md" style="width:100%;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none;">
+                        <option value="7">Últimos 7 dias</option>
+                        <option value="14">Últimos 14 dias</option>
+                        <option value="30" selected>Últimos 30 dias</option>
+                        <option value="60">Últimos 60 dias</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="funil-grid">
+                <!-- Top Left: Visao Geral -->
+                <div class="funil-card">
+                    <div class="funil-card-title">Visão Geral das Conversas</div>
+                    
+                    <div style="display:flex; gap:10px; margin-bottom: 20px;">
+                        <div style="flex:1; background:var(--bg-secondary); padding:12px; border-radius:8px; border:1px solid var(--border); display:flex; flex-direction:column; gap:4px;">
+                            <div style="display:flex; align-items:center; gap:6px; font-size:12px; color:var(--muted);"><i data-lucide="messages-square" style="width:14px; color:var(--text);"></i> Total de Conversas</div>
+                            <div id="fgTotal" style="font-size:20px; font-weight:800;">—</div>
+                        </div>
+                    </div>
+                    
+                    <div class="funil-legend">
+                        <div class="funil-legend-item">
+                            <div class="funil-legend-label">
+                                <div class="funil-legend-dot" style="background:#25d366;"></div>
+                                Rastreadas
+                            </div>
+                            <div>
+                                <span class="funil-legend-val" id="fgTrackedVal">—</span>
+                                <span class="funil-legend-pct" id="fgTrackedPct"></span>
+                            </div>
+                        </div>
+                        <div class="funil-legend-item">
+                            <div class="funil-legend-label">
+                                <div class="funil-legend-dot" style="background:#f97316;"></div>
+                                Não rastreadas
+                            </div>
+                            <div>
+                                <span class="funil-legend-val" id="fgUntrackedVal">—</span>
+                                <span class="funil-legend-pct" id="fgUntrackedPct"></span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="display:flex; align-items:center; gap:8px; background:var(--bg-secondary); padding:10px 14px; border-radius:8px; border:1px solid var(--border);">
+                        <i data-lucide="clock" style="width:16px; color:#3b82f6;"></i>
+                        <div style="font-size:12px; color:var(--muted);">Tempo médio 1ª resposta</div>
+                        <div id="fgAvgResponse" style="margin-left:auto; font-weight:700; font-size:13px;">—</div>
+                    </div>
+
+                    <div class="funil-gauge-wrap">
+                        <canvas id="chartVisaoGeral"></canvas>
+                        <div class="funil-gauge-center" id="chartVisaoGeralCenter">—</div>
+                    </div>
+                </div>
+
+                <!-- Top Right: Origem -->
+                <div class="funil-card">
+                    <div class="funil-card-title">Origem das Conversas</div>
+                    
+                    <div style="display:flex; justify-content:space-between; margin-bottom:20px; gap:10px;">
+                        <div style="flex:1; text-align:center; padding:10px; background:var(--bg-secondary); border-radius:8px; border:1px solid var(--border);">
+                            <div style="display:flex; align-items:center; justify-content:center; gap:6px; font-size:12px; color:var(--muted); margin-bottom:4px;">
+                                <img src="https://cdn.simpleicons.org/meta/1877f2" style="width:12px;"> Meta Ads
+                            </div>
+                            <div id="foMeta" style="font-size:18px; font-weight:800;">—</div>
+                        </div>
+                        <div style="flex:1; text-align:center; padding:10px; background:var(--bg-secondary); border-radius:8px; border:1px solid var(--border);">
+                            <div style="display:flex; align-items:center; justify-content:center; gap:6px; font-size:12px; color:var(--muted); margin-bottom:4px;">
+                                <img src="https://cdn.simpleicons.org/google/34a853" style="width:12px;"> Google Ads
+                            </div>
+                            <div id="foGoogle" style="font-size:18px; font-weight:800;">—</div>
+                        </div>
+                        <div style="flex:1; text-align:center; padding:10px; background:var(--bg-secondary); border-radius:8px; border:1px solid var(--border);">
+                            <div style="display:flex; align-items:center; justify-content:center; gap:6px; font-size:12px; color:var(--muted); margin-bottom:4px;">
+                                <i data-lucide="globe" style="width:12px; color:#64748b;"></i> Outras
+                            </div>
+                            <div id="foOutras" style="font-size:18px; font-weight:800;">—</div>
+                        </div>
+                        <div style="flex:1; text-align:center; padding:10px; background:var(--bg-secondary); border-radius:8px; border:1px solid var(--border);">
+                            <div style="display:flex; align-items:center; justify-content:center; gap:6px; font-size:12px; color:var(--muted); margin-bottom:4px;">
+                                <i data-lucide="link-2-off" style="width:12px; color:#f97316;"></i> Não rastr.
+                            </div>
+                            <div id="foNaoRast" style="font-size:18px; font-weight:800;">—</div>
+                        </div>
+                    </div>
+
+                    <div class="chart-container">
+                        <canvas id="chartOrigens"></canvas>
+                    </div>
+                </div>
+
+                <!-- Bottom Left: Funil -->
+                <div class="funil-card">
+                    <div class="funil-card-title">Funil da Jornada de Compra</div>
+                    <div id="fjWrap" class="fj-wrap">
+                        <div style="color:var(--muted);font-size:13px;text-align:center;padding:20px;">Carregando...</div>
+                    </div>
+                </div>
+
+                <!-- Bottom Right: Faturamento -->
+                <div class="funil-card">
+                    <div class="funil-card-title">Faturamento Total</div>
+                    <div style="display:flex; justify-content:space-between; margin-bottom:20px; gap:10px;">
+                        <div style="flex:1; padding:12px; background:var(--bg-secondary); border-radius:8px; border:1px solid var(--border);">
+                            <div style="display:flex; align-items:center; gap:6px; font-size:12px; color:var(--muted); margin-bottom:4px;">
+                                <i data-lucide="check-circle-2" style="width:14px; color:#38bdf8;"></i> Total de Vendas
+                            </div>
+                            <div id="ffTotalVendas" style="font-size:20px; font-weight:800; color:#38bdf8;">—</div>
+                        </div>
+                        <div style="flex:1; padding:12px; background:var(--bg-secondary); border-radius:8px; border:1px solid var(--border);">
+                            <div style="display:flex; align-items:center; gap:6px; font-size:12px; color:var(--muted); margin-bottom:4px;">
+                                <i data-lucide="dollar-sign" style="width:14px; color:#10b981;"></i> Faturamento Total (R$)
+                            </div>
+                            <div id="ffFaturamento" style="font-size:20px; font-weight:800; color:#10b981;">—</div>
+                        </div>
+                    </div>
+
+                    <div class="chart-container">
+                        <canvas id="chartFaturamento"></canvas>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -5137,10 +5272,11 @@ document.addEventListener('keydown', e => {
 });
 
 // ── Abas ───────────────────────────────────────────────────────
-const ABAS = ['leads','conversas','relatorios','anuncios','captacao','inteligente','clientes','conta','config','ajustes','agencia','whatsapp','zaprelatorios','logs'];
+const ABAS = ['leads','conversas','funil','relatorios','anuncios','captacao','inteligente','clientes','conta','config','ajustes','agencia','whatsapp','zaprelatorios','logs'];
 const TITULOS = {
     leads:          '<i data-lucide="users" style="color:var(--blue);"></i> Leads',
     conversas:      '<i data-lucide="messages-square" style="color:#25D366;"></i> Conversas',
+    funil:          '<i data-lucide="filter" style="color:var(--blue);"></i> Funil de Vendas',
     relatorios:     '<i data-lucide="bar-chart-2" style="color:var(--blue);"></i> Relatórios',
     anuncios:       '<img src="https://cdn.simpleicons.org/meta/0082FB" style="width:16px;height:16px;display:inline;vertical-align:-2px;margin-right:6px;" alt="Meta"> Meta Ads',
     captacao:       '<i data-lucide="link" style="color:var(--blue);"></i> Link de rastreamento',
@@ -5173,6 +5309,7 @@ function mudarAba(aba) {
         if ($('chatModalOverlay')?.style.display === 'flex' && typeof fecharConversaModal === 'function') fecharConversaModal();
         if (typeof chatMonitorInit === 'function') chatMonitorInit();
     }
+    if (aba === 'funil') { funilInit(); }
     if (aba === 'anuncios' && !adsCarregado) carregarAnuncios();
     if (aba === 'captacao') { carregarCampanhasLink(); }
     if (aba === 'inteligente') { capIntCarregar(); }
