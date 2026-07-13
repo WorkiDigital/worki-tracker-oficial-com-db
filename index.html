@@ -12,7 +12,7 @@
     <script defer src="https://cdn.jsdelivr.net/npm/lucide@0.469.0/dist/umd/lucide.min.js"></script>
     <!-- Chart.js, html2canvas e jsPDF são carregados sob demanda via loadScript() (utils.js).
          Não incluir aqui — evita baixar ~500KB em toda sessão mesmo sem abrir Anúncios ou exportar PDF. -->
-    <link rel="stylesheet" href="css/dashboard.css?v=20260713-kanban1">
+    <link rel="stylesheet" href="css/dashboard.css?v=20260713-kanban2">
     <link rel="stylesheet" href="css/splash.css?v=20260712-1">
     <link rel="stylesheet" href="css/funil.css?v=20260713-1">
     <script defer src="js/utils.js?v=20260712-1"></script>
@@ -200,13 +200,13 @@
 <div id="qualificarModal" class="modal-overlay" role="dialog" aria-modal="true" onclick="if(event.target===this) this.classList.remove('open')">
     <div class="modal" style="max-width:400px;text-align:center;">
         <div class="modal-head" style="justify-content:center;margin-bottom:15px;border-bottom:none;">
-            <div class="modal-icon" style="background:rgba(59, 130, 246, 0.1);color:var(--c6);"><i data-lucide="check-circle" style="width:24px;height:24px;"></i></div>
+            <div class="modal-icon" style="background:rgba(59, 130, 246, 0.1);color:var(--blue);"><i data-lucide="check-circle" style="width:24px;height:24px;"></i></div>
         </div>
         <h3 style="margin:0 0 10px;font-size:18px;">Qualificar Lead</h3>
         <p style="color:var(--muted);font-size:13px;margin-bottom:20px;">Marcar o lead <strong id="modalQualificarNome" style="color:var(--text-primary)"></strong> como Qualificado?<br>O evento será enviado para a Meta imediatamente.</p>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-            <button class="btn btn-sm" onclick="$('qualificarModal').classList.remove('open')" style="border:1px solid var(--border);background:var(--bg-secondary);color:var(--text-primary);">Cancelar</button>
-            <button class="btn btn-sm" id="btnConfirmarQualificacao" onclick="confirmarQualificacao()" style="background:var(--c6);color:#fff;border:none;display:inline-flex;align-items:center;justify-content:center;gap:6px;"><i data-lucide="check" style="width:14px;"></i> Confirmar</button>
+        <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;">
+            <button type="button" class="btn btn-sm" onclick="$('qualificarModal').classList.remove('open')" style="width:100%;min-height:34px;border:1px solid var(--border);background:var(--bg-secondary);color:var(--text-primary);justify-content:center;">Cancelar</button>
+            <button type="button" class="btn btn-sm" id="btnConfirmarQualificacao" onclick="confirmarQualificacao()" style="width:100%;min-height:34px;background:var(--blue);color:#fff;border:none;display:inline-flex;align-items:center;justify-content:center;gap:6px;"><i data-lucide="check" style="width:14px;"></i> Confirmar</button>
         </div>
     </div>
 </div>
@@ -6153,7 +6153,7 @@ function resetLeadSearchAutofill() {
     input.defaultValue = '';
 }
 </script>
-<script defer src="js/leads.js?v=20260713-kanban1"></script>
+<script defer src="js/leads.js?v=20260713-kanban2"></script>
 <script defer src="js/chat-monitor.js?v=20260712-5"></script>
 <script defer src="js/admin.js?v=20260622-4"></script>
 <script defer src="js/reports-auto.js?v=20260712-1"></script>
