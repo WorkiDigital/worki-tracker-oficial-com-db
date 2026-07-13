@@ -151,9 +151,12 @@ export default async function handler(req, res) {
       data: { tracking_id: trackingId, visitor_id: visitorId, page_url: pageUrl, fbclid: !!fbclid },
     });
 
-    const messageTemplate = clean(body.message, 1000) || campaign.default_message || 'Olá! Gostaria de mais informações.';
-    const baseMsg = formatarMensagemDinamica(messageTemplate, { utm_source, utm_medium, utm_campaign, utm_content })
-      || 'Olá! Gostaria de mais informações.';
+    // A mensagem vem EXCLUSIVAMENTE do campo configurado no painel
+    // (campaign.default_message). Ignora o data-wapp-message do botão HTML e não
+    // tem fallback fixo — o painel é a única fonte da verdade. Se o cliente deixar
+    // vazio, o WhatsApp abre sem texto pré-preenchido.
+    const messageTemplate = campaign.default_message || '';
+    const baseMsg = formatarMensagemDinamica(messageTemplate, { utm_source, utm_medium, utm_campaign, utm_content });
     const mensagem = inserirTokenNaMensagem(baseMsg, encodeToken(trackingId));
     const numero = (destino.whatsapp_number || '').replace(/\D/g, '');
     const waUrl = `https://api.whatsapp.com/send/?phone=${numero}&text=${encodeURIComponent(mensagem)}&type=phone_number&app_absent=0`;

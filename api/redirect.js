@@ -356,10 +356,14 @@ export default async function handler(req, res) {
     }
 
     // 4. Mensagem + token invisível
-    const messageTemplate = campaign.default_message || 'Olá! Gostaria de mais informações.';
+    // A mensagem vem EXCLUSIVAMENTE do campo configurado no painel
+    // (campaign.default_message). Sem fallback: se o cliente deixar vazio, o
+    // WhatsApp abre sem texto pré-preenchido. Decisão do usuário — o painel é a
+    // única fonte da verdade da mensagem.
+    const messageTemplate = campaign.default_message || '';
     const baseMsg = formatarMensagemDinamica(messageTemplate, {
       utm_source, utm_medium, utm_campaign, utm_content,
-    }) || 'Olá! Gostaria de mais informações.';
+    });
     const mensagem = inserirTokenNaMensagem(baseMsg, encodeToken(trackingId));
 
     // 5. Página intermediária com Pixel (PageView no navegador) + redireciona.
