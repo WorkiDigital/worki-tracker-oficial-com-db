@@ -970,6 +970,31 @@ o delay de ~1.4s que o `redirect.js` usa para o Pixel/gtag terem tempo de dispar
 - `gclid` já era capturado em `collectParams()` desde antes — nenhuma mudança na captura, só no que
   é feito com o dado depois de chegar no backend.
 
+## 🎨 Página de redirecionamento personalizável por link (2026-07)
+
+A telinha intermediária do link rastreável (`/r/<slug>`, gerada por `htmlPagePixel` em
+`api/redirect.js`) — que aparece ~1.4s antes de abrir o WhatsApp enquanto o Pixel/gtag dispara — é
+personalizável **por link**: título, subtítulo e cor de fundo. Visual em card branco centralizado
+sobre a cor escolhida (spinner verde). Campos vazios → usa os padrões.
+
+### Onde configura / onde flui
+- **Modal de link → aba Configuração** (`index.html`): seção "Página de redirecionamento" com
+  `capRedirectTitle` (120 chars), `capRedirectSubtitle` (200), `capRedirectBgColor` (`<input
+  type="color">`, default `#e5ddd5`).
+- **`js/captacao.js`**: reset (color reseta pra `#e5ddd5`, não `''`, senão o picker fica preto),
+  preenchimento na edição, e leitura em `capBodyCliente` → `redirect_title/subtitle/bg_color`.
+- **`api/tracking-campaigns.js`**: INSERT (slice 120/200/20) + UPDATE (allow-list `campos[]`).
+- **3 colunas** em `tracking_campaigns` (`redirect_title/subtitle/bg_color`), auto-migram via
+  `ensureTrackingSchema`. `redirect.js` usa `SELECT *`, então já chegam no `campaign`.
+
+### ⚠️ Segurança (não remover)
+Título/subtítulo/cor vêm do usuário e são injetados em HTML/CSS inline. Em `api/redirect.js`:
+- **`escHtml()`** escapa `< > & " '` do título/subtítulo — sem isso, `<script>` no título = XSS na
+  página servida a QUALQUER pessoa que clicar no link.
+- **`corSegura()`** valida a cor por regex (só `#hex`, `rgb()/rgba()`, ou nome CSS `[a-z]{3,20}`) —
+  qualquer coisa fora disso (ex: `red;background:url(x)//`) cai no fallback. Sem isso, injeção de CSS
+  arbitrário no `style` inline do `body`.
+
 ## 🧹 Limpeza de emojis/símbolos no nome dos leads (2026-07)
 
 `leads_tracking.nome` (vindo de `pushName` do WhatsApp) às vezes chega decorado com emojis (ex:
