@@ -31,6 +31,30 @@ export default async function handler(req, res) {
 
   const user = await verifyAuth(req, res);
   if (!user) return;
+  if (process.env.NODE_ENV !== 'production' && req.method === 'GET') {
+    const destino = {
+      id: 9001,
+      cliente_id: user.cliente_id ?? null,
+      nome: 'Modelo Grupo Comercial',
+      account_id: 'act_1234567890',
+      instance_name: 'modelo_atendimento',
+      destino_tipo: 'grupo',
+      destino_jid: '5511999999999-123456@g.us',
+      destino_nome: 'Equipe Comercial',
+      total_relatorios: 2,
+      criado_em: new Date().toISOString()
+    };
+    if (req.query.id) {
+      return res.status(200).json({
+        ...destino,
+        relatorios: [
+          { id: 9101, destino_id: 9001, template: 'Relatorio diario modelo: leads, conversas, vendas e faturamento.', frequencia: 'diario', horario: '09:00', periodo: 'yesterday', campaign_filter_text: 'DEMO', campaign_objectives: ['OUTCOME_LEADS'], status: 'ativo', criado_em: new Date().toISOString() },
+          { id: 9102, destino_id: 9001, template: 'Resumo semanal modelo por campanha e objetivo.', frequencia: 'semanal', horario: '18:30', periodo: 'last_7d', campaign_filter_text: 'DEMO', campaign_objectives: ['OUTCOME_SALES','OUTCOME_LEADS'], status: 'ativo', criado_em: new Date().toISOString() }
+        ]
+      });
+    }
+    return res.status(200).json([destino]);
+  }
 
   const pool = getPool();
   await ensureZapDestinosSchema(pool);
