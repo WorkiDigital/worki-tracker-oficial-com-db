@@ -95,13 +95,26 @@ export default async function handler(req, res) {
           FROM scoped
           ORDER BY cliente_id, instance, telefone, message_at DESC, id DESC
         ),
+        -- Nome do CONTATO: pega o push_name da ultima mensagem que veio DELE
+        -- (from_me=false, nao vazio) — nunca da empresa. Sem isso, se a ultima
+        -- mensagem da conversa fosse uma resposta da propria empresa, a lista
+        -- mostrava o nome do negocio no lugar do cliente.
+        contact_name AS (
+          SELECT DISTINCT ON (cliente_id, instance, telefone)
+            cliente_id, instance, telefone, push_name AS contact_push_name
+          FROM scoped
+          WHERE from_me = false AND push_name IS NOT NULL AND push_name <> ''
+          ORDER BY cliente_id, instance, telefone, message_at DESC, id DESC
+        ),
         counts AS (
           SELECT cliente_id, instance, telefone, COUNT(*)::int AS message_count
           FROM scoped
           GROUP BY cliente_id, instance, telefone
         )
         SELECT
-          lm.*,
+          lm.id, lm.cliente_id, lm.lead_id, lm.instance, lm.telefone, lm.from_me,
+          lm.body, lm.message_type, lm.media_url, lm.message_at,
+          COALESCE(cn.contact_push_name, lm.push_name) AS push_name,
           c.message_count,
           cli.nome AS cliente_nome,
           lead.id AS lead_id,
@@ -116,6 +129,10 @@ export default async function handler(req, res) {
           ON c.cliente_id = lm.cliente_id
          AND c.instance = lm.instance
          AND c.telefone = lm.telefone
+        LEFT JOIN contact_name cn
+          ON cn.cliente_id = lm.cliente_id
+         AND cn.instance = lm.instance
+         AND cn.telefone = lm.telefone
         LEFT JOIN public.clientes cli ON cli.id = lm.cliente_id
         LEFT JOIN LATERAL (
           SELECT id, nome, status, lead_origin, utm_campaign, utm_medium, utm_content
