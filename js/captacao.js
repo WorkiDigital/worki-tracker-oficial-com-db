@@ -803,9 +803,10 @@ async function abrirModalCampanha(id, duplicar = false) {
   _capJornadaEtapas = [];
 
   // Reset form
-  ['capNome','capMensagem','capUtmSource','capUtmMedium','capUtmCampaign','capUtmContent','capAllowedDomains','capButtonText'].forEach(i => {
+  ['capNome','capMensagem','capUtmSource','capUtmMedium','capUtmCampaign','capUtmContent','capAllowedDomains','capButtonText','capRedirectTitle','capRedirectSubtitle'].forEach(i => {
     const el = $(i); if (el) el.value = '';
   });
+  const bgEl = $('capRedirectBgColor'); if (bgEl) bgEl.value = '#e5ddd5';
   const modeEl = $('capModo'); if (modeEl) modeEl.value = 'single';
   const origEl = $('capOrigem'); if (origEl) origEl.value = 'bio';
   $('capConversionAuto').checked = false;
@@ -840,6 +841,9 @@ async function abrirModalCampanha(id, duplicar = false) {
       $('capConversionEvent').value = c.conversion_event || 'lead';
       $('capAllowedDomains').value = Array.isArray(c.allowed_domains) ? c.allowed_domains.join(', ') : '';
       $('capButtonText').value = c.button_text || '';
+      $('capRedirectTitle').value = c.redirect_title || '';
+      $('capRedirectSubtitle').value = c.redirect_subtitle || '';
+      $('capRedirectBgColor').value = c.redirect_bg_color || '#e5ddd5';
       _capDestinos = (c.destinations || []).map(d => {
         const copia = { ...d };
         if (duplicar) delete copia.id;
@@ -1132,6 +1136,9 @@ async function salvarCampanha() {
     conversion_event:$('capConversionEvent')?.value || 'lead',
     allowed_domains: ($('capAllowedDomains')?.value || '').split(',').map(s => s.trim()).filter(Boolean),
     button_text:     $('capButtonText')?.value.trim() || null,
+    redirect_title:    $('capRedirectTitle')?.value.trim()    || null,
+    redirect_subtitle: $('capRedirectSubtitle')?.value.trim() || null,
+    redirect_bg_color: $('capRedirectBgColor')?.value.trim()  || null,
     destinations:    _capDestinos,
     journey_stages:  _capJornadaEtapas.map((stage, position) => ({ ...stage, position })),
   });

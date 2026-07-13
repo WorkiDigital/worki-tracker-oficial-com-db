@@ -414,6 +414,25 @@
         </div>
 
         <div style="background:var(--tag);border:1px solid var(--border);border-radius:10px;padding:14px;margin:4px 0 16px;">
+            <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px;">Página de redirecionamento <span style="color:var(--muted);font-weight:400;font-size:11px;">(opcional)</span></div>
+            <p style="font-size:11px;color:var(--muted);margin-bottom:12px;">Personalize a telinha curta que aparece antes de abrir o WhatsApp. Se deixar vazio, usa o texto padrão.</p>
+            <div style="display:grid;grid-template-columns:1fr auto;gap:12px;align-items:end;">
+                <div class="input-group" style="margin:0;">
+                    <label>Título</label>
+                    <input id="capRedirectTitle" type="text" maxlength="120" placeholder="Por favor, aguarde alguns segundos.">
+                </div>
+                <div class="input-group" style="margin:0;">
+                    <label>Cor de fundo</label>
+                    <input id="capRedirectBgColor" type="color" value="#e5ddd5" style="width:56px;height:38px;padding:2px;cursor:pointer;">
+                </div>
+            </div>
+            <div class="input-group" style="margin:12px 0 0;">
+                <label>Subtítulo</label>
+                <input id="capRedirectSubtitle" type="text" maxlength="200" placeholder="Estamos localizando um atendente disponível…">
+            </div>
+        </div>
+
+        <div style="background:var(--tag);border:1px solid var(--border);border-radius:10px;padding:14px;margin:4px 0 16px;">
             <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;">
                 <div>
                     <div style="font-size:13px;font-weight:700;color:var(--text);">Números de destino</div>
@@ -5993,7 +6012,7 @@ function resetLeadSearchAutofill() {
 <script defer src="js/chat-monitor.js?v=20260712-5"></script>
 <script defer src="js/admin.js?v=20260622-4"></script>
 <script defer src="js/reports-auto.js?v=20260712-1"></script>
-<script defer src="js/captacao.js?v=20260622-6"></script>
+<script defer src="js/captacao.js?v=20260712-7"></script>
 
 <!-- Drawer Perfil do Lead (4 abas) — deve ficar no final do body para z-index funcionar -->
 <div id="leadProfileDrawer" style="position:fixed;inset:0;z-index:9999;display:none;align-items:stretch;justify-content:flex-end;background:rgba(0,0,0,0.55);" onclick="if(event.target===this)fecharPerfilLead()">

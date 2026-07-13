@@ -256,6 +256,13 @@ async function createTrackingSchema() {
       ALTER TABLE public.tracking_campaigns
       ADD COLUMN IF NOT EXISTS button_text VARCHAR(80);
 
+      -- Textos e cor de fundo personalizaveis da pagina intermediaria de
+      -- redirecionamento (/r/<slug>). NULL = usa os padroes do redirect.js.
+      ALTER TABLE public.tracking_campaigns
+      ADD COLUMN IF NOT EXISTS redirect_title VARCHAR(120),
+      ADD COLUMN IF NOT EXISTS redirect_subtitle VARCHAR(200),
+      ADD COLUMN IF NOT EXISTS redirect_bg_color VARCHAR(20);
+
       -- Vincula o clique nascido do script de site ao visitor_id do PageView,
       -- permitindo correlacionar PageView → clique → lead na jornada.
       ALTER TABLE public.tracking_clicks

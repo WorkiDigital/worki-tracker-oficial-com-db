@@ -113,8 +113,29 @@ async function gravarLog(pool, { cliente_id, instance, tag, level, message, data
 // Página intermediária: dispara o Pixel (PageView) no navegador com o mesmo
 // event_id do CAPI server-side (dedup), espera ~1.5s e redireciona pro WhatsApp.
 // Spinner discreto para o usuário entender que é rápido.
-function htmlPagePixel({ waUrl, pixelId, eventId, fbc, fbp, googleAdsId, googleAdsLabel, gclid }) {
+// Escapa texto para uso seguro dentro do HTML (evita quebra/injeção via título/subtítulo).
+function escHtml(s) {
+  return String(s || '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+// Só aceita cor num formato seguro (#hex, rgb/rgba, ou nome CSS simples) para
+// injetar em CSS inline. Qualquer coisa fora disso cai no padrão escuro.
+function corSegura(cor, fallback) {
+  const c = String(cor || '').trim();
+  if (/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(c)) return c;
+  if (/^rgba?\(\s*[\d.,\s%]+\)$/i.test(c)) return c;
+  if (/^[a-z]{3,20}$/i.test(c)) return c; // nomes CSS (white, beige, etc.)
+  return fallback;
+}
+
+function htmlPagePixel({ waUrl, pixelId, eventId, fbc, fbp, googleAdsId, googleAdsLabel, gclid, redirectTitle, redirectSubtitle, redirectBgColor }) {
   const safeUrl = waUrl.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+  const bgColor = corSegura(redirectBgColor, '#e5ddd5');
+  // Título/subtítulo: usa os configurados, senão os padrões. Escapados p/ HTML.
+  const titulo = escHtml(redirectTitle || 'Redirecionando para o WhatsApp…');
+  const subtitulo = redirectSubtitle != null && String(redirectSubtitle).trim() !== ''
+    ? escHtml(redirectSubtitle) : '';
   const pixelSnippet = pixelId ? `
   <script>
     !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
@@ -153,18 +174,25 @@ function htmlPagePixel({ waUrl, pixelId, eventId, fbc, fbp, googleAdsId, googleA
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
-    background:#0a0f1a;color:#e2e8f0;height:100vh;display:flex;align-items:center;
-    justify-content:center;flex-direction:column;gap:18px}
-  .spin{width:42px;height:42px;border:3px solid rgba(255,255,255,.15);
-    border-top-color:#25D366;border-radius:50%;animation:r .8s linear infinite}
+    background:${bgColor};height:100vh;display:flex;align-items:center;
+    justify-content:center;padding:20px}
+  .card{background:#fff;border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,.12);
+    padding:38px 44px;max-width:440px;width:100%;text-align:center;
+    display:flex;flex-direction:column;align-items:center;gap:14px}
+  .spin{width:40px;height:40px;border:4px solid rgba(18,140,126,.18);
+    border-top-color:#128c7e;border-radius:50%;animation:r .8s linear infinite}
   @keyframes r{to{transform:rotate(360deg)}}
-  p{font-size:15px;color:#94a3b8}
-  a{color:#25D366;text-decoration:none;font-size:13px}
+  h1{font-size:19px;font-weight:700;color:#128c7e;line-height:1.3;margin-top:6px}
+  p{font-size:14px;color:#667781;line-height:1.4}
+  a{color:#128c7e;text-decoration:none;font-size:13px;font-weight:600;margin-top:4px}
 </style></head>
 <body>
-  <div class="spin"></div>
-  <p>Redirecionando para o WhatsApp…</p>
-  <a id="manual" href="${safeUrl}">Abrir agora</a>
+  <div class="card">
+    <div class="spin"></div>
+    <h1>${titulo}</h1>
+    ${subtitulo ? `<p>${subtitulo}</p>` : ''}
+    <a id="manual" href="${safeUrl}">Abrir agora</a>
+  </div>
   ${pixelSnippet}
   ${gtagSnippet}
   <script>
@@ -381,6 +409,9 @@ export default async function handler(req, res) {
     return res.end(htmlPagePixel({
       waUrl, pixelId: capiPixelId, eventId: pageviewEventId, fbc, fbp,
       googleAdsId, googleAdsLabel, gclid,
+      redirectTitle: campaign.redirect_title,
+      redirectSubtitle: campaign.redirect_subtitle,
+      redirectBgColor: campaign.redirect_bg_color,
     }));
 
   } catch (err) {
