@@ -1,6 +1,15 @@
 // ── Leads (extracted from index.html) ──────────────────────────
 let chumboAtivo = null;
 const leadsSelecionados = new Set();
+const LEADS_VIEW_MODE_KEY = 'wt_leads_view_mode';
+const LEADS_VIEW_MODES = new Set(['lista', 'kanban']);
+const LEAD_KANBAN_COLUMNS = [
+    { key:'lead', label:'Lead', status:'Lead', tone:'neutral' },
+    { key:'qualificado', label:'Qualificado', status:'Qualificado', tone:'blue' },
+    { key:'agendado', label:'Agendado', status:'Agendado', tone:'amber' },
+    { key:'vendido', label:'Vendido', status:'Vendido', tone:'green' },
+    { key:'perdido', label:'Perdido', status:'Perdido', tone:'red' },
+];
 
 // Cache de leads por chave "clienteId|periodo" — evita piscar ao navegar entre abas.
 const _leadsCache = new MemCache(2 * 60 * 1000); // TTL 2 min (auto-refresh de 30s mantém fresco)
@@ -229,7 +238,7 @@ function aplicarFiltros() {
     });
 
     pagAtual = 1;
-    renderTabela();
+    renderLeadsView();
     renderRelatorios(); // async — Chart.js carregado sob demanda dentro dela
     
     // Atualiza as métricas do topo (cards) baseadas no filtro atual
@@ -406,6 +415,211 @@ function renderTabela() {
     renderPaginacao(totalPags, total, inicio);
 }
 
+function getLeadsViewMode() {
+    try {
+        const saved = localStorage.getItem(LEADS_VIEW_MODE_KEY);
+        return LEADS_VIEW_MODES.has(saved) ? saved : 'lista';
+    } catch (_) {
+        return 'lista';
+    }
+}
+
+function setLeadsViewMode(mode) {
+    const next = LEADS_VIEW_MODES.has(mode) ? mode : 'lista';
+    try { localStorage.setItem(LEADS_VIEW_MODE_KEY, next); } catch (_) {}
+    renderLeadsView();
+}
+
+function updateLeadsViewToggle(mode = getLeadsViewMode()) {
+    $('btnLeadsLista')?.classList.toggle('active', mode === 'lista');
+    $('btnLeadsKanban')?.classList.toggle('active', mode === 'kanban');
+}
+
+function getLeadStatusKey(status) {
+    const s = String(status || 'lead').trim().toLowerCase();
+    if (['vendido', 'venda', 'venda_fechada'].includes(s)) return 'vendido';
+    if (s === 'qualificado') return 'qualificado';
+    if (s === 'agendado') return 'agendado';
+    if (s === 'perdido') return 'perdido';
+    return 'lead';
+}
+
+function renderLeadsView() {
+    const mode = getLeadsViewMode();
+    const tableWrap = $('leadsTableWrap');
+    const kanbanWrap = $('leadsKanbanWrap');
+    const pag = $('paginacao');
+    updateLeadsViewToggle(mode);
+
+    if (mode === 'kanban') {
+        if (tableWrap) tableWrap.style.display = 'none';
+        if (pag) pag.style.display = 'none';
+        if (kanbanWrap) kanbanWrap.style.display = 'grid';
+        renderKanban();
+        return;
+    }
+
+    if (kanbanWrap) {
+        kanbanWrap.style.display = 'none';
+        kanbanWrap.innerHTML = '';
+    }
+    if (tableWrap) tableWrap.style.display = '';
+    if (pag) pag.style.display = '';
+    renderTabela();
+}
+
+function renderKanban() {
+    const wrap = $('leadsKanbanWrap');
+    if (!wrap) return;
+
+    const total = dadosFiltrados.length;
+    $('leadsCount').textContent = total;
+    $('btnExport').style.display = 'flex';
+    atualizarSelecaoLeads();
+
+    if (!total) {
+        const temBusca = (($('inputBusca')?.value || '').trim().length > 0);
+        wrap.innerHTML = `<div class="kanban-empty">
+            <i data-lucide="columns-3"></i>
+            <strong>${temBusca ? 'Nenhum lead corresponde a busca.' : 'Nenhum lead neste periodo.'}</strong>
+            <span>${temBusca ? 'Tente outro nome ou telefone.' : 'Ajuste o periodo ou aguarde novos contatos.'}</span>
+        </div>`;
+        if (window.lucide) lucide.createIcons({ nodes: [wrap] });
+        return;
+    }
+
+    wrap.innerHTML = LEAD_KANBAN_COLUMNS.map(col => {
+        const leads = dadosFiltrados.filter(lead => getLeadStatusKey(lead.status) === col.key);
+        return `<section class="kanban-column kanban-${col.tone}" data-status="${col.key}" ondragover="kanbanDragOver(event)" ondragleave="kanbanDragLeave(event)" ondrop="kanbanDrop(event, '${col.key}')">
+            <div class="kanban-column-head">
+                <div><span class="kanban-dot"></span>${esc(col.label)}</div>
+                <span>${leads.length}</span>
+            </div>
+            <div class="kanban-column-body">
+                ${leads.length ? leads.map(renderKanbanCard).join('') : '<div class="kanban-column-empty">Sem leads</div>'}
+            </div>
+        </section>`;
+    }).join('');
+
+    if (window.lucide) lucide.createIcons({ nodes: [wrap] });
+}
+
+function renderKanbanCard(lead) {
+    const idx = dadosFiltrados.findIndex(l => Number(l.id) === Number(lead.id));
+    const statusKey = getLeadStatusKey(lead.status);
+    const origemInfo = obterOrigemLead(lead.lead_origin);
+    const msg = (lead.mensagem_recebida || 'Sem mensagem').trim();
+    const anuncio = lead.utm_content || lead.utm_campaign || 'Sem anuncio';
+    const tempoFunil = tempoRelativo(lead.created_at || lead.event_time);
+    const score = lead.lead_score || 0;
+    const scoreColor = score >= 70 ? '#ef4444' : score >= 40 ? '#f59e0b' : '#6b7280';
+
+    return `<article class="kanban-card" draggable="true" data-lead-id="${Number(lead.id)}" ondragstart="kanbanDragStart(event, ${Number(lead.id)})" ondragend="kanbanDragEnd(event)">
+        <div class="kanban-card-top">
+            <button type="button" class="kanban-check" onclick="toggleKanbanLeadSelecionado(${Number(lead.id)})" title="Selecionar lead" aria-label="Selecionar lead">
+                ${leadsSelecionados.has(Number(lead.id)) ? '<i data-lucide="check"></i>' : ''}
+            </button>
+            <div class="kanban-card-title" title="${esc(lead.nome || lead.telefone || 'Lead')}">${esc(lead.nome || 'Lead sem nome')}</div>
+            <span class="kanban-score" style="color:${scoreColor};">${score}</span>
+        </div>
+        <div class="kanban-phone">${esc(lead.telefone || 'Telefone nao informado')}</div>
+        <div class="kanban-chip-row">
+            <span class="kanban-origin" style="background:${origemInfo.bg};color:${origemInfo.color};border-color:${origemInfo.border};">${origemInfo.label}</span>
+            <span class="kanban-status-mini">${esc(LEAD_KANBAN_COLUMNS.find(c => c.key === statusKey)?.label || 'Lead')}</span>
+        </div>
+        <div class="kanban-message" title="${esc(msg)}">${esc(msg.substring(0, 92))}${msg.length > 92 ? '...' : ''}</div>
+        <div class="kanban-meta">
+            <span title="${esc(anuncio)}">${esc(anuncio)}</span>
+            <strong>${tempoFunil}</strong>
+        </div>
+        <div class="kanban-actions">
+            <button type="button" onclick="abrirPerfilLead(${Number(lead.id)})" title="Ver perfil"><i data-lucide="user"></i></button>
+            <button type="button" onclick="abrirConversaDoLead(${Number(lead.id)})" title="Abrir conversa"><i data-lucide="message-circle"></i></button>
+            <button type="button" onclick="qualificarLead(${idx})" title="Qualificar"><i data-lucide="check-circle"></i></button>
+            <button type="button" class="sale" onclick="abrirModal(${idx})" title="Registrar venda"><i data-lucide="zap"></i><span>Venda</span></button>
+        </div>
+    </article>`;
+}
+
+function toggleKanbanLeadSelecionado(id) {
+    const leadId = Number(id);
+    toggleLeadSelecionado(leadId, !leadsSelecionados.has(leadId));
+    renderKanban();
+}
+let kanbanDraggingLeadId = null;
+
+function kanbanDragStart(event, leadId) {
+    kanbanDraggingLeadId = Number(leadId);
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', String(leadId));
+    event.currentTarget.classList.add('dragging');
+}
+
+function kanbanDragEnd(event) {
+    event.currentTarget?.classList.remove('dragging');
+    document.querySelectorAll('.kanban-column.drag-over').forEach(el => el.classList.remove('drag-over'));
+    kanbanDraggingLeadId = null;
+}
+
+function kanbanDragOver(event) {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+    event.currentTarget.classList.add('drag-over');
+}
+
+function kanbanDragLeave(event) {
+    if (!event.currentTarget.contains(event.relatedTarget)) event.currentTarget.classList.remove('drag-over');
+}
+
+async function kanbanDrop(event, statusKey) {
+    event.preventDefault();
+    event.currentTarget.classList.remove('drag-over');
+    const leadId = Number(event.dataTransfer.getData('text/plain') || kanbanDraggingLeadId);
+    if (!leadId) return;
+    await atualizarStatusLeadKanban(leadId, statusKey);
+}
+
+async function atualizarStatusLeadKanban(leadId, statusKey) {
+    const lead = dadosFiltrados.find(l => Number(l.id) === Number(leadId));
+    if (!lead) return;
+    const atual = getLeadStatusKey(lead.status);
+    if (atual === statusKey) return;
+
+    const idx = dadosFiltrados.findIndex(l => Number(l.id) === Number(leadId));
+    if (statusKey === 'vendido') {
+        abrirModal(idx);
+        return;
+    }
+    if (statusKey === 'qualificado') {
+        qualificarLead(idx);
+        return;
+    }
+
+    const col = LEAD_KANBAN_COLUMNS.find(c => c.key === statusKey) || LEAD_KANBAN_COLUMNS[0];
+    const previousStatus = lead.status;
+    lead.status = col.status;
+    renderKanban();
+
+    try {
+        const r = await authFetch('/api/leads-update', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: lead.id, status: col.status })
+        });
+        const result = await r.json();
+        if (!r.ok || result.error) throw new Error(result.error || 'Erro ao atualizar status');
+        const raw = rawData.find(l => Number(l.id) === Number(lead.id));
+        if (raw) raw.status = col.status;
+        toast(`Lead movido para ${col.label}.`, 'success');
+        aplicarFiltros();
+    } catch (e) {
+        lead.status = previousStatus;
+        const raw = rawData.find(l => Number(l.id) === Number(lead.id));
+        if (raw) raw.status = previousStatus;
+        renderKanban();
+        toast('Erro ao mover lead: ' + e.message, 'error');
+    }
+}
 function toggleLeadSelecionado(id, checked) {
     const leadId = Number(id);
     if (checked) leadsSelecionados.add(leadId);

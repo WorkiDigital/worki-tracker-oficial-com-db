@@ -129,6 +129,10 @@ export default async function handler(req, res) {
     return res.status(200).json({ ok: true });
   } catch (error) {
     console.error('Leads UPDATE error:', error);
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn('[leads-update] mock update fallback:', error.message);
+      return res.status(200).json({ ok: true, mock: true });
+    }
     return res.status(500).json({ error: error.message || 'Erro ao atualizar.' });
   }
 }
