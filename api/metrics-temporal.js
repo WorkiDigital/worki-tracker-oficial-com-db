@@ -54,7 +54,7 @@ export default async function handler(req, res) {
         (SELECT AVG(EXTRACT(EPOCH FROM (sale_closed_at - created_at))/86400)
          FROM leads_tracking WHERE 1=1 ${cliWhere}${saleDateFilter} AND sale_closed_at IS NOT NULL) as avg_cycle_days,
         AVG(EXTRACT(EPOCH FROM (first_response_at - created_at))/60) FILTER (WHERE first_response_at IS NOT NULL) as avg_response_min,
-        COUNT(*) FILTER (WHERE last_interaction_at < NOW() - INTERVAL '48 hours' AND status NOT IN ('venda_fechada', 'perdido', 'Vendido')) as leads_at_risk,
+        COUNT(*) FILTER (WHERE last_interaction_at < NOW() - INTERVAL '48 hours' AND status NOT IN ('venda_fechada', 'perdido', 'Vendido', 'Agendado')) as leads_at_risk,
         (SELECT COUNT(*) FROM leads_tracking WHERE 1=1 ${cliWhere}${saleDateFilter}
          AND sale_closed_at IS NOT NULL AND EXTRACT(EPOCH FROM (sale_closed_at - created_at))/3600 < 24) as fast_sales,
         (SELECT COUNT(*) FROM leads_tracking WHERE 1=1 ${cliWhere}${saleDateFilter}

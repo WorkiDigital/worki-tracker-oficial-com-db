@@ -31,7 +31,7 @@ export default async function handler(req, res) {
     const stagnant = await pool.query(`
       SELECT id, nome, telefone, last_interaction_at, status 
       FROM leads_tracking 
-      WHERE status NOT IN ('venda_fechada', 'perdido', 'vendido')
+      WHERE status NOT IN ('venda_fechada', 'perdido', 'vendido', 'Agendado')
       AND last_interaction_at < NOW() - INTERVAL '48 hours'
       ${whereClause}
       ORDER BY last_interaction_at DESC
@@ -42,7 +42,7 @@ export default async function handler(req, res) {
       SELECT id, nome, telefone, lead_score, last_interaction_at 
       FROM leads_tracking 
       WHERE lead_score > 70
-      AND status NOT IN ('venda_fechada', 'vendido')
+      AND status NOT IN ('venda_fechada', 'vendido', 'Agendado')
       AND last_interaction_at < NOW() - INTERVAL '12 hours'
       ${whereClause}
       ORDER BY lead_score DESC

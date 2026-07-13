@@ -343,8 +343,9 @@ function renderTabela() {
         const platCls  = plat.includes('face') ? 'facebook' : plat.includes('google') ? 'google' : plat.includes('whats') ? 'whatsapp' : 'instagram';
         const status   = (lead.status||'Lead').toLowerCase();
         const purchase = status === 'venda_fechada' || status === 'vendido';
-        const stColor  = purchase ? '#10b981' : '';
-        const stBorder = purchase ? '1px solid rgba(16,185,129,.3)' : 'transparent';
+        const agendado = status === 'agendado';
+        const stColor  = purchase ? '#10b981' : agendado ? '#f59e0b' : '';
+        const stBorder = purchase ? '1px solid rgba(16,185,129,.3)' : agendado ? '1px solid rgba(245,158,11,.3)' : 'transparent';
         const msg      = (lead.mensagem_recebida||'Sem mensagem').substring(0,35);
         const temCapi  = true; // O backend busca o pixel do cliente via banco de dados 
         const data     = tempoRelativo(lead.event_time||lead.created_at);
@@ -1320,12 +1321,13 @@ function lpPreencherDados({ lead, jornada, interacoes }) {
     const status = (lead.status || 'lead');
     const isVendido = status.toLowerCase() === 'vendido' || status.toLowerCase() === 'venda_fechada';
     const isQualif = status.toLowerCase() === 'qualificado';
-    const badgeColor = isVendido ? '#10b981' : isQualif ? '#6366f1' : 'var(--muted)';
-    const badgeBg = isVendido ? 'rgba(16,185,129,.12)' : isQualif ? 'rgba(99,102,241,.12)' : 'var(--bg-secondary)';
+    const isAgendado = status.toLowerCase() === 'agendado';
+    const badgeColor = isVendido ? '#10b981' : isQualif ? '#6366f1' : isAgendado ? '#f59e0b' : 'var(--muted)';
+    const badgeBg = isVendido ? 'rgba(16,185,129,.12)' : isQualif ? 'rgba(99,102,241,.12)' : isAgendado ? 'rgba(245,158,11,.12)' : 'var(--bg-secondary)';
     $('lpStatusBadge').textContent = status;
     $('lpStatusBadge').style.color = badgeColor;
     $('lpStatusBadge').style.background = badgeBg;
-    $('lpStatusBadge').style.borderColor = isVendido ? 'rgba(16,185,129,.3)' : isQualif ? 'rgba(99,102,241,.3)' : 'var(--border)';
+    $('lpStatusBadge').style.borderColor = isVendido ? 'rgba(16,185,129,.3)' : isQualif ? 'rgba(99,102,241,.3)' : isAgendado ? 'rgba(245,158,11,.3)' : 'var(--border)';
 
     // ── Aba Perfil ──
     $('lpRowNome').innerHTML     = lpRow('Nome completo', lead.nome, null, true);

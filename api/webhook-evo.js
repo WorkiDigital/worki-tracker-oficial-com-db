@@ -946,7 +946,11 @@ async function processarJornadaFromMe(pool, { clienteIdFm, telefoneFm, textoFm }
   await pool.query(
     `UPDATE leads_tracking
      SET current_stage_id = $1, stage_changed_at = NOW()
-         ${alvo.event_concept === 'appointment' ? ', scheduled_at = NOW()' : ''}
+         ${alvo.event_concept === 'appointment' ? `, scheduled_at = NOW()
+           -- Marca 'Agendado' SEM rebaixar: se o lead ja e Vendido/Qualificado
+           -- (estagios mais avancados no funil), preserva o status atual.
+           , status = CASE WHEN LOWER(COALESCE(status,'')) IN ('vendido','venda_fechada','qualificado')
+                           THEN status ELSE 'Agendado' END` : ''}
          ${alvo.event_concept === 'qualified' ? ', qualified_at = COALESCE(qualified_at, NOW())' : ''}
          ${alvo.event_concept === 'purchase' ? ", sale_closed_at = COALESCE(sale_closed_at, NOW()), status = 'Vendido', valor_venda = COALESCE(valor_venda, $3)" : ''}
      WHERE id = $2`,
