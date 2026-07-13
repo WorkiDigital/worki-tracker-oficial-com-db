@@ -26,12 +26,17 @@ function _funilBindEvents() {
 
 async function funilCarregar() {
     const periodo = document.getElementById('funilPeriodo')?.value || '30';
-    
+
     const container = document.getElementById('aba-funil');
     if (container) container.classList.add('loading-overlay-active');
 
     try {
         const params = new URLSearchParams({ periodo });
+        // Admin filtra por cliente via o seletor global do topo (mesmo padrão
+        // já usado em Leads/Captação/Inteligente) — sem seletor duplicado na aba.
+        if (typeof clienteAdminSelecionado !== 'undefined' && clienteAdminSelecionado) {
+            params.set('cliente_id', clienteAdminSelecionado);
+        }
         const r = await authFetch(`/api/metrics-funnel?${params}`);
         if (!r.ok) {
             const err = await r.json().catch(() => ({}));

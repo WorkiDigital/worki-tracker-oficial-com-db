@@ -14,9 +14,9 @@
          Não incluir aqui — evita baixar ~500KB em toda sessão mesmo sem abrir Anúncios ou exportar PDF. -->
     <link rel="stylesheet" href="css/dashboard.css?v=20260712-4">
     <link rel="stylesheet" href="css/splash.css?v=20260712-1">
-    <link rel="stylesheet" href="css/funil.css">
+    <link rel="stylesheet" href="css/funil.css?v=20260713-1">
     <script defer src="js/utils.js?v=20260712-1"></script>
-    <script defer src="js/funil.js"></script>
+    <script defer src="js/funil.js?v=20260713-1"></script>
 </head>
 <body>
 
@@ -2911,6 +2911,7 @@ function trocarClienteAdmin(id) {
     recarregarLeads();
     if (!$('aba-captacao')?.classList.contains('aba-oculta')) carregarCampanhasLink();
     if (!$('aba-inteligente')?.classList.contains('aba-oculta')) capIntCarregar();
+    if (!$('aba-funil')?.classList.contains('aba-oculta') && typeof funilCarregar === 'function') funilCarregar();
 }
 
 // ── Anúncios — Account picker ──────────────────────────────────

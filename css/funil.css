@@ -15,8 +15,9 @@
 
 .funil-grid {
     display: grid;
-    grid-template-columns: 1fr 2fr;
+    grid-template-columns: 1fr 1fr;
     gap: 24px;
+    align-items: stretch;
 }
 
 .funil-card {
@@ -28,6 +29,7 @@
     display: flex;
     flex-direction: column;
     position: relative;
+    min-height: 440px;
 }
 
 .funil-card-title {
@@ -35,13 +37,15 @@
     font-weight: 700;
     color: var(--text-primary);
     margin-bottom: 20px;
+    flex-shrink: 0;
 }
 
 /* Gauge area */
 .funil-gauge-wrap {
     position: relative;
     width: 100%;
-    height: 180px;
+    flex: 1;
+    min-height: 160px;
     display: flex;
     justify-content: center;
     align-items: flex-end;
@@ -99,22 +103,24 @@
 
 /* Horizontal Funnel Bars */
 .fj-wrap {
+    flex: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 8px;
-    padding: 20px 0;
+    justify-content: center;
+    gap: 14px;
+    padding: 12px 0;
 }
 .fj-bar {
-    border-radius: 4px;
-    padding: 12px;
+    border-radius: 8px;
+    padding: 14px 16px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     text-align: center;
     transition: width 0.5s ease;
-    min-width: 120px;
+    min-width: 140px;
 }
 .fj-label {
     font-size: 11px;
@@ -124,7 +130,7 @@
     opacity: 0.8;
 }
 .fj-val {
-    font-size: 16px;
+    font-size: 18px;
     font-weight: 800;
     margin-top: 4px;
 }
@@ -132,11 +138,33 @@
 /* Chart containers */
 .chart-container {
     position: relative;
-    height: 250px;
+    flex: 1;
+    min-height: 220px;
     width: 100%;
 }
 
 .funil-loading .funil-card {
     opacity: 0.6;
     pointer-events: none;
+}
+
+@media (max-width: 1024px) {
+    .funil-grid {
+        grid-template-columns: 1fr;
+    }
+    .funil-card {
+        min-height: 380px;
+    }
+}
+
+@media (max-width: 640px) {
+    #aba-funil {
+        padding: 16px;
+        gap: 16px;
+    }
+    .funil-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
 }
