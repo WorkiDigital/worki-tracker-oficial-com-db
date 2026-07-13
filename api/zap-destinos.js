@@ -1,6 +1,7 @@
 import { verifyAuth } from './_auth.js';
 import { getPool } from './_db.js';
 import { cors } from './_cors.js';
+import { shouldServeDemoData } from './_demo-data.js';
 
 let _zapDestinosSchemaEnsured = false;
 async function ensureZapDestinosSchema(pool) {
@@ -31,7 +32,7 @@ export default async function handler(req, res) {
 
   const user = await verifyAuth(req, res);
   if (!user) return;
-  if (process.env.NODE_ENV !== 'production' && req.method === 'GET') {
+  if (shouldServeDemoData(req) && req.method === 'GET') {
     const destino = {
       id: 9001,
       cliente_id: user.cliente_id ?? null,

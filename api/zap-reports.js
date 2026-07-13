@@ -1,6 +1,7 @@
 import { verifyAuth } from './_auth.js';
 import { getPool } from './_db.js';
 import { cors } from './_cors.js';
+import { shouldServeDemoData } from './_demo-data.js';
 import { normalizeCampaignFilters } from './_zap-report-metrics.js';
 
 let _zapFilterColumnsEnsured = false;
@@ -34,7 +35,7 @@ export default async function handler(req, res) {
 
   const user = await verifyAuth(req, res);
   if (!user) return;
-  if (process.env.NODE_ENV !== 'production' && req.method === 'GET') {
+  if (shouldServeDemoData(req) && req.method === 'GET') {
     return res.status(200).json([
       { id: 9101, destino_id: Number(req.query.destino_id || 9001), template: 'Relatorio diario modelo: leads, conversas, vendas e faturamento.', frequencia: 'diario', horario: '09:00', periodo: 'yesterday', campaign_filter_text: 'DEMO', campaign_objectives: ['OUTCOME_LEADS'], status: 'ativo', criado_em: new Date().toISOString() },
       { id: 9102, destino_id: Number(req.query.destino_id || 9001), template: 'Resumo semanal modelo por campanha e objetivo.', frequencia: 'semanal', horario: '18:30', periodo: 'last_7d', campaign_filter_text: 'DEMO', campaign_objectives: ['OUTCOME_SALES','OUTCOME_LEADS'], status: 'ativo', criado_em: new Date().toISOString() }
