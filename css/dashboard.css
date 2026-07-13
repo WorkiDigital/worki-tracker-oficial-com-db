@@ -162,7 +162,7 @@ input[type="checkbox"] { position:relative; min-width:18px; min-height:18px; pad
 .topbar-right { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
 
 /* ── Controls ───────────────────────────── */
-.ctrl-box { display:flex; align-items:center; background:var(--card); padding:7px 13px; border-radius:8px; border:1px solid var(--border); gap:8px; transition:border-color .2s; }
+.ctrl-box { display:flex; align-items:center; background:var(--card); padding:7px 13px; border-radius:10px; border:1px solid var(--border); gap:8px; transition:border-color .2s; }
 .ctrl-box:focus-within { border-color:var(--blue); }
 .ctrl-box input, .ctrl-box select { background:transparent; border:none; color:var(--text); font-size:13px; outline:none; font-family:'Inter'; color-scheme:var(--scheme); }
 .ctrl-box input::placeholder { color:var(--muted); }

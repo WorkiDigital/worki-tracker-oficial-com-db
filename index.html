@@ -12,7 +12,7 @@
     <script defer src="https://cdn.jsdelivr.net/npm/lucide@0.469.0/dist/umd/lucide.min.js"></script>
     <!-- Chart.js, html2canvas e jsPDF são carregados sob demanda via loadScript() (utils.js).
          Não incluir aqui — evita baixar ~500KB em toda sessão mesmo sem abrir Anúncios ou exportar PDF. -->
-    <link rel="stylesheet" href="css/dashboard.css?v=20260712-4">
+    <link rel="stylesheet" href="css/dashboard.css?v=20260714-1">
     <link rel="stylesheet" href="css/splash.css?v=20260712-1">
     <link rel="stylesheet" href="css/funil.css?v=20260713-1">
     <script defer src="js/utils.js?v=20260712-1"></script>
@@ -949,6 +949,10 @@
                         <span class="count-badge" id="leadsCount">—</span>
                     </div>
                     <div style="display:flex;gap:8px;align-items:center;">
+                        <div class="leads-view-toggle" role="group" aria-label="Modo de visualizacao dos leads">
+                            <button type="button" class="leads-view-btn active" id="btnLeadsLista" onclick="setLeadsViewMode('lista')" title="Modo lista"><i data-lucide="list" style="width:13px;"></i><span>Lista</span></button>
+                            <button type="button" class="leads-view-btn" id="btnLeadsKanban" onclick="setLeadsViewMode('kanban')" title="Modo Kanban"><i data-lucide="columns-3" style="width:13px;"></i><span>Kanban</span></button>
+                        </div>
                         <span id="leadsSelecionadosInfo" style="display:none;font-size:12px;color:var(--muted);"></span>
                         <button id="btnExcluirLeads" class="btn btn-ghost btn-sm" onclick="excluirLeadsSelecionados()" style="display:none;color:var(--red);border-color:rgba(239,68,68,.3);">
                             <i data-lucide="trash-2" style="width:12px;"></i> Excluir selecionados
@@ -958,7 +962,7 @@
                         </button>
                     </div>
                 </div>
-                <div style="overflow-x:auto;">
+                <div id="leadsTableWrap" style="overflow-x:auto;">
                     <table>
                         <thead>
                             <tr>
@@ -982,6 +986,7 @@
                         <tbody id="tabela-corpo"></tbody>
                     </table>
                 </div>
+                <div id="leadsKanbanWrap" class="leads-kanban-wrap" style="display:none;"></div>
                 <div class="pagination" id="paginacao"></div>
             </div>
         </div>
