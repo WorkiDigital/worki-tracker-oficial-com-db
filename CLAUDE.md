@@ -1089,3 +1089,57 @@ mapa de cores/labels do painel de Leads). Sem lead vinculado, sem badge.
 Abaixo de 1180px, os 3 painéis (lista/conversa/lead) viram telas cheias com slide (`translateX`) e
 botões de voltar — um único breakpoint, sem faixa intermediária (já existiu uma entre 780-1180px
 que duplicava as setas de navegação; removida).
+
+### ⚠️ Mídia ENVIADA pelo painel não auto-carrega (não reintroduzir)
+Mídia que o painel **enviou** (`from_me=true`) é gravada com o `media_url` real do WhatsApp quando o
+webhook ecoa a mensagem de volta. Mas a Evolution (`getBase64FromMediaMessage`) **não consegue
+servir de volta mídia própria** (esse endpoint é pra mídia recebida) — toda busca falha. Incluir
+essas mensagens no auto-load (`chatAutoloadMediaQueue`) causou **rajada de 429** (dezenas de
+`get_media` a cada poll, tentando pra sempre). Regras atuais:
+- `chatAutoloadMediaQueue` filtra `!m.from_me` — mídia enviada NUNCA entra na fila de auto-load.
+- `chatAutoloadedIds.add(m.id)` é feito **antes** da tentativa (não só em sucesso) — qualquer
+  mídia falha nunca é reintentada automaticamente (evita loop infinito em qualquer cenário).
+- Mídia enviada mostra botão manual ("Ver imagem"/"Ouvir audio") em vez de spinner que nunca
+  resolveria. O usuário pode tentar manualmente; reabrir a conversa limpa `chatAutoloadedIds`.
+
+### Poll silencioso só re-renderiza se algo mudou (scroll + 429)
+`chatLoadMessages(conversation, silent=true)` (poll de 10s da conversa aberta) compara
+`chatThreadSignature()` (quantidade + última mensagem) antes de reescrever o DOM. Sem isso, o poll
+reescrevia `chatMessagesList.innerHTML` inteiro a cada 10s → (a) forçava `scrollTop` pro fim,
+arrancando o usuário que rolou pra cima pra ler histórico; (b) recriava elementos de mídia,
+disparando `get_media` em massa. Scroll só gruda no fim se o usuário já estava perto do fim
+(`wasNearBottom`, 80px de tolerância).
+
+### Atalho de conversa em Leads + popup (modal)
+Cada linha da tabela de Leads tem um botão verde (WhatsApp, `message-circle`) que abre a conversa
+daquele lead num **popup/modal** sobre a própria aba Leads — não navega para a aba Conversas.
+- `abrirConversaDoLead(leadId)` (`js/leads.js`): resolve telefone/instância/cliente_id do lead em
+  `rawData` e **move fisicamente** os painéis `.chat-thread-panel` + `.chat-lead-panel` do monitor
+  para dentro do `#chatModalSlot` (reaproveita os mesmos IDs/listeners — nada de DOM duplicado).
+  `fecharConversaModal()` devolve os painéis à `#chatMonitorShell`.
+- `chatAbrirConversaPorTelefone(telefone, instance, clienteId)` (`js/chat-monitor.js`): orquestra
+  init + filtro de cliente (admin) + carga da lista + seleção da conversa exata
+  (`cliente_id|instance|telefone`), com fallback por cliente+telefone se a instância não bater, e
+  toast "sem conversa recente" se o lead não tem conversa nos últimos 15 dias.
+- Guarda `chatState.openingByPhone`: impede o `chatMonitorInit()` (disparado por
+  `mudarAba('conversas')`) de rodar carga duplicada, e impede o auto-select da 1ª conversa em
+  `chatLoadConversations` (que causaria flash da conversa errada).
+- Polling passa a rodar também com o modal aberto (aba Conversas oculta): `chatStartPolling` checa
+  `abaVisivel || modalAberto`. `mudarAba('conversas')` devolve os painéis antes de mostrar a aba.
+- Fecha com X, clique fora, ou ESC (handler global de Escape no `index.html`).
+
+### ⚠️ Flash de conversa antiga ao trocar de conversa (corrigido — não regredir)
+Ao abrir a conversa de outro lead, a conversa **anterior** aparecia por alguns segundos até a nova
+carregar. Corrigido em 3 camadas: (1) `chatSelectConversation` limpa `currentThreadMessages`/
+`optimisticMessages`/`chatAutoloadedIds` e chama `chatRenderThreadLoading(conversation)`
+imediatamente (mostra spinner + título/meta da conversa nova na hora); (2) `chatLoadMessages`
+descarta a resposta se a conversa não é mais a ativa (`chatIsActiveConversation`) — evita que uma
+requisição lenta da conversa antiga sobrescreva a nova; (3) o auto-select de `chatLoadConversations`
+é pulado quando `openingByPhone`.
+
+### 🔑 SEMPRE bumpar o `?v=` ao editar JS/CSS do chat (armadilha recorrente)
+`js/chat-monitor.js`, `js/leads.js` e `css/dashboard.css` têm `Cache-Control: immutable` de 1 ano
+(por terem `?v=` no `index.html`). Editar o arquivo **sem** incrementar o `?v=` = o navegador
+continua servindo a versão antiga cacheada, e a correção "não funciona" mesmo com deploy OK. Isso
+causou várias sessões de "o bug voltou" que eram só cache. **Todo commit que mexe nesses arquivos
+DEVE bumpar o `?v=` correspondente no `index.html`** (padrão `?v=AAAAMMDD-N`).
