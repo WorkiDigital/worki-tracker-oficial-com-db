@@ -179,13 +179,6 @@ async function createTrackingSchema() {
       ALTER TABLE public.journey_stages
       ADD COLUMN IF NOT EXISTS tracking_campaign_id INTEGER REFERENCES public.tracking_campaigns(id) ON DELETE CASCADE;
 
-      -- Gatilhos independentes por etapa (Kanban configurável = Jornada = Funil):
-      -- uma etapa pode disparar por palavra-chave, por arraste no Kanban, ou ambos.
-      ALTER TABLE public.journey_stages
-      ADD COLUMN IF NOT EXISTS trigger_keyword BOOLEAN DEFAULT true,
-      ADD COLUMN IF NOT EXISTS trigger_kanban_drag BOOLEAN DEFAULT false,
-      ADD COLUMN IF NOT EXISTS color VARCHAR(20) DEFAULT 'neutral';
-
       -- Histórico de jornada por lead: 1 linha por (lead, etapa) — UNIQUE impede duplicar.
       CREATE TABLE IF NOT EXISTS public.lead_journey_history (
         id SERIAL PRIMARY KEY,

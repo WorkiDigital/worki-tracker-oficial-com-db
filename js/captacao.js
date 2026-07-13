@@ -141,27 +141,6 @@ function capIntConceitoLabel(key) {
   return capIntConceitosWpp().find(conceito => conceito.key === key)?.label || key || 'Evento';
 }
 
-// Etapas de compra/checkout exigem valor extraído da mensagem — não fazem
-// sentido como gatilho de arraste (mover um card não digita um regex de valor).
-function capIntDragPermitido(conceptKey) {
-  return conceptKey !== 'purchase' && conceptKey !== 'checkout';
-}
-
-function capIntAtualizarVisibilidadeGatilho() {
-  const keywordAtivo = $('capIntTriggerKeyword')?.checked !== false;
-  ['capIntKeywords', 'capIntMatch'].forEach(id => {
-    const el = $(id);
-    if (el) el.closest('.input-group').style.opacity = keywordAtivo ? '' : '.45';
-  });
-}
-
-function capIntGatilhoBadges(etapa) {
-  const badges = [];
-  if (etapa.trigger_keyword !== false) badges.push('<span class="cap-int-badge" title="Dispara por palavra-chave"><i data-lucide="keyboard"></i></span>');
-  if (etapa.trigger_kanban_drag === true) badges.push('<span class="cap-int-badge" title="Dispara ao arrastar no Kanban"><i data-lucide="move"></i></span>');
-  return badges.join('');
-}
-
 async function capIntCarregar() {
   capSincronizarSeletorCliente();
   const clienteId = capClienteId();
@@ -215,7 +194,7 @@ function capIntRender() {
     <div class="cap-journey-stage">
       <span class="cap-journey-order">${index + 1}</span>
       <div class="cap-journey-stage-main">
-        <strong>${esc(etapa.name)}${etapa.enabled === false ? ' · inativa' : ''} ${capIntGatilhoBadges(etapa)}</strong>
+        <strong>${esc(etapa.name)}${etapa.enabled === false ? ' · inativa' : ''}</strong>
         <small>${esc(capIntConceitoLabel(etapa.event_concept))} · ${esc((etapa.keywords || []).join(', ') || 'sem palavra-chave')}</small>
       </div>
       <div class="cap-journey-actions">
@@ -228,13 +207,6 @@ function capIntRender() {
   if (window.lucide) lucide.createIcons({ nodes: [lista] });
 }
 
-function capIntSelecionarCor(cor) {
-  const picker = $('capIntColorPicker');
-  if (!picker) return;
-  const radio = picker.querySelector(`input[value="${cor || 'neutral'}"]`) || picker.querySelector('input[value="neutral"]');
-  if (radio) radio.checked = true;
-}
-
 function capIntNovaEtapa() {
   capIntPopularSelect();
   $('capIntEtapaId').value = '';
@@ -245,13 +217,9 @@ function capIntNovaEtapa() {
   $('capIntKeywords').value = '';
   $('capIntMatch').value = 'partial';
   $('capIntRegex').value = '';
-  $('capIntTriggerKeyword').checked = true;
-  $('capIntTriggerDrag').checked = false;
-  capIntSelecionarCor('neutral');
   $('capIntEnabled').checked = true;
   $('capIntSalvarEtapaBtn').textContent = 'Criar etapa';
   $('capIntForm').style.display = '';
-  capIntAtualizarVisibilidadeGatilho();
   $('capIntNome').focus();
 }
 
@@ -265,13 +233,9 @@ function capIntEditar(id) {
   $('capIntKeywords').value = (etapa.keywords || []).join(', ');
   $('capIntMatch').value = etapa.keyword_match === 'exact' ? 'exact' : 'partial';
   $('capIntRegex').value = etapa.value_regex || '';
-  $('capIntTriggerKeyword').checked = etapa.trigger_keyword !== false;
-  $('capIntTriggerDrag').checked = etapa.trigger_kanban_drag === true;
-  capIntSelecionarCor(etapa.color || 'neutral');
   $('capIntEnabled').checked = etapa.enabled !== false;
   $('capIntSalvarEtapaBtn').textContent = 'Salvar etapa';
   $('capIntForm').style.display = '';
-  capIntAtualizarVisibilidadeGatilho();
   $('capIntNome').focus();
 }
 
@@ -291,13 +255,11 @@ function capIntEtapaPayload(etapa, position) {
     id: etapa.id || undefined,
     name: etapa.name,
     event_concept: etapa.event_concept,
-    trigger_keyword: etapa.trigger_keyword !== false,
-    trigger_kanban_drag: etapa.trigger_kanban_drag === true,
+    trigger_type: 'keyword',
     keywords: etapa.keywords || [],
     keyword_match: etapa.keyword_match === 'exact' ? 'exact' : 'partial',
     value_regex: etapa.value_regex || null,
     currency: etapa.currency || 'BRL',
-    color: etapa.color || 'neutral',
     position,
     enabled: etapa.enabled !== false,
   });
@@ -308,15 +270,8 @@ async function capIntSalvarEtapa() {
   const nome = $('capIntNome')?.value.trim();
   const keywords = ($('capIntKeywords')?.value || '').split(',').map(k => k.trim()).filter(Boolean);
   const valueRegex = $('capIntRegex')?.value.trim() || null;
-  const triggerKeyword = $('capIntTriggerKeyword')?.checked !== false;
-  const triggerDrag = $('capIntTriggerDrag')?.checked === true;
-  const eventConcept = $('capIntConcept')?.value || 'lead';
   if (!nome) return toast('Informe o nome da etapa.', 'error');
-  if (!triggerKeyword && !triggerDrag) return toast('Ative ao menos um gatilho: palavra-chave ou arraste no Kanban.', 'error');
-  if (triggerKeyword && !keywords.length) return toast('Informe ao menos uma palavra-chave.', 'error');
-  if (triggerDrag && !capIntDragPermitido(eventConcept)) {
-    return toast('Etapas de compra/checkout exigem valor extraído da mensagem — desative o gatilho de arraste ou escolha outro evento.', 'error');
-  }
+  if (!keywords.length) return toast('Informe ao menos uma palavra-chave.', 'error');
   if (valueRegex) {
     try { new RegExp(valueRegex); } catch {
       return toast('A expressão regular de valor é inválida.', 'error');
@@ -325,18 +280,14 @@ async function capIntSalvarEtapa() {
 
   const id = Number($('capIntEtapaId')?.value) || null;
   const original = _capIntEtapas.find(item => Number(item.id) === id);
-  const corSelecionada = $('capIntColorPicker')?.querySelector('input:checked')?.value || 'neutral';
   const etapa = {
     id,
     name: nome,
-    event_concept: eventConcept,
-    trigger_keyword: triggerKeyword,
-    trigger_kanban_drag: triggerDrag,
+    event_concept: $('capIntConcept')?.value || 'lead',
     keywords,
     keyword_match: $('capIntMatch')?.value === 'exact' ? 'exact' : 'partial',
     value_regex: valueRegex,
     currency: original?.currency || 'BRL',
-    color: corSelecionada,
     enabled: $('capIntEnabled')?.checked !== false,
   };
   const position = original ? _capIntEtapas.indexOf(original) : _capIntEtapas.length;
