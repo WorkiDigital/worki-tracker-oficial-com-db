@@ -1,6 +1,7 @@
 const chatState = {
     initialized: false,
     conversations: [],
+    allConversations: [],
     selected: null,
     pollTimer: null,
     searchTimer: null,
@@ -63,7 +64,9 @@ function chatBindEvents() {
     });
     $('chatOrigemFilter')?.addEventListener('change', () => {
         chatState.selected = null;
-        chatLoadConversations(false);
+        chatApplyOrigemFilter();
+        if (chatState.conversations.length) chatSelectConversation(0);
+        else chatRenderEmptyThread();
     });
     $('chatClienteFilter')?.addEventListener('change', async () => {
         chatState.selected = null;
@@ -188,9 +191,8 @@ async function chatLoadConversations(silent = false) {
         const params = chatBuildParams({ action: 'list_conversations' });
         const res = await authFetch(`/api/chat-messages?${params.toString()}`);
         const rows = await readApiJson(res, 'Falha ao carregar conversas');
-        chatState.conversations = Array.isArray(rows) ? rows : [];
-        if (count) count.textContent = chatState.conversations.length;
-        chatRenderConversations();
+        chatState.allConversations = Array.isArray(rows) ? rows : [];
+        chatApplyOrigemFilter();
 
         const selectedKey = chatState.selected && chatConversationKey(chatState.selected);
         const stillExists = selectedKey && chatState.conversations.find(c => chatConversationKey(c) === selectedKey);
@@ -217,6 +219,17 @@ async function chatLoadConversations(silent = false) {
     } finally {
         chatState.loadingList = false;
     }
+}
+
+// Filtra allConversations pela origem selecionada, atualiza conversations, badge e lista.
+function chatApplyOrigemFilter() {
+    const origem = $('chatOrigemFilter')?.value || '';
+    chatState.conversations = origem
+        ? chatState.allConversations.filter(c => (c.lead_origin || '') === origem)
+        : chatState.allConversations;
+    const count = $('chatConversationCount');
+    if (count) count.textContent = chatState.conversations.length;
+    chatRenderConversations();
 }
 
 function chatConversationKey(c) {

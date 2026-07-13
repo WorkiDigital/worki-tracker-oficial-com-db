@@ -849,7 +849,11 @@ async function processarJornadaFromMe(pool, { clienteIdFm, telefoneFm, textoFm }
     [telefoneFm, clienteIdFm]
   );
   const lead = leadRes.rows[0];
-  if (!lead) return;
+  if (!lead) {
+    await gravarLogWebhook({ cliente_id: clienteIdFm, instance: 'jornada', tag: 'journey_debug', level: 'warn',
+      message: 'Jornada: lead nao encontrado por telefone+cliente', data: { telefone: telefoneFm, texto: textoFm.slice(0, 80) } });
+    return;
+  }
   if (lead.click_event_source_url) lead.event_source_url = lead.click_event_source_url;
 
   // Lead de link usa SOMENTE as etapas daquele link. Lead sem link usa SOMENTE
@@ -868,11 +872,21 @@ async function processarJornadaFromMe(pool, { clienteIdFm, telefoneFm, textoFm }
      ORDER BY position ASC, id ASC`,
     params
   );
-  if (!stagesRes.rows.length) return;
+  if (!stagesRes.rows.length) {
+    await gravarLogWebhook({ cliente_id: clienteIdFm, instance: 'jornada', tag: 'journey_debug', level: 'warn',
+      message: 'Jornada: nenhuma etapa encontrada para o lead', data: { lead_id: lead.id, campaignId, filtro: campaignFilter } });
+    return;
+  }
 
   // Qual etapa a mensagem aciona (primeira que casar).
   const alvo = stagesRes.rows.find(s => mensagemBateKeyword(textoFm, s));
-  if (!alvo) return;
+  if (!alvo) {
+    await gravarLogWebhook({ cliente_id: clienteIdFm, instance: 'jornada', tag: 'journey_debug', level: 'warn',
+      message: 'Jornada: texto nao casou com nenhuma keyword', data: { lead_id: lead.id, texto: textoFm.slice(0, 120), etapas: stagesRes.rows.map(s => ({ id: s.id, keywords: s.keywords, match: s.keyword_match })) } });
+    return;
+  }
+  await gravarLogWebhook({ cliente_id: clienteIdFm, instance: 'jornada', tag: 'journey_debug', level: 'info',
+    message: `Jornada: etapa "${alvo.name}" acionada`, data: { lead_id: lead.id, stage_id: alvo.id, concept: alvo.event_concept } });
 
   // Já existe histórico dessa etapa para esse lead? (idempotência app-level)
   const jaRes = await pool.query(
