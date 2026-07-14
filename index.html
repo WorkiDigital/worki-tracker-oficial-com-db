@@ -849,14 +849,14 @@
             <button class="btn btn-ghost" id="btnTheme" onclick="toggleTheme()" title="Alternar tema">
                 <i id="iconTheme" data-lucide="sun" style="width:15px;"></i>
             </button>
+            <!-- Filtro global por cliente (admin only) -->
+            <div id="adminClienteFilter" style="display:none;" class="ctrl-box">
+                <i data-lucide="users" style="width:14px;color:var(--muted);flex-shrink:0;"></i>
+                <select id="selectClienteAdmin" class="bare" onchange="trocarClienteAdmin(this.value)">
+                </select>
+            </div>
             <!-- Controles exclusivos da aba Leads -->
             <div id="leadsControls" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-                <!-- Client selector (admin only) -->
-                <div id="adminClienteFilter" style="display:none;" class="ctrl-box">
-                    <i data-lucide="users" style="width:14px;color:var(--muted);flex-shrink:0;"></i>
-                    <select id="selectClienteAdmin" class="bare" onchange="trocarClienteAdmin(this.value)">
-                    </select>
-                </div>
                 <!-- Instance filter -->
                 <div id="instanceFilterContainer" class="ctrl-box">
                     <i data-lucide="smartphone" style="width:14px;color:var(--muted);flex-shrink:0;"></i>
@@ -2858,7 +2858,7 @@ async function fazerLogout() {
 async function popularSeletorAdmin() {
     const u = JSON.parse(localStorage.getItem('adlytics_user') || '{}');
     if (!u?.is_admin) return;
-    document.getElementById('adminClienteFilter').style.display = '';
+    atualizarVisibilidadeFiltroCliente();
     const r = await authFetch('/api/clientes');
     const clientes = await r.json();
     const sel = document.getElementById('selectClienteAdmin');
@@ -2881,25 +2881,40 @@ async function popularSeletorAdmin() {
     }
 }
 
+const ABAS_COM_FILTRO_CLIENTE = new Set(['leads','conversas','funil','anuncios','captacao','inteligente']);
+
+function abaAtual() {
+    return ABAS.find(a => !$('aba-' + a)?.classList.contains('aba-oculta')) || 'leads';
+}
+
+function atualizarVisibilidadeFiltroCliente(aba = abaAtual()) {
+    const box = $('adminClienteFilter');
+    if (!box) return;
+    const u = JSON.parse(localStorage.getItem('adlytics_user') || '{}');
+    box.style.display = u?.is_admin && ABAS_COM_FILTRO_CLIENTE.has(aba) ? 'flex' : 'none';
+}
+
 function trocarClienteAdmin(id) {
     if (typeof _leadsCache !== 'undefined') _leadsCache.clear();
     clienteAdminSelecionado = id ? parseInt(id) : null;
     if (id) localStorage.setItem('wt_admin_cliente_id', String(id));
     else localStorage.removeItem('wt_admin_cliente_id');
-    // Mantém os dois seletores (global + o da aba Captação) em sincronia.
-    const g = document.getElementById('selectClienteAdmin');
-    const c = document.getElementById('capSelectCliente');
-    const i = document.getElementById('intSelectCliente');
+    const g = $('selectClienteAdmin');
+    const c = $('capSelectCliente');
+    const i = $('intSelectCliente');
+    const chat = $('chatClienteFilter');
     if (g && g.value !== String(id ?? '')) g.value = id ?? '';
     if (c && c.value !== String(id ?? '')) c.value = id ?? '';
     if (i && i.value !== String(id ?? '')) i.value = id ?? '';
-    // Leads são carregados sob demanda do backend por cliente — rebusca em vez de só refiltrar a memória.
+    if (chat && chat.value !== String(id ?? '')) chat.value = id ?? '';
+
     recarregarLeads();
+    if (!$('aba-conversas')?.classList.contains('aba-oculta') && typeof chatMonitorRefreshCliente === 'function') chatMonitorRefreshCliente();
     if (!$('aba-captacao')?.classList.contains('aba-oculta')) carregarCampanhasLink();
     if (!$('aba-inteligente')?.classList.contains('aba-oculta')) capIntCarregar();
     if (!$('aba-funil')?.classList.contains('aba-oculta') && typeof funilCarregar === 'function') funilCarregar();
+    if (!$('aba-anuncios')?.classList.contains('aba-oculta')) { adsCarregado = false; carregarContasAds(); }
 }
-
 // ── Anúncios — Account picker ──────────────────────────────────
 let _todasContas = [];        // lista completa carregada da API
 let _contasVisiveis = [];     // lista filtrada por Configurações
@@ -2923,9 +2938,18 @@ function restaurarFiltroStatus() {
 
 async function carregarContasAds() {
     try {
-        const contas = await authFetch('/api/ads-accounts').then(r=>r.json());
-        if (!Array.isArray(contas) || !contas.length) return;
-        _todasContas = contas;
+        const clienteQs = clienteAdminSelecionado ? '?cliente_id=' + encodeURIComponent(clienteAdminSelecionado) : '';
+        const contas = await authFetch('/api/ads-accounts' + clienteQs).then(r=>r.json());
+        _todasContas = Array.isArray(contas) ? contas : [];
+        if (!_todasContas.length) {
+            _contasVisiveis = [];
+            _contaSelecionada = null;
+            $('adsAccountSelect').innerHTML = '';
+            const lbl = $('acctBtnLabel');
+            if (lbl) { lbl.textContent = 'Nenhuma conta vinculada'; lbl.classList.add('placeholder'); }
+            $('acctSavedBadge').style.display = 'none';
+            return;
+        }
 
         // Aplica filtro de contas salvo em Configurações e popula o select/dropdown
         aplicarFiltroContas();
@@ -5288,7 +5312,8 @@ function mudarAba(aba) {
     const el = $('aba-'+aba); if(el) el.classList.remove('aba-oculta');
     const btn = $('btn-'+aba); if(btn) btn.classList.add('active');
     $('titulo-pagina').innerHTML = TITULOS[aba]||'';
-    $('leadsControls').style.display = ['leads','relatorios'].includes(aba) ? 'flex' : 'none';
+    atualizarVisibilidadeFiltroCliente(aba);
+    $('leadsControls').style.display = aba === 'leads' ? 'flex' : 'none';
     lucide.createIcons({ nodes:[$('titulo-pagina')] });
     if (aba === 'conversas') {
         // Se o popup de conversa estiver aberto, devolve os paineis para a shell
@@ -5297,7 +5322,7 @@ function mudarAba(aba) {
         if (typeof chatMonitorInit === 'function') chatMonitorInit();
     }
     if (aba === 'funil') { funilInit(); }
-    if (aba === 'anuncios' && !adsCarregado) carregarAnuncios();
+    if (aba === 'anuncios' && !adsCarregado) carregarContasAds();
     if (aba === 'captacao') { carregarCampanhasLink(); }
     if (aba === 'inteligente') { capIntCarregar(); }
     if (aba === 'conta')    { carregarMinhaConta(); }
@@ -6143,7 +6168,7 @@ function resetLeadSearchAutofill() {
 </script>
 <script defer src="js/leads.js?v=20260713-kanban2"></script>
 <script defer src="js/chat-monitor.js?v=20260712-5"></script>
-<script defer src="js/admin.js?v=20260714-1"></script>
+<script defer src="js/admin.js?v=20260714-2"></script>
 <script defer src="js/reports-auto.js?v=20260712-1"></script>
 <script defer src="js/captacao.js?v=20260714-2"></script>
 

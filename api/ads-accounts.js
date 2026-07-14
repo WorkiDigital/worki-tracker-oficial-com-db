@@ -35,7 +35,19 @@ export default async function handler(req, res) {
     }
 
     // Para clientes (não-admin): filtra apenas a conta vinculada no painel
-    const allowedId = await getClientAccountId(user);
+    let targetClientAccountId = null;
+    if (user.is_admin && req.query.cliente_id) {
+      try {
+        const pool = getPool();
+        const r = await pool.query('SELECT account_id FROM clientes WHERE id = $1', [req.query.cliente_id]);
+        targetClientAccountId = r.rows[0]?.account_id || null;
+      } catch (_) {}
+    }
+
+    if (user.is_admin && req.query.cliente_id && !targetClientAccountId) {
+      return res.status(200).json([]);
+    }
+    const allowedId = targetClientAccountId || await getClientAccountId(user);
     if (!user.is_admin && !allowedId && process.env.ALLOW_UNSCOPED_CLIENT_ACCOUNTS !== 'true') {
       return res.status(403).json({ error: 'Conta de anúncios não vinculada ao cliente.' });
     }

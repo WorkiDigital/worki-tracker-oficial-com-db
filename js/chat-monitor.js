@@ -25,9 +25,17 @@ function chatCurrentUser() {
     catch (_) { return {}; }
 }
 
+function chatClienteFiltroAtual() {
+    const user = chatCurrentUser();
+    if (user.is_admin && typeof clienteAdminSelecionado !== 'undefined' && clienteAdminSelecionado) {
+        return String(clienteAdminSelecionado);
+    }
+    return $('chatClienteFilter')?.value || '';
+}
+
 function chatBuildParams(extra = {}) {
     const params = new URLSearchParams(extra);
-    const cliente = $('chatClienteFilter')?.value || '';
+    const cliente = chatClienteFiltroAtual();
     const instance = $('chatInstanceFilter')?.value || '';
     const origem = $('chatOrigemFilter')?.value || '';
     const search = $('chatSearchInput')?.value?.trim() || '';
@@ -103,13 +111,9 @@ async function chatLoadClientFilter() {
     const user = chatCurrentUser();
     const select = $('chatClienteFilter');
     if (!select) return;
-    if (!user.is_admin) {
-        select.style.display = 'none';
-        select.disabled = true;
-        return;
-    }
-    select.style.display = '';
-    select.disabled = false;
+    select.style.display = 'none';
+    select.disabled = true;
+    if (!user.is_admin) return;
     const previous = select.value;
     select.innerHTML = '<option value="">Carregando clientes...</option>';
     try {
@@ -174,6 +178,13 @@ function chatStopPolling() {
 
 async function chatMonitorRefresh() {
     await chatLoadClientFilter();
+    await chatLoadInstances();
+    await chatLoadConversations(false);
+}
+
+async function chatMonitorRefreshCliente() {
+    if (!chatState.initialized) return;
+    chatState.selected = null;
     await chatLoadInstances();
     await chatLoadConversations(false);
 }
@@ -302,6 +313,10 @@ async function chatAbrirConversaPorTelefone(telefone, instance, clienteId) {
         // "Todas" — a conversa pode estar em qualquer instância daquele cliente.
         const user = chatCurrentUser();
         if (user.is_admin && clienteId != null) {
+            clienteAdminSelecionado = parseInt(clienteId, 10);
+            localStorage.setItem('wt_admin_cliente_id', String(clienteId));
+            const gf = $('selectClienteAdmin');
+            if (gf) gf.value = String(clienteId);
             const cf = $('chatClienteFilter');
             if (cf) cf.value = String(clienteId);
         }
@@ -1073,6 +1088,7 @@ function chatRelativeTime(value) {
 
 window.chatMonitorInit = chatMonitorInit;
 window.chatMonitorRefresh = chatMonitorRefresh;
+window.chatMonitorRefreshCliente = chatMonitorRefreshCliente;
 window.chatStopPolling = chatStopPolling;
 window.chatSelectConversation = chatSelectConversation;
 window.chatAbrirConversaPorTelefone = chatAbrirConversaPorTelefone;

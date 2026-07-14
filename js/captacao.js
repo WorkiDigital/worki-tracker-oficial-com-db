@@ -36,23 +36,17 @@ function capClienteNome() {
 // já que #leadsControls não aparece aqui. Só admin vê.
 function capSincronizarSeletorCliente() {
   const global = $('selectClienteAdmin');
-  const user = capUsuario();
   const seletores = [
     { box: $('capClienteSelectorBox'), sel: $('capSelectCliente') },
     { box: $('intClienteSelectorBox'), sel: $('intSelectCliente') },
   ];
 
   seletores.forEach(({ box, sel }) => {
-    if (!box || !sel) return;
-    if (!user.is_admin || !global) {
-      box.style.display = 'none';
-      return;
+    if (box) box.style.display = 'none';
+    if (sel && global) {
+      sel.innerHTML = global.innerHTML;
+      if (clienteAdminSelecionado) sel.value = String(clienteAdminSelecionado);
     }
-    // Copia as <option> do seletor global e marca o cliente atual.
-    sel.innerHTML = global.innerHTML;
-    if (clienteAdminSelecionado) sel.value = String(clienteAdminSelecionado);
-    box.style.display = 'flex';
-    if (window.lucide) lucide.createIcons({ nodes: [box] });
   });
 }
 
