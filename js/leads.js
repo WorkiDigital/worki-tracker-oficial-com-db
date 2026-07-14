@@ -3,42 +3,13 @@ let chumboAtivo = null;
 const leadsSelecionados = new Set();
 const LEADS_VIEW_MODE_KEY = 'wt_leads_view_mode';
 const LEADS_VIEW_MODES = new Set(['lista', 'kanban']);
-
-// Colunas do Kanban vêm do pipeline configurado por cliente (journey_stages) —
-// mesma fonte da Jornada Inteligente e do Funil dinâmico. Sem config nenhuma,
-// só existe a coluna virtual "Novo" (current_stage_id NULL).
-let _kanbanStages = null;       // etapas carregadas do cliente atual
-let _kanbanStagesClienteId = undefined; // detecta troca de cliente p/ recarregar
-
-async function carregarKanbanStages() {
-    const clienteKey = (typeof clienteAdminSelecionado !== 'undefined' && clienteAdminSelecionado) ? clienteAdminSelecionado : 'me';
-    if (_kanbanStages && _kanbanStagesClienteId === clienteKey) return _kanbanStages;
-    try {
-        const url = clienteKey !== 'me' ? `/api/journey-stages?cliente_id=${clienteKey}` : '/api/journey-stages';
-        const r = await authFetch(url);
-        const stages = await readApiJson(r, 'Falha ao carregar as etapas do pipeline');
-        _kanbanStages = Array.isArray(stages) ? stages : [];
-        _kanbanStagesClienteId = clienteKey;
-    } catch (e) {
-        _kanbanStages = [];
-        _kanbanStagesClienteId = clienteKey;
-        toast('Erro ao carregar o pipeline: ' + e.message, 'error');
-    }
-    return _kanbanStages;
-}
-
-function invalidarKanbanStages() {
-    _kanbanStages = null;
-    _kanbanStagesClienteId = undefined;
-}
-
-function getKanbanColunas() {
-    const etapas = (_kanbanStages || []).filter(s => s.enabled !== false);
-    return [
-        { key: null, label: 'Novo', tone: 'neutral', virtual: true },
-        ...etapas.map(s => ({ key: Number(s.id), label: s.name, tone: s.color || 'neutral', stage: s })),
-    ];
-}
+const LEAD_KANBAN_COLUMNS = [
+    { key:'lead', label:'Lead', status:'Lead', tone:'neutral' },
+    { key:'qualificado', label:'Qualificado', status:'Qualificado', tone:'blue' },
+    { key:'agendado', label:'Agendado', status:'Agendado', tone:'amber' },
+    { key:'vendido', label:'Vendido', status:'Vendido', tone:'green' },
+    { key:'perdido', label:'Perdido', status:'Perdido', tone:'red' },
+];
 
 // Cache de leads por chave "clienteId|periodo" — evita piscar ao navegar entre abas.
 const _leadsCache = new MemCache(2 * 60 * 1000); // TTL 2 min (auto-refresh de 30s mantém fresco)
@@ -464,10 +435,13 @@ function updateLeadsViewToggle(mode = getLeadsViewMode()) {
     $('btnLeadsKanban')?.classList.toggle('active', mode === 'kanban');
 }
 
-function getLeadStageKey(lead) {
-    return lead.current_stage_id === null || lead.current_stage_id === undefined
-        ? null
-        : Number(lead.current_stage_id);
+function getLeadStatusKey(status) {
+    const s = String(status || 'lead').trim().toLowerCase();
+    if (['vendido', 'venda', 'venda_fechada'].includes(s)) return 'vendido';
+    if (s === 'qualificado') return 'qualificado';
+    if (s === 'agendado') return 'agendado';
+    if (s === 'perdido') return 'perdido';
+    return 'lead';
 }
 
 function renderLeadsView() {
@@ -481,7 +455,7 @@ function renderLeadsView() {
         if (tableWrap) tableWrap.style.display = 'none';
         if (pag) pag.style.display = 'none';
         if (kanbanWrap) kanbanWrap.style.display = 'grid';
-        carregarKanbanStages().then(renderKanban);
+        renderKanban();
         return;
     }
 
@@ -514,11 +488,9 @@ function renderKanban() {
         return;
     }
 
-    const colunas = getKanbanColunas();
-    wrap.innerHTML = colunas.map(col => {
-        const leads = dadosFiltrados.filter(lead => getLeadStageKey(lead) === col.key);
-        const dropKey = col.key === null ? '' : String(col.key);
-        return `<section class="kanban-column kanban-${col.tone}" data-status="${col.key ?? 'novo'}" ondragover="kanbanDragOver(event)" ondragleave="kanbanDragLeave(event)" ondrop="kanbanDrop(event, '${dropKey}')">
+    wrap.innerHTML = LEAD_KANBAN_COLUMNS.map(col => {
+        const leads = dadosFiltrados.filter(lead => getLeadStatusKey(lead.status) === col.key);
+        return `<section class="kanban-column kanban-${col.tone}" data-status="${col.key}" ondragover="kanbanDragOver(event)" ondragleave="kanbanDragLeave(event)" ondrop="kanbanDrop(event, '${col.key}')">
             <div class="kanban-column-head">
                 <div><span class="kanban-dot"></span>${esc(col.label)}</div>
                 <span>${leads.length}</span>
@@ -534,14 +506,13 @@ function renderKanban() {
 
 function renderKanbanCard(lead) {
     const idx = dadosFiltrados.findIndex(l => Number(l.id) === Number(lead.id));
-    const stageKey = getLeadStageKey(lead);
+    const statusKey = getLeadStatusKey(lead.status);
     const origemInfo = obterOrigemLead(lead.lead_origin);
     const msg = (lead.mensagem_recebida || 'Sem mensagem').trim();
     const anuncio = lead.utm_content || lead.utm_campaign || 'Sem anuncio';
     const tempoFunil = tempoRelativo(lead.created_at || lead.event_time);
     const score = lead.lead_score || 0;
     const scoreColor = score >= 70 ? '#ef4444' : score >= 40 ? '#f59e0b' : '#6b7280';
-    const colunaAtual = getKanbanColunas().find(c => c.key === stageKey);
 
     return `<article class="kanban-card" draggable="true" data-lead-id="${Number(lead.id)}" ondragstart="kanbanDragStart(event, ${Number(lead.id)})" ondragend="kanbanDragEnd(event)">
         <div class="kanban-card-top">
@@ -554,7 +525,7 @@ function renderKanbanCard(lead) {
         <div class="kanban-phone">${esc(lead.telefone || 'Telefone nao informado')}</div>
         <div class="kanban-chip-row">
             <span class="kanban-origin" style="background:${origemInfo.bg};color:${origemInfo.color};border-color:${origemInfo.border};">${origemInfo.label}</span>
-            <span class="kanban-status-mini">${esc(colunaAtual?.label || 'Novo')}</span>
+            <span class="kanban-status-mini">${esc(LEAD_KANBAN_COLUMNS.find(c => c.key === statusKey)?.label || 'Lead')}</span>
         </div>
         <div class="kanban-message" title="${esc(msg)}">${esc(msg.substring(0, 92))}${msg.length > 92 ? '...' : ''}</div>
         <div class="kanban-meta">
@@ -600,63 +571,51 @@ function kanbanDragLeave(event) {
     if (!event.currentTarget.contains(event.relatedTarget)) event.currentTarget.classList.remove('drag-over');
 }
 
-async function kanbanDrop(event, dropKey) {
+async function kanbanDrop(event, statusKey) {
     event.preventDefault();
     event.currentTarget.classList.remove('drag-over');
     const leadId = Number(event.dataTransfer.getData('text/plain') || kanbanDraggingLeadId);
     if (!leadId) return;
-    const stageId = dropKey === '' ? null : Number(dropKey);
-    await atualizarStatusLeadKanban(leadId, stageId);
+    await atualizarStatusLeadKanban(leadId, statusKey);
 }
 
-async function atualizarStatusLeadKanban(leadId, stageId) {
+async function atualizarStatusLeadKanban(leadId, statusKey) {
     const lead = dadosFiltrados.find(l => Number(l.id) === Number(leadId));
     if (!lead) return;
-    const atual = getLeadStageKey(lead);
-    if (atual === stageId) return;
+    const atual = getLeadStatusKey(lead.status);
+    if (atual === statusKey) return;
 
-    const colunas = getKanbanColunas();
-    const col = colunas.find(c => c.key === stageId) || colunas[0];
-    const previousStageId = lead.current_stage_id ?? null;
+    const idx = dadosFiltrados.findIndex(l => Number(l.id) === Number(leadId));
+    if (statusKey === 'vendido') {
+        abrirModal(idx);
+        return;
+    }
+    if (statusKey === 'qualificado') {
+        qualificarLead(idx);
+        return;
+    }
+
+    const col = LEAD_KANBAN_COLUMNS.find(c => c.key === statusKey) || LEAD_KANBAN_COLUMNS[0];
     const previousStatus = lead.status;
-    lead.current_stage_id = stageId;
+    lead.status = col.status;
     renderKanban();
 
     try {
-        const clienteAdmin = (typeof clienteAdminSelecionado !== 'undefined' && clienteAdminSelecionado) ? clienteAdminSelecionado : undefined;
-        const r = await authFetch('/api/journey-stages', {
+        const r = await authFetch('/api/leads-update', {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'move_lead', lead_id: lead.id, stage_id: stageId, cliente_id: clienteAdmin })
+            body: JSON.stringify({ id: lead.id, status: col.status })
         });
-        const result = await readApiJson(r, 'Erro ao mover lead');
+        const result = await r.json();
+        if (!r.ok || result.error) throw new Error(result.error || 'Erro ao atualizar status');
         const raw = rawData.find(l => Number(l.id) === Number(lead.id));
-        if (result.lead) {
-            lead.current_stage_id = result.lead.current_stage_id ?? null;
-            lead.status = result.lead.status ?? lead.status;
-            if (raw) {
-                raw.current_stage_id = lead.current_stage_id;
-                raw.status = lead.status;
-            }
-        } else if (raw) {
-            raw.current_stage_id = stageId;
-        }
-        if (result.capi?.sent) {
-            toast(`Lead movido para ${col.label}. Evento enviado à Meta.`, 'success');
-        } else if (result.capi?.error) {
-            toast(`Lead movido para ${col.label}. Falha ao enviar evento à Meta: ${result.capi.error}`, 'warning');
-        } else {
-            toast(`Lead movido para ${col.label}.`, 'success');
-        }
+        if (raw) raw.status = col.status;
+        toast(`Lead movido para ${col.label}.`, 'success');
         aplicarFiltros();
     } catch (e) {
-        lead.current_stage_id = previousStageId;
         lead.status = previousStatus;
         const raw = rawData.find(l => Number(l.id) === Number(lead.id));
-        if (raw) {
-            raw.current_stage_id = previousStageId;
-            raw.status = previousStatus;
-        }
+        if (raw) raw.status = previousStatus;
         renderKanban();
         toast('Erro ao mover lead: ' + e.message, 'error');
     }

@@ -4,11 +4,10 @@ import { cors } from './_cors.js';
 import { decryptToken } from './_crypto.js';
 import { decodeToken } from './_invisible-token.js';
 import { ensureTrackingSchema } from './_tracking-schema.js';
-import { enviarConversao } from './_capi.js';
+import { enviarConversao, extrairValor } from './_capi.js';
 import { log } from './_logger.js';
 import { limparTextoDecorativo } from './_text-sanitize.js';
 import { ensureChatMessagesSchema } from './_chat-schema.js';
-import { dispararEtapaJornada } from './_journey-trigger.js';
 
 // ── Handler principal — recebe payload bruto da Evolution API ──
 export default async function handler(req, res) {
@@ -874,11 +873,10 @@ async function processarJornadaFromMe(pool, { clienteIdFm, telefoneFm, textoFm }
   const params = campaignId ? [clienteIdFm, campaignId] : [clienteIdFm];
 
   const stagesRes = await pool.query(
-    `SELECT id, name, event_concept, keywords, keyword_match, value_regex, currency, position,
-            is_first_contact, is_sale
+    `SELECT id, name, event_concept, keywords, keyword_match, value_regex, currency, position
      FROM journey_stages
      WHERE cliente_id = $1 AND ${campaignFilter}
-       AND enabled = true AND trigger_keyword = true
+       AND enabled = true AND trigger_type = 'keyword'
      ORDER BY position ASC, id ASC`,
     params
   );
@@ -898,11 +896,96 @@ async function processarJornadaFromMe(pool, { clienteIdFm, telefoneFm, textoFm }
   await gravarLogWebhook({ cliente_id: clienteIdFm, instance: 'jornada', tag: 'journey_debug', level: 'info',
     message: `Jornada: etapa "${alvo.name}" acionada`, data: { lead_id: lead.id, stage_id: alvo.id, concept: alvo.event_concept } });
 
-  const r = await dispararEtapaJornada({
-    lead, stage: alvo, allStages: stagesRes.rows, pool, textoOrigem: textoFm, origem: 'keyword',
+  // Já existe histórico dessa etapa para esse lead? (idempotência app-level)
+  const jaRes = await pool.query(
+    'SELECT value FROM lead_journey_history WHERE lead_id = $1 AND stage_id = $2 LIMIT 1',
+    [lead.id, alvo.id]
+  );
+  if (jaRes.rows.length) {
+    if (alvo.event_concept === 'purchase' && lead.valor_venda == null && jaRes.rows[0].value != null) {
+      await pool.query(
+        `UPDATE leads_tracking
+         SET sale_closed_at = COALESCE(sale_closed_at, NOW()),
+             status = 'Vendido',
+             valor_venda = COALESCE(valor_venda, $2)
+         WHERE id = $1`,
+        [lead.id, jaRes.rows[0].value]
+      );
+    }
+    return;
+  }
+
+  // Sequencial permitindo pular: etapas ANTERIORES (position menor) ainda sem
+  // histórico viram 'skipped' (concluídas sem reenviar evento à Meta).
+  const anteriores = stagesRes.rows.filter(s => (s.position ?? 0) < (alvo.position ?? 0));
+  for (const ant of anteriores) {
+    await pool.query(
+      `INSERT INTO lead_journey_history (lead_id, cliente_id, stage_id, event_concept, meta_status, created_at)
+       VALUES ($1,$2,$3,$4,'skipped',NOW())
+       ON CONFLICT (lead_id, stage_id) DO NOTHING`,
+      [lead.id, clienteIdFm, ant.id, ant.event_concept]
+    );
+  }
+
+  // Valor (se a etapa tem regex). Se exigir valor e não extrair → erro, não envia.
+  let value = null;
+  const exigeValor = alvo.event_concept === 'purchase' || alvo.event_concept === 'checkout';
+  if (alvo.value_regex) value = extrairValor(textoFm, alvo.value_regex);
+  if (exigeValor && alvo.value_regex && value == null) {
+    await pool.query(
+      `INSERT INTO lead_journey_history
+        (lead_id, cliente_id, stage_id, event_concept, trigger_message, channel, meta_status, meta_response, created_at, last_attempt_at)
+       VALUES ($1,$2,$3,$4,$5,$6,'error','Valor não extraído da mensagem',NOW(),NOW())
+       ON CONFLICT (lead_id, stage_id) DO NOTHING`,
+      [lead.id, clienteIdFm, alvo.id, alvo.event_concept, textoFm.slice(0, 500), resolverCanalLocal(lead)]
+    );
+    log('warn', 'webhook_evo_journey_valor', { lead_id: lead.id, stage: alvo.name });
+    return;
+  }
+
+  // Envia à Meta (canal decidido pelo módulo central) e registra o resultado.
+  const r = await enviarConversao({
+    lead, concept: alvo.event_concept, value, currency: alvo.currency || 'BRL', pool,
   });
 
+  await pool.query(
+    `INSERT INTO lead_journey_history
+      (lead_id, cliente_id, stage_id, event_concept, event_name, trigger_message, value, currency,
+       channel, event_id, meta_status, meta_response, fbtrace_id, attempts, created_at, last_attempt_at)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,1,NOW(),NOW())
+     ON CONFLICT (lead_id, stage_id) DO UPDATE
+       SET meta_status = EXCLUDED.meta_status, meta_response = EXCLUDED.meta_response,
+           fbtrace_id = EXCLUDED.fbtrace_id, attempts = lead_journey_history.attempts + 1,
+           last_attempt_at = NOW()`,
+    [lead.id, clienteIdFm, alvo.id, alvo.event_concept, r.event_name, textoFm.slice(0, 500),
+     value, alvo.currency || 'BRL', r.channel, r.event_id,
+     r.sent ? 'sent' : 'error', r.sent ? null : (r.error || 'falha'), r.fbtrace_id || null]
+  );
+
+  // Atualiza a etapa atual do lead (e scheduled_at p/ agendamento).
+  const updateLeadParams = [alvo.id, lead.id];
+  if (alvo.event_concept === 'purchase') updateLeadParams.push(value);
+  await pool.query(
+    `UPDATE leads_tracking
+     SET current_stage_id = $1, stage_changed_at = NOW()
+         ${alvo.event_concept === 'appointment' ? `, scheduled_at = NOW()
+           -- Marca 'Agendado' SEM rebaixar: se o lead ja e Vendido/Qualificado
+           -- (estagios mais avancados no funil), preserva o status atual.
+           , status = CASE WHEN LOWER(COALESCE(status,'')) IN ('vendido','venda_fechada','qualificado')
+                           THEN status ELSE 'Agendado' END` : ''}
+         ${alvo.event_concept === 'qualified' ? ', qualified_at = COALESCE(qualified_at, NOW())' : ''}
+         ${alvo.event_concept === 'purchase' ? ", sale_closed_at = COALESCE(sale_closed_at, NOW()), status = 'Vendido', valor_venda = COALESCE(valor_venda, $3)" : ''}
+     WHERE id = $2`,
+    updateLeadParams
+  );
+
   log('info', 'webhook_evo_journey', { lead_id: lead.id, stage: alvo.name, concept: alvo.event_concept, sent: r.sent });
+}
+
+// Canal local (espelha resolverCanal do _capi.js) só para o registro de erro
+// quando nem chegamos a chamar enviarConversao (valor ausente).
+function resolverCanalLocal(lead) {
+  return lead.ctw_aci_id ? 'business_messaging' : 'website';
 }
 
 // Atribui um lead a um clique de link rastreável pelo token exato.

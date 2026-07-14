@@ -179,34 +179,6 @@ async function createTrackingSchema() {
       ALTER TABLE public.journey_stages
       ADD COLUMN IF NOT EXISTS tracking_campaign_id INTEGER REFERENCES public.tracking_campaigns(id) ON DELETE CASCADE;
 
-      -- Gatilhos independentes por etapa (Kanban configurável = Jornada = Funil):
-      -- uma etapa pode disparar por palavra-chave, por arraste no Kanban, ou ambos.
-      -- is_first_contact/is_sale são flags de TIPO da etapa (usadas pelo Funil e
-      -- pela regra "não rebaixar" status) — independentes do(s) evento(s) CAPI
-      -- disparado(s), pois uma etapa pode ser "venda" sem necessariamente mandar
-      -- o conceito 'purchase' (ex: cliente que so quer marcar sem evento à Meta).
-      ALTER TABLE public.journey_stages
-      ADD COLUMN IF NOT EXISTS trigger_keyword BOOLEAN DEFAULT true,
-      ADD COLUMN IF NOT EXISTS trigger_kanban_drag BOOLEAN DEFAULT false,
-      ADD COLUMN IF NOT EXISTS color VARCHAR(20) DEFAULT 'neutral',
-      ADD COLUMN IF NOT EXISTS is_first_contact BOOLEAN DEFAULT false,
-      ADD COLUMN IF NOT EXISTS is_sale BOOLEAN DEFAULT false,
-      ADD COLUMN IF NOT EXISTS google_ads_note VARCHAR(255);
-
-      -- Eventos ADICIONAIS por etapa (além do event_concept principal). Uma etapa
-      -- pode disparar N conceitos CAPI Meta em paralelo (ex: "Comprou" manda
-      -- Purchase + um evento customizado). Cada linha tem seu próprio dedup via
-      -- event_id determinístico em lead_journey_history (ver stage_event_extra_id).
-      CREATE TABLE IF NOT EXISTS public.journey_stage_events (
-        id SERIAL PRIMARY KEY,
-        stage_id INTEGER REFERENCES public.journey_stages(id) ON DELETE CASCADE,
-        event_concept VARCHAR(20) NOT NULL,
-        currency VARCHAR(8) DEFAULT 'BRL',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-      CREATE INDEX IF NOT EXISTS idx_journey_stage_events_stage
-        ON public.journey_stage_events(stage_id);
-
       -- Histórico de jornada por lead: 1 linha por (lead, etapa) — UNIQUE impede duplicar.
       CREATE TABLE IF NOT EXISTS public.lead_journey_history (
         id SERIAL PRIMARY KEY,

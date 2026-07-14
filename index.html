@@ -12,11 +12,11 @@
     <script defer src="https://cdn.jsdelivr.net/npm/lucide@0.469.0/dist/umd/lucide.min.js"></script>
     <!-- Chart.js, html2canvas e jsPDF são carregados sob demanda via loadScript() (utils.js).
          Não incluir aqui — evita baixar ~500KB em toda sessão mesmo sem abrir Anúncios ou exportar PDF. -->
-    <link rel="stylesheet" href="css/dashboard.css?v=20260713-kanban3">
+    <link rel="stylesheet" href="css/dashboard.css?v=20260713-kanban2">
     <link rel="stylesheet" href="css/splash.css?v=20260712-1">
-    <link rel="stylesheet" href="css/funil.css?v=20260713-2">
+    <link rel="stylesheet" href="css/funil.css?v=20260713-1">
     <script defer src="js/utils.js?v=20260712-1"></script>
-    <script defer src="js/funil.js?v=20260713-3"></script>
+    <script defer src="js/funil.js?v=20260713-2"></script>
 </head>
 <body>
 
@@ -2089,6 +2089,18 @@
 
                 <div id="capIntBlocked" class="cap-journey-empty" style="display:none;">Selecione um cliente para configurar o Rastreamento Inteligente.</div>
                 <div id="capIntContent">
+                    <div class="cap-int-form-grid">
+                        <div class="input-group">
+                            <label>Template de Venda <span style="color:var(--muted);font-weight:400;font-size:11px;">(formato da mensagem do atendente)</span></label>
+                            <textarea id="capIntTemplate" rows="6" maxlength="10000" placeholder="Ex:&#10;Nome completo: {nome}&#10;Produto: {produto}&#10;Valor da Compra: {valor}&#10;Endereço: {endereco}&#10;Cidade: {cidade}" class="cap-int-template"></textarea>
+                        </div>
+                        <div class="input-group">
+                            <label>Gatilho de Qualificação <span style="color:var(--muted);font-weight:400;font-size:11px;">(opcional)</span></label>
+                            <span style="font-size:11px;color:var(--muted);display:block;margin-bottom:7px;">Palavra-chave que marca o lead como Qualificado. Se vazio, usa <code>#qualificado</code>.</span>
+                            <input type="text" id="capIntQualificacao" maxlength="255" placeholder="Ex: #leadbom">
+                        </div>
+                    </div>
+
                     <div class="cap-int-divider"></div>
                     <div class="cap-journey-head">
                         <div>
@@ -2120,45 +2132,6 @@
                         <div class="input-group">
                             <label>Regex de valor <span style="color:var(--muted);font-weight:400;">(opcional, grupo (?&lt;value&gt;...))</span></label>
                             <input type="text" id="capIntRegex" placeholder="R\$\s*(?&lt;value&gt;\d{1,3}(?:\.\d{3})*,\d{2})">
-                        </div>
-                        <div class="input-group">
-                            <label>Eventos extras <span style="color:var(--muted);font-weight:400;">(opcional — disparam junto com o evento principal)</span></label>
-                            <select id="capIntEventoExtraSelect" class="form-control" onchange="capIntAdicionarEventoExtra()"></select>
-                            <div id="capIntEventosExtrasLista" class="cap-int-extra-list"></div>
-                        </div>
-                        <div class="input-group">
-                            <label>Cor da coluna no Kanban</label>
-                            <div id="capIntColorPicker" class="cap-color-picker">
-                                <label class="cap-color-swatch cap-color-neutral"><input type="radio" name="capIntColor" value="neutral" checked><span></span></label>
-                                <label class="cap-color-swatch cap-color-blue"><input type="radio" name="capIntColor" value="blue"><span></span></label>
-                                <label class="cap-color-swatch cap-color-amber"><input type="radio" name="capIntColor" value="amber"><span></span></label>
-                                <label class="cap-color-swatch cap-color-green"><input type="radio" name="capIntColor" value="green"><span></span></label>
-                                <label class="cap-color-swatch cap-color-red"><input type="radio" name="capIntColor" value="red"><span></span></label>
-                            </div>
-                        </div>
-                        <div class="cap-grid-main" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
-                            <label class="cap-conversion-toggle">
-                                <input class="cbx-lg" type="checkbox" id="capIntTriggerKeyword" checked onchange="capIntAtualizarVisibilidadeGatilho()">
-                                <span><strong>Disparar por palavra-chave</strong><small>O atendente digita a palavra e a etapa dispara.</small></span>
-                            </label>
-                            <label class="cap-conversion-toggle">
-                                <input class="cbx-lg" type="checkbox" id="capIntTriggerDrag">
-                                <span><strong>Disparar ao arrastar no Kanban</strong><small>Mover o card do lead para esta coluna dispara a etapa.</small></span>
-                            </label>
-                        </div>
-                        <div class="cap-grid-main" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
-                            <label class="cap-conversion-toggle">
-                                <input class="cbx-lg" type="checkbox" id="capIntIsFirstContact">
-                                <span><strong>Etapa de primeiro contato</strong><small>Marca esta etapa como a entrada inicial do funil.</small></span>
-                            </label>
-                            <label class="cap-conversion-toggle">
-                                <input class="cbx-lg" type="checkbox" id="capIntIsSale">
-                                <span><strong>Etapa de venda</strong><small>Contabiliza como venda no Funil, independente do evento enviado.</small></span>
-                            </label>
-                        </div>
-                        <div class="input-group">
-                            <label>Nota Google Ads <span style="color:var(--muted);font-weight:400;">(informativo — Google Ads não dispara por etapa, só no clique)</span></label>
-                            <input type="text" id="capIntGoogleAdsNote" maxlength="255" placeholder="Ex: corresponde à conversão 'Venda' no Google Ads">
                         </div>
                         <label class="cap-conversion-toggle" style="margin-bottom:12px;">
                             <input class="cbx-lg" type="checkbox" id="capIntEnabled" checked>
@@ -2922,7 +2895,6 @@ async function popularSeletorAdmin() {
 
 function trocarClienteAdmin(id) {
     if (typeof _leadsCache !== 'undefined') _leadsCache.clear();
-    if (typeof invalidarKanbanStages === 'function') invalidarKanbanStages();
     clienteAdminSelecionado = id ? parseInt(id) : null;
     if (id) localStorage.setItem('wt_admin_cliente_id', String(id));
     else localStorage.removeItem('wt_admin_cliente_id');
@@ -6181,11 +6153,11 @@ function resetLeadSearchAutofill() {
     input.defaultValue = '';
 }
 </script>
-<script defer src="js/leads.js?v=20260713-kanban4"></script>
+<script defer src="js/leads.js?v=20260713-kanban2"></script>
 <script defer src="js/chat-monitor.js?v=20260712-5"></script>
 <script defer src="js/admin.js?v=20260622-4"></script>
 <script defer src="js/reports-auto.js?v=20260712-1"></script>
-<script defer src="js/captacao.js?v=20260714-1"></script>
+<script defer src="js/captacao.js?v=20260712-7"></script>
 
 <!-- Drawer Perfil do Lead (4 abas) — deve ficar no final do body para z-index funcionar -->
 <div id="leadProfileDrawer" style="position:fixed;inset:0;z-index:9999;display:none;align-items:stretch;justify-content:flex-end;background:rgba(0,0,0,0.55);" onclick="if(event.target===this)fecharPerfilLead()">
