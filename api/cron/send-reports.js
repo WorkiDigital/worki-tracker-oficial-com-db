@@ -249,13 +249,15 @@ export async function runCronJob() {
 
 export default async function handler(req, res) {
     const cronSecret = process.env.CRON_SECRET;
-    // Fail-closed: em produção, CRON_SECRET é obrigatório — sem ele a rota
-    // ficaria aberta para qualquer requisição sem autenticação nenhuma.
+    // Fail-closed: CRON_SECRET é sempre obrigatório para a rota HTTP — sem ele
+    // ficaria aberta para qualquer requisição sem autenticação nenhuma. Não
+    // depende de NODE_ENV (o ambiente real de produção pode não ter essa env
+    // setada). O tick interno do cron (setInterval em server.js) não passa por
+    // aqui — chama runCronJob() diretamente, sem HTTP.
     if (!cronSecret) {
-        if (process.env.NODE_ENV === 'production') {
-            return res.status(500).json({ error: 'CRON_SECRET não configurado no servidor.' });
-        }
-    } else if (req.headers.authorization !== `Bearer ${cronSecret}`) {
+        return res.status(500).json({ error: 'CRON_SECRET não configurado no servidor.' });
+    }
+    if (req.headers.authorization !== `Bearer ${cronSecret}`) {
         return res.status(401).json({ error: 'Não autorizado' });
     }
     try {

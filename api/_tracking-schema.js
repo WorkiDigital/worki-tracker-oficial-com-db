@@ -131,6 +131,13 @@ async function createTrackingSchema() {
       ADD COLUMN IF NOT EXISTS gclid VARCHAR(512),
       ADD COLUMN IF NOT EXISTS google_ads_keyword VARCHAR(255);
 
+      -- gbraid/wbraid: identificadores de clique do Google Ads para fluxos sem
+      -- cookie de terceiros (iOS/Safari, campanhas Performance Max). Paridade
+      -- com gclid, que já existe acima.
+      ALTER TABLE public.tracking_clicks
+      ADD COLUMN IF NOT EXISTS gbraid VARCHAR(512),
+      ADD COLUMN IF NOT EXISTS wbraid VARCHAR(512);
+
       ALTER TABLE public.tracking_campaigns
       ADD COLUMN IF NOT EXISTS utm_content VARCHAR(255),
       ADD COLUMN IF NOT EXISTS archived_at TIMESTAMP,
@@ -245,6 +252,19 @@ async function createTrackingSchema() {
         ON public.tracking_pageviews(campaign_id, created_at DESC);
       CREATE INDEX IF NOT EXISTS idx_tracking_pageviews_visitor
         ON public.tracking_pageviews(visitor_id);
+
+      -- gclid/gbraid/wbraid do PageView: hoje o site-pageview.js recebia o gclid
+      -- só para decidir se devolvia as credenciais Google Ads na resposta, mas
+      -- descartava o valor em seguida. Persistindo aqui, dá pra rastrear o clique
+      -- de anúncio Google desde a primeira visita, não só no momento do clique
+      -- no botão do WhatsApp.
+      ALTER TABLE public.tracking_pageviews
+      ADD COLUMN IF NOT EXISTS gclid VARCHAR(512),
+      ADD COLUMN IF NOT EXISTS gbraid VARCHAR(512),
+      ADD COLUMN IF NOT EXISTS wbraid VARCHAR(512);
+
+      CREATE INDEX IF NOT EXISTS idx_tracking_pageviews_gclid
+        ON public.tracking_pageviews(gclid) WHERE gclid IS NOT NULL;
 
       -- Domínios autorizados a usar o script por campanha (opcional; vazio = qualquer domínio).
       ALTER TABLE public.tracking_campaigns

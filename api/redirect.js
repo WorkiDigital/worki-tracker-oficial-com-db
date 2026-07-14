@@ -129,7 +129,7 @@ function corSegura(cor, fallback) {
   return fallback;
 }
 
-function htmlPagePixel({ waUrl, pixelId, eventId, fbc, fbp, googleAdsId, googleAdsLabel, gclid, redirectTitle, redirectSubtitle, redirectBgColor }) {
+function htmlPagePixel({ waUrl, pixelId, eventId, fbc, fbp, googleAdsId, googleAdsLabel, gclid, gbraid, wbraid, redirectTitle, redirectSubtitle, redirectBgColor }) {
   const safeUrl = waUrl.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
   const bgColor = corSegura(redirectBgColor, '#e5ddd5');
   // Título/subtítulo: usa os configurados, senão os padrões. Escapados p/ HTML.
@@ -149,9 +149,15 @@ function htmlPagePixel({ waUrl, pixelId, eventId, fbc, fbp, googleAdsId, googleA
     } catch(e) {}
   </script>` : '';
   // Google Ads (conversão via clique) — 100% client-side (gtag.js), sem GTM. Só
-  // dispara quando o cliente tem o ID/label configurados E o clique veio com gclid
-  // (senão não há anúncio Google para atribuir).
-  const gtagSnippet = (googleAdsId && googleAdsLabel && gclid) ? `
+  // dispara quando o cliente tem o ID/label configurados E o clique veio com
+  // gclid, gbraid ou wbraid (senão não há anúncio Google para atribuir). gbraid/
+  // wbraid cobrem fluxos sem cookie de terceiros (iOS/Safari, Performance Max),
+  // onde o Google não entrega gclid.
+  const temIdentificadorGoogle = !!(gclid || gbraid || wbraid);
+  const conversionExtra = !gclid
+    ? `${gbraid ? `,\n        'gbraid': ${jsStr(gbraid)}` : ''}${wbraid ? `,\n        'wbraid': ${jsStr(wbraid)}` : ''}`
+    : '';
+  const gtagSnippet = (googleAdsId && googleAdsLabel && temIdentificadorGoogle) ? `
   <script async src="https://www.googletagmanager.com/gtag/js?id=${jsStr(googleAdsId)}"></script>
   <script>
     window.dataLayer = window.dataLayer || [];
@@ -162,7 +168,7 @@ function htmlPagePixel({ waUrl, pixelId, eventId, fbc, fbp, googleAdsId, googleA
       gtag('event', 'conversion', {
         'send_to': ${jsStr(googleAdsId + '/' + googleAdsLabel)},
         'value': 1.0,
-        'currency': 'BRL',
+        'currency': 'BRL'${conversionExtra}
       });
     } catch(e) {}
   </script>` : '';
@@ -293,6 +299,11 @@ export default async function handler(req, res) {
     const adset_id       = adParam(q.adset_id, 64);
     const metaCampaignId = adParam(q.meta_campaign_id || q.campaign_id, 64);
     const gclid          = adParam(q.gclid, 512);
+    // gbraid/wbraid: identificadores de clique do Google Ads para fluxos sem
+    // cookie de terceiros (iOS/Safari, campanhas Performance Max) — paridade com
+    // gclid, que já era capturado.
+    const gbraid         = adParam(q.gbraid, 512);
+    const wbraid         = adParam(q.wbraid, 512);
     // Palavra-chave do Google Ads: variável dinâmica {keyword} do próprio Google.
     // Aceita nomes alternativos (keyword, utm_term) para robustez.
     const googleAdsKeyword = adParam(q.keyword || q.utm_term, 255);
@@ -303,14 +314,16 @@ export default async function handler(req, res) {
          utm_source, utm_medium, utm_campaign, utm_content, referrer, ip_address, user_agent,
          whatsapp_number, instance_name, fbclid, fbc, fbp, pageview_event_id, event_source_url,
          geo_city, geo_region, geo_region_code, geo_country, geo_country_code,
-         placement, ad_id, adset_id, meta_campaign_id, gclid, google_ads_keyword, expires_at)
-       VALUES ($1,$2,$3,$4,'clicked',$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29, NOW() + INTERVAL '72 hours')`,
+         placement, ad_id, adset_id, meta_campaign_id, gclid, google_ads_keyword, expires_at,
+         gbraid, wbraid)
+       VALUES ($1,$2,$3,$4,'clicked',$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29, NOW() + INTERVAL '72 hours',$30,$31)`,
       [trackingId, campaign.id, destino.id, campaign.cliente_id,
        utm_source, utm_medium, utm_campaign, utm_content, referrer, ip, userAgent,
        destino.whatsapp_number, destino.instance_name, fbclid, fbc, fbp, pageviewEventId, eventSourceUrl,
        geo?.city || null, geo?.region || null, geo?.region_code || null,
        geo?.country || null, geo?.country_code || null,
-       placement, ad_id, adset_id, metaCampaignId, gclid, googleAdsKeyword]
+       placement, ad_id, adset_id, metaCampaignId, gclid, googleAdsKeyword,
+       gbraid, wbraid]
     );
 
     await client.query('COMMIT');
@@ -337,26 +350,29 @@ export default async function handler(req, res) {
       message: `Clique no link "${campaign.name}" → ${destino.whatsapp_number}`,
       data: { tracking_id: trackingId, campaign_id: campaign.id, destino: destino.whatsapp_number,
               fbclid: !!fbclid, fbc: !!fbc, fbp: !!fbp, capi_pixel: !!capiPixelId,
-              gclid: !!gclid, google_ads_keyword: googleAdsKeyword,
+              gclid: !!gclid, gbraid: !!gbraid, wbraid: !!wbraid, google_ads_keyword: googleAdsKeyword,
               google_ads_configurado: !!(googleAdsId && googleAdsLabel),
               geo_city: geo?.city || null, geo_region: geo?.region || null,
               geo_country: geo?.country || null },
     });
 
     // Log dedicado do disparo Google Ads (paridade com o log capi_web da Meta) —
-    // best-effort, só quando o snippet realmente foi/seria injetado.
-    if (gclid && googleAdsId && googleAdsLabel) {
+    // best-effort, só quando o snippet realmente foi/seria injetado. gbraid/wbraid
+    // contam como identificador válido (fluxos sem gclid, ex. iOS/Safari).
+    const temIdentificadorGoogleLog = !!(gclid || gbraid || wbraid);
+    if (temIdentificadorGoogleLog && googleAdsId && googleAdsLabel) {
       await gravarLog(pool, {
         cliente_id: campaign.cliente_id, instance: `link:${slug}`,
         tag: 'google_ads_click', level: 'info',
         message: `Conversão Google Ads disparada (client-side) no clique.`,
-        data: { tracking_id: trackingId, google_ads_conversion_id: googleAdsId },
+        data: { tracking_id: trackingId, google_ads_conversion_id: googleAdsId,
+                via: gclid ? 'gclid' : (gbraid ? 'gbraid' : 'wbraid') },
       });
-    } else if (gclid && (!googleAdsId || !googleAdsLabel)) {
+    } else if (temIdentificadorGoogleLog && (!googleAdsId || !googleAdsLabel)) {
       await gravarLog(pool, {
         cliente_id: campaign.cliente_id, instance: `link:${slug}`,
         tag: 'google_ads_click', level: 'warn',
-        message: `Clique com gclid mas cliente sem ID/label de conversão Google Ads configurado.`,
+        message: `Clique com identificador Google (gclid/gbraid/wbraid) mas cliente sem ID/label de conversão configurado.`,
         data: { tracking_id: trackingId },
       });
     }
@@ -408,7 +424,7 @@ export default async function handler(req, res) {
     });
     return res.end(htmlPagePixel({
       waUrl, pixelId: capiPixelId, eventId: pageviewEventId, fbc, fbp,
-      googleAdsId, googleAdsLabel, gclid,
+      googleAdsId, googleAdsLabel, gclid, gbraid, wbraid,
       redirectTitle: campaign.redirect_title,
       redirectSubtitle: campaign.redirect_subtitle,
       redirectBgColor: campaign.redirect_bg_color,

@@ -83,17 +83,19 @@ export default async function handler(req, res) {
   const fbp = clean(body.fbp, 255);
   const fbc = fbclid ? `fb.1.${Date.now()}.${fbclid}` : (clean(body.fbc, 512));
   const gclid = clean(body.gclid, 512);
+  const gbraid = clean(body.gbraid, 512);
+  const wbraid = clean(body.wbraid, 512);
   const pageviewEventId = `pv_${visitorId}_${Date.now().toString(36)}`;
 
   await pool.query(
     `INSERT INTO tracking_pageviews
       (visitor_id, campaign_id, cliente_id, page_url, page_title, referrer,
        utm_source, utm_medium, utm_campaign, utm_content, fbclid, fbc, fbp,
-       ip_address, user_agent, pageview_event_id)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)`,
+       ip_address, user_agent, pageview_event_id, gclid, gbraid, wbraid)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)`,
     [visitorId, campaign.id, campaign.cliente_id, pageUrl, pageTitle, referrer,
      utm_source, utm_medium, utm_campaign, utm_content, fbclid, fbc, fbp,
-     ip, userAgent, pageviewEventId]
+     ip, userAgent, pageviewEventId, gclid, gbraid, wbraid]
   );
 
   // PageView server-side via CAPI Web (best-effort) + devolve o pixel_id para o
@@ -124,11 +126,17 @@ export default async function handler(req, res) {
     }
   } catch (_) { /* best-effort */ }
 
+  // Qualquer um dos 3 identificadores de clique do Google (gclid, ou gbraid/wbraid
+  // nos fluxos sem cookie de terceiros — iOS/Safari, Performance Max) habilita a
+  // conversão client-side no clique do botão do WhatsApp.
+  const temIdentificadorGoogle = !!(gclid || gbraid || wbraid);
+
   await gravarLog(pool, {
     cliente_id: campaign.cliente_id, tag: 'site_pageview', level: 'info',
     message: `PageView do site (campanha "${campaign.name}")`,
     data: { visitor_id: visitorId, page_url: pageUrl, capi_sent: capiSent, fbclid: !!fbclid,
-            gclid: !!gclid, google_ads_configurado: !!(googleAdsId && googleAdsLabel) },
+            gclid: !!gclid, gbraid: !!gbraid, wbraid: !!wbraid,
+            google_ads_configurado: !!(googleAdsId && googleAdsLabel) },
   });
 
   return res.status(200).json({
@@ -136,7 +144,7 @@ export default async function handler(req, res) {
     pageview_event_id: pageviewEventId,
     pixel_id: capiPixelId,
     button_text: campaign.button_text || null,
-    google_ads_id: (gclid && googleAdsId && googleAdsLabel) ? googleAdsId : null,
-    google_ads_label: (gclid && googleAdsId && googleAdsLabel) ? googleAdsLabel : null,
+    google_ads_id: (temIdentificadorGoogle && googleAdsId && googleAdsLabel) ? googleAdsId : null,
+    google_ads_label: (temIdentificadorGoogle && googleAdsId && googleAdsLabel) ? googleAdsLabel : null,
   });
 }

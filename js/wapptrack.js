@@ -62,6 +62,41 @@
     catch (e) { /* localStorage indisponível (modo privado etc.) */ }
   }
 
+  // Persistência dos identificadores de clique do Google Ads (gclid/gbraid/wbraid).
+  // Sem isso, se o visitante navegar para outra página do site antes de clicar no
+  // WhatsApp, o parâmetro some da URL e o clique final fica sem atribuição — mesmo
+  // problema que o visitor_id já resolve acima, aplicado aos 3 campos do Google.
+  // TTL de 90 dias (mesma janela de conversão padrão usada pelo Google Ads).
+  var GOOGLE_CLICK_KEY = 'wapptrack_google_click';
+  var GOOGLE_CLICK_TTL_MS = 1000 * 60 * 60 * 24 * 90; // 90 dias
+
+  function getStoredGoogleClick() {
+    try {
+      var raw = localStorage.getItem(GOOGLE_CLICK_KEY);
+      if (!raw) return null;
+      var data = JSON.parse(raw);
+      if (!data.ts || (Date.now() - data.ts) > GOOGLE_CLICK_TTL_MS) return null;
+      return data;
+    } catch (e) { return null; }
+  }
+
+  function setStoredGoogleClick(fields) {
+    try { localStorage.setItem(GOOGLE_CLICK_KEY, JSON.stringify({ ts: Date.now(), gclid: fields.gclid || null, gbraid: fields.gbraid || null, wbraid: fields.wbraid || null })); }
+    catch (e) { /* localStorage indisponível (modo privado etc.) */ }
+  }
+
+  // Só sobrescreve o valor salvo se a URL atual trouxer um identificador novo —
+  // uma visita sem nenhum parâmetro Google não deve apagar o clique original.
+  function resolverGoogleClickIds() {
+    var atual = { gclid: qs('gclid'), gbraid: qs('gbraid'), wbraid: qs('wbraid') };
+    if (atual.gclid || atual.gbraid || atual.wbraid) {
+      setStoredGoogleClick(atual);
+      return atual;
+    }
+    var salvo = getStoredGoogleClick();
+    return salvo || atual;
+  }
+
   function getCookie(name) {
     var match = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
     return match ? decodeURIComponent(match[1]) : null;
@@ -73,6 +108,7 @@
   }
 
   function collectParams() {
+    var googleClick = resolverGoogleClickIds();
     return {
       campaign: campaign,
       page_url: window.location.href,
@@ -88,7 +124,9 @@
       ad_id: qs('ad_id') || qs('adid'),
       adset_id: qs('adset_id'),
       meta_campaign_id: qs('meta_campaign_id') || qs('campaign_id'),
-      gclid: qs('gclid'),
+      gclid: googleClick.gclid,
+      gbraid: googleClick.gbraid,
+      wbraid: googleClick.wbraid,
       keyword: qs('keyword') || qs('utm_term'),
     };
   }
@@ -146,11 +184,20 @@
     if (!googleAdsId || !googleAdsLabel) return;
     ensureGtagLib(googleAdsId);
     try {
-      window.gtag('event', 'conversion', {
+      var googleClick = resolverGoogleClickIds();
+      var evento = {
         'send_to': googleAdsId + '/' + googleAdsLabel,
         'value': 1.0,
         'currency': 'BRL',
-      });
+      };
+      // gclid já é lido automaticamente pelo gtag.js da URL/cookie _gcl_aw quando
+      // presente; gbraid/wbraid (fluxos sem cookie de terceiros, ex. iOS) precisam
+      // ser passados explicitamente — sem isso o clique fica sem conversão nenhuma.
+      if (!googleClick.gclid) {
+        if (googleClick.gbraid) evento.gbraid = googleClick.gbraid;
+        if (googleClick.wbraid) evento.wbraid = googleClick.wbraid;
+      }
+      window.gtag('event', 'conversion', evento);
     } catch (e) { /* best-effort */ }
   }
 

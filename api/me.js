@@ -18,9 +18,34 @@ export default async function handler(req, res) {
 
   try {
     const pool = getPool();
-    const r = await pool.query('SELECT permissoes FROM clientes WHERE id = $1', [user.cliente_id]);
-    const permissoes = r.rows[0]?.permissoes || user.permissoes || {};
-    return res.status(200).json({ permissoes });
+    const r = await pool.query(`
+      SELECT 
+        permissoes, 
+        pixel_padrao, 
+        google_ads_conversion_id, 
+        google_ads_conversion_label, 
+        capi_pixel_id, 
+        token_last4, 
+        capi_token_last4 
+      FROM clientes WHERE id = $1
+    `, [user.cliente_id]);
+    
+    if (r.rows.length === 0) {
+        return res.status(200).json({ permissoes: user.permissoes || {} });
+    }
+
+    const row = r.rows[0];
+    const permissoes = row.permissoes || user.permissoes || {};
+    const integracoes = {
+        pixel_padrao: row.pixel_padrao,
+        google_ads_conversion_id: row.google_ads_conversion_id,
+        google_ads_conversion_label: row.google_ads_conversion_label,
+        capi_pixel_id: row.capi_pixel_id,
+        token_last4: row.token_last4,
+        capi_token_last4: row.capi_token_last4
+    };
+
+    return res.status(200).json({ permissoes, integracoes });
   } catch (e) {
     // Em caso de falha, devolve as permissões do JWT sem derrubar o dashboard.
     return res.status(200).json({ permissoes: user.permissoes || {} });
