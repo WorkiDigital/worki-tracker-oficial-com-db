@@ -849,14 +849,16 @@
             <button class="btn btn-ghost" id="btnTheme" onclick="toggleTheme()" title="Alternar tema">
                 <i id="iconTheme" data-lucide="sun" style="width:15px;"></i>
             </button>
-            <!-- Filtro global por cliente (admin only) -->
-            <div id="adminClienteFilter" style="display:none;" class="ctrl-box">
+            <!-- Filtros da barra -->
+            <div id="filterControls" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                <!-- Filtro global por cliente (admin only) -->
+                <div id="adminClienteFilter" style="display:none;" class="ctrl-box">
                 <i data-lucide="users" style="width:14px;color:var(--muted);flex-shrink:0;"></i>
                 <select id="selectClienteAdmin" class="bare" onchange="trocarClienteAdmin(this.value)">
                 </select>
-            </div>
-            <!-- Controles exclusivos da aba Leads -->
-            <div id="leadsControls" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                </div>
+                <!-- Controles exclusivos da aba Leads -->
+                <div id="leadsControls" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
                 <!-- Instance filter -->
                 <div id="instanceFilterContainer" class="ctrl-box">
                     <i data-lucide="smartphone" style="width:14px;color:var(--muted);flex-shrink:0;"></i>
@@ -908,6 +910,7 @@
                 <button class="btn btn-ghost" id="btnExport" onclick="exportarCSV()" title="Exportar CSV" style="display:none;">
                     <i data-lucide="download" style="width:14px;"></i> CSV
                 </button>
+                </div>
             </div>
         </div>
     </div>
@@ -2890,10 +2893,12 @@ function abaAtual() {
 }
 
 function atualizarVisibilidadeFiltroCliente(aba = abaAtual()) {
+    const wrapper = $('filterControls');
     const box = $('adminClienteFilter');
-    if (!box) return;
     const u = JSON.parse(localStorage.getItem('adlytics_user') || '{}');
-    box.style.display = u?.is_admin && ABAS_COM_FILTRO_CLIENTE.has(aba) ? 'flex' : 'none';
+    const abaComCliente = u?.is_admin && ABAS_COM_FILTRO_CLIENTE.has(aba);
+    if (wrapper) wrapper.style.display = (aba === 'leads' || abaComCliente) ? 'flex' : 'none';
+    if (box) box.style.display = abaComCliente ? 'flex' : 'none';
 }
 
 function trocarClienteAdmin(id) {
