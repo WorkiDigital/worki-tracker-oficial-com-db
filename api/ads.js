@@ -4,12 +4,14 @@ import { cacheGet, cacheSet, cacheKey } from './_cache.js';
 import { fetchMeta } from './_meta-client.js';
 import { cors } from './_cors.js';
 import { rateLimit } from './_rate-limit.js';
+import { requirePermission } from './_require-permission.js';
 
 export default async function handler(req, res) {
   if (cors(req, res, ['GET'])) return;
 
   const user = await verifyAuth(req, res);
   if (!user) return;
+  if (requirePermission(user, res, 'anuncios')) return;
   if (await rateLimit(req, res, user)) return;
 
   const { datePreset = 'last_30d', accountId, dateFrom, dateTo } = req.query;

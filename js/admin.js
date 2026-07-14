@@ -198,6 +198,17 @@ let waPollTimer;
 let currentWaInstance = null;
 let _waData = [];
 
+function waClienteFiltroAtual() {
+    const user = JSON.parse(localStorage.getItem('adlytics_user') || '{}');
+    if (!user.is_admin) return null;
+    const clienteId = (typeof clienteAdminSelecionado !== 'undefined' && clienteAdminSelecionado) ? Number(clienteAdminSelecionado) : null;
+    return Number.isFinite(clienteId) && clienteId > 0 ? clienteId : null;
+}
+
+function waComClienteSelecionado(payload = {}) {
+    const clienteId = waClienteFiltroAtual();
+    return clienteId ? { ...payload, target_cliente_id: clienteId } : payload;
+}
 function setWaView(view) {
     if (waPollTimer) {
         clearInterval(waPollTimer);
@@ -222,7 +233,10 @@ async function carregarListaWa() {
     listEl.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted);">Carregando conexões...</div>';
 
     try {
-        const r = await authFetch('/api/evo-manager?action=list');
+        const params = new URLSearchParams({ action: 'list' });
+        const clienteId = waClienteFiltroAtual();
+        if (_waUser.is_admin && clienteId) params.set('target_cliente_id', clienteId);
+        const r = await authFetch('/api/evo-manager?' + params.toString());
         const data = await r.json();
 
         if (!r.ok || data.error) throw new Error(data.error || `Erro ao listar conexões (HTTP ${r.status})`);
@@ -358,7 +372,7 @@ async function verConexao(name) {
 async function deletarConexao(name) {
     if (!confirm(`Excluir permanentemente a conexão "${name}"? Isso remove da Evolution também.`)) return;
     try {
-        const r = await authFetch('/api/evo-manager', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({action:'delete', instanceName: name}) });
+        const r = await authFetch('/api/evo-manager', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(waComClienteSelecionado({action:'delete', instanceName: name})) });
         const data = await r.json();
         if (!r.ok) throw new Error(data.error || 'Erro ao excluir');
         toast("Conexão excluída da Evolution.", "success");
@@ -369,7 +383,8 @@ async function deletarConexao(name) {
 async function checkWaStatus(fetchQrIfNotOpen = false) {
     if (!currentWaInstance) return;
     try {
-        const r = await authFetch(`/api/evo-manager?action=status&instanceName=${encodeURIComponent(currentWaInstance)}`);
+        const params = new URLSearchParams(waComClienteSelecionado({ action: 'status', instanceName: currentWaInstance }));
+        const r = await authFetch('/api/evo-manager?' + params.toString());
         const data = await r.json();
         const state = String(data?.instance?.state || data?.state || '').toLowerCase();
         const isConnected = ['open', 'connected', 'online'].includes(state);
@@ -387,7 +402,8 @@ async function checkWaStatus(fetchQrIfNotOpen = false) {
             if (fetchQrIfNotOpen) {
                 $('waQrImage').style.display = 'none';
                 $('waWaitQr').style.display = 'block';
-                const rQR = await authFetch(`/api/evo-manager?action=connect&instanceName=${encodeURIComponent(currentWaInstance)}`);
+                const qrParams = new URLSearchParams(waComClienteSelecionado({ action: 'connect', instanceName: currentWaInstance }));
+                const rQR = await authFetch('/api/evo-manager?' + qrParams.toString());
                 const qd = await rQR.json();
                 if (qd.base64) {
                     $('waQrImage').src = qd.base64;
@@ -418,7 +434,9 @@ async function waCreateInstance() {
     btn.innerHTML = 'Gerando...'; btn.disabled = true;
 
     try {
-        const r = await authFetch('/api/evo-manager', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({action:'create', instanceName: name}) });
+        const user = JSON.parse(localStorage.getItem('adlytics_user') || '{}');
+        if (user.is_admin && !waClienteFiltroAtual()) { toast('Selecione um cliente no filtro antes de criar a conexão.', 'error'); return; }
+        const r = await authFetch('/api/evo-manager', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(waComClienteSelecionado({action:'create', instanceName: name})) });
         const data = await r.json();
 
         if (!r.ok || data.error) throw new Error(data.error || 'Falha ao conectar na Evolution');
@@ -454,7 +472,7 @@ async function waCreateInstance() {
 async function waLogout(name) {
     if(!confirm(`Atenção: Deslogar permanentemente o aparelho conectado em "${name}"?`)) return;
     try {
-        await authFetch('/api/evo-manager', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({action:'logout', instanceName: name}) });
+        await authFetch('/api/evo-manager', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(waComClienteSelecionado({action:'logout', instanceName: name})) });
         toast("Sessão encerrada remotamente.", "success");
         await carregarListaWa();
     } catch(e) {

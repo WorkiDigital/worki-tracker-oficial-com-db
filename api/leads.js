@@ -2,12 +2,14 @@ import { getPool } from './_db.js';
 import { verifyAuth } from './_auth.js';
 import { cors } from './_cors.js';
 import { rateLimit } from './_rate-limit.js';
+import { requirePermission } from './_require-permission.js';
 
 export default async function handler(req, res) {
   if (cors(req, res, ['GET'])) return;
 
   const user = await verifyAuth(req, res);
   if (!user) return;
+  if (requirePermission(user, res, 'leads')) return;
   if (await rateLimit(req, res, user)) return; // verifyAuth já envia os headers de erro 401.
 
   try {

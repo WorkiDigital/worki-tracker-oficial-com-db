@@ -4,6 +4,7 @@ import { cors } from './_cors.js';
 import { getCachedMetrics, setCachedMetrics } from './_cache.js';
 import { getClientAccountId } from './_validate.js';
 import { fetchMeta } from './_meta-client.js';
+import { requirePermission } from './_require-permission.js';
 
 function mockTemporalMetrics() {
   return {
@@ -32,9 +33,16 @@ export default async function handler(req, res) {
   try {
     const user = await verifyAuth(req, res);
     if (!user) return;
+    if (requirePermission(user, res, 'leads')) return;
 
     const pool = getPool();
     const cliente_id = user.is_admin ? (req.query.cliente_id || user.cliente_id) : user.cliente_id;
+    // Defesa contra dado inconsistente: usuário não-admin SEMPRE precisa ter
+    // cliente_id (senão a query abaixo rodaria sem filtro e vazaria todos os
+    // clientes). Admin sem cliente selecionado continua vendo a visão agregada.
+    if (!user.is_admin && !cliente_id) {
+      return res.status(403).json({ error: 'Usuário sem cliente associado.' });
+    }
 
     // 1. Métricas do Banco de Dados (Leads Tracking)
     // Métricas de lead (criação) filtram por created_at; métricas de venda filtram por sale_closed_at.

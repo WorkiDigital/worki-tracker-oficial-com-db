@@ -3,6 +3,7 @@ import { verifyAuth } from './_auth.js';
 import { cors } from './_cors.js';
 import { rateLimit } from './_rate-limit.js';
 import { enviarConversao } from './_capi.js';
+import { requirePermission } from './_require-permission.js';
 
 // Envio CAPI (Purchase/QualifiedLead) centralizado em api/_capi.js — page_id,
 // hashing, canal e dedup por event_id vivem lá. Este endpoint só atualiza o lead
@@ -13,6 +14,7 @@ export default async function handler(req, res) {
 
   const user = await verifyAuth(req, res);
   if (!user) return;
+  if (requirePermission(user, res, 'leads')) return;
   if (await rateLimit(req, res, user)) return;
 
   const { id, status, valor_venda, produto, nome, email, cpf, cidade, estado, endereco } = req.body;

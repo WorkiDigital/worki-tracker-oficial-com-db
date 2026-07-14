@@ -3,6 +3,7 @@ import { getPool } from './_db.js';
 import { cors } from './_cors.js';
 import { ensureTrackingSchema } from './_tracking-schema.js';
 import { enviarConversao, CONCEPT_KEYS_WPP, CONCEPTS } from './_capi.js';
+import { requirePermission } from './_require-permission.js';
 
 // CRUD da Jornada geral CTWA/WhatsApp (tracking_campaign_id NULL) + histórico.
 // Jornadas de links são salvas transacionalmente por /api/tracking-campaigns.
@@ -48,6 +49,7 @@ export default async function handler(req, res) {
       if (!cliente_id) return res.status(400).json({ error: 'cliente_id é obrigatório para administrador.' });
 
       if (req.query.action === 'config') {
+        if (requirePermission(user, res, 'inteligente')) return;
         const config = await pool.query(
           `SELECT template_venda, template_qualificacao
            FROM clientes
@@ -77,6 +79,7 @@ export default async function handler(req, res) {
         return res.status(200).json(hist.rows);
       }
 
+      if (requirePermission(user, res, 'inteligente')) return;
       const r = await pool.query(
         `SELECT * FROM journey_stages
          WHERE cliente_id = $1 AND tracking_campaign_id IS NULL
@@ -88,6 +91,7 @@ export default async function handler(req, res) {
 
     // ── POST/PATCH: criar ou editar etapa ──
     if (method === 'POST' || method === 'PATCH') {
+      if (requirePermission(user, res, 'inteligente')) return;
       const cliente_id = alvoCliente(req.body.cliente_id);
       if (!cliente_id) return res.status(400).json({ error: 'cliente_id é obrigatório para administrador.' });
 
@@ -213,6 +217,7 @@ export default async function handler(req, res) {
 
     // ── DELETE: excluir etapa ──
     if (method === 'DELETE') {
+      if (requirePermission(user, res, 'inteligente')) return;
       const cliente_id = alvoCliente(req.query.cliente_id);
       const id = parseInt(req.query.id, 10);
       if (!cliente_id || !id) return res.status(400).json({ error: 'id e cliente_id são obrigatórios.' });

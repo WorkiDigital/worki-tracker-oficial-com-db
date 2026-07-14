@@ -2886,7 +2886,7 @@ async function popularSeletorAdmin() {
     }
 }
 
-const ABAS_COM_FILTRO_CLIENTE = new Set(['leads','conversas','funil','anuncios','captacao','inteligente']);
+const ABAS_COM_FILTRO_CLIENTE = new Set(['leads','conversas','funil','relatorios','anuncios','captacao','inteligente','whatsapp']);
 
 function abaAtual() {
     return ABAS.find(a => !$('aba-' + a)?.classList.contains('aba-oculta')) || 'leads';
@@ -6175,7 +6175,7 @@ function resetLeadSearchAutofill() {
 </script>
 <script defer src="js/leads.js?v=20260714-clientfilter1"></script>
 <script defer src="js/chat-monitor.js?v=20260712-5"></script>
-<script defer src="js/admin.js?v=20260714-2"></script>
+<script defer src="js/admin.js?v=20260714-3"></script>
 <script defer src="js/reports-auto.js?v=20260712-1"></script>
 <script defer src="js/captacao.js?v=20260714-2"></script>
 

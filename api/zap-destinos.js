@@ -2,6 +2,7 @@ import { verifyAuth } from './_auth.js';
 import { getPool } from './_db.js';
 import { cors } from './_cors.js';
 import { shouldServeDemoData } from './_demo-data.js';
+import { requirePermission } from './_require-permission.js';
 
 let _zapDestinosSchemaEnsured = false;
 async function ensureZapDestinosSchema(pool) {
@@ -32,6 +33,7 @@ export default async function handler(req, res) {
 
   const user = await verifyAuth(req, res);
   if (!user) return;
+  if (requirePermission(user, res, 'zaprelatorios')) return;
   if (shouldServeDemoData(req) && req.method === 'GET') {
     const destino = {
       id: 9001,

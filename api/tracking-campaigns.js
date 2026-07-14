@@ -4,6 +4,7 @@ import { cors } from './_cors.js';
 import { ensureTrackingSchema } from './_tracking-schema.js';
 import { CONCEPTS } from './_capi.js';
 import { randomUUID } from 'crypto';
+import { requirePermission } from './_require-permission.js';
 
 // CRUD de campanhas/links rastreáveis + seus destinos (rotador).
 // Isolamento multi-tenant por cliente_id (admin pode passar cliente_id).
@@ -275,6 +276,7 @@ export default async function handler(req, res) {
 
   const user = await verifyAuth(req, res);
   if (!user) return;
+  if (requirePermission(user, res, 'captacao')) return;
 
   await ensureTrackingSchema();
   const pool = getPool();

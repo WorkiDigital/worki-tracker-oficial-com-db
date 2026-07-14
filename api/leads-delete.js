@@ -1,6 +1,7 @@
 import { getPool } from './_db.js';
 import { verifyAuth } from './_auth.js';
 import { cors } from './_cors.js';
+import { requirePermission } from './_require-permission.js';
 
 // Exclusão em lote de leads com isolamento multi-tenant.
 // O frontend envia no máximo 500 IDs por chamada; o backend aceita até 1000.
@@ -9,6 +10,7 @@ export default async function handler(req, res) {
 
   const user = await verifyAuth(req, res);
   if (!user) return;
+  if (requirePermission(user, res, 'leads')) return;
 
   const ids = [...new Set((Array.isArray(req.body?.ids) ? req.body.ids : [])
     .map(id => parseInt(id, 10))

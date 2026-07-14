@@ -5,12 +5,14 @@ import { fetchMeta } from './_meta-client.js';
 import { cors } from './_cors.js';
 import { rateLimit } from './_rate-limit.js';
 import { normalizeCampaignFilters, summarizeZapCampaigns } from './_zap-report-metrics.js';
+import { requirePermission } from './_require-permission.js';
 
 export default async function handler(req, res) {
     if (cors(req, res, ['GET'])) return;
 
     const user = await verifyAuth(req, res);
     if (!user) return;
+    if (requirePermission(user, res, 'zaprelatorios')) return;
     if (await rateLimit(req, res, user)) return;
 
     const token = await getTokenForUser(user);

@@ -15,6 +15,7 @@ import { cors } from './_cors.js';
 import { ensureTrackingSchema } from './_tracking-schema.js';
 import { enviarCapiWebPageView } from './_capi-web.js';
 import { extractClientIp } from './_geoip.js';
+import { rateLimitByIp } from './_rate-limit-ip.js';
 
 function dominioPermitido(campaign, origin) {
   const lista = campaign.allowed_domains || [];
@@ -44,6 +45,7 @@ async function gravarLog(pool, { cliente_id, tag, level, message, data }) {
 
 export default async function handler(req, res) {
   if (cors(req, res, ['POST'], { public: true, openOrigin: true })) return;
+  if (await rateLimitByIp(req, res)) return;
 
   await ensureTrackingSchema();
   const pool = getPool();

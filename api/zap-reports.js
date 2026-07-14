@@ -3,6 +3,7 @@ import { getPool } from './_db.js';
 import { cors } from './_cors.js';
 import { shouldServeDemoData } from './_demo-data.js';
 import { normalizeCampaignFilters } from './_zap-report-metrics.js';
+import { requirePermission } from './_require-permission.js';
 
 let _zapFilterColumnsEnsured = false;
 async function ensureZapFilterColumns(pool) {
@@ -35,6 +36,7 @@ export default async function handler(req, res) {
 
   const user = await verifyAuth(req, res);
   if (!user) return;
+  if (requirePermission(user, res, 'zaprelatorios')) return;
   if (shouldServeDemoData(req) && req.method === 'GET') {
     return res.status(200).json([
       { id: 9101, destino_id: Number(req.query.destino_id || 9001), template: 'Relatorio diario modelo: leads, conversas, vendas e faturamento.', frequencia: 'diario', horario: '09:00', periodo: 'yesterday', campaign_filter_text: 'DEMO', campaign_objectives: ['OUTCOME_LEADS'], status: 'ativo', criado_em: new Date().toISOString() },

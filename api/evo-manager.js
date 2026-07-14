@@ -290,6 +290,25 @@ export default async function handler(req, res) {
     if (action === 'fetchGroups') {
       const target = req.query.instanceName || req.body?.instanceName;
       if (!target) return res.status(400).json({ error: 'instanceName obrigatório' });
+
+      // Segurança multi-tenant: mesmo padrão de api/evo-groups.js — admin passa
+      // direto; cliente deve ter instância com prefixo OU vinculada na tabela
+      // instancias_mapeamento. Sem isso, qualquer cliente podia listar grupos
+      // de outra instância só sabendo/adivinhando o nome dela.
+      if (!user.is_admin) {
+        const prefix = `cliente_${user.cliente_id}_`;
+        if (!target.startsWith(prefix)) {
+          const pool = getPool();
+          const linked = await pool.query(
+            'SELECT id FROM instancias_mapeamento WHERE instance_name = $1 AND cliente_id = $2',
+            [target, user.cliente_id]
+          );
+          if (linked.rowCount === 0) {
+            return res.status(403).json({ error: 'Acesso negado a esta instância.' });
+          }
+        }
+      }
+
       const r = await fetch(`${EVO_URL}/group/fetchAllGroups/${target}`, { headers });
       if (!r.ok) return res.status(r.status).json({ error: 'Erro ao buscar grupos na Evolution' });
       const data = await r.json();

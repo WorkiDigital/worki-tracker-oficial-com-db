@@ -12,7 +12,13 @@ export async function runChatCleanup() {
 
 export default async function handler(req, res) {
   const cronSecret = process.env.CRON_SECRET;
-  if (cronSecret && req.headers.authorization !== `Bearer ${cronSecret}`) {
+  // Fail-closed: em produção, CRON_SECRET é obrigatório — sem ele a rota
+  // ficaria aberta para qualquer requisição sem autenticação nenhuma.
+  if (!cronSecret) {
+    if (process.env.NODE_ENV === 'production') {
+      return res.status(500).json({ error: 'CRON_SECRET não configurado no servidor.' });
+    }
+  } else if (req.headers.authorization !== `Bearer ${cronSecret}`) {
     return res.status(401).json({ error: 'Nao autorizado' });
   }
 

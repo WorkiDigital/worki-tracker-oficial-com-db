@@ -3,6 +3,7 @@ import { verifyAuth } from './_auth.js';
 import { cors } from './_cors.js';
 import { rateLimit } from './_rate-limit.js';
 import { ensureChatMessagesSchema } from './_chat-schema.js';
+import { requirePermission } from './_require-permission.js';
 
 function parseClienteId(value) {
   const parsed = Number(value);
@@ -37,6 +38,7 @@ export default async function handler(req, res) {
 
   const user = await verifyAuth(req, res);
   if (!user) return;
+  if (requirePermission(user, res, 'whatsapp')) return;
   if (await rateLimit(req, res, user)) return;
 
   const action = req.query?.action || req.body?.action || 'list_conversations';

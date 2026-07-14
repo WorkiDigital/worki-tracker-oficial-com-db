@@ -89,6 +89,19 @@ export async function runCronJob() {
 
         const envioChave = `${hojeChave}:${horaAgendada}`;
         if (ag.ultimo_envio_chave === envioChave) continue;
+
+        // Lock por agendamento: evita envio duplicado se duas execuções do cron
+        // rodarem ao mesmo tempo (ex: reinício do processo no meio do tick, ou
+        // futura escala horizontal). pg_try_advisory_lock não bloqueia — se outra
+        // instância já detém o lock, esta pula o agendamento sem esperar.
+        const lockKey = `zap_report_${ag.id}`;
+        const lockRes = await pool.query('SELECT pg_try_advisory_lock(hashtext($1)) AS ok', [lockKey]);
+        if (!lockRes.rows[0]?.ok) {
+            console.warn(`[CronZap] #${ag.id} já está sendo processado por outra execução — pulando`);
+            continue;
+        }
+
+        try {
         elegiveis++;
 
         console.log(`[CronZap] #${ag.id} → ${ag.destino_nome || ag.destino_jid} (${horaAgendada})`);
@@ -226,6 +239,9 @@ export async function runCronJob() {
         } catch (e) {
             console.error(`[CronZap] Falha #${ag.id}: ${e.message}`);
         }
+        } finally {
+            await pool.query('SELECT pg_advisory_unlock(hashtext($1))', [lockKey]).catch(() => {});
+        }
     }
 
     return { success: true, enviados, elegiveis, total: agendamentos.length, horarioAtual };
@@ -233,7 +249,13 @@ export async function runCronJob() {
 
 export default async function handler(req, res) {
     const cronSecret = process.env.CRON_SECRET;
-    if (cronSecret && req.headers.authorization !== `Bearer ${cronSecret}`) {
+    // Fail-closed: em produção, CRON_SECRET é obrigatório — sem ele a rota
+    // ficaria aberta para qualquer requisição sem autenticação nenhuma.
+    if (!cronSecret) {
+        if (process.env.NODE_ENV === 'production') {
+            return res.status(500).json({ error: 'CRON_SECRET não configurado no servidor.' });
+        }
+    } else if (req.headers.authorization !== `Bearer ${cronSecret}`) {
         return res.status(401).json({ error: 'Não autorizado' });
     }
     try {

@@ -38,6 +38,12 @@ export default async function handler(req, res) {
 
   const pool = getPool();
   const cliente_id = user.is_admin ? (req.query.cliente_id || user.cliente_id) : user.cliente_id;
+  // Defesa contra dado inconsistente: usuário não-admin SEMPRE precisa ter
+  // cliente_id (senão a query abaixo rodaria sem filtro e vazaria todos os
+  // clientes). Admin sem cliente selecionado continua vendo a visão agregada.
+  if (!user.is_admin && !cliente_id) {
+    return res.status(403).json({ error: 'Usuário sem cliente associado.' });
+  }
   const periodo = req.query.periodo || '30'; // in days
 
   try {
