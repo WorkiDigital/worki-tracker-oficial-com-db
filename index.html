@@ -880,7 +880,6 @@
                         <option value="organic">Orgânico</option>
                         <option value="bio">Link da bio</option>
                         <option value="campaign_link">Link de campanha</option>
-                        <option value="rotator">Rotador</option>
                     </select>
                 </div>
                 <!-- Search -->
@@ -979,7 +978,6 @@
                                 <th class="sortable" onclick="sortBy('nome')">Nome <span class="sort-icon" id="sort-nome">↕</span></th>
                                 <th>Telefone</th>
                                 <th class="sortable" onclick="sortBy('status')">Status <span class="sort-icon" id="sort-status">↕</span></th>
-                                <th class="sortable" onclick="sortBy('lead_score')">Score <span class="sort-icon" id="sort-lead_score">↕</span></th>
                                 <th>Anúncio</th>
                                 <th>Origem</th>
                                 <th>Mensagem</th>
@@ -1012,8 +1010,6 @@
                         <option value="organic">Orgânico</option>
                         <option value="bio">Link da bio</option>
                         <option value="campaign_link">Link rastreável</option>
-                        <option value="rotator">Rotador</option>
-                        <option value="intelligent">Rastr. inteligente</option>
                     </select>
                     <div class="chat-monitor-search">
                         <i data-lucide="search" style="width:14px;height:14px;flex-shrink:0;"></i>
@@ -6324,7 +6320,7 @@ function resetLeadSearchAutofill() {
         </div>
         <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">Atendimento</div>
         <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:10px;margin-bottom:18px;">
-          <div id="lpRowStatus"></div><div id="lpRowScore"></div><div id="lpRowInstancia"></div><div id="lpRowPlataforma"></div><div id="lpRowDispositivo"></div><div id="lpRowEntrada"></div>
+          <div id="lpRowStatus"></div><div id="lpRowInstancia"></div><div id="lpRowPlataforma"></div><div id="lpRowDispositivo"></div><div id="lpRowEntrada"></div>
         </div>
         <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">Primeira Mensagem</div>
         <div id="lpMensagem" style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;padding:14px;font-size:13px;color:var(--text-primary);line-height:1.6;white-space:pre-wrap;word-break:break-word;">—</div>

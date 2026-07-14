@@ -43,27 +43,14 @@ export default async function handler(req, res) {
       ORDER BY last_interaction_at DESC
     `, params);
 
-    // 3. Leads quentes (Score > 70) sem follow-up há mais de 12h
-    const hotLeads = await pool.query(`
-      SELECT id, nome, telefone, lead_score, last_interaction_at 
-      FROM leads_tracking 
-      WHERE lead_score > 70
-      AND status NOT IN ('venda_fechada', 'vendido', 'Agendado')
-      AND last_interaction_at < NOW() - INTERVAL '12 hours'
-      ${whereClause}
-      ORDER BY lead_score DESC
-    `, params);
-
     res.status(200).json({
       summary: {
         slow_response_count: slowResponse.rows.length,
-        stagnant_count: stagnant.rows.length,
-        hot_leads_count: hotLeads.rows.length
+        stagnant_count: stagnant.rows.length
       },
       details: {
         slow_response: slowResponse.rows,
-        stagnant: stagnant.rows,
-        hot_leads: hotLeads.rows
+        stagnant: stagnant.rows
       }
     });
 

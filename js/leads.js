@@ -295,7 +295,7 @@ function sortBy(col) {
     if (sortCol === col) sortDir *= -1;
     else { sortCol = col; sortDir = -1; }
  
-    ['nome','status','event_time','lead_score'].forEach(c => {
+    ['nome','status','event_time'].forEach(c => {
         const el = $('sort-'+c);
         if (!el) return;
         el.textContent = c === sortCol ? (sortDir === 1 ? '↑' : '↓') : '↕';
@@ -371,11 +371,6 @@ function renderTabela() {
         const msg      = (lead.mensagem_recebida||'Sem mensagem').substring(0,35);
         const temCapi  = true; // O backend busca o pixel do cliente via banco de dados 
         const data     = tempoRelativo(lead.event_time||lead.created_at);
-        
-        // FASE 2: Lead Score
-        const score = lead.lead_score || 0;
-        const scoreCls = score >= 70 ? 'hot' : score >= 40 ? 'warm' : 'cold';
-        const scoreColor = score >= 70 ? '#ef4444' : score >= 40 ? '#f59e0b' : '#6b7280';
 
         // Tempo no Funil
         const tempoFunil = tempoRelativo(lead.created_at || lead.event_time);
@@ -402,7 +397,6 @@ function renderTabela() {
             <td data-label="Nome" style="color:var(--text);font-weight:600;">${esc(lead.nome)||'N/A'}</td>
             <td data-label="Telefone">${esc(lead.telefone)||'N/A'}</td>
             <td data-label="Status"><span class="tag" style="color:${stColor};border:${stBorder};">${esc(status)}</span></td>
-            <td data-label="Score"><span style="font-weight:700;color:${scoreColor};">${score}</span></td>
             <td data-label="Anúncio" style="max-width:160px;" title="${esc(tooltipOrig)}">
                 ${anuncio ? `<div style="font-size:11px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(anuncio)}</div>` : `<div style="font-size:11px;color:var(--muted);">—</div>`}
             </td>
@@ -524,8 +518,6 @@ function renderKanbanCard(lead) {
     const msg = (lead.mensagem_recebida || 'Sem mensagem').trim();
     const anuncio = lead.utm_content || lead.utm_campaign || 'Sem anuncio';
     const tempoFunil = tempoRelativo(lead.created_at || lead.event_time);
-    const score = lead.lead_score || 0;
-    const scoreColor = score >= 70 ? '#ef4444' : score >= 40 ? '#f59e0b' : '#6b7280';
 
     return `<article class="kanban-card" draggable="true" data-lead-id="${Number(lead.id)}" ondragstart="kanbanDragStart(event, ${Number(lead.id)})" ondragend="kanbanDragEnd(event)">
         <div class="kanban-card-top">
@@ -533,7 +525,6 @@ function renderKanbanCard(lead) {
                 ${leadsSelecionados.has(Number(lead.id)) ? '<i data-lucide="check"></i>' : ''}
             </button>
             <div class="kanban-card-title" title="${esc(lead.nome || lead.telefone || 'Lead')}">${esc(lead.nome || 'Lead sem nome')}</div>
-            <span class="kanban-score" style="color:${scoreColor};">${score}</span>
         </div>
         <div class="kanban-phone">${esc(lead.telefone || 'Telefone nao informado')}</div>
         <div class="kanban-chip-row">
@@ -1561,9 +1552,6 @@ function lpPreencherDados({ lead, jornada, interacoes }) {
     $('lpRowCpf').innerHTML      = lpRow('CPF', lead.cpf);
     $('lpRowEndereco').innerHTML = lpRow('Endereço', [lead.endereco, lead.cidade, lead.estado].filter(Boolean).join(', ') || null);
     $('lpRowStatus').innerHTML   = lpRow('Status', status, badgeColor, true);
-    const scoreVal = lead.lead_score || 0;
-    const scoreCor = scoreVal >= 70 ? '#ef4444' : scoreVal >= 40 ? '#f59e0b' : '#6b7280';
-    $('lpRowScore').innerHTML    = lpRow('Lead Score', scoreVal ? `${scoreVal} pts` : null, scoreCor);
     $('lpRowInstancia').innerHTML = lpRow('Instância', lead.instancia);
     $('lpRowPlataforma').innerHTML = lpRow('Plataforma', lead.plataforma);
     $('lpRowDispositivo').innerHTML = lpRow('Dispositivo', lead.device && lead.device.label);

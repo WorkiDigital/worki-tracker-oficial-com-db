@@ -255,7 +255,6 @@ html.light .tag { color:#374151; }
 .kanban-check { width:22px; height:22px; border-radius:6px; border:1px solid var(--border); background:var(--bg); color:var(--blue); padding:0; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; }
 .kanban-check svg { width:13px; height:13px; }
 .kanban-card-title { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--text); font-size:13px; font-weight:800; }
-.kanban-score { font-size:12px; font-weight:800; }
 .kanban-phone { margin:6px 0 8px 31px; color:var(--muted); font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .kanban-chip-row { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:8px; }
 .kanban-origin, .kanban-status-mini { display:inline-flex; align-items:center; min-height:20px; padding:2px 7px; border-radius:999px; border:1px solid var(--border); font-size:10px; font-weight:800; line-height:1; }
