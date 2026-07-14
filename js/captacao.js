@@ -147,8 +147,6 @@ async function capIntCarregar() {
   const seq = ++_capIntLoadSeq;
   _capIntEtapas = [];
   capIntCancelarForm();
-  if ($('capIntTemplate')) $('capIntTemplate').value = '';
-  if ($('capIntQualificacao')) $('capIntQualificacao').value = '';
 
   if (!clienteId) {
     capIntBloquear(true, 'Selecione um cliente para configurar o Rastreamento Inteligente.');
@@ -159,17 +157,12 @@ async function capIntCarregar() {
   if ($('capIntLista')) $('capIntLista').innerHTML = '<div class="cap-journey-empty">Carregando configuração…</div>';
 
   try {
-    const [configResponse, stagesResponse] = await Promise.all([
-      authFetch(capUrlApi('/api/journey-stages', { action: 'config' })),
+    const [stagesResponse] = await Promise.all([
       authFetch(capUrlApi('/api/journey-stages')),
       capCarregarConceitos(),
     ]);
-    const config = await readApiJson(configResponse, 'Falha ao carregar a configuração inteligente');
     const stages = await readApiJson(stagesResponse, 'Falha ao carregar as etapas da jornada');
     if (seq !== _capIntLoadSeq || Number(capClienteId()) !== Number(clienteId)) return;
-
-    $('capIntTemplate').value = config.template_venda || '';
-    $('capIntQualificacao').value = config.template_qualificacao || '';
     _capIntEtapas = Array.isArray(stages) ? stages : [];
     capIntPopularSelect();
     capIntRender();
@@ -351,6 +344,9 @@ async function capIntMover(index, direction) {
 }
 
 async function capIntSalvarConfig() {
+  const templateInput = $('capIntTemplate');
+  const qualificacaoInput = $('capIntQualificacao');
+  if (!templateInput && !qualificacaoInput) return capIntCancelarConfig();
   if (!capClienteId()) return toast('Selecione um cliente.', 'error');
   const button = $('capIntSalvarConfigBtn');
   const originalText = button.textContent;
@@ -362,13 +358,11 @@ async function capIntSalvarConfig() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(capBodyCliente({
         action: 'config',
-        template_venda: $('capIntTemplate')?.value || '',
-        template_qualificacao: $('capIntQualificacao')?.value || '',
+        template_venda: templateInput?.value || '',
+        template_qualificacao: qualificacaoInput?.value || '',
       })),
     });
     const config = await readApiJson(response, 'Falha ao salvar a configuração inteligente');
-    $('capIntTemplate').value = config.template_venda || '';
-    $('capIntQualificacao').value = config.template_qualificacao || '';
     toast('Rastreamento inteligente atualizado.', 'success');
   } catch (e) {
     toast('Erro: ' + e.message, 'error');

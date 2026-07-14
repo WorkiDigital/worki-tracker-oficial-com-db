@@ -2089,18 +2089,6 @@
 
                 <div id="capIntBlocked" class="cap-journey-empty" style="display:none;">Selecione um cliente para configurar o Rastreamento Inteligente.</div>
                 <div id="capIntContent">
-                    <div class="cap-int-form-grid">
-                        <div class="input-group">
-                            <label>Template de Venda <span style="color:var(--muted);font-weight:400;font-size:11px;">(formato da mensagem do atendente)</span></label>
-                            <textarea id="capIntTemplate" rows="6" maxlength="10000" placeholder="Ex:&#10;Nome completo: {nome}&#10;Produto: {produto}&#10;Valor da Compra: {valor}&#10;Endereço: {endereco}&#10;Cidade: {cidade}" class="cap-int-template"></textarea>
-                        </div>
-                        <div class="input-group">
-                            <label>Gatilho de Qualificação <span style="color:var(--muted);font-weight:400;font-size:11px;">(opcional)</span></label>
-                            <span style="font-size:11px;color:var(--muted);display:block;margin-bottom:7px;">Palavra-chave que marca o lead como Qualificado. Se vazio, usa <code>#qualificado</code>.</span>
-                            <input type="text" id="capIntQualificacao" maxlength="255" placeholder="Ex: #leadbom">
-                        </div>
-                    </div>
-
                     <div class="cap-int-divider"></div>
                     <div class="cap-journey-head">
                         <div>
@@ -6157,7 +6145,7 @@ function resetLeadSearchAutofill() {
 <script defer src="js/chat-monitor.js?v=20260712-5"></script>
 <script defer src="js/admin.js?v=20260622-4"></script>
 <script defer src="js/reports-auto.js?v=20260712-1"></script>
-<script defer src="js/captacao.js?v=20260712-7"></script>
+<script defer src="js/captacao.js?v=20260714-2"></script>
 
 <!-- Drawer Perfil do Lead (4 abas) — deve ficar no final do body para z-index funcionar -->
 <div id="leadProfileDrawer" style="position:fixed;inset:0;z-index:9999;display:none;align-items:stretch;justify-content:flex-end;background:rgba(0,0,0,0.55);" onclick="if(event.target===this)fecharPerfilLead()">
