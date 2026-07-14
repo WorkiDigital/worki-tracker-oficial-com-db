@@ -14,7 +14,8 @@ async function carregarKanbanStages() {
     const clienteKey = (typeof clienteAdminSelecionado !== 'undefined' && clienteAdminSelecionado) ? clienteAdminSelecionado : 'me';
     if (_kanbanStages && _kanbanStagesClienteId === clienteKey) return _kanbanStages;
     try {
-        const r = await authFetch('/api/journey-stages');
+        const url = clienteKey !== 'me' ? `/api/journey-stages?cliente_id=${clienteKey}` : '/api/journey-stages';
+        const r = await authFetch(url);
         const stages = await readApiJson(r, 'Falha ao carregar as etapas do pipeline');
         _kanbanStages = Array.isArray(stages) ? stages : [];
         _kanbanStagesClienteId = clienteKey;
@@ -622,10 +623,11 @@ async function atualizarStatusLeadKanban(leadId, stageId) {
     renderKanban();
 
     try {
+        const clienteAdmin = (typeof clienteAdminSelecionado !== 'undefined' && clienteAdminSelecionado) ? clienteAdminSelecionado : undefined;
         const r = await authFetch('/api/journey-stages', {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'move_lead', lead_id: lead.id, stage_id: stageId })
+            body: JSON.stringify({ action: 'move_lead', lead_id: lead.id, stage_id: stageId, cliente_id: clienteAdmin })
         });
         const result = await readApiJson(r, 'Erro ao mover lead');
         const raw = rawData.find(l => Number(l.id) === Number(lead.id));
