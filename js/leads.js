@@ -11,6 +11,16 @@ const LEAD_KANBAN_COLUMNS = [
     { key:'perdido', label:'Perdido', status:'Perdido', tone:'red' },
 ];
 
+function leadClienteAdminAtual() {
+    if (typeof clienteAdminSelecionado === 'undefined' || !clienteAdminSelecionado) return null;
+    const n = Number(clienteAdminSelecionado);
+    return Number.isFinite(n) ? n : null;
+}
+
+function leadPertenceAoCliente(lead, clienteId) {
+    if (!clienteId) return true;
+    return Number(lead?.cliente_id) === Number(clienteId);
+}
 // Cache de leads por chave "clienteId|periodo" — evita piscar ao navegar entre abas.
 const _leadsCache = new MemCache(2 * 60 * 1000); // TTL 2 min (auto-refresh de 30s mantém fresco)
 
@@ -24,7 +34,8 @@ async function recarregarLeads(silencioso = false) {
     if (icon) icon.style.animation = 'spin 1s linear infinite';
 
     const periodo = $('periodoSelect')?.value || 'hojeOntem';
-    const clienteKey = (typeof clienteAdminSelecionado !== 'undefined' && clienteAdminSelecionado) ? clienteAdminSelecionado : 'me';
+    const clienteId = leadClienteAdminAtual();
+    const clienteKey = clienteId || 'me';
     const cacheKey = `${clienteKey}|${periodo}`;
 
     // Serve cache imediatamente (sem skeleton) — evita piscar ao trocar de aba.
@@ -57,9 +68,8 @@ async function _recarregarLeadsFetch(cacheKey, periodo, silencioso) {
 
         let url = '/api/leads';
         const params = new URLSearchParams();
-        if (typeof clienteAdminSelecionado !== 'undefined' && clienteAdminSelecionado) {
-            params.append('cliente_id', clienteAdminSelecionado);
-        }
+        const clienteId = leadClienteAdminAtual();
+        if (clienteId) params.append('cliente_id', clienteId);
         const range = (periodo && periodo !== 'todos') ? calcRange(periodo) : null;
         if (range) {
             params.append('start', range[0].toISOString());
@@ -112,7 +122,8 @@ async function carregarMetricasTemporais() {
         let url = '/api/metrics-temporal?';
         const params = new URLSearchParams();
         
-        if (clienteAdminSelecionado) params.append('cliente_id', clienteAdminSelecionado);
+        const clienteId = leadClienteAdminAtual();
+        if (clienteId) params.append('cliente_id', clienteId);
         if (range) {
             params.append('start', range[0].toISOString());
             params.append('end', range[1].toISOString());
@@ -207,7 +218,8 @@ function aplicarFiltros() {
     const origemFiltro = ($('selectOrigem')?.value || '');
 
     dadosFiltrados = rawData.filter(l => {
-        if (clienteAdminSelecionado && l.cliente_id !== clienteAdminSelecionado) return false;
+        const clienteId = leadClienteAdminAtual();
+        if (!leadPertenceAoCliente(l, clienteId)) return false;
 
         // Filtro por instância
         if (instanciaFiltro && l.instancia !== instanciaFiltro) return false;
@@ -253,8 +265,9 @@ function popularFiltroInstancias() {
     const valorAtual = sel.value;
     
     // Filtra os leads pelo cliente selecionado antes de extrair instâncias únicas
-    const leadsVisiveis = clienteAdminSelecionado 
-        ? rawData.filter(l => l.cliente_id === clienteAdminSelecionado)
+    const clienteId = leadClienteAdminAtual();
+    const leadsVisiveis = clienteId
+        ? rawData.filter(l => leadPertenceAoCliente(l, clienteId))
         : rawData;
 
     const instancias = [...new Set(leadsVisiveis.map(l => l.instancia).filter(Boolean))].sort();
@@ -694,9 +707,8 @@ async function confirmarExclusaoLeads() {
         for (let i = 0; i < ids.length; i += 500) {
             const lote = ids.slice(i, i + 500);
             const body = { ids: lote };
-            if (typeof clienteAdminSelecionado !== 'undefined' && clienteAdminSelecionado) {
-                body.cliente_id = clienteAdminSelecionado;
-            }
+            const clienteId = leadClienteAdminAtual();
+            if (clienteId) body.cliente_id = clienteId;
             const response = await authFetch('/api/leads-delete', {
                 method: 'DELETE',
                 headers: { 'Content-Type': 'application/json' },
@@ -842,9 +854,8 @@ async function renderComparativoPeriodo() {
 
     try {
         const params = new URLSearchParams();
-        if (typeof clienteAdminSelecionado !== 'undefined' && clienteAdminSelecionado) {
-            params.append('cliente_id', clienteAdminSelecionado);
-        }
+        const clienteId = leadClienteAdminAtual();
+        if (clienteId) params.append('cliente_id', clienteId);
         params.append('start', prev[0].toISOString());
         params.append('end', prev[1].toISOString());
 

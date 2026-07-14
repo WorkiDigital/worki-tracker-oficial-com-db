@@ -2862,6 +2862,8 @@ async function popularSeletorAdmin() {
     const r = await authFetch('/api/clientes');
     const clientes = await r.json();
     const sel = document.getElementById('selectClienteAdmin');
+    if (!sel) return;
+    sel.innerHTML = '';
     clientes.forEach(c => {
         const opt = document.createElement('option');
         opt.value = c.id;
@@ -6166,7 +6168,7 @@ function resetLeadSearchAutofill() {
     input.defaultValue = '';
 }
 </script>
-<script defer src="js/leads.js?v=20260713-kanban2"></script>
+<script defer src="js/leads.js?v=20260714-clientfilter1"></script>
 <script defer src="js/chat-monitor.js?v=20260712-5"></script>
 <script defer src="js/admin.js?v=20260714-2"></script>
 <script defer src="js/reports-auto.js?v=20260712-1"></script>
