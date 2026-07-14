@@ -77,6 +77,13 @@ cp .env.example .env
 ```
 
 Edite o arquivo `.env` com suas credenciais (veja [Variáveis de ambiente](#variáveis-de-ambiente)).
+No mínimo, defina `DATABASE_URL`, `JWT_SECRET` e `TOKEN_ENCRYPTION_KEY`.
+
+Gere a chave de criptografia com:
+
+```bash
+openssl rand -hex 32
+```
 
 ### 4. Criar as tabelas no banco
 
@@ -149,25 +156,30 @@ No EasyPanel, crie também:
 ### 3. Variáveis de ambiente
 
 Adicionar em **Environment** do serviço (veja detalhes na [seção abaixo](#variáveis-de-ambiente)).
+Em produção, garanta pelo menos `DATABASE_URL`, `JWT_SECRET`, `TOKEN_ENCRYPTION_KEY`, `NODE_ENV=production`, `WEBHOOK_URL`, `EVOLUTION_API_URL`, `EVOLUTION_GLOBAL_KEY` e `WEBHOOK_SECRET`.
 
 ### 4. Health check
 
 Configure no EasyPanel:
 - Path: `/health`
-- Porta: `3000`
+- Porta: a mesma definida em `PORT` (padrão `3000`; se usar `PORT=8080`, configure `8080`)
 - Intervalo: 30s
+
+Para diagnóstico protegido, use `/health/detailed` com `Authorization: Bearer <HEALTHCHECK_TOKEN>`.
 
 ### 5. Domínio
 
 1. EasyPanel → **Domains** → adicionar `app.seudominio.com`
 2. Apontar DNS (CNAME ou A) para o IP do servidor
 3. SSL será gerado automaticamente (Let's Encrypt)
+4. Use o mesmo domínio, sem barra final, em `ALLOWED_ORIGINS`
 
 ### 6. Após o deploy
 
 1. Abrir o terminal do serviço (EasyPanel → Terminal)
 2. Rodar `node setup-db.js` para criar as tabelas
-3. Criar o admin conforme [seção acima](#criar-o-usuário-admin)
+3. Criar o admin conforme [seção acima](#criar-o-usuário-admin), ou configurar `ADMIN_EMAIL`/`ADMIN_PASSWORD` para acesso de recuperação
+4. Em **Conexão WhatsApp**, salve/reconfigure as instâncias para registrar o webhook `WEBHOOK_URL` na Evolution API
 
 ---
 
@@ -177,18 +189,27 @@ Configure no EasyPanel:
 |----------|:-----------:|---------|-----------|
 | `DATABASE_URL` | ✅ | `postgresql://user:pass@host:5432/db` | String de conexão PostgreSQL |
 | `JWT_SECRET` | ✅ | `minimo-32-caracteres-aleatorios` | Segredo para assinar tokens JWT. **Nunca deixe em branco em produção** |
+| `TOKEN_ENCRYPTION_KEY` | ✅ | `64-caracteres-hex` | Chave AES-256-GCM para criptografar tokens de clientes. Gere com `openssl rand -hex 32` |
 | `META_ADS_TOKEN` | ✅ | `EAAI...` | Token de acesso permanente da Meta (Graph API) |
+| `NODE_ENV` | ✅ produção | `production` | Ativa comportamento de produção e evita fallbacks/mock de desenvolvimento |
 | `REDIS_URL` | ⬜ | `redis://redis:6379` | URL do Redis para cache e rate limiting. Se ausente, cache fica em memória |
-| `ALLOWED_ORIGINS` | ⬜ | `https://app.seudominio.com` | Origens CORS permitidas (separar por vírgula). Default: `*` |
-| `EVOLUTION_API_URL` | ⬜ | `https://evo.seudominio.com` | URL base da Evolution API |
-| `EVOLUTION_GLOBAL_KEY` | ⬜ | `chave_global` | Chave de autenticação global da Evolution API |
-| `WEBHOOK_SECRET` | ⬜ | `segredo_para_webhooks` | Segredo para validar webhooks da Evolution |
+| `ALLOWED_ORIGINS` | ⬜ | `https://app.seudominio.com` | Origens CORS permitidas (separar por vírgula e sem barra final). Default: `*` |
+| `EVOLUTION_API_URL` | ✅ WhatsApp | `https://evo.seudominio.com` | URL base da Evolution API |
+| `EVOLUTION_GLOBAL_KEY` | ✅ WhatsApp | `chave_global` | Chave de autenticação global da Evolution API |
+| `WEBHOOK_URL` | ✅ WhatsApp | `https://app.seudominio.com/api/webhook-evo` | URL pública do webhook nativo registrado nas instâncias Evolution |
+| `WEBHOOK_SECRET` | ✅ WhatsApp | `segredo_para_webhooks` | Segredo para validar webhooks da Evolution |
+| `WEBHOOK_SECRET_IN_URL` | ⬜ | `true` | Inclui `?secret=` no webhook registrado; útil quando a Evolution não envia header |
+| `ADMIN_EMAIL` / `ADMIN_PASSWORD` | ⬜ | `admin@...` | Login admin de recuperação via variáveis de ambiente |
+| `HEALTHCHECK_TOKEN` | ⬜ | `token-longo` | Protege `/health/detailed` em produção |
+| `CRON_SECRET` | ⬜ | `token-longo` | Protege endpoints de cron quando expostos por HTTP |
 | `IP_GEOLOCATION_URL` | ⬜ | `https://seu-provedor.com/lookup/{ip}` | Endpoint licenciado de geolocalização por IP. `{ip}` é substituído pelo IP do clique. Sem esta variável, nenhum IP é enviado a terceiros |
 | `RATE_LIMIT_RPM` | ⬜ | `120` | Requisições por minuto por usuário (default: 120) |
 | `LOG_LEVEL` | ⬜ | `info` | Nível de log: `debug`, `info`, `warn`, `error` (default: `info`) |
 | `PORT` | ⬜ | `3000` | Porta do servidor (default: 3000) |
 
 > ⬜ = opcional em desenvolvimento, mas recomendado em produção.
+
+> Use `WEBHOOK_URL`, não `N8N_WEBHOOK_URL`. O endpoint nativo atual é `/api/webhook-evo`.
 
 Se o domínio estiver na Cloudflare, ative **Rules → Transform Rules → Managed Transforms → Add visitor location headers**. A aplicação lê diretamente `cf-ipcity`, `cf-region`, `cf-region-code` e `cf-ipcountry`, dispensando uma consulta externa. Mantenha o origin protegido para que somente proxies confiáveis possam definir os cabeçalhos de IP/localização.
 
