@@ -31,10 +31,13 @@ export default async function handler(req, res) {
 
   if (req.method === 'POST') {
       const { nome, email_contato, pixel_padrao, senha_acesso } = req.body;
-      if (!nome) return res.status(400).json({ error: 'Nome da Agência/Cliente é obrigatório' });
-      if (!email_contato) return res.status(400).json({ error: 'Email de contato é obrigatório' });
-      if (!senha_acesso) return res.status(400).json({ error: 'Senha de acesso é obrigatória' });
-      if (!pixel_padrao) return res.status(400).json({ error: 'Pixel Padrão é obrigatório — cada cliente tem seu próprio pixel' });
+      const email = String(email_contato || '').trim().toLowerCase();
+      const senha = String(senha_acesso || '');
+      const nomeCliente = String(nome || '').trim() || 'Acesso ' + (email.split('@')[0] || 'cliente');
+      const pixelPadrao = String(pixel_padrao || '').trim() || null;
+      if (!email) return res.status(400).json({ error: 'Email de contato é obrigatório' });
+      if (!senha) return res.status(400).json({ error: 'Senha de acesso é obrigatória' });
+      if (senha.length < 6) return res.status(400).json({ error: 'Senha deve ter no mínimo 6 caracteres' });
 
       try {
           // 1. Cria a configuração raiz do Cliente
@@ -48,16 +51,16 @@ export default async function handler(req, res) {
 
           const clientResult = await pool.query(
               'INSERT INTO clientes (nome, email_contato, pixel_padrao, token_meta_enc, token_last4, token_updated_at) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
-              [nome, email_contato, pixel_padrao, token_meta_enc, token_last4, token_meta ? new Date() : null]
+              [nomeCliente, email, pixelPadrao, token_meta_enc, token_last4, token_meta ? new Date() : null]
           );
           const cliente_id = clientResult.rows[0].id;
 
           // 2. Cria o usuário com Acesso Restrito (Login e Senha do cliente) amarrado ao ID dele
           const salt = await bcrypt.genSalt(10);
-          const hash = await bcrypt.hash(senha_acesso, salt);
+          const hash = await bcrypt.hash(senha, salt);
           await pool.query(
               'INSERT INTO usuarios (email, senha_hash, cliente_id, is_admin) VALUES ($1, $2, $3, false)',
-              [email_contato, hash, cliente_id]
+              [email, hash, cliente_id]
           );
 
           return res.status(201).json({ message: 'Cliente registrado com Conta de Acesso criada!', cliente_id });

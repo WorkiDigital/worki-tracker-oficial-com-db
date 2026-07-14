@@ -13,8 +13,6 @@ async function salvarNovoCliente() {
     const email_contato = $('novoCliEmail').value.trim();
     const senha_acesso = $('novoCliSenha').value;
 
-    if (!nome) { toast('Nome da empresa é obrigatório!', 'error'); return; }
-    if (!pixel_padrao) { toast('Pixel Padrão é obrigatório — cada cliente tem seu próprio pixel!', 'error'); return; }
     if (!email_contato) { toast('E-mail de acesso é obrigatório!', 'error'); return; }
     if (!senha_acesso || senha_acesso.length < 6) { toast('Senha deve ter no mínimo 6 caracteres!', 'error'); return; }
 

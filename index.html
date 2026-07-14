@@ -239,16 +239,16 @@
     <div class="modal">
         <div class="modal-head">
             <div class="modal-icon"><i data-lucide="building" style="width:22px;height:22px;" class="text1"></i></div>
-            <div><h3>Novo Cliente SaaS</h3><p>Configure pixel, acesso e conta de anúncios do cliente</p></div>
+            <div><h3>Novo Cliente SaaS</h3><p>Crie o acesso agora e complete os dados depois</p></div>
             <button class="modal-close" aria-label="Fechar" onclick="$('modalAddCliente').classList.remove('open')"><i data-lucide="x" style="width:16px;"></i></button>
         </div>
-        <div class="input-group"><label>Nome da Empresa/Loja <span style="color:var(--red)">*</span></label><input type="text" id="novoCliNome" placeholder="Ex: Loja do João"></div>
-        <div class="input-group"><label>Pixel Meta do Cliente <span style="color:var(--red)">*</span></label><input type="text" id="novoCliPixel" placeholder="Apenas números. Ex: 123456789"></div>
+        <div class="input-group"><label>Nome da Empresa/Loja <span style="color:var(--muted);font-weight:400;font-size:11px;">(opcional)</span></label><input type="text" id="novoCliNome" placeholder="Pode preencher depois"></div>
+        <div class="input-group"><label>Pixel Meta do Cliente <span style="color:var(--muted);font-weight:400;font-size:11px;">(opcional)</span></label><input type="text" id="novoCliPixel" placeholder="Pode preencher depois"></div>
         <hr style="border:none;border-top:1px solid var(--border);margin:15px 0;">
         <p style="font-size:12px;color:var(--muted);margin-bottom:10px;">Acesso ao Portal do Cliente <span style="color:var(--red)">*</span></p>
         <div class="input-group"><label>E-mail (Login) <span style="color:var(--red)">*</span></label><input type="email" id="novoCliEmail" autocomplete="off" placeholder="cliente@loja.com"></div>
         <div class="input-group"><label>Senha de Acesso <span style="color:var(--red)">*</span></label><input type="text" id="novoCliSenha" placeholder="Min. 6 caracteres"></div>
-        <button class="btn-confirm" id="btnSalvarCliente" onclick="salvarNovoCliente()">Criar Cliente</button>
+        <button class="btn-confirm" id="btnSalvarCliente" onclick="salvarNovoCliente()">Criar Acesso</button>
     </div>
 </div>
 
@@ -6143,7 +6143,7 @@ function resetLeadSearchAutofill() {
 </script>
 <script defer src="js/leads.js?v=20260713-kanban2"></script>
 <script defer src="js/chat-monitor.js?v=20260712-5"></script>
-<script defer src="js/admin.js?v=20260622-4"></script>
+<script defer src="js/admin.js?v=20260714-1"></script>
 <script defer src="js/reports-auto.js?v=20260712-1"></script>
 <script defer src="js/captacao.js?v=20260714-2"></script>
 
