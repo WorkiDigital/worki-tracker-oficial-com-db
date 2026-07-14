@@ -1,5 +1,11 @@
 /* ── Shared Utilities ─────────────────────────────────────────── */
 
+// Prefixo de domínio para chamadas de API. Vazio = mesma origem (comportamento
+// atual, sem mudança). Setado via window.API_BASE_URL antes deste script
+// carregar, quando front e API rodam em domínios separados.
+window.API_BASE_URL = window.API_BASE_URL || '';
+function apiUrl(path) { return window.API_BASE_URL + path; }
+
 const $ = id => document.getElementById(id);
 const esc = s => !s ? '' : String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 

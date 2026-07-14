@@ -15,6 +15,9 @@
     <link rel="stylesheet" href="css/dashboard.css?v=20260713-kanban2">
     <link rel="stylesheet" href="css/splash.css?v=20260712-1">
     <link rel="stylesheet" href="css/funil.css?v=20260713-1">
+    <!-- Prefixo de domínio da API. Vazio = mesma origem (front+API juntos, comportamento atual).
+         Setar para "https://api-seu-dominio.com" quando front e API rodarem em domínios separados. -->
+    <script>window.API_BASE_URL = '';</script>
     <script defer src="js/utils.js?v=20260712-1"></script>
     <script defer src="js/funil.js?v=20260713-2"></script>
 </head>
@@ -2634,7 +2637,7 @@ async function authFetch(url, opts = {}) {
         timer = setTimeout(() => ctrl.abort(), opts.timeoutMs || 30000);
     }
     try {
-        const r = await fetch(url, { ...opts, signal, headers: { ...(opts.headers||{}), 'Authorization': `Bearer ${AUTH_TOKEN}` } });
+        const r = await fetch(apiUrl(url), { ...opts, signal, headers: { ...(opts.headers||{}), 'Authorization': `Bearer ${AUTH_TOKEN}` } });
         if (r.status === 401) {
             localStorage.removeItem('adlytics_token');
             localStorage.removeItem('adlytics_user');
@@ -2775,7 +2778,7 @@ async function init() {
 
     // Config + Auth
     try {
-        const cfg = await fetch('/api/config').then(r=>r.json());
+        const cfg = await fetch(apiUrl('/api/config')).then(r=>r.json());
         
         // Atualiza Marca (Sidebar e Topbar)
         const brandName = cfg.projectName || 'Adlytics';

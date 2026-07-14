@@ -30,7 +30,7 @@ function onChangeGlobalInstance() {
 async function carregarInstanciasRelatorio() {
     try {
         const token = localStorage.getItem('adlytics_token');
-        const res = await fetch('/api/evo-manager?action=list', {
+        const res = await fetch(apiUrl('/api/evo-manager?action=list'), {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         if (!res.ok) throw new Error('Falha ao carregar instâncias');
@@ -73,7 +73,7 @@ async function carregarGruposRelatorio() {
     
     try {
         const token = localStorage.getItem('adlytics_token');
-        const res = await fetch(`/api/evo-groups?instanceName=${instanceName}`, {
+        const res = await fetch(apiUrl(`/api/evo-groups?instanceName=${instanceName}`), {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         if (!res.ok) throw new Error('Falha ao buscar grupos');
@@ -101,7 +101,7 @@ async function carregarListaRelatorios() {
 
     try {
         const token = localStorage.getItem('adlytics_token');
-        const res = await fetch('/api/reports-config', {
+        const res = await fetch(apiUrl('/api/reports-config'), {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         if(!res.ok) {
@@ -183,7 +183,7 @@ async function salvarRelatorioAgendado() {
 
     try {
         const token = localStorage.getItem('adlytics_token');
-        const res = await fetch('/api/reports-config', {
+        const res = await fetch(apiUrl('/api/reports-config'), {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json',
@@ -207,7 +207,7 @@ async function deletarRelatorio(id) {
     if(!confirm('Deseja excluir este agendamento?')) return;
     try {
         const token = localStorage.getItem('adlytics_token');
-        const res = await fetch(`/api/reports-config?id=${id}`, {
+        const res = await fetch(apiUrl(`/api/reports-config?id=${id}`), {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${token}` }
         });

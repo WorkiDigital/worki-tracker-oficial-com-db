@@ -91,6 +91,10 @@
 </div>
 
 <script>
+// Prefixo de domínio da API. Vazio = mesma origem (comportamento atual).
+window.API_BASE_URL = window.API_BASE_URL || '';
+function apiUrl(path) { return window.API_BASE_URL + path; }
+
 let TOKEN = localStorage.getItem('adlytics_token');
 
 // ── Inicialização ───────────────────────────────────────────────
@@ -103,7 +107,7 @@ async function init() {
 
 async function carregarWhiteLabel() {
     try {
-        const r = await fetch('/api/config');
+        const r = await fetch(apiUrl('/api/config'));
         const cfg = await r.json();
         const brandName = cfg.projectName || 'Adlytics';
         const brandLogo = cfg.projectLogo;
@@ -161,7 +165,7 @@ async function fazerLogin() {
     esconderAlerta();
 
     try {
-        const res = await fetch('/api/auth-login', {
+        const res = await fetch(apiUrl('/api/auth-login'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password: senha })
@@ -203,7 +207,7 @@ async function fazerCadastro() {
     esconderAlerta();
 
     try {
-        const res = await fetch('/api/auth-register', {
+        const res = await fetch(apiUrl('/api/auth-register'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password: senha })

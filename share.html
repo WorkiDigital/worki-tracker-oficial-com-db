@@ -165,7 +165,7 @@
     // White-Label Logic for Share Page
     (async () => {
         try {
-            const r = await fetch('/api/config');
+            const r = await fetch(apiUrl('/api/config'));
             const cfg = await r.json();
             const brandName = cfg.projectName || 'Adlytics';
             const brandLogo = cfg.projectLogo;
