@@ -7,6 +7,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <link rel="stylesheet" href="css/login.css?v=20260712-1">
+    <!-- Config de runtime (window.APP_CONFIG.API_BASE_URL) — ver index.html. -->
+    <script src="/runtime-config.js"></script>
 </head>
 <body>
 
@@ -91,9 +93,14 @@
 </div>
 
 <script>
-// Prefixo de domínio da API. Vazio = mesma origem (comportamento atual).
-window.API_BASE_URL = window.API_BASE_URL || '';
-function apiUrl(path) { return window.API_BASE_URL + path; }
+// window.APP_CONFIG vem de /runtime-config.js (carregado no <head>); fallback
+// para window.API_BASE_URL cobre HTML servido sem essa rota disponível.
+function apiUrl(path) {
+    const baseUrl = window.APP_CONFIG?.API_BASE_URL || window.API_BASE_URL || '';
+    const normalizedBase = baseUrl.replace(/\/+$/, '');
+    const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+    return `${normalizedBase}${normalizedPath}`;
+}
 
 let TOKEN = localStorage.getItem('adlytics_token');
 

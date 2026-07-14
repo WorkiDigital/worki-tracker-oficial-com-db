@@ -280,8 +280,15 @@ const server = http.createServer(async (req, res) => {
 server.listen(PORT, () => {
   console.log(`✅ API-only rodando em http://localhost:${PORT}`);
   console.log('   Rotas públicas: /api/*, /r/*, /redirect/*, /js/wapptrack.js');
-  iniciarCronZap();
-  iniciarCronChatCleanup();
+  // Desligável via ENABLE_CRONS=false para rodar o legado (npm start) e esta
+  // API ao mesmo tempo durante a migração, sem duplicar envio de relatórios
+  // nem limpeza de mensagens.
+  if (process.env.ENABLE_CRONS !== 'false') {
+    iniciarCronZap();
+    iniciarCronChatCleanup();
+  } else {
+    console.log('[Crons] desativados via ENABLE_CRONS=false');
+  }
 });
 
 async function iniciarCronZap() {

@@ -15,9 +15,10 @@
     <link rel="stylesheet" href="css/dashboard.css?v=20260713-kanban2">
     <link rel="stylesheet" href="css/splash.css?v=20260712-1">
     <link rel="stylesheet" href="css/funil.css?v=20260713-1">
-    <!-- Prefixo de domínio da API. Vazio = mesma origem (front+API juntos, comportamento atual).
-         Setar para "https://api-seu-dominio.com" quando front e API rodarem em domínios separados. -->
-    <script>window.API_BASE_URL = '';</script>
+    <!-- Config de runtime (window.APP_CONFIG.API_BASE_URL): gerada pelo servidor
+         a partir da env API_BASE_URL (server-static.js) ou API_BASE_URL="" em
+         dev/legado (mesma origem). Precisa carregar antes de utils.js/apiUrl(). -->
+    <script src="/runtime-config.js"></script>
     <script defer src="js/utils.js?v=20260712-1"></script>
     <script defer src="js/funil.js?v=20260713-2"></script>
 </head>

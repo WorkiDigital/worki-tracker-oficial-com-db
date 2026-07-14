@@ -19,8 +19,14 @@ if (process.env.NODE_ENV === 'production' && !API_BASE_URL) {
   process.exit(1);
 }
 
+function runtimeConfigScript() {
+  return `window.APP_CONFIG = Object.freeze({ API_BASE_URL: ${JSON.stringify(API_BASE_URL)} });\n`;
+}
+
+// Fallback: se algum HTML não carregar <script src="/runtime-config.js">
+// explicitamente, ainda recebe a config injetada inline no <head>.
 function injectRuntimeConfig(html) {
-  const runtimeConfig = `<script>window.API_BASE_URL=${JSON.stringify(API_BASE_URL)};</script>`;
+  const runtimeConfig = `<script>${runtimeConfigScript()}</script>`;
   return html.includes('</head>')
     ? html.replace('</head>', `  ${runtimeConfig}\n</head>`)
     : `${runtimeConfig}\n${html}`;
@@ -143,7 +149,7 @@ const server = http.createServer((req, res) => {
       'Cache-Control': 'no-store',
       'X-Content-Type-Options': 'nosniff'
     });
-    res.end(`window.API_BASE_URL=${JSON.stringify(API_BASE_URL)};\n`);
+    res.end(runtimeConfigScript());
     return;
   }
 

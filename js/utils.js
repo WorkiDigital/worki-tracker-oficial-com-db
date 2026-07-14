@@ -1,10 +1,17 @@
 /* ── Shared Utilities ─────────────────────────────────────────── */
 
 // Prefixo de domínio para chamadas de API. Vazio = mesma origem (comportamento
-// atual, sem mudança). Setado via window.API_BASE_URL antes deste script
-// carregar, quando front e API rodam em domínios separados.
-window.API_BASE_URL = window.API_BASE_URL || '';
-function apiUrl(path) { return window.API_BASE_URL + path; }
+// atual, sem mudança). window.APP_CONFIG vem de /runtime-config.js (servido
+// pelo server-static.js a partir da env API_BASE_URL); window.API_BASE_URL
+// é fallback para compatibilidade com HTML antigo que ainda não carregou
+// runtime-config.js. Quando front e API rodam em domínios separados, o
+// front define uma dessas duas fontes antes deste script carregar.
+function apiUrl(path) {
+    const baseUrl = window.APP_CONFIG?.API_BASE_URL || window.API_BASE_URL || '';
+    const normalizedBase = baseUrl.replace(/\/+$/, '');
+    const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+    return `${normalizedBase}${normalizedPath}`;
+}
 
 const $ = id => document.getElementById(id);
 const esc = s => !s ? '' : String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');

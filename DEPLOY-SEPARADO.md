@@ -60,9 +60,16 @@ EVOLUTION_GLOBAL_KEY
 WEBHOOK_SECRET
 CRON_SECRET
 HEALTHCHECK_TOKEN
+ENABLE_CRONS=true
 NODE_ENV=production
 PORT=3000
 ```
+
+`ENABLE_CRONS` controla se este processo inicia os crons de relatórios e limpeza.
+**Nunca deixe `ENABLE_CRONS=true` simultaneamente neste serviço e no legado
+(`npm start`)** — os dois rodando ao mesmo tempo duplicam envio de relatórios e
+execução de limpeza. Durante a migração, configure `ENABLE_CRONS=false` no
+serviço legado (via env) enquanto ele continuar no ar como fallback.
 
 Configure também o CORS:
 
@@ -155,15 +162,15 @@ A resposta deve conter:
 
 ### Configuração em runtime
 
-O `server-static.js` injeta automaticamente a variável `API_BASE_URL` em cada HTML servido. Assim, o mesmo código pode ser usado em staging e produção sem alterar os arquivos HTML.
+`index.html`, `login.html` e `share.html` carregam `<script src="/runtime-config.js">` no `<head>`, antes de `js/utils.js`. O `server-static.js` serve esse arquivo a partir da env `API_BASE_URL`:
 
-A configuração ativa também pode ser validada em:
-
-```text
-/runtime-config.js
+```javascript
+window.APP_CONFIG = Object.freeze({ API_BASE_URL: "https://api.seudominio.com" });
 ```
 
-O endpoint expõe apenas a URL pública da API, sem segredos.
+`apiUrl(path)` (em `js/utils.js` e na função local equivalente de `login.html`) lê `window.APP_CONFIG.API_BASE_URL`, com fallback para `window.API_BASE_URL` em HTML mais antigo. Assim, o mesmo código pode ser usado em staging e produção sem alterar os arquivos HTML — só a env `API_BASE_URL` muda.
+
+O `server.js` legado e o `server-static.js` também servem `/runtime-config.js` (o legado sempre com `API_BASE_URL: ""`, já que roda frontend e API juntos na mesma origem). O endpoint expõe apenas a URL pública da API, sem segredos.
 
 ## EasyPanel — configuração recomendada
 
@@ -177,6 +184,7 @@ Start: npm run start:api
 Port: 3000
 Domain: api.seudominio.com
 Health: /health
+Env: ENABLE_CRONS=true
 ```
 
 ### Serviço `apptrack-front`
@@ -208,7 +216,7 @@ Sem alteração.
 5. Teste `/r/:slug`, `/redirect/:slug` e `/js/wapptrack.js` no domínio da API.
 6. Configure `ALLOWED_ORIGINS` com o domínio real do frontend.
 7. Publique os dois serviços em produção.
-8. Mantenha temporariamente o serviço legado com `npm start` como fallback.
+8. Mantenha temporariamente o serviço legado com `npm start` como fallback, configurando `ENABLE_CRONS=false` nele para não duplicar crons com o serviço `apptrack-api`.
 9. Após validação, remova o domínio público do serviço legado ou desative-o.
 
 ## Checklist de validação
@@ -228,8 +236,9 @@ Sem alteração.
 - [ ] Links `/r/` e `/redirect/` funcionam.
 - [ ] PostgreSQL não foi alterado.
 - [ ] Redis não foi alterado.
-- [ ] Cron de relatórios está ativo apenas no serviço da API.
+- [ ] Cron de relatórios está ativo apenas no serviço da API (`ENABLE_CRONS=true` só ali, `ENABLE_CRONS=false` no legado se ele continuar ativo).
 - [ ] Cron de limpeza está ativo apenas no serviço da API.
+- [ ] `/runtime-config.js` do frontend retorna a URL correta da API em produção.
 
 ## Rollback
 
