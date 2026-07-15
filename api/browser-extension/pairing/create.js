@@ -23,7 +23,7 @@ export default async function handler(req, res) {
 
   await ensureExtensionPairingSchema();
 
-  const instanceName = String(req.body?.instanceName || '').trim();
+  const rawInstanceName = String(req.body?.instanceName || '').trim();
   // Opcional: a extensão detecta o telefone (wid/me) após o login no WhatsApp
   // Web e envia em /exchange; se não conseguir, cai no fallback manual do
   // /start. Se o painel já quiser fixar um número de antemão, ainda aceita.
@@ -33,22 +33,31 @@ export default async function handler(req, res) {
     ? Number(req.body?.target_cliente_id)
     : Number(user.cliente_id);
 
-  if (!instanceName || (rawPhone && !expectedPhone) || !Number.isInteger(clienteId) || clienteId <= 0) {
+  if (!rawInstanceName || (rawPhone && !expectedPhone) || !Number.isInteger(clienteId) || clienteId <= 0) {
     return res.status(400).json({ code: 'INVALID_PAIRING_REQUEST' });
   }
 
   const pool = getPool();
 
+  // O painel manda o nome "curto" (sem o prefixo cliente_N_/admin_ — ver
+  // renderWaLista/displayName em js/admin.js), mesmo padrão que
+  // api/evo-manager.js reconstrói antes de falar com a Evolution. Aceita as
+  // duas formas (curta ou já prefixada) para não quebrar chamadas antigas.
+  const prefix = user.is_admin ? `cliente_${clienteId}_` : `cliente_${user.cliente_id}_`;
+  const safeName = rawInstanceName.replace(/[^a-zA-Z0-9_-]/g, '');
+  const candidateNames = Array.from(new Set([rawInstanceName, `${prefix}${safeName}`]));
+
   // Nunca deriva o tenant apenas pelo prefixo do nome da instância — sempre
   // confirma o vínculo real na tabela de mapeamento (mesmo padrão de
   // isolamento multi-tenant já usado em api/evo-manager.js).
   const ownership = await pool.query(
-    `SELECT instance_name FROM instancias_mapeamento WHERE instance_name = $1 AND cliente_id = $2 LIMIT 1`,
-    [instanceName, clienteId]
+    `SELECT instance_name FROM instancias_mapeamento WHERE instance_name = ANY($1) AND cliente_id = $2 LIMIT 1`,
+    [candidateNames, clienteId]
   );
   if (!ownership.rows.length) {
     return res.status(404).json({ code: 'INSTANCE_NOT_FOUND' });
   }
+  const instanceName = ownership.rows[0].instance_name;
 
   const { raw, display } = createPlatformCode();
   const codeHash = hashPlatformCode(raw);
