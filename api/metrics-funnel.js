@@ -30,6 +30,28 @@ function mockFunnelMetrics() {
   };
 }
 
+const FUNIL_TZ = 'America/Sao_Paulo';
+
+function normalizarPeriodoFunil(raw) {
+  const value = String(raw || '30');
+  if (value === 'hoje' || value === 'ontem' || value === 'hojeOntem') return { tipo: value };
+  const dias = Number.parseInt(value, 10);
+  return { tipo: 'dias', dias: Number.isFinite(dias) && dias > 0 ? Math.min(dias, 365) : 30 };
+}
+
+function periodoFunilSql(column, periodo, periodParamIdx) {
+  const base = `date_trunc('day', NOW() AT TIME ZONE '${FUNIL_TZ}')`;
+  if (periodo.tipo === 'hoje') {
+    return `${column} >= (${base} AT TIME ZONE '${FUNIL_TZ}') AND ${column} < ((${base} + INTERVAL '1 day') AT TIME ZONE '${FUNIL_TZ}')`;
+  }
+  if (periodo.tipo === 'ontem') {
+    return `${column} >= ((${base} - INTERVAL '1 day') AT TIME ZONE '${FUNIL_TZ}') AND ${column} < (${base} AT TIME ZONE '${FUNIL_TZ}')`;
+  }
+  if (periodo.tipo === 'hojeOntem') {
+    return `${column} >= ((${base} - INTERVAL '1 day') AT TIME ZONE '${FUNIL_TZ}') AND ${column} < ((${base} + INTERVAL '1 day') AT TIME ZONE '${FUNIL_TZ}')`;
+  }
+  return `${column} > NOW() - INTERVAL '1 day' * $${periodParamIdx}`;
+}
 export default async function handler(req, res) {
   if (cors(req, res, ['GET'])) return;
 
@@ -44,7 +66,7 @@ export default async function handler(req, res) {
   if (!user.is_admin && !cliente_id) {
     return res.status(403).json({ error: 'Usuário sem cliente associado.' });
   }
-  const periodo = req.query.periodo || '30'; // in days
+  const periodo = normalizarPeriodoFunil(req.query.periodo);
 
   try {
     let cliWhere = '';
@@ -56,9 +78,13 @@ export default async function handler(req, res) {
       params.push(cliente_id);
     }
     
-    // Add period parameter
-    params.push(parseInt(periodo, 10));
-    const periodIdx = paramIdx;
+    let periodIdx = null;
+    if (periodo.tipo === 'dias') {
+      params.push(periodo.dias);
+      periodIdx = paramIdx++;
+    }
+    const leadsPeriodWhere = periodoFunilSql('created_at', periodo, periodIdx);
+    const salesPeriodWhere = periodoFunilSql('sale_closed_at', periodo, periodIdx);
 
     // 1. Overview and Funnel
     const overviewQ = await pool.query(`
@@ -72,7 +98,7 @@ export default async function handler(req, res) {
         AVG(EXTRACT(EPOCH FROM (first_response_at - created_at))/60) as avg_response_min,
         AVG(EXTRACT(EPOCH FROM (sale_closed_at - created_at))/86400) as avg_cycle_days
       FROM leads_tracking
-      WHERE created_at > NOW() - INTERVAL '1 day' * $${periodIdx}
+      WHERE ${leadsPeriodWhere}
       ${cliWhere}
     `, params);
 
@@ -86,7 +112,7 @@ export default async function handler(req, res) {
         COUNT(*) FILTER (WHERE lead_origin != 'ctwa' AND lead_origin != 'google' AND lead_origin IS NOT NULL AND lead_origin != '') as other,
         COUNT(*) FILTER (WHERE lead_origin IS NULL OR lead_origin = '' OR lead_origin = 'organic') as untracked
       FROM leads_tracking
-      WHERE created_at > NOW() - INTERVAL '1 day' * $${periodIdx}
+      WHERE ${leadsPeriodWhere}
       ${cliWhere}
       GROUP BY DATE(created_at), TO_CHAR(created_at, 'DD Mon')
       ORDER BY DATE(created_at) ASC
@@ -100,7 +126,7 @@ export default async function handler(req, res) {
         COUNT(*) as count,
         SUM(valor_venda) as revenue
       FROM leads_tracking
-      WHERE sale_closed_at > NOW() - INTERVAL '1 day' * $${periodIdx}
+      WHERE ${salesPeriodWhere}
       ${cliWhere}
       GROUP BY DATE(sale_closed_at), TO_CHAR(sale_closed_at, 'DD Mon')
       ORDER BY DATE(sale_closed_at) ASC
