@@ -88,11 +88,25 @@ async function setup() {
 
     // Adicionando vínculos na tabela Usuários
     await client.query(`
-      ALTER TABLE public.usuarios 
+      ALTER TABLE public.usuarios
       ADD COLUMN IF NOT EXISTS cliente_id INTEGER REFERENCES public.clientes(id),
       ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE;
     `);
     console.log('✅ Permissões de agência (cliente_id, is_admin) injetadas na tabela "usuarios".');
+
+    // Wizard de Onboarding: estado de progresso por usuário (não por cliente —
+    // admin "de banco" não tem cliente_id, então precisa morar em usuarios).
+    await client.query(`
+      ALTER TABLE public.usuarios
+      ADD COLUMN IF NOT EXISTS onboarding_completo BOOLEAN DEFAULT FALSE,
+      ADD COLUMN IF NOT EXISTS onboarding_perfil VARCHAR(20);
+    `);
+    // Contas já existentes antes desta migração não devem ver o wizard —
+    // só quem se cadastrar depois disso começa com onboarding pendente.
+    await client.query(`
+      UPDATE public.usuarios SET onboarding_completo = TRUE WHERE criado_em < NOW();
+    `);
+    console.log('✅ Onboarding (onboarding_completo, onboarding_perfil) injetado na tabela "usuarios".');
 
     // Adicionando vínculo na tabela Leads_Tracking
     await client.query(`

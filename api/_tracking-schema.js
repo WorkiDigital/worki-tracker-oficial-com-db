@@ -150,6 +150,13 @@ async function createTrackingSchema() {
       ADD COLUMN IF NOT EXISTS capi_token_last4 VARCHAR(6),
       ADD COLUMN IF NOT EXISTS capi_token_updated_at TIMESTAMP;
 
+      ALTER TABLE public.usuarios
+      ADD COLUMN IF NOT EXISTS onboarding_completo BOOLEAN DEFAULT FALSE,
+      ADD COLUMN IF NOT EXISTS onboarding_perfil VARCHAR(20);
+
+      UPDATE public.usuarios SET onboarding_completo = TRUE WHERE criado_em < '2026-07-14 00:00:00' AND onboarding_completo IS FALSE;
+
+
       CREATE INDEX IF NOT EXISTS idx_capture_cliente_instance
         ON public.lead_capture_settings(cliente_id, instance_name);
       CREATE INDEX IF NOT EXISTS idx_tracking_campaigns_cliente

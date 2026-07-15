@@ -308,25 +308,37 @@ export default async function handler(req, res) {
     // Aceita nomes alternativos (keyword, utm_term) para robustez.
     const googleAdsKeyword = adParam(q.keyword || q.utm_term, 255);
 
-    await client.query(
-      `INSERT INTO tracking_clicks
-        (tracking_id, campaign_id, destination_id, cliente_id, status,
-         utm_source, utm_medium, utm_campaign, utm_content, referrer, ip_address, user_agent,
-         whatsapp_number, instance_name, fbclid, fbc, fbp, pageview_event_id, event_source_url,
-         geo_city, geo_region, geo_region_code, geo_country, geo_country_code,
-         placement, ad_id, adset_id, meta_campaign_id, gclid, google_ads_keyword, expires_at,
-         gbraid, wbraid)
-       VALUES ($1,$2,$3,$4,'clicked',$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29, NOW() + INTERVAL '72 hours',$30,$31)`,
-      [trackingId, campaign.id, destino.id, campaign.cliente_id,
-       utm_source, utm_medium, utm_campaign, utm_content, referrer, ip, userAgent,
-       destino.whatsapp_number, destino.instance_name, fbclid, fbc, fbp, pageviewEventId, eventSourceUrl,
-       geo?.city || null, geo?.region || null, geo?.region_code || null,
-       geo?.country || null, geo?.country_code || null,
-       placement, ad_id, adset_id, metaCampaignId, gclid, googleAdsKeyword,
-       gbraid, wbraid]
-    );
+    // Teste de rastreamento do wizard de onboarding: confirma que o link
+    // resolve/tem destino disponível sem gravar um clique falso nas métricas
+    // reais do cliente. Único desvio — resto da validação roda normalmente.
+    const isOnboardingTest = req.headers['x-onboarding-test'] === '1';
+    if (!isOnboardingTest) {
+      await client.query(
+        `INSERT INTO tracking_clicks
+          (tracking_id, campaign_id, destination_id, cliente_id, status,
+           utm_source, utm_medium, utm_campaign, utm_content, referrer, ip_address, user_agent,
+           whatsapp_number, instance_name, fbclid, fbc, fbp, pageview_event_id, event_source_url,
+           geo_city, geo_region, geo_region_code, geo_country, geo_country_code,
+           placement, ad_id, adset_id, meta_campaign_id, gclid, google_ads_keyword, expires_at,
+           gbraid, wbraid)
+         VALUES ($1,$2,$3,$4,'clicked',$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29, NOW() + INTERVAL '72 hours',$30,$31)`,
+        [trackingId, campaign.id, destino.id, campaign.cliente_id,
+         utm_source, utm_medium, utm_campaign, utm_content, referrer, ip, userAgent,
+         destino.whatsapp_number, destino.instance_name, fbclid, fbc, fbp, pageviewEventId, eventSourceUrl,
+         geo?.city || null, geo?.region || null, geo?.region_code || null,
+         geo?.country || null, geo?.country_code || null,
+         placement, ad_id, adset_id, metaCampaignId, gclid, googleAdsKeyword,
+         gbraid, wbraid]
+      );
+    }
 
     await client.query('COMMIT');
+
+    if (isOnboardingTest) {
+      // Encerra aqui: nada de CAPI/Pixel/logs para um teste sintético.
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ ok: true, destino: destino.whatsapp_number }));
+    }
 
     // Busca o pixel CAPI Web e as credenciais de Google Ads do cliente (uma única
     // consulta, reaproveitada tanto pro Pixel JS/CAPI server quanto pro gtag.js).

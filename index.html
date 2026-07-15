@@ -15,6 +15,7 @@
     <link rel="stylesheet" href="css/dashboard.css?v=20260713-kanban2">
     <link rel="stylesheet" href="css/splash.css?v=20260712-1">
     <link rel="stylesheet" href="css/funil.css?v=20260713-1">
+    <link rel="stylesheet" href="css/onboarding.css?v=20260715-1">
     <script defer src="js/utils.js?v=20260712-1"></script>
     <script defer src="js/funil.js?v=20260713-2"></script>
 </head>
@@ -2812,19 +2813,25 @@ async function init() {
         AUTH_TOKEN = token;
 
         // Busca permissões frescas do banco — garante que mudanças feitas pelo admin
-        // sejam aplicadas imediatamente no F5, sem exigir logout.
-        if (!user.is_admin) {
-            try {
-                const meRes = await authFetch('/api/me');
-                if (meRes.ok) {
-                    const meData = await meRes.json();
-                    if (meData.permissoes) {
-                        user.permissoes = meData.permissoes;
-                        localStorage.setItem('adlytics_user', JSON.stringify(user));
-                    }
+        // sejam aplicadas imediatamente no F5, sem exigir logout. Sempre chama (não
+        // só para não-admin): também é como descobrimos onboarding_completo/perfil
+        // para os 3 tipos de usuário (admin do .env, admin de banco, cliente), já
+        // que /api/me sabe bifurcar sozinho.
+        let onboardingCompleto = true;
+        try {
+            const meRes = await authFetch('/api/me');
+            if (meRes.ok) {
+                const meData = await meRes.json();
+                if (!user.is_admin && meData.permissoes) {
+                    user.permissoes = meData.permissoes;
+                    localStorage.setItem('adlytics_user', JSON.stringify(user));
                 }
-            } catch (_) { /* fallback silencioso: usa permissões do JWT */ }
-        }
+                if (typeof meData.onboarding_completo === 'boolean') {
+                    onboardingCompleto = meData.onboarding_completo;
+                }
+                user.onboarding_perfil = meData.onboarding_perfil || null;
+            }
+        } catch (_) { /* fallback silencioso: usa permissões do JWT, nunca trava o dashboard */ }
 
         $('userEmail').textContent = user.email;
 
@@ -2865,6 +2872,13 @@ async function init() {
     } catch(_) {
         window.location.href = 'login.html';
         return;
+    }
+
+    // Wizard de onboarding: nunca abre para o admin do .env (id 0, sem linha
+    // em "usuarios") — a UI de base (sidebar, primeira aba) já está montada
+    // por baixo, então o wizard é só um overlay não-bloqueante por cima.
+    if (!onboardingCompleto && user.id) {
+        try { abrirWizardOnboarding(user); } catch (_) { /* nunca travar o dashboard por causa do wizard */ }
     }
 
     carregarMetricsCfg();
@@ -6282,6 +6296,7 @@ function resetLeadSearchAutofill() {
 <script defer src="js/admin.js?v=20260714-3"></script>
 <script defer src="js/reports-auto.js?v=20260712-1"></script>
 <script defer src="js/captacao.js?v=20260714-2"></script>
+<script defer src="js/onboarding.js?v=20260715-1"></script>
 
 <!-- Drawer Perfil do Lead (4 abas) — deve ficar no final do body para z-index funcionar -->
 <div id="leadProfileDrawer" style="position:fixed;inset:0;z-index:9999;display:none;align-items:stretch;justify-content:flex-end;background:rgba(0,0,0,0.55);" onclick="if(event.target===this)fecharPerfilLead()">
@@ -6363,6 +6378,37 @@ function resetLeadSearchAutofill() {
       </div>
     </div>
   </div>
+</div>
+
+<!-- Wizard de Onboarding -->
+<div id="onboardingWizard" class="onb-overlay" role="dialog" aria-modal="true">
+  <div class="onb-shell">
+    <div class="onb-header">
+      <div class="onb-header-top">
+        <h2>Configuração inicial</h2>
+        <button class="onb-skip" onclick="onbFechar()">Pular por agora</button>
+      </div>
+      <div class="onb-steps" id="onbSteps"></div>
+    </div>
+    <div class="onb-body" id="onbBody"></div>
+    <div class="onb-footer">
+      <button class="onb-btn onb-btn-ghost" id="onbBtnVoltar" onclick="onbVoltar()">Voltar</button>
+      <button class="onb-btn onb-btn-primary" id="onbBtnAvancar" onclick="onbAvancarOuConcluir()">Avançar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Checklist persistente de onboarding -->
+<div id="onbChecklistBadge">
+  <div class="onb-badge-panel" id="onbBadgePanel">
+    <h4>Configuração inicial</h4>
+    <div id="onbBadgeItens"></div>
+    <button class="onb-badge-continue" onclick="onbContinuarDoChecklist()">Continuar configuração</button>
+  </div>
+  <button class="onb-badge-btn" onclick="onbToggleBadgePanel()" title="Configuração inicial">
+    <i data-lucide="list-checks" style="width:20px;height:20px;"></i>
+    <span class="onb-badge-count" id="onbBadgeCount">0/5</span>
+  </button>
 </div>
 </body>
 </html>

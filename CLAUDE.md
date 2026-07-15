@@ -1168,3 +1168,36 @@ requisição lenta da conversa antiga sobrescreva a nova; (3) o auto-select de `
 continua servindo a versão antiga cacheada, e a correção "não funciona" mesmo com deploy OK. Isso
 causou várias sessões de "o bug voltou" que eram só cache. **Todo commit que mexe nesses arquivos
 DEVE bumpar o `?v=` correspondente no `index.html`** (padrão `?v=AAAAMMDD-N`).
+
+## 🔙 Tentativa de separar Front e API em 2 serviços — REVERTIDA (2026-07-14)
+
+Houve uma tentativa completa de separar o `server.js` único (front+API+webhooks+crons juntos) em
+dois serviços EasyPanel independentes: `server-api.js` (só `/api/*`, `/r/*`, `/redirect/*`,
+`/js/wapptrack.js`, health, crons) e `server-static.js` (só HTML/CSS/JS/img, com
+`window.APP_CONFIG.API_BASE_URL` injetado via `/runtime-config.js`). Chegou a ser implementada,
+mesclada no `main` e testada em produção nos dois serviços novos (`worki-tracker-oficial-2-api` e
+`worki-tracker-oficial-2-front`) — **mas foi revertida por decisão do usuário antes da migração
+completa** (commit de revert `3dffecf`, desfaz `6e06740`..`2db01a9`).
+
+**Estado atual: voltamos 100% ao `server.js` único** (front+API+webhooks+crons no mesmo processo,
+mesmo domínio) — é o único servidor válido hoje. `server-api.js`/`server-static.js` **não existem
+mais no repositório**. Não recriar essa separação sem alinhamento explícito do usuário.
+
+### Armadilhas descobertas nessa tentativa (úteis se a separação for retomada no futuro)
+- **Nixpacks ignora o "Comando de início" customizado da UI do EasyPanel** e cai no `npm start`
+  padrão do `package.json` — aconteceu nos DOIS serviços novos (front e depois API), mesmo com o
+  campo visivelmente preenchido corretamente (`npm run start:static` / `npm run start:api`) e
+  salvo. **Só um rebuild sem cache** (opção separada do botão normal "Implantar") resolveu — um
+  redeploy normal não bastou.
+- **Cada serviço novo no EasyPanel precisa da própria Deploy Key SSH** no GitHub, mesmo apontando
+  pro mesmo repositório de um serviço que já funciona — copiar a URL do repo não é suficiente.
+- **Caminho de Build deve ser `/`** mesmo quando a intenção é "puxar só a pasta `api/`" ou "só o
+  front" — não existe uma pasta física separada para cada parte neste repo (é o mesmo código,
+  arquivos de entrada diferentes). Configurar `/api` ou `/front` como Caminho de Build faz o
+  Nixpacks procurar um `package.json` que não existe ali e falhar.
+- **`ALLOWED_ORIGINS` não é "qual URL essa API tem"** — é a lista de domínios do FRONT autorizados a
+  chamar a API (CORS). Colocar a própria URL da API ali é erro comum e não faz nada de útil.
+- Ao trocar de branch de trabalho (`refactor/separate-frontend-api-services`) e voltar pro `main`,
+  usar `git stash` para não perder mudanças não commitadas de outra frente (ex: remoção do sistema
+  de Score, que rodava em paralelo) — depois `git stash pop` mescla sem conflito se os arquivos não
+  se sobrepuserem.

@@ -19,8 +19,9 @@ export default async function handler(req, res) {
     return res.status(403).json({ error: 'Conta de administrador do sistema não pode ser editada pelo painel.' });
   }
 
-  const { email, senhaAtual, novaSenha } = req.body || {};
-  if (!email && !novaSenha) {
+  const { email, senhaAtual, novaSenha, onboarding_perfil, onboarding_completo } = req.body || {};
+  const temCamposOnboarding = onboarding_perfil !== undefined || onboarding_completo !== undefined;
+  if (!email && !novaSenha && !temCamposOnboarding) {
     return res.status(400).json({ error: 'Nada para atualizar.' });
   }
 
@@ -53,6 +54,15 @@ export default async function handler(req, res) {
       if (!ok) return res.status(401).json({ error: 'Senha atual incorreta.' });
       const hash = await bcrypt.hash(novaSenha, 10);
       sets.push(`senha_hash = $${i++}`); params.push(hash);
+    }
+
+    // Progresso do wizard de onboarding — gravado de forma otimista a cada
+    // etapa concluída (perfil na etapa 1, conclusão total na etapa 7).
+    if (onboarding_perfil !== undefined) {
+      sets.push(`onboarding_perfil = $${i++}`); params.push(onboarding_perfil);
+    }
+    if (onboarding_completo === true) {
+      sets.push(`onboarding_completo = $${i++}`); params.push(true);
     }
 
     if (!sets.length) return res.status(200).json({ ok: true, unchanged: true });

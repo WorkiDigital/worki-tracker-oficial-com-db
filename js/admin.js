@@ -1,3 +1,19 @@
+// Traduz erros crus da Evolution API em mensagens amigáveis, sem esconder a
+// causa quando nenhum padrão conhecido é reconhecido (nunca mascarar o erro).
+function onbTraduzErroWa(mensagemCrua) {
+    const msg = String(mensagemCrua || '').toLowerCase();
+    if (/already (exists|in use)|já existe|em uso/.test(msg)) {
+        return 'Já existe uma conexão com esse nome. Escolha outro nome e tente novamente.';
+    }
+    if (/unauthorized|401|forbidden|403|invalid.*key|apikey/.test(msg)) {
+        return 'Erro de autenticação com o servidor de WhatsApp. Contate o suporte.';
+    }
+    if (/timeout|timed out|econnrefused|failed to fetch|network|fetch failed/.test(msg)) {
+        return 'Não foi possível falar com o servidor de WhatsApp agora. Tente novamente em instantes.';
+    }
+    return mensagemCrua;
+}
+
 // ── Admin: Clientes/Agências (SaaS) ────────────────────────────
 function abrirModalAddCliente() {
     $('novoCliNome').value = '';
@@ -28,6 +44,10 @@ async function salvarNovoCliente() {
         });
         const data = await r.json();
         if (!r.ok || data.error) throw new Error(data.error || `Erro ao criar cliente (HTTP ${r.status})`);
+
+        // Exposto para o wizard de onboarding poder setar clienteAdminSelecionado
+        // e seguir para as próximas etapas sem precisar reabrir o modal.
+        window._ultimoClienteCriadoId = data.cliente_id || null;
 
         $('modalAddCliente').classList.remove('open');
         // Limpar campos
@@ -114,8 +134,8 @@ function switchEditTab(tab) {
     });
 }
 
-function abrirEditCliente(id) {
-    switchEditTab('dados');
+function abrirEditCliente(id, abaInicial = 'dados') {
+    switchEditTab(abaInicial);
     const c = (window._clientesMap || {})[id] || { id };
     $('editCliId').value        = c.id;
     $('editCliNome').value      = c.nome || '';
@@ -462,7 +482,7 @@ async function waCreateInstance() {
             throw new Error("Não foi possível gerar a imagem Base64 do WhatsApp.");
         }
     } catch(e) {
-        toast(e.message, 'error');
+        toast(onbTraduzErroWa(e.message), 'error');
         setWaView('waCreate');
     } finally {
         btn.innerHTML = old; btn.disabled = false;
