@@ -18,8 +18,13 @@
     <link rel="stylesheet" href="css/onboarding.css?v=20260715-1">
     <script defer src="js/utils.js?v=20260712-1"></script>
     <script defer src="js/funil.js?v=20260713-2"></script>
+    <style>
+        /* Previne piscar o dashboard antes de validar o login/redirecionar */
+        body.app-loading .sidebar,
+        body.app-loading .main { opacity: 0; pointer-events: none; }
+    </style>
 </head>
-<body>
+<body class="app-loading">
 
 <!-- Premium Splash Overlay -->
 <div id="premiumSplash" class="premium-splash" style="display: none;">
@@ -2833,6 +2838,7 @@ async function init() {
             }
         } catch (_) { /* fallback silencioso: usa permissões do JWT, nunca trava o dashboard */ }
 
+        document.body.classList.remove('app-loading');
         $('userEmail').textContent = user.email;
 
         if (user.is_admin) {
