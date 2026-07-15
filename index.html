@@ -14,10 +14,10 @@
          Não incluir aqui — evita baixar ~500KB em toda sessão mesmo sem abrir Anúncios ou exportar PDF. -->
     <link rel="stylesheet" href="css/dashboard.css?v=20260715-conta1">
     <link rel="stylesheet" href="css/splash.css?v=20260712-1">
-    <link rel="stylesheet" href="css/funil.css?v=20260715-smart1">
+    <link rel="stylesheet" href="css/funil.css?v=20260713-1">
     <link rel="stylesheet" href="css/onboarding.css?v=20260715-1">
     <script defer src="js/utils.js?v=20260712-1"></script>
-    <script defer src="js/funil.js?v=20260715-smart1"></script>
+    <script defer src="js/funil.js?v=20260713-2"></script>
     <style>
         /* Previne piscar o dashboard antes de validar o login/redirecionar */
         body.app-loading .sidebar,
@@ -1123,16 +1123,8 @@
         <!-- ABA: FUNIL DE VENDAS -->
         <div id="aba-funil" class="aba-oculta">
             <div class="funil-header">
-                <div class="funil-header-copy">
-                    <div class="funil-kicker"><i data-lucide="chart-no-axes-combined"></i> Relatorio inteligente</div>
-                    <h2>Funil de Vendas</h2>
-                </div>
-                <div class="funil-header-actions">
-                    <button type="button" class="btn btn-ghost btn-sm" onclick="mudarAba('inteligente')" title="Configurar jornada">
-                        <i data-lucide="workflow" style="width:14px;"></i>
-                        <span>Configurar jornada</span>
-                    </button>
-                    <div class="input-group" style="width:200px;">
+                <div></div>
+                <div class="input-group" style="width:200px;">
                     <select id="funilPeriodo" class="bare pad-md" style="width:100%;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none;">
                         <option value="hoje">Hoje</option>
                         <option value="ontem">Ontem</option>
@@ -1142,7 +1134,6 @@
                         <option value="30" selected>Últimos 30 dias</option>
                         <option value="60">Últimos 60 dias</option>
                     </select>
-                    </div>
                 </div>
             </div>
             
@@ -1235,7 +1226,6 @@
                     <div id="fjWrap" class="fj-wrap">
                         <div style="color:var(--muted);font-size:13px;text-align:center;padding:20px;">Carregando...</div>
                     </div>
-                    <div id="fjDropoff" class="fj-dropoff"></div>
                 </div>
 
                 <!-- Bottom Right: Faturamento -->
@@ -1259,11 +1249,6 @@
                     <div class="chart-container">
                         <canvas id="chartFaturamento"></canvas>
                     </div>
-                </div>
-                <div class="funil-card funil-card-wide">
-                    <div class="funil-card-title">Relatorio por campanha</div>
-                    <div id="fjTiming" class="fj-timing-grid"></div>
-                    <div id="frTable" class="funil-report-table"></div>
                 </div>
             </div>
         </div>
