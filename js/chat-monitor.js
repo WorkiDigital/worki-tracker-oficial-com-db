@@ -116,7 +116,10 @@ async function chatLoadClientFilter() {
     select.style.display = 'none';
     select.disabled = true;
     if (!user.is_admin) return;
-    const previous = select.value;
+    const globalCliente = typeof clienteAdminSelecionado !== 'undefined' && clienteAdminSelecionado
+        ? String(clienteAdminSelecionado)
+        : '';
+    const previous = globalCliente || select.value;
     select.innerHTML = '<option value="">Carregando clientes...</option>';
     try {
         const res = await authFetch('/api/chat-messages?action=list_clients');
@@ -141,7 +144,11 @@ async function chatLoadInstances() {
     select.innerHTML = '<option value="">Todas as instancias</option>';
     try {
         const params = new URLSearchParams({ action: 'list' });
-        const cliente = $('chatClienteFilter')?.value || '';
+        const cliente = chatClienteFiltroAtual();
+        const chatClienteSelect = $('chatClienteFilter');
+        if (cliente && chatClienteSelect && chatClienteSelect.value !== String(cliente)) {
+            chatClienteSelect.value = String(cliente);
+        }
         if (cliente) params.set('target_cliente_id', cliente);
         const res = await authFetch(`/api/evo-manager?${params.toString()}`);
         const instances = await readApiJson(res, 'Falha ao carregar instancias');
