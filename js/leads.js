@@ -340,7 +340,7 @@ function renderTabela() {
         const dica = temBusca
             ? 'Tente outro nome ou telefone.'
             : 'Ajuste o período no filtro acima ou aguarde novos contatos.';
-        tbody.innerHTML = `<tr><td colspan="13" style="text-align:center;padding:48px 20px;color:var(--muted);">
+        tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:48px 20px;color:var(--muted);">
             <i data-lucide="users-round" style="width:34px;height:34px;opacity:.4;display:block;margin:0 auto 12px;"></i>
             <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px;">${msg}</div>
             <div style="font-size:12px;">${dica}</div>
@@ -368,12 +368,8 @@ function renderTabela() {
         const agendado = status === 'agendado';
         const stColor  = purchase ? '#10b981' : agendado ? '#f59e0b' : '';
         const stBorder = purchase ? '1px solid rgba(16,185,129,.3)' : agendado ? '1px solid rgba(245,158,11,.3)' : 'transparent';
-        const msg      = (lead.mensagem_recebida||'Sem mensagem').substring(0,35);
         const temCapi  = true; // O backend busca o pixel do cliente via banco de dados 
         const data     = tempoRelativo(lead.event_time||lead.created_at);
-
-        // Tempo no Funil
-        const tempoFunil = tempoRelativo(lead.created_at || lead.event_time);
 
         // Campanha / Conjunto / Anúncio
         const campanha = lead.utm_campaign || '—';
@@ -401,11 +397,9 @@ function renderTabela() {
                 ${anuncio ? `<div style="font-size:11px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(anuncio)}</div>` : `<div style="font-size:11px;color:var(--muted);">—</div>`}
             </td>
             <td data-label="Origem">${origemBadge}</td>
-            <td data-label="Mensagem" title="${esc(lead.mensagem_recebida)}" style="max-width:180px;overflow:hidden;text-overflow:ellipsis;">${esc(msg)}${lead.mensagem_recebida?.length>35?'…':''}</td>
             <td data-label="Instância" style="font-size:12px;color:var(--muted);">${esc(lead.instancia||'—')}</td>
             <td data-label="Plataforma" style="text-align:center;"><div class="platform-icon ${platCls}" title="${esc(plataformaLabel)}">${_PLATFORM_ICONS[platCls] || ''}</div></td>
             <td data-label="Data" title="${esc(lead.event_time)}" style="white-space:nowrap;">${data}</td>
-            <td data-label="Funil" style="font-size:11px;font-weight:600;">${tempoFunil}</td>
             <td style="white-space:nowrap;"><div style="display:inline-flex;gap:4px;align-items:center;">
                 <button class="btn btn-sm" onclick="abrirPerfilLead(${lead.id})" title="Ver perfil completo do lead" style="background:rgba(99,102,241,0.1);color:#6366f1;border:1px solid rgba(99,102,241,0.3);padding:2px 8px;display:inline-flex;align-items:center;justify-content:center;"><i data-lucide="user" style="width:12px;"></i></button>
                 <button class="btn btn-sm" onclick="abrirConversaDoLead(${lead.id})" title="Abrir conversa no WhatsApp" style="background:rgba(37,211,102,0.1);color:#128c4a;border:1px solid rgba(37,211,102,0.35);padding:2px 8px;display:inline-flex;align-items:center;justify-content:center;"><i data-lucide="message-circle" style="width:12px;"></i></button>
@@ -515,9 +509,7 @@ function renderKanbanCard(lead) {
     const idx = dadosFiltrados.findIndex(l => Number(l.id) === Number(lead.id));
     const statusKey = getLeadStatusKey(lead.status);
     const origemInfo = obterOrigemLead(lead.lead_origin);
-    const msg = (lead.mensagem_recebida || 'Sem mensagem').trim();
     const anuncio = lead.utm_content || lead.utm_campaign || 'Sem anuncio';
-    const tempoFunil = tempoRelativo(lead.created_at || lead.event_time);
 
     return `<article class="kanban-card" draggable="true" data-lead-id="${Number(lead.id)}" ondragstart="kanbanDragStart(event, ${Number(lead.id)})" ondragend="kanbanDragEnd(event)">
         <div class="kanban-card-top">
@@ -531,10 +523,8 @@ function renderKanbanCard(lead) {
             <span class="kanban-origin" style="background:${origemInfo.bg};color:${origemInfo.color};border-color:${origemInfo.border};">${origemInfo.label}</span>
             <span class="kanban-status-mini">${esc(LEAD_KANBAN_COLUMNS.find(c => c.key === statusKey)?.label || 'Lead')}</span>
         </div>
-        <div class="kanban-message" title="${esc(msg)}">${esc(msg.substring(0, 92))}${msg.length > 92 ? '...' : ''}</div>
         <div class="kanban-meta">
             <span title="${esc(anuncio)}">${esc(anuncio)}</span>
-            <strong>${tempoFunil}</strong>
         </div>
         <div class="kanban-actions">
             <button type="button" onclick="abrirPerfilLead(${Number(lead.id)})" title="Ver perfil"><i data-lucide="user"></i></button>
