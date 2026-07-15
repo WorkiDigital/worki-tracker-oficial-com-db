@@ -163,6 +163,7 @@ const PERIODOS_LOCAIS = ['hoje', 'ontem', 'hojeOntem'];
 function onPeriodoChange() {
     const v = $('periodoSelect').value;
     $('areaPersonalizada').style.display = v === 'personalizado' ? 'flex' : 'none';
+    syncRelatorioPeriodo();
     if (v === 'personalizado') return; // só recarrega no botão OK
 
     // Só dá pra refiltrar a memória (instantâneo) se o que ESTÁ carregado é
@@ -174,6 +175,55 @@ function onPeriodoChange() {
         return;
     }
     // Demais casos rebuscam do backend (dados frescos e completos).
+    recarregarLeads();
+}
+
+function syncRelatorioPeriodo() {
+    const main = $('periodoSelect');
+    const rel = $('relatorioPeriodoSelect');
+    if (!main || !rel) return;
+
+    rel.value = main.value || 'hojeOntem';
+    const isCustom = rel.value === 'personalizado';
+    const custom = $('relatorioAreaPersonalizada');
+    if (custom) custom.style.display = isCustom ? 'flex' : 'none';
+
+    if ($('relatorioDataInicio') && $('dataInicio')) $('relatorioDataInicio').value = $('dataInicio').value || '';
+    if ($('relatorioDataFim') && $('dataFim')) $('relatorioDataFim').value = $('dataFim').value || '';
+}
+
+function onRelatorioPeriodoChange() {
+    const rel = $('relatorioPeriodoSelect');
+    const main = $('periodoSelect');
+    if (!rel || !main) return;
+
+    main.value = rel.value;
+    const isCustom = rel.value === 'personalizado';
+    if ($('relatorioAreaPersonalizada')) $('relatorioAreaPersonalizada').style.display = isCustom ? 'flex' : 'none';
+    if ($('areaPersonalizada')) $('areaPersonalizada').style.display = isCustom ? 'flex' : 'none';
+
+    if (isCustom) {
+        if ($('relatorioDataInicio') && $('dataInicio')) $('relatorioDataInicio').value = $('dataInicio').value || '';
+        if ($('relatorioDataFim') && $('dataFim')) $('relatorioDataFim').value = $('dataFim').value || '';
+        return;
+    }
+
+    onPeriodoChange();
+}
+
+function aplicarRelatorioPeriodoPersonalizado() {
+    const ini = $('relatorioDataInicio')?.value || '';
+    const fim = $('relatorioDataFim')?.value || '';
+    if (!ini || !fim) {
+        toast('Informe a data inicial e final.', 'warning');
+        return;
+    }
+
+    if ($('periodoSelect')) $('periodoSelect').value = 'personalizado';
+    if ($('dataInicio')) $('dataInicio').value = ini;
+    if ($('dataFim')) $('dataFim').value = fim;
+    if ($('areaPersonalizada')) $('areaPersonalizada').style.display = 'flex';
+    syncRelatorioPeriodo();
     recarregarLeads();
 }
 
@@ -787,6 +837,7 @@ function calcMetricasRelatorio(leads) {
 
 async function renderRelatorios() {
     if (typeof ensureChart === 'function') await ensureChart();
+    syncRelatorioPeriodo();
     const total  = dadosFiltrados.length;
     const vendas = dadosFiltrados.filter(l => (l.status||'').toLowerCase() === 'vendido');
     // Qualificados: status "Qualificado" OU que já passaram pela qualificação (qualified_at).

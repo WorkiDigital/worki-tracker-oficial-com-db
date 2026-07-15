@@ -12,7 +12,7 @@
     <script defer src="https://cdn.jsdelivr.net/npm/lucide@0.469.0/dist/umd/lucide.min.js"></script>
     <!-- Chart.js, html2canvas e jsPDF são carregados sob demanda via loadScript() (utils.js).
          Não incluir aqui — evita baixar ~500KB em toda sessão mesmo sem abrir Anúncios ou exportar PDF. -->
-    <link rel="stylesheet" href="css/dashboard.css?v=20260715-conta1">
+    <link rel="stylesheet" href="css/dashboard.css?v=20260715-reportperiod1">
     <link rel="stylesheet" href="css/splash.css?v=20260712-1">
     <link rel="stylesheet" href="css/funil.css?v=20260713-1">
     <link rel="stylesheet" href="css/onboarding.css?v=20260715-1">
@@ -1990,7 +1990,27 @@
 
         <!-- ABA: RELATÓRIOS -->
         <div id="aba-relatorios" class="aba-oculta">
-            <div style="display:flex;justify-content:flex-end;margin-bottom:12px;">
+            <div class="relatorios-toolbar">
+                <div class="ctrl-box relatorios-periodo">
+                    <i data-lucide="calendar" style="width:14px;color:var(--muted);flex-shrink:0;"></i>
+                    <select id="relatorioPeriodoSelect" class="bare" onchange="onRelatorioPeriodoChange()">
+                        <option value="hojeOntem">Hoje e Ontem</option>
+                        <option value="hoje">Hoje</option>
+                        <option value="ontem">Ontem</option>
+                        <option value="7dias">7 dias</option>
+                        <option value="14dias">14 dias</option>
+                        <option value="esteMes">Este mês</option>
+                        <option value="mesPassado">Mês passado</option>
+                        <option value="todos">Todo período</option>
+                        <option value="personalizado">Personalizado</option>
+                    </select>
+                </div>
+                <div id="relatorioAreaPersonalizada" class="ctrl-box relatorios-custom" style="display:none;">
+                    <input type="date" id="relatorioDataInicio" style="color-scheme:var(--scheme);border:none;background:transparent;color:var(--text);outline:none;font-size:13px;">
+                    <span style="color:var(--muted);font-size:12px;">→</span>
+                    <input type="date" id="relatorioDataFim" style="color-scheme:var(--scheme);border:none;background:transparent;color:var(--text);outline:none;font-size:13px;">
+                    <button class="btn btn-primary btn-sm" type="button" onclick="aplicarRelatorioPeriodoPersonalizado()">OK</button>
+                </div>
                 <button class="btn btn-ghost btn-sm" id="btnExportRelatorio" onclick="exportarRelatorioPDF()">
                     <i data-lucide="file-down" style="width:14px;"></i> Exportar PDF
                 </button>
@@ -5400,6 +5420,7 @@ function mudarAba(aba) {
         if (typeof chatMonitorInit === 'function') chatMonitorInit();
     }
     if (aba === 'funil') { funilInit(); }
+    if (aba === 'relatorios' && typeof syncRelatorioPeriodo === 'function') { syncRelatorioPeriodo(); }
     if (aba === 'anuncios' && !adsCarregado) carregarContasAds();
     if (aba === 'captacao') { carregarCampanhasLink(); }
     if (aba === 'inteligente') { capIntCarregar(); }
@@ -6305,7 +6326,7 @@ function resetLeadSearchAutofill() {
     input.defaultValue = '';
 }
 </script>
-<script defer src="js/leads.js?v=20260715-chatfix1"></script>
+<script defer src="js/leads.js?v=20260715-reportperiod1"></script>
 <script defer src="js/chat-monitor.js?v=20260715-chatfix1"></script>
 <script defer src="js/admin.js?v=20260714-3"></script>
 <script defer src="js/reports-auto.js?v=20260712-1"></script>
