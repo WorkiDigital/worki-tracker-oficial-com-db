@@ -265,6 +265,41 @@
     </div>
 </div>
 
+<!-- Modal de pareamento via extensão Chrome -->
+<div id="modalExtensaoPareamento" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="tituloExtensaoPareamento" onclick="if(event.target===this) fecharModalExtensaoPareamento()">
+    <div class="modal" style="max-width:420px;">
+        <div class="modal-head">
+            <div class="modal-icon"><i data-lucide="puzzle" style="width:22px;height:22px;" class="text1"></i></div>
+            <div>
+                <h3 id="tituloExtensaoPareamento">Conectar com a extensão</h3>
+                <p>Gere um código para colar na extensão do WappTrack</p>
+            </div>
+            <button class="modal-close" aria-label="Fechar" onclick="fecharModalExtensaoPareamento()"><i data-lucide="x" style="width:16px;"></i></button>
+        </div>
+
+        <div id="extPareamentoForm">
+            <div class="input-group">
+                <label>Número com país e DDD</label>
+                <input type="tel" id="extPareamentoTelefone" placeholder="5511999999999" inputmode="numeric" autocomplete="tel">
+            </div>
+            <p style="font-size:11px;color:var(--muted);margin:-8px 0 14px;">Use o número que já está (ou vai ficar) conectado no WhatsApp Web.</p>
+            <button class="btn-confirm" id="btnGerarCodigoExtensao" onclick="gerarCodigoExtensao()">Gerar código</button>
+        </div>
+
+        <div id="extPareamentoResultado" style="display:none;">
+            <div style="background:var(--tag);border-radius:10px;padding:16px;text-align:center;margin-bottom:14px;">
+                <p style="font-size:11px;color:var(--muted);margin-bottom:8px;">Código para colar na extensão</p>
+                <p id="extPareamentoCodigo" style="font-family:monospace;font-size:22px;font-weight:800;letter-spacing:.05em;word-break:break-word;margin:0 0 8px;"></p>
+                <p id="extPareamentoCountdown" style="font-size:11px;color:var(--muted);margin:0;"></p>
+            </div>
+            <button class="btn btn-ghost" style="width:100%;justify-content:center;margin-bottom:8px;" onclick="copiarCodigoExtensao()">
+                <i data-lucide="copy" style="width:14px;"></i> Copiar código
+            </button>
+            <p style="font-size:11px;color:var(--muted);text-align:center;">Copie e cole na extensão do WappTrack aberta sobre o WhatsApp Web.</p>
+        </div>
+    </div>
+</div>
+
 <!-- Modal Novo Cliente -->
 <div id="modalAddCliente" class="modal-overlay" role="dialog" aria-modal="true" onclick="if(event.target===this) this.classList.remove('open')">
     <div class="modal">
@@ -2306,6 +2341,9 @@
                         <button class="btn btn-ghost btn-sm" onclick="carregarListaWa()">← Voltar</button>
                         <button class="btn btn-ghost btn-sm" id="btnCompartilharWa" onclick="compartilharQrComResponsavel()" style="display:none;">
                             <i data-lucide="share-2" style="width:12px;"></i> Compartilhar com o responsável
+                        </button>
+                        <button class="btn btn-ghost btn-sm" onclick="abrirModalExtensaoPareamento()">
+                            <i data-lucide="puzzle" style="width:12px;"></i> Conectar com a extensão
                         </button>
                     </div>
 

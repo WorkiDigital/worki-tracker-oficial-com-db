@@ -323,6 +323,90 @@ function waCopiarLinkCompartilhado() {
     }
 }
 
+// ── Pareamento via extensão Chrome ────────────────────────────────────────
+// A extensão não gera código nenhum — o painel gera aqui (POST /pairing/create),
+// o usuário cola no popup da extensão, que troca por um JWT próprio e segue o
+// resto do fluxo sozinha (exchange → start → status), sem envolver o painel.
+let _extPareamentoCountdownTimer = null;
+
+function abrirModalExtensaoPareamento() {
+    if (!currentWaInstance) { toast('Gere o QR Code primeiro.', 'error'); return; }
+    $('extPareamentoTelefone').value = '';
+    $('extPareamentoForm').style.display = '';
+    $('extPareamentoResultado').style.display = 'none';
+    $('modalExtensaoPareamento').classList.add('open');
+    if (window.lucide) lucide.createIcons({ nodes: [$('modalExtensaoPareamento')] });
+}
+
+function fecharModalExtensaoPareamento() {
+    $('modalExtensaoPareamento').classList.remove('open');
+    if (_extPareamentoCountdownTimer) { clearInterval(_extPareamentoCountdownTimer); _extPareamentoCountdownTimer = null; }
+}
+
+async function gerarCodigoExtensao() {
+    const telefoneDigitado = $('extPareamentoTelefone').value.replace(/\D/g, '');
+    if (telefoneDigitado.length < 8 || telefoneDigitado.length > 15) {
+        toast('Informe um número válido com país e DDD.', 'error');
+        return;
+    }
+
+    const btn = $('btnGerarCodigoExtensao');
+    const original = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Gerando...';
+
+    try {
+        const r = await authFetch('/api/browser-extension/pairing/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(waComClienteSelecionado({
+                instanceName: currentWaInstance,
+                phoneNumber: telefoneDigitado,
+            })),
+        });
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.code || 'Falha ao gerar o código.');
+
+        $('extPareamentoForm').style.display = 'none';
+        $('extPareamentoResultado').style.display = '';
+        $('extPareamentoCodigo').textContent = data.code;
+        _iniciarCountdownExtensaoPareamento(data.expiresAt);
+    } catch (e) {
+        toast(e.message, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = original;
+    }
+}
+
+function _iniciarCountdownExtensaoPareamento(expiresAtIso) {
+    if (_extPareamentoCountdownTimer) clearInterval(_extPareamentoCountdownTimer);
+    const el = $('extPareamentoCountdown');
+    const atualizar = () => {
+        const restanteMs = new Date(expiresAtIso).getTime() - Date.now();
+        if (restanteMs <= 0) {
+            el.textContent = 'Código expirado — gere um novo.';
+            clearInterval(_extPareamentoCountdownTimer);
+            _extPareamentoCountdownTimer = null;
+            return;
+        }
+        const seg = Math.ceil(restanteMs / 1000);
+        el.textContent = `Expira em ${Math.floor(seg / 60)}:${String(seg % 60).padStart(2, '0')}`;
+    };
+    atualizar();
+    _extPareamentoCountdownTimer = setInterval(atualizar, 1000);
+}
+
+function copiarCodigoExtensao() {
+    const codigo = $('extPareamentoCodigo')?.textContent;
+    if (!codigo) return;
+    if (typeof capCopiar === 'function') {
+        capCopiar(codigo, 'Código copiado!');
+    } else {
+        navigator.clipboard.writeText(codigo).then(() => toast('Código copiado!', 'success'));
+    }
+}
+
 function setWaView(view) {
     if (waPollTimer) {
         clearInterval(waPollTimer);
