@@ -15,7 +15,12 @@ async function createTrackingSchema() {
       ADD COLUMN IF NOT EXISTS utm_source VARCHAR(255),
       ADD COLUMN IF NOT EXISTS utm_medium VARCHAR(255),
       ADD COLUMN IF NOT EXISTS utm_campaign VARCHAR(255),
-      ADD COLUMN IF NOT EXISTS utm_content VARCHAR(255);
+      ADD COLUMN IF NOT EXISTS utm_content VARCHAR(255),
+      ADD COLUMN IF NOT EXISTS first_response_at TIMESTAMP,
+      ADD COLUMN IF NOT EXISTS qualified_at TIMESTAMP,
+      ADD COLUMN IF NOT EXISTS proposal_sent_at TIMESTAMP,
+      ADD COLUMN IF NOT EXISTS sale_closed_at TIMESTAMP,
+      ADD COLUMN IF NOT EXISTS valor_venda NUMERIC(10,2);
 
       CREATE TABLE IF NOT EXISTS public.lead_capture_settings (
         id SERIAL PRIMARY KEY,
