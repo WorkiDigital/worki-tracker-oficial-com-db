@@ -1362,7 +1362,7 @@ async function abrirConversaDoLead(leadId) {
 
     // Carrega/seleciona a conversa (assume o controle da carga, sem trocar de aba).
     if (typeof chatState !== 'undefined') chatState.openingByPhone = true;
-    await chatAbrirConversaPorTelefone(telefone, lead.instancia || '', lead.cliente_id ?? null);
+    await chatAbrirConversaPorTelefone(telefone, lead.instancia || '', lead.cliente_id ?? null, lead.nome || '');
 }
 
 // Fecha o popup e devolve os paineis do monitor ao seu lugar original (a shell da aba Conversas).

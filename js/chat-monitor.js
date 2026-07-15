@@ -6,6 +6,8 @@ const chatState = {
     pollTimer: null,
     searchTimer: null,
     loadingList: false,
+    listRequestId: 0,
+    openingRequestId: 0,
     // Composer
     currentThreadMessages: [],
     optimisticMessages: [],
@@ -190,7 +192,7 @@ async function chatMonitorRefreshCliente() {
 }
 
 async function chatLoadConversations(silent = false) {
-    if (chatState.loadingList) return;
+    const requestId = ++chatState.listRequestId;
     chatState.loadingList = true;
     const list = $('chatConversationsList');
     const count = $('chatConversationCount');
@@ -202,6 +204,7 @@ async function chatLoadConversations(silent = false) {
         const params = chatBuildParams({ action: 'list_conversations' });
         const res = await authFetch(`/api/chat-messages?${params.toString()}`);
         const rows = await readApiJson(res, 'Falha ao carregar conversas');
+        if (chatState.listRequestId !== requestId) return false;
         chatState.allConversations = Array.isArray(rows) ? rows : [];
         chatApplyOrigemFilter();
 
@@ -210,7 +213,7 @@ async function chatLoadConversations(silent = false) {
         if (chatState.openingByPhone) {
             // chatAbrirConversaPorTelefone vai selecionar a conversa exata logo abaixo.
             // Auto-selecionar a primeira aqui causa flash da conversa errada.
-            return;
+            return true;
         }
         if (!stillExists && chatState.conversations.length) {
             await chatSelectConversation(0);
@@ -222,13 +225,21 @@ async function chatLoadConversations(silent = false) {
             // sem re-selecionar o card na lista (evita "piscar" a lista lateral).
             await chatLoadMessages(chatState.selected, true);
         }
+        return true;
     } catch (e) {
+        if (chatState.listRequestId !== requestId) return false;
+        if (chatState.openingByPhone) {
+            chatState.allConversations = [];
+            chatState.conversations = [];
+            chatRenderConversations();
+        }
         if (!silent) {
             if (list) list.innerHTML = `<div class="chat-empty"><i data-lucide="alert-triangle"></i><span>${esc(e.message)}</span></div>`;
             toast(e.message, 'error');
         }
+        return false;
     } finally {
-        chatState.loadingList = false;
+        if (chatState.listRequestId === requestId) chatState.loadingList = false;
     }
 }
 
@@ -245,6 +256,38 @@ function chatApplyOrigemFilter() {
 
 function chatConversationKey(c) {
     return `${c.cliente_id}|${c.instance}|${c.telefone}`;
+}
+
+function chatRenderOpeningConversation(target, message = 'Carregando conversa...', loading = true) {
+    const box = $('chatMessagesList');
+    const title = $('chatThreadTitle');
+    const meta = $('chatThreadMeta');
+    const lead = $('chatLeadCard');
+    const icon = loading ? 'loader-2' : 'messages-square';
+    const iconClass = loading ? ' class="spinner"' : '';
+    const name = target.lead_nome || target.push_name || target.telefone;
+    const instance = target.instance || 'Todas instancias';
+
+    chatState.selected = null;
+    chatState.currentThreadMessages = [];
+    chatState.optimisticMessages = [];
+    chatAutoloadedIds.clear();
+    if (title) title.textContent = name;
+    if (meta) meta.textContent = `${target.telefone} - ${instance}`;
+    if (box) box.innerHTML = `<div class="chat-empty"><i data-lucide="${icon}"${iconClass}></i><span>${esc(message)}</span></div>`;
+    if (lead) {
+        lead.innerHTML = loading
+            ? '<div class="chat-empty compact"><i data-lucide="loader-2" class="spinner"></i><span>Carregando lead...</span></div>'
+            : `<div class="chat-lead-empty">
+                <i data-lucide="user-round"></i>
+                <strong>${esc(name)}</strong>
+                <span>${esc(target.telefone)}</span>
+                <small>${esc(instance)}</small>
+            </div>`;
+    }
+    chatRenderConversations();
+    chatMobileShowThread();
+    if (window.lucide?.createIcons) lucide.createIcons();
 }
 
 // Assinatura leve para detectar se a lista de mensagens de uma thread mudou entre
@@ -294,10 +337,19 @@ function chatRenderConversations() {
 // conversa recente (retenção de 15 dias). É chamada logo após mudarAba('conversas'),
 // que já dispara chatMonitorInit() em paralelo — por isso aqui aguardamos o init
 // completo (idempotente) e recarregamos a lista com o filtro certo, evitando corrida.
-async function chatAbrirConversaPorTelefone(telefone, instance, clienteId) {
+async function chatAbrirConversaPorTelefone(telefone, instance, clienteId, leadName = '') {
     const tel = String(telefone || '').replace(/\D/g, '');
     if (!tel) { toast('Lead sem telefone válido.', 'error'); return; }
 
+    const requestId = ++chatState.openingRequestId;
+    const target = {
+        telefone: tel,
+        instance: instance || '',
+        cliente_id: clienteId,
+        lead_nome: leadName || '',
+        push_name: leadName || '',
+    };
+    chatRenderOpeningConversation(target);
     chatState.openingByPhone = true;
     try {
         // Garante bind/filtros carregados uma vez (mesma guarda de chatMonitorInit).
@@ -305,7 +357,9 @@ async function chatAbrirConversaPorTelefone(telefone, instance, clienteId) {
             chatState.initialized = true;
             chatBindEvents();
             await chatLoadClientFilter();
+            if (chatState.openingRequestId !== requestId) return;
             await chatLoadInstances();
+            if (chatState.openingRequestId !== requestId) return;
         }
 
         // Admin: aponta o filtro de cliente para o cliente do lead (não-admin já é
@@ -324,7 +378,12 @@ async function chatAbrirConversaPorTelefone(telefone, instance, clienteId) {
         if (inst) inst.value = '';
 
         chatState.selected = null;
-        await chatLoadConversations(false);
+        const loaded = await chatLoadConversations(false);
+        if (chatState.openingRequestId !== requestId) return;
+        if (!loaded) {
+            chatRenderOpeningConversation(target, 'Erro ao carregar conversa. Tente atualizar.', false);
+            return;
+        }
         chatStartPolling();
 
         // Localiza a conversa exata (cliente|instance|telefone). Se a instância não
@@ -341,11 +400,13 @@ async function chatAbrirConversaPorTelefone(telefone, instance, clienteId) {
 
         if (idx === -1) {
             toast('Sem conversa recente para este lead (retenção de 15 dias).', 'warning');
+            chatRenderOpeningConversation(target, 'Sem conversa recente para este lead (retencao de 15 dias).', false);
             return;
         }
+        if (chatState.openingRequestId !== requestId) return;
         await chatSelectConversation(idx);
     } finally {
-        chatState.openingByPhone = false;
+        if (chatState.openingRequestId === requestId) chatState.openingByPhone = false;
     }
 }
 
