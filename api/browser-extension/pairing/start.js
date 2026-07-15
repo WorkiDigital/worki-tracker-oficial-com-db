@@ -3,6 +3,11 @@
 // para iniciar o pareamento por número — é a ÚNICA rota que conhece a
 // EVOLUTION_GLOBAL_KEY neste fluxo. Idempotente: se já existe um pairingCode
 // válido não expirado, devolve o mesmo sem rechamar a Evolution.
+//
+// Telefone: normalmente já chega definido (detectado em exchange.js). Se
+// detecção falhou lá (ex: conta @lid não resolvida), este é o último ponto
+// onde a extensão pode enviar o telefone confirmado manualmente pelo
+// usuário — sem ele, PHONE_REQUIRED (não há como chamar a Evolution).
 import { getPool } from '../../_db.js';
 import { encryptToken, decryptToken } from '../../_crypto.js';
 import { rateLimitByIp } from '../../_rate-limit-ip.js';
@@ -26,7 +31,8 @@ export default async function handler(req, res) {
   await ensureExtensionPairingSchema();
 
   const pairingRequestId = String(req.body?.pairingRequestId || '');
-  const detectedPhone = normalizePhone(String(req.body?.detectedPhoneNumber || ''));
+  const rawPhone = String(req.body?.detectedPhoneNumber || req.body?.phoneNumber || '').trim();
+  const suppliedPhone = rawPhone ? normalizePhone(rawPhone) : null;
 
   if (pairingRequestId !== auth.pairing_id) {
     return res.status(403).json({ code: 'PAIRING_SCOPE_MISMATCH' });
@@ -48,9 +54,23 @@ export default async function handler(req, res) {
     }
     return res.status(409).json({ code: 'PAIRING_NOT_AVAILABLE' });
   }
-  // Best-effort: hoje a extensão sempre manda null aqui (ver exchange.js).
-  if (detectedPhone && detectedPhone !== pairing.expected_phone) {
+  let expectedPhone = pairing.expected_phone;
+  if (expectedPhone && suppliedPhone && suppliedPhone !== expectedPhone) {
     return res.status(409).json({ code: 'PHONE_MISMATCH' });
+  }
+  if (!expectedPhone) {
+    // Nem create() nem exchange() conseguiram um telefone (detecção falhou,
+    // ex: conta @lid ainda não resolvida) — este é o último ponto do fluxo
+    // onde a extensão pode enviar o número confirmado manualmente pelo
+    // usuário. Sem ele, não há como chamar a Evolution.
+    if (!suppliedPhone) {
+      return res.status(400).json({ code: 'PHONE_REQUIRED' });
+    }
+    expectedPhone = suppliedPhone;
+    await pool.query(
+      `UPDATE wa_extension_pairings SET expected_phone=$1, updated_at=NOW() WHERE id=$2`,
+      [expectedPhone, pairing.id]
+    );
   }
 
   // Idempotência: devolve o código ainda válido sem chamar a Evolution de novo.
@@ -87,7 +107,7 @@ export default async function handler(req, res) {
     }
 
     const data = await fetchEvolutionJson(
-      `/instance/connect/${encodedInstance}?number=${encodeURIComponent(pairing.expected_phone)}`
+      `/instance/connect/${encodedInstance}?number=${encodeURIComponent(expectedPhone)}`
     );
 
     const pairingCode = normalizePairingCode(data?.pairingCode);
@@ -113,7 +133,7 @@ export default async function handler(req, res) {
     return res.status(200).json({
       operationId: pairing.id,
       pairingCode,
-      phoneNumber: pairing.expected_phone,
+      phoneNumber: expectedPhone,
       expiresAt: expiresAt.toISOString(),
     });
   } catch (error) {

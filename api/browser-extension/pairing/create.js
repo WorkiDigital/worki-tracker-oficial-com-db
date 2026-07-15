@@ -24,12 +24,16 @@ export default async function handler(req, res) {
   await ensureExtensionPairingSchema();
 
   const instanceName = String(req.body?.instanceName || '').trim();
-  const expectedPhone = normalizePhone(String(req.body?.phoneNumber || ''));
+  // Opcional: a extensão detecta o telefone (wid/me) após o login no WhatsApp
+  // Web e envia em /exchange; se não conseguir, cai no fallback manual do
+  // /start. Se o painel já quiser fixar um número de antemão, ainda aceita.
+  const rawPhone = String(req.body?.phoneNumber || '').trim();
+  const expectedPhone = rawPhone ? normalizePhone(rawPhone) : null;
   const clienteId = user.is_admin
     ? Number(req.body?.target_cliente_id)
     : Number(user.cliente_id);
 
-  if (!instanceName || !expectedPhone || !Number.isInteger(clienteId) || clienteId <= 0) {
+  if (!instanceName || (rawPhone && !expectedPhone) || !Number.isInteger(clienteId) || clienteId <= 0) {
     return res.status(400).json({ code: 'INVALID_PAIRING_REQUEST' });
   }
 

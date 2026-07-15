@@ -331,7 +331,6 @@ let _extPareamentoCountdownTimer = null;
 
 function abrirModalExtensaoPareamento() {
     if (!currentWaInstance) { toast('Gere o QR Code primeiro.', 'error'); return; }
-    $('extPareamentoTelefone').value = '';
     $('extPareamentoForm').style.display = '';
     $('extPareamentoResultado').style.display = 'none';
     $('modalExtensaoPareamento').classList.add('open');
@@ -344,12 +343,9 @@ function fecharModalExtensaoPareamento() {
 }
 
 async function gerarCodigoExtensao() {
-    const telefoneDigitado = $('extPareamentoTelefone').value.replace(/\D/g, '');
-    if (telefoneDigitado.length < 8 || telefoneDigitado.length > 15) {
-        toast('Informe um número válido com país e DDD.', 'error');
-        return;
-    }
-
+    // Telefone não é pedido aqui — a extensão detecta o número conectado no
+    // WhatsApp Web sozinha (wid/me) depois do login e manda no /exchange; só
+    // cai em confirmação manual dentro da própria extensão se não conseguir.
     const btn = $('btnGerarCodigoExtensao');
     const original = btn.textContent;
     btn.disabled = true;
@@ -361,7 +357,6 @@ async function gerarCodigoExtensao() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(waComClienteSelecionado({
                 instanceName: currentWaInstance,
-                phoneNumber: telefoneDigitado,
             })),
         });
         const data = await r.json();

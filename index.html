@@ -278,11 +278,10 @@
         </div>
 
         <div id="extPareamentoForm">
-            <div class="input-group">
-                <label>Número com país e DDD</label>
-                <input type="tel" id="extPareamentoTelefone" placeholder="5511999999999" inputmode="numeric" autocomplete="tel">
-            </div>
-            <p style="font-size:11px;color:var(--muted);margin:-8px 0 14px;">Use o número que já está (ou vai ficar) conectado no WhatsApp Web.</p>
+            <p style="font-size:12px;color:var(--muted);margin:0 0 14px;line-height:1.6;">
+                A extensão detecta automaticamente o número conectado no WhatsApp Web depois do
+                login. Gere o código e cole na extensão para continuar.
+            </p>
             <button class="btn-confirm" id="btnGerarCodigoExtensao" onclick="gerarCodigoExtensao()">Gerar código</button>
         </div>
 
@@ -295,7 +294,7 @@
             <button class="btn btn-ghost" style="width:100%;justify-content:center;margin-bottom:8px;" onclick="copiarCodigoExtensao()">
                 <i data-lucide="copy" style="width:14px;"></i> Copiar código
             </button>
-            <p style="font-size:11px;color:var(--muted);text-align:center;">Copie e cole na extensão do WappTrack aberta sobre o WhatsApp Web.</p>
+            <p style="font-size:11px;color:var(--muted);text-align:center;">Copie e cole na extensão do WappTrack aberta sobre o WhatsApp Web. Se a extensão não detectar o número automaticamente, ela vai pedir para confirmar manualmente.</p>
         </div>
     </div>
 </div>
@@ -6448,7 +6447,7 @@ function resetLeadSearchAutofill() {
 </script>
 <script defer src="js/leads.js?v=20260715-tabfilters1"></script>
 <script defer src="js/chat-monitor.js?v=20260715-chatmedia1"></script>
-<script defer src="js/admin.js?v=20260715-1"></script>
+<script defer src="js/admin.js?v=20260715-2"></script>
 <script defer src="js/reports-auto.js?v=20260712-1"></script>
 <script defer src="js/captacao.js?v=20260714-2"></script>
 <script defer src="js/onboarding.js?v=20260715-2"></script>

@@ -20,7 +20,7 @@ async function createSchema() {
         created_by INTEGER REFERENCES public.usuarios(id) ON DELETE SET NULL,
         cliente_id INTEGER NOT NULL REFERENCES public.clientes(id) ON DELETE CASCADE,
         instance_name VARCHAR(255) NOT NULL,
-        expected_phone VARCHAR(20) NOT NULL,
+        expected_phone VARCHAR(20),
         status VARCHAR(20) NOT NULL DEFAULT 'CREATED',
         attempts INTEGER NOT NULL DEFAULT 0,
         last_error_code VARCHAR(80),
@@ -42,6 +42,8 @@ async function createSchema() {
         ON public.wa_extension_pairings(instance_name, status);
       CREATE INDEX IF NOT EXISTS idx_wa_extension_pairings_expires
         ON public.wa_extension_pairings(expires_at);
+
+      ALTER TABLE public.wa_extension_pairings ALTER COLUMN expected_phone DROP NOT NULL;
     `);
 
     await client.query('COMMIT');

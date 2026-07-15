@@ -2,10 +2,16 @@
 // Rota pública (sem JWT normal) — o popup da extensão troca o código colado
 // pelo usuário por um JWT de extensão escopado. Nunca loga o código/hash/JWT.
 //
-// IMPORTANTE: a extensão real confirma que "whatsapp.detectedPhoneNumber"
-// quase sempre vem null (o WhatsApp Web não expõe o telefone da própria
-// conta de forma estável no DOM) — a validação de telefone só roda quando o
-// dado vier preenchido; ausência de telefone NUNCA bloqueia o fluxo.
+// Telefone: a extensão detecta o número consultando o wid/me interno do
+// WhatsApp Web (WA-JS) DEPOIS do login — não é confiável a 100% (contas com
+// @lid podem não resolver o telefone ainda). Por isso o código temporário do
+// painel continua obrigatório para identificar usuário/tenant/instância; o
+// telefone em si é opcional aqui e pode chegar de 3 formas:
+//   1. Já veio fixado no /create (expected_phone preenchido).
+//   2. Detectado agora pela extensão (whatsapp.detectedPhone) — grava aqui.
+//   3. Nenhum dos dois — fica NULL; o /start exige e aceita como fallback
+//      manual (usuário digita na própria extensão).
+// detectionMethod: 'WID' | 'LID_UNRESOLVED' | 'UNAVAILABLE' (apenas informativo/log).
 import { getPool } from '../../_db.js';
 import { rateLimitByIp } from '../../_rate-limit-ip.js';
 import { extensionCors } from '../../_extension-origin.js';
@@ -25,7 +31,9 @@ export default async function handler(req, res) {
 
   const normalizedCode = normalizePlatformCode(req.body?.code);
   const whatsappStatus = req.body?.whatsapp?.status;
-  const detectedPhone = normalizePhone(String(req.body?.whatsapp?.detectedPhoneNumber || ''));
+  const detectedPhoneRaw = String(req.body?.whatsapp?.detectedPhone || '').trim();
+  const detectedPhone = detectedPhoneRaw ? normalizePhone(detectedPhoneRaw) : null;
+  const detectionMethod = String(req.body?.whatsapp?.detectionMethod || '').slice(0, 40);
 
   if (!normalizedCode) {
     return res.status(400).json({ code: 'PAIRING_CODE_INVALID' });
@@ -62,20 +70,22 @@ export default async function handler(req, res) {
       await client.query('COMMIT');
       return res.status(410).json({ code: 'PAIRING_CODE_EXPIRED' });
     }
-    // Só valida telefone quando a extensão de fato conseguiu detectar um —
-    // hoje ela sempre manda null, então este branch é best-effort/futuro.
-    if (detectedPhone && detectedPhone !== pairing.expected_phone) {
+    let expectedPhone = pairing.expected_phone;
+    if (expectedPhone && detectedPhone && detectedPhone !== expectedPhone) {
       await client.query('ROLLBACK');
       return res.status(409).json({ code: 'PHONE_MISMATCH' });
+    }
+    if (!expectedPhone && detectedPhone) {
+      expectedPhone = detectedPhone;
     }
 
     const issued = issueExtensionToken(pairing);
 
     await client.query(
       `UPDATE wa_extension_pairings
-       SET consumed_at=NOW(), status='EXCHANGED', token_jti=$1, updated_at=NOW()
-       WHERE id=$2`,
-      [issued.jti, pairing.id]
+       SET consumed_at=NOW(), status='EXCHANGED', token_jti=$1, expected_phone=$2, updated_at=NOW()
+       WHERE id=$3`,
+      [issued.jti, expectedPhone, pairing.id]
     );
 
     await client.query('COMMIT');
@@ -83,7 +93,9 @@ export default async function handler(req, res) {
     return res.status(200).json({
       accessToken: issued.token,
       pairingRequestId: pairing.id,
-      expectedPhoneNumber: pairing.expected_phone,
+      expectedPhoneNumber: expectedPhone,
+      phoneRequired: !expectedPhone,
+      detectionMethod: detectionMethod || null,
       expiresInSeconds: issued.expiresIn,
     });
   } catch (error) {
