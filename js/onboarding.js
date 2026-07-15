@@ -83,6 +83,10 @@ function onbFechar() {
 function onbAvancar() {
     if (onbState.etapaIdx < ONB_ETAPAS.length - 1) {
         onbState.etapaIdx++;
+        const user = JSON.parse(localStorage.getItem('adlytics_user') || '{}');
+        if (ONB_ETAPAS[onbState.etapaIdx] === 'cliente' && !user.is_admin) {
+            onbState.etapaIdx++; // Pula etapa de cliente para usuário normal
+        }
         onbRenderStep();
     }
 }
@@ -90,6 +94,10 @@ function onbAvancar() {
 function onbVoltar() {
     if (onbState.etapaIdx > 0) {
         onbState.etapaIdx--;
+        const user = JSON.parse(localStorage.getItem('adlytics_user') || '{}');
+        if (ONB_ETAPAS[onbState.etapaIdx] === 'cliente' && !user.is_admin) {
+            onbState.etapaIdx--; // Pula etapa de cliente para usuário normal
+        }
         onbRenderStep();
     }
 }

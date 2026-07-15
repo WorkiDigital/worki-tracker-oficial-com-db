@@ -169,6 +169,9 @@ input[type="checkbox"] { position:relative; min-width:18px; min-height:18px; pad
 .ctrl-box input[type=text] { width:200px; }
 select.bare { background:transparent; border:none; color:var(--text); font-size:13px; outline:none; font-family:'Inter'; color-scheme:var(--scheme); cursor:pointer; }
 select.bare option { background:var(--card); }
+#filterControls { min-width:0; }
+#adminClienteFilter { min-width:190px; flex:0 0 auto; }
+#selectClienteAdmin { width:100%; min-width:145px; max-width:230px; overflow:hidden; text-overflow:ellipsis; }
 .btn { display:flex; align-items:center; gap:6px; padding:7px 14px; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; border:none; transition:all .2s ease; }
 .btn-primary { background:linear-gradient(135deg,#1d4ed8,var(--blue)); color:#fff; box-shadow:0 2px 8px var(--glow-blue); }
 .btn-primary:hover { filter:brightness(1.12); transform:translateY(-1px); box-shadow:0 4px 16px var(--glow-blue); }
@@ -850,6 +853,8 @@ html.light .nav-item.active { box-shadow:inset 3px 0 0 var(--blue); background:r
 
     /* Leads controls: wrap full width */
     #leadsControls { width:100%; }
+    #adminClienteFilter { min-width:170px; }
+    #selectClienteAdmin { min-width:125px; max-width:190px; }
     .ctrl-box input[type=text] { width:140px; }
 }
 
