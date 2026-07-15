@@ -14,7 +14,7 @@ export default async function handler(req, res) {
   if (requirePermission(user, res, 'anuncios')) return;
   if (await rateLimit(req, res, user)) return;
 
-  const { datePreset = 'last_30d', accountId, dateFrom, dateTo } = req.query;
+  const { datePreset = 'last_30d', accountId, dateFrom, dateTo, cliente_id } = req.query;
 
   const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
   if (dateFrom && !dateRegex.test(dateFrom)) return res.status(400).json({ error: 'dateFrom inválido. Use formato YYYY-MM-DD.' });
@@ -27,7 +27,7 @@ export default async function handler(req, res) {
 
   if (!token) return res.status(403).json({ error: 'Token Meta não configurado para sua conta. Solicite ao administrador da plataforma.' });
   if (!accountId) return res.status(400).json({ error: 'accountId is required' });
-  if (!(await verifyAccountAccess(user, accountId))) return res.status(403).json({ error: 'Acesso negado a esta conta de anúncios.' });
+  if (!(await verifyAccountAccess(user, accountId, cliente_id))) return res.status(403).json({ error: 'Acesso negado a esta conta de anúncios.' });
 
   // Campos de insight. Hook Rate foi REMOVIDO: a API não expõe "reproduções de 3s"
   // (o numerador que o Gerenciador usa) — confirmado por debug, todos os campos

@@ -17,7 +17,10 @@ export default async function handler(req, res) {
   if (!token) return res.status(403).json({ error: 'Token Meta não configurado para sua conta. Solicite ao administrador da plataforma.' });
 
   // ── Cache hit? (contas mudam raramente — TTL 120s) ───────────
-  const ck = userCacheKey(user, 'accounts');
+  const scopedClienteId = user.is_admin && req.query.cliente_id
+    ? String(req.query.cliente_id)
+    : '';
+  const ck = userCacheKey(user, 'accounts', req.query.scope || 'all', scopedClienteId || 'self');
   const cached = await cacheGet(ck);
   if (cached) return res.status(200).json(cached);
 

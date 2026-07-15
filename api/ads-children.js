@@ -12,13 +12,13 @@ export default async function handler(req, res) {
   if (!user) return;
   if (await rateLimit(req, res, user)) return;
 
-  const { level, parentId, accountId, datePreset = 'last_30d' } = req.query;
+  const { level, parentId, accountId, datePreset = 'last_30d', cliente_id } = req.query;
   const token = await getTokenForUser(user);
 
   if (!token)    return res.status(403).json({ error: 'Token Meta não configurado para sua conta. Solicite ao administrador da plataforma.' });
   if (!parentId) return res.status(400).json({ error: 'parentId is required' });
   if (!accountId) return res.status(400).json({ error: 'accountId is required' });
-  if (!(await verifyAccountAccess(user, accountId))) return res.status(403).json({ error: 'Acesso negado a esta conta de anúncios.' });
+  if (!(await verifyAccountAccess(user, accountId, cliente_id))) return res.status(403).json({ error: 'Acesso negado a esta conta de anúncios.' });
   if (!['adsets', 'ads'].includes(level))
     return res.status(400).json({ error: 'level must be adsets or ads' });
 

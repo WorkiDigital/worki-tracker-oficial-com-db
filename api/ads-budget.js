@@ -41,6 +41,7 @@ export default async function handler(req, res) {
     entity_type,
     entity_id,
     new_budget_minor,
+    cliente_id,
   } = req.body || {};
 
   if (!accountId) return res.status(400).json({ error: 'accountId é obrigatório.' });
@@ -55,7 +56,7 @@ export default async function handler(req, res) {
   if (!Number.isSafeInteger(newBudget) || newBudget <= 0) {
     return res.status(400).json({ error: 'Informe um orçamento válido em unidades monetárias mínimas.' });
   }
-  if (!(await verifyAccountAccess(user, accountId))) {
+  if (!(await verifyAccountAccess(user, accountId, cliente_id))) {
     return res.status(403).json({ error: 'Acesso negado a esta conta de anúncios.' });
   }
 

@@ -22,7 +22,7 @@ export default async function handler(req, res) {
   if (!user) return;
   if (await rateLimit(req, res, user)) return;
 
-  const { accountId, datePreset = 'last_30d', dateFrom, dateTo, campaignIds, status } = req.query;
+  const { accountId, datePreset = 'last_30d', dateFrom, dateTo, campaignIds, status, cliente_id } = req.query;
   if (dateFrom && !DATE_RE.test(dateFrom)) return res.status(400).json({ error: 'dateFrom invalido. Use formato YYYY-MM-DD.' });
   if (dateTo && !DATE_RE.test(dateTo)) return res.status(400).json({ error: 'dateTo invalido. Use formato YYYY-MM-DD.' });
   if (!VALID_PRESETS.has(datePreset)) return res.status(400).json({ error: 'datePreset invalido.' });
@@ -37,7 +37,7 @@ export default async function handler(req, res) {
   const token = await getTokenForUser(user);
   if (!token) return res.status(403).json({ error: 'Token Meta não configurado para sua conta. Solicite ao administrador da plataforma.' });
   if (!accountId) return res.status(400).json({ error: 'accountId is required' });
-  if (!(await verifyAccountAccess(user, accountId))) return res.status(403).json({ error: 'Acesso negado a esta conta de anúncios.' });
+  if (!(await verifyAccountAccess(user, accountId, cliente_id))) return res.status(403).json({ error: 'Acesso negado a esta conta de anúncios.' });
 
   // ── Cache hit? ────────────────────────────────────────────────
   const ck = cacheKey('best', accountId, datePreset, dateFrom, dateTo, status || '', scopedCampaignIds.join('|'));

@@ -20,6 +20,11 @@ async function ensureAccountIdColumn() {
  */
 export const normalizeAccountId = id => String(id || '').replace(/^act_/, '').trim();
 
+function parseClienteId(value) {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+}
+
 /**
  * Verifica se o usuário tem acesso ao accountId informado.
  * - Admin: acesso irrestrito.
@@ -27,9 +32,31 @@ export const normalizeAccountId = id => String(id || '').replace(/^act_/, '').tr
  * - Cliente com account_id configurado: deve coincidir exatamente.
  * Retorna true/false.
  */
-export async function verifyAccountAccess(user, accountId) {
+export async function verifyAccountAccess(user, accountId, scopedClienteId = null) {
   if (!accountId) return false;
-  if (user.is_admin) return true;
+
+  if (user.is_admin) {
+    const hasScopedCliente = scopedClienteId !== null
+      && scopedClienteId !== undefined
+      && String(scopedClienteId).trim() !== '';
+    const clienteId = parseClienteId(scopedClienteId);
+    if (!hasScopedCliente) return true;
+    if (!clienteId) return false;
+
+    await ensureAccountIdColumn();
+    try {
+      const pool = getPool();
+      const r = await pool.query(
+        'SELECT account_id FROM clientes WHERE id = $1',
+        [clienteId]
+      );
+      const configured = r.rows[0]?.account_id;
+      return !!configured && normalizeAccountId(configured) === normalizeAccountId(accountId);
+    } catch {
+      return false;
+    }
+  }
+
   if (!user.cliente_id) return false;
 
   await ensureAccountIdColumn();
