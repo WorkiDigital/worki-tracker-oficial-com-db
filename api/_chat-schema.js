@@ -37,13 +37,19 @@ export async function ensureChatMessagesSchema() {
           ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
         CREATE INDEX IF NOT EXISTS idx_chat_messages_cliente_instance
           ON public.chat_messages(cliente_id, instance, message_at DESC);
+        CREATE INDEX IF NOT EXISTS idx_chat_messages_cliente_at
+          ON public.chat_messages(cliente_id, message_at DESC);
         CREATE INDEX IF NOT EXISTS idx_chat_messages_thread
           ON public.chat_messages(cliente_id, instance, telefone, message_at DESC);
+        CREATE INDEX IF NOT EXISTS idx_chat_messages_cliente_phone_at
+          ON public.chat_messages(cliente_id, telefone, message_at DESC);
         CREATE INDEX IF NOT EXISTS idx_chat_messages_ttl
           ON public.chat_messages(message_at);
         CREATE UNIQUE INDEX IF NOT EXISTS idx_chat_messages_dedup
           ON public.chat_messages(instance, message_id)
           WHERE message_id IS NOT NULL;
+        CREATE INDEX IF NOT EXISTS idx_leads_tracking_cliente_telefone_created
+          ON public.leads_tracking(cliente_id, telefone, created_at DESC, id DESC);
       `);
     })().catch((error) => {
       ensurePromise = null;
