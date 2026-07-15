@@ -3062,6 +3062,7 @@ function trocarClienteAdmin(id) {
     if (!$('aba-captacao')?.classList.contains('aba-oculta')) carregarCampanhasLink();
     if (!$('aba-inteligente')?.classList.contains('aba-oculta')) capIntCarregar();
     if (!$('aba-funil')?.classList.contains('aba-oculta') && typeof funilCarregar === 'function') funilCarregar();
+    if (!$('aba-relatorios')?.classList.contains('aba-oculta') && typeof recarregarRelatorios === 'function') recarregarRelatorios();
     if (!$('aba-anuncios')?.classList.contains('aba-oculta')) { adsCarregado = false; carregarContasAds(); }
 }
 // ── Anúncios — Account picker ──────────────────────────────────
@@ -5501,7 +5502,7 @@ function mudarAba(aba) {
         if (typeof chatMonitorInit === 'function') chatMonitorInit();
     }
     if (aba === 'funil') { funilInit(); }
-    if (aba === 'relatorios' && typeof syncRelatorioPeriodo === 'function') { syncRelatorioPeriodo(); }
+    if (aba === 'relatorios' && typeof recarregarRelatorios === 'function') { recarregarRelatorios(); }
     if (aba === 'anuncios' && !adsCarregado) carregarContasAds();
     if (aba === 'captacao') { carregarCampanhasLink(); }
     if (aba === 'inteligente') { capIntCarregar(); }
@@ -6407,7 +6408,7 @@ function resetLeadSearchAutofill() {
     input.defaultValue = '';
 }
 </script>
-<script defer src="js/leads.js?v=20260715-reportperiod1"></script>
+<script defer src="js/leads.js?v=20260715-tabfilters1"></script>
 <script defer src="js/chat-monitor.js?v=20260715-chatfix1"></script>
 <script defer src="js/admin.js?v=20260714-3"></script>
 <script defer src="js/reports-auto.js?v=20260712-1"></script>

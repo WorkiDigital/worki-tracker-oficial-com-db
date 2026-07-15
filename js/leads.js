@@ -23,6 +23,8 @@ function leadPertenceAoCliente(lead, clienteId) {
 }
 // Cache de leads por chave "clienteId|periodo" — evita piscar ao navegar entre abas.
 const _leadsCache = new MemCache(2 * 60 * 1000); // TTL 2 min (auto-refresh de 30s mantém fresco)
+const _relatoriosCache = new MemCache(2 * 60 * 1000);
+let relatoriosData = [];
 
 async function recarregarLeads(silencioso = false) {
     const dot   = $('refreshDot');
@@ -163,7 +165,6 @@ const PERIODOS_LOCAIS = ['hoje', 'ontem', 'hojeOntem'];
 function onPeriodoChange() {
     const v = $('periodoSelect').value;
     $('areaPersonalizada').style.display = v === 'personalizado' ? 'flex' : 'none';
-    syncRelatorioPeriodo();
     if (v === 'personalizado') return; // só recarrega no botão OK
 
     // Só dá pra refiltrar a memória (instantâneo) se o que ESTÁ carregado é
@@ -179,36 +180,22 @@ function onPeriodoChange() {
 }
 
 function syncRelatorioPeriodo() {
-    const main = $('periodoSelect');
     const rel = $('relatorioPeriodoSelect');
-    if (!main || !rel) return;
-
-    rel.value = main.value || 'hojeOntem';
+    if (!rel) return;
     const isCustom = rel.value === 'personalizado';
     const custom = $('relatorioAreaPersonalizada');
     if (custom) custom.style.display = isCustom ? 'flex' : 'none';
-
-    if ($('relatorioDataInicio') && $('dataInicio')) $('relatorioDataInicio').value = $('dataInicio').value || '';
-    if ($('relatorioDataFim') && $('dataFim')) $('relatorioDataFim').value = $('dataFim').value || '';
 }
 
 function onRelatorioPeriodoChange() {
     const rel = $('relatorioPeriodoSelect');
-    const main = $('periodoSelect');
-    if (!rel || !main) return;
+    if (!rel) return;
 
-    main.value = rel.value;
     const isCustom = rel.value === 'personalizado';
     if ($('relatorioAreaPersonalizada')) $('relatorioAreaPersonalizada').style.display = isCustom ? 'flex' : 'none';
-    if ($('areaPersonalizada')) $('areaPersonalizada').style.display = isCustom ? 'flex' : 'none';
+    if (isCustom) return;
 
-    if (isCustom) {
-        if ($('relatorioDataInicio') && $('dataInicio')) $('relatorioDataInicio').value = $('dataInicio').value || '';
-        if ($('relatorioDataFim') && $('dataFim')) $('relatorioDataFim').value = $('dataFim').value || '';
-        return;
-    }
-
-    onPeriodoChange();
+    recarregarRelatorios();
 }
 
 function aplicarRelatorioPeriodoPersonalizado() {
@@ -219,12 +206,8 @@ function aplicarRelatorioPeriodoPersonalizado() {
         return;
     }
 
-    if ($('periodoSelect')) $('periodoSelect').value = 'personalizado';
-    if ($('dataInicio')) $('dataInicio').value = ini;
-    if ($('dataFim')) $('dataFim').value = fim;
-    if ($('areaPersonalizada')) $('areaPersonalizada').style.display = 'flex';
     syncRelatorioPeriodo();
-    recarregarLeads();
+    recarregarRelatorios();
 }
 
 function calcRange(periodo) {
@@ -249,6 +232,21 @@ function calcRange(periodo) {
         if (a && b) { const f=new Date(b); f.setDate(f.getDate()+1); return [new Date(a), f]; }
     }
     return null;
+}
+
+function calcRangeRelatorio() {
+    const periodo = $('relatorioPeriodoSelect')?.value || 'hojeOntem';
+    if (periodo === 'personalizado') {
+        const a = $('relatorioDataInicio')?.value || '';
+        const b = $('relatorioDataFim')?.value || '';
+        if (a && b) {
+            const f = new Date(b);
+            f.setDate(f.getDate() + 1);
+            return [new Date(a), f];
+        }
+        return null;
+    }
+    return periodo && periodo !== 'todos' ? calcRange(periodo) : null;
 }
 
 // Range do período ANTERIOR com a mesma duração do range atual (deslocado para trás).
@@ -301,7 +299,6 @@ function aplicarFiltros() {
 
     pagAtual = 1;
     renderLeadsView();
-    renderRelatorios(); // async — Chart.js carregado sob demanda dentro dela
     
     // Atualiza as métricas do topo (cards) baseadas no filtro atual
     carregarMetricasTemporais();
@@ -823,6 +820,52 @@ function exportarCSV() {
 }
 
 // ── Relatórios ─────────────────────────────────────────────────
+function relatorioPeriodoKey() {
+    const periodo = $('relatorioPeriodoSelect')?.value || 'hojeOntem';
+    if (periodo !== 'personalizado') return periodo;
+    return `personalizado:${$('relatorioDataInicio')?.value || ''}:${$('relatorioDataFim')?.value || ''}`;
+}
+
+async function recarregarRelatorios(silencioso = false) {
+    if ($('relatorioPeriodoSelect')?.value === 'personalizado' && !calcRangeRelatorio()) return;
+    const periodoKey = relatorioPeriodoKey();
+    const clienteId = leadClienteAdminAtual();
+    const cacheKey = `${clienteId || 'me'}|${periodoKey}`;
+    const cached = _relatoriosCache.get(cacheKey);
+    if (cached) {
+        relatoriosData = cached;
+        renderRelatorios(relatoriosData);
+        if (!silencioso) {
+            _recarregarRelatoriosFetch(cacheKey).catch(() => {});
+        }
+        return;
+    }
+    await _recarregarRelatoriosFetch(cacheKey);
+}
+
+async function _recarregarRelatoriosFetch(cacheKey) {
+    try {
+        const params = new URLSearchParams();
+        const clienteId = leadClienteAdminAtual();
+        if (clienteId) params.append('cliente_id', clienteId);
+        const range = calcRangeRelatorio();
+        if (range) {
+            params.append('start', range[0].toISOString());
+            params.append('end', range[1].toISOString());
+        }
+        const qs = params.toString();
+        const resp = await authFetch('/api/leads' + (qs ? '?' + qs : ''));
+        const data = await readApiJson(resp, 'Falha ao carregar relatorios');
+        if (!Array.isArray(data)) throw new Error(data.error || 'Resposta inesperada do servidor');
+        relatoriosData = data;
+        _relatoriosCache.set(cacheKey, data);
+        renderRelatorios(relatoriosData);
+    } catch (e) {
+        console.error('Erro ao carregar relatorios:', e);
+        toast(e.message || 'Falha ao carregar relatorios', 'error');
+    }
+}
+
 // Calcula as métricas-chave de um conjunto de leads (reutilizado no período atual e no anterior).
 function calcMetricasRelatorio(leads) {
     const total  = leads.length;
@@ -835,13 +878,14 @@ function calcMetricasRelatorio(leads) {
     return { total, vendas: vendas.length, qualificados: qualificados.length, receita, conv };
 }
 
-async function renderRelatorios() {
+async function renderRelatorios(leadsRelatorio = relatoriosData) {
     if (typeof ensureChart === 'function') await ensureChart();
     syncRelatorioPeriodo();
-    const total  = dadosFiltrados.length;
-    const vendas = dadosFiltrados.filter(l => (l.status||'').toLowerCase() === 'vendido');
+    const base = Array.isArray(leadsRelatorio) ? leadsRelatorio : [];
+    const total  = base.length;
+    const vendas = base.filter(l => (l.status||'').toLowerCase() === 'vendido');
     // Qualificados: status "Qualificado" OU que já passaram pela qualificação (qualified_at).
-    const qualificados = dadosFiltrados.filter(l =>
+    const qualificados = base.filter(l =>
         (l.status||'').toLowerCase() === 'qualificado' || l.qualified_at
     );
     const receita = vendas.reduce((s,l) => s + parseFloat(l.valor_venda||0), 0);
@@ -854,12 +898,12 @@ async function renderRelatorios() {
     $('val-receita').textContent = brl(receita);
 
     // Comparação vs período anterior (busca leve, não bloqueia o render principal).
-    renderComparativoPeriodo();
+    renderComparativoPeriodo(base);
 
-    const mapCamp = agrupar(dadosFiltrados, 'utm_campaign');
-    const mapAdset = agrupar(dadosFiltrados, 'utm_medium');
-    const mapA  = agrupar(dadosFiltrados, 'utm_content');
-    const mapP  = agrupar(dadosFiltrados, 'plataforma');
+    const mapCamp = agrupar(base, 'utm_campaign');
+    const mapAdset = agrupar(base, 'utm_medium');
+    const mapA  = agrupar(base, 'utm_content');
+    const mapP  = agrupar(base, 'plataforma');
     const mapAV = agrupar(vendas, 'utm_content');
     const mapPV = agrupar(vendas, 'plataforma');
 
@@ -871,16 +915,15 @@ async function renderRelatorios() {
     criarGrafico('c4','l4',mapPV,'doughnut');
     
     // NOVO: Gráfico de Linha do Tempo
-    renderTimelineChart();
+    renderTimelineChart(base);
     
     // NOVO: Heatmap de Horários
-    renderHeatmap(window.currentHeatmapTipo || 'leads');
+    renderHeatmap(window.currentHeatmapTipo || 'leads', base);
 }
 
 // Busca os leads do período anterior e renderiza a variação (+/-%) em cada card.
-async function renderComparativoPeriodo() {
-    const periodo = $('periodoSelect')?.value || 'hojeOntem';
-    const range = (periodo && periodo !== 'todos') ? calcRange(periodo) : null;
+async function renderComparativoPeriodo(leadsAtuais = relatoriosData) {
+    const range = calcRangeRelatorio();
     const prev = calcRangePrevio(range);
     if (!prev) { limparComparativo(); return; } // "Todos" não tem período anterior definido
 
@@ -896,7 +939,7 @@ async function renderComparativoPeriodo() {
         const leadsPrev = await resp.json();
         if (!Array.isArray(leadsPrev)) { limparComparativo(); return; }
 
-        const atual = calcMetricasRelatorio(dadosFiltrados);
+        const atual = calcMetricasRelatorio(Array.isArray(leadsAtuais) ? leadsAtuais : []);
         const ant   = calcMetricasRelatorio(leadsPrev);
 
         setDelta('delta-total',        atual.total,        ant.total);
@@ -969,7 +1012,7 @@ async function exportarRelatorioPDF() {
         const imgW = pageW;
 
         // Cabeçalho com nome do projeto e período.
-        const periodoLabel = $('periodoSelect')?.options[$('periodoSelect').selectedIndex]?.text || '';
+        const periodoLabel = $('relatorioPeriodoSelect')?.options[$('relatorioPeriodoSelect').selectedIndex]?.text || '';
         const projeto = $('nome-projeto')?.textContent || 'Relatório';
         pdf.setFontSize(14);
         pdf.text(`${projeto} — Relatório`, 10, 12);
@@ -1022,7 +1065,7 @@ async function exportarRelatorioPDF() {
 
 window.currentHeatmapTipo = 'leads';
 
-function renderHeatmap(tipo) {
+function renderHeatmap(tipo, leadsBase = relatoriosData) {
     window.currentHeatmapTipo = tipo;
     const btnLeads = $('btnHeatmapLeads');
     const btnVendas = $('btnHeatmapVendas');
@@ -1032,9 +1075,9 @@ function renderHeatmap(tipo) {
     const container = $('heatmapGrid');
     if (!container) return;
     
-    let dados = dadosFiltrados;
+    let dados = Array.isArray(leadsBase) ? leadsBase : [];
     if (tipo === 'vendas') {
-        dados = dadosFiltrados.filter(l => (l.status||'').toLowerCase() === 'vendido');
+        dados = dados.filter(l => (l.status||'').toLowerCase() === 'vendido');
     }
     
     // Dias da semana: Dom a Sáb
@@ -1084,13 +1127,13 @@ function renderHeatmap(tipo) {
     container.innerHTML = html;
 }
 
-async function renderTimelineChart() {
+async function renderTimelineChart(leadsBase = relatoriosData) {
     if (typeof ensureChart === 'function') await ensureChart();
     const ctx = $('cTimeline');
     if (!ctx) return;
 
     // Agrupa dados por dia (últimos 30 dias por padrão ou conforme filtro)
-    const timelineData = agruparPorDia(dadosFiltrados);
+    const timelineData = agruparPorDia(Array.isArray(leadsBase) ? leadsBase : [], $('relatorioPeriodoSelect')?.value || 'hojeOntem');
     const labels = timelineData.map(d => d.data);
     const leadsValues = timelineData.map(d => d.leads);
     const vendasValues = timelineData.map(d => d.vendas);
@@ -1158,12 +1201,11 @@ async function renderTimelineChart() {
     });
 }
 
-function agruparPorDia(leads) {
+function agruparPorDia(leads, periodo = $('relatorioPeriodoSelect')?.value || 'hojeOntem') {
     const dias = {};
     const hoje = new Date();
     
     // Determina o range de dias baseado no filtro atual ou últimos 15 dias
-    const periodo = $('periodoSelect')?.value;
     let numDias = 15;
     if (periodo === '7dias') numDias = 7;
     if (periodo === '30dias') numDias = 30; // Se houver essa opção futuramente
