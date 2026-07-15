@@ -320,6 +320,23 @@ async function createTrackingSchema() {
       FOR EACH ROW EXECUTE FUNCTION bloquear_delete_clique_convertido();
     `);
 
+    // Link publico de curta duracao para compartilhar um QR Code de conexao
+    // WhatsApp ja gerado com quem nao tem acesso ao painel (ex: dono do
+    // celular). Vida curta (minutos) -> schema lazy aqui, nao em setup-db.js.
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS public.wa_connect_links (
+        token VARCHAR(64) PRIMARY KEY,
+        instance_name VARCHAR(255) NOT NULL,
+        cliente_id INTEGER REFERENCES public.clientes(id) ON DELETE CASCADE,
+        qr_base64 TEXT NOT NULL,
+        created_by INTEGER REFERENCES public.usuarios(id),
+        expires_at TIMESTAMP NOT NULL,
+        used_at TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE INDEX IF NOT EXISTS idx_wa_connect_links_expires ON public.wa_connect_links(expires_at);
+    `);
+
     await client.query('COMMIT');
     console.log('[tracking-schema] Schema de captação verificado/criado.');
   } catch (error) {

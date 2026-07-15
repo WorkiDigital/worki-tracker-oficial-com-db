@@ -250,6 +250,18 @@ function onbRenderWhatsapp(body) {
             <p id="waQrTitle" style="font-weight:700;margin-bottom:12px;"></p>
             <img id="waQrImage" style="display:none;max-width:220px;border-radius:12px;">
             <p id="waWaitQr" style="color:var(--muted);font-size:13px;">Aguardando leitura do QR Code…</p>
+            <p id="waQrCountdown" style="color:var(--muted);font-size:12px;margin-top:8px;"></p>
+            <div style="max-width:320px;margin:12px auto 0;text-align:left;background:var(--hover);border-radius:10px;padding:12px 14px;">
+                <ol style="font-size:12px;color:var(--muted);line-height:1.7;padding-left:18px;margin:0;">
+                    <li>Abra o WhatsApp no celular do número que vai atender.</li>
+                    <li>Toque no menu (⋮) ou, no iPhone, em Configurações.</li>
+                    <li>Toque em Aparelhos conectados → Conectar um aparelho.</li>
+                    <li>Aponte a câmera para o QR Code acima.</li>
+                </ol>
+            </div>
+            <button class="onb-btn onb-btn-ghost" id="btnCompartilharWa" onclick="compartilharQrComResponsavel()" style="display:none;margin-top:10px;">
+                <i data-lucide="share-2" style="width:14px;height:14px;"></i> Compartilhar com o responsável
+            </button>
         </div>
         <div id="waConnectedView" style="display:none;text-align:center;margin-top:16px;">
             <i data-lucide="check-circle" style="width:40px;height:40px;color:var(--green);"></i>

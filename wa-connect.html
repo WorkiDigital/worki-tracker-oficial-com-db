@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conectar WhatsApp</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg:#0a0f1a; --card:#0d1321; --text:#e2e8f0; --muted:#64748b; --green:#25D366; --border:rgba(255,255,255,.08); }
+        @media (prefers-color-scheme: light) {
+            :root { --bg:#f0f4f8; --card:#ffffff; --text:#0f172a; --muted:#64748b; --border:rgba(0,0,0,.08); }
+        }
+        * { box-sizing:border-box; }
+        body {
+            margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center;
+            background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; padding:20px;
+        }
+        .card {
+            background:var(--card); border:1px solid var(--border); border-radius:16px;
+            padding:28px 24px; max-width:360px; width:100%; text-align:center;
+        }
+        h1 { font-size:16px; margin:0 0 6px; }
+        p.sub { color:var(--muted); font-size:13px; margin:0 0 20px; }
+        .qr-box {
+            background:var(--border); border-radius:10px; padding:16px; margin:0 auto 14px;
+            display:flex; align-items:center; justify-content:center; min-height:220px; min-width:220px;
+        }
+        .qr-box img { width:200px; height:200px; border-radius:8px; background:#fff; padding:8px; }
+        .countdown { color:var(--muted); font-size:12px; margin-bottom:14px; }
+        .instrucoes {
+            text-align:left; background:var(--border); border-radius:10px; padding:14px 16px; margin-bottom:8px;
+        }
+        .instrucoes ol { font-size:12px; color:var(--muted); line-height:1.7; padding-left:18px; margin:0; }
+        .estado { font-size:13px; color:var(--muted); }
+        .sucesso { color:var(--green); font-weight:700; }
+        .erro { color:#ef4444; font-weight:700; }
+        .nota { font-size:11px; color:var(--muted); margin-top:14px; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>Conectar WhatsApp</h1>
+        <p class="sub">Escaneie o código abaixo com o celular que vai atender os clientes.</p>
+        <div id="conteudo">
+            <p class="estado">Carregando...</p>
+        </div>
+    </div>
+
+    <script src="js/wa-connect-public.js?v=20260715-1"></script>
+</body>
+</html>

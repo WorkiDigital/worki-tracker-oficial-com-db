@@ -240,6 +240,31 @@
     </div>
 </div>
 
+<!-- Modal generico de confirmacao para acoes de instancia WhatsApp (excluir/desconectar/desvincular).
+     Cor/icone/textos setados dinamicamente por abrirModalConfirmarWa() (js/admin.js). -->
+<div id="modalConfirmarWa" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="tituloConfirmarWa" onclick="if(event.target===this) fecharModalConfirmarWa()">
+    <div class="modal" style="max-width:430px;">
+        <div class="modal-head">
+            <div class="modal-icon" id="iconeConfirmarWa">
+                <i data-lucide="wifi-off" style="width:22px;height:22px;"></i>
+            </div>
+            <div>
+                <h3 id="tituloConfirmarWa">Confirmar ação</h3>
+                <p id="subtituloConfirmarWa"></p>
+            </div>
+            <button class="modal-close" aria-label="Fechar" onclick="fecharModalConfirmarWa()"><i data-lucide="x" style="width:16px;"></i></button>
+        </div>
+        <div id="avisoConfirmarWa" style="padding:14px;border-radius:10px;margin-bottom:18px;">
+            <div id="nomeConfirmarWa" style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:5px;"></div>
+            <div id="textoConfirmarWa" style="font-size:12px;color:var(--muted);line-height:1.5;"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <button type="button" class="btn btn-ghost" onclick="fecharModalConfirmarWa()" style="justify-content:center;">Cancelar</button>
+            <button type="button" id="btnConfirmarWa" onclick="confirmarAcaoWaPendente()" style="border:0;border-radius:8px;padding:12px;font-weight:700;cursor:pointer;">Confirmar</button>
+        </div>
+    </div>
+</div>
+
 <!-- Modal Novo Cliente -->
 <div id="modalAddCliente" class="modal-overlay" role="dialog" aria-modal="true" onclick="if(event.target===this) this.classList.remove('open')">
     <div class="modal">
@@ -2260,11 +2285,29 @@
                 <!-- QR CODE VIEW -->
                 <div id="waQrView" style="display:none;text-align:center;padding:10px 0;">
                     <h4 id="waQrTitle" style="margin-bottom:10px;font-size:14px;">Conectar: </h4>
-                    <div style="background:var(--tag);border-radius:10px;padding:16px;margin:0 auto 14px;display:inline-flex;align-items:center;justify-content:center;min-height:220px;min-width:220px;">
+                    <div style="background:var(--tag);border-radius:10px;padding:16px;margin:0 auto 10px;display:inline-flex;align-items:center;justify-content:center;min-height:220px;min-width:220px;">
                         <img id="waQrImage" src="" alt="QR Code WhatsApp" style="width:200px;height:200px;display:none;border-radius:8px;background:#fff;padding:8px;" loading="lazy">
                         <div id="waWaitQr" style="color:var(--muted);font-size:13px;">Carregando QR Code...</div>
                     </div>
-                    <div><button class="btn btn-ghost btn-sm" onclick="carregarListaWa()">← Voltar</button></div>
+                    <p id="waQrCountdown" style="color:var(--muted);font-size:12px;margin-bottom:14px;"></p>
+
+                    <div style="max-width:340px;margin:0 auto 14px;text-align:left;background:var(--tag);border-radius:10px;padding:14px 16px;">
+                        <p style="font-size:12px;font-weight:700;margin-bottom:8px;">Como escanear:</p>
+                        <ol style="font-size:12px;color:var(--muted);line-height:1.7;padding-left:18px;margin:0;">
+                            <li>Abra o WhatsApp no celular do número que vai atender.</li>
+                            <li>Toque no menu (⋮) ou, no iPhone, em <strong>Configurações</strong>.</li>
+                            <li>Toque em <strong>Aparelhos conectados</strong>.</li>
+                            <li>Toque em <strong>Conectar um aparelho</strong>.</li>
+                            <li>Aponte a câmera para o QR Code acima.</li>
+                        </ol>
+                    </div>
+
+                    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+                        <button class="btn btn-ghost btn-sm" onclick="carregarListaWa()">← Voltar</button>
+                        <button class="btn btn-ghost btn-sm" id="btnCompartilharWa" onclick="compartilharQrComResponsavel()" style="display:none;">
+                            <i data-lucide="share-2" style="width:12px;"></i> Compartilhar com o responsável
+                        </button>
+                    </div>
                 </div>
 
                 <!-- CONNECTED VIEW -->

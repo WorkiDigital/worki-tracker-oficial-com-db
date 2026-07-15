@@ -229,11 +229,88 @@ function waComClienteSelecionado(payload = {}) {
     const clienteId = waClienteFiltroAtual();
     return clienteId ? { ...payload, target_cliente_id: clienteId } : payload;
 }
+// Estimativa de UX para o tempo de validade do QR Code — a Evolution não
+// retorna nenhum campo de expiração real no payload (confirmado: só base64 e
+// instance.state são consumidos). Ao chegar a 0, busca um QR novo sozinho
+// reaproveitando o polling que já existe (checkWaStatus), então mesmo se essa
+// estimativa estiver errada o usuário nunca fica travado com um QR morto.
+const WA_QR_TTL_SECONDS = 60;
+let _waQrCountdownTimer = null;
+let _waQrCountdownRestante = WA_QR_TTL_SECONDS;
+
+function iniciarCountdownWaQr() {
+    pararCountdownWaQr();
+    _waQrCountdownRestante = WA_QR_TTL_SECONDS;
+    atualizarTextoCountdownWaQr();
+    _waQrCountdownTimer = setInterval(() => {
+        _waQrCountdownRestante--;
+        if (_waQrCountdownRestante <= 0) {
+            pararCountdownWaQr();
+            checkWaStatus(true); // busca QR novo automaticamente
+            return;
+        }
+        atualizarTextoCountdownWaQr();
+    }, 1000);
+}
+
+function pararCountdownWaQr() {
+    if (_waQrCountdownTimer) { clearInterval(_waQrCountdownTimer); _waQrCountdownTimer = null; }
+}
+
+function atualizarTextoCountdownWaQr() {
+    const el = $('waQrCountdown');
+    if (!el) return;
+    const min = Math.floor(_waQrCountdownRestante / 60);
+    const seg = String(_waQrCountdownRestante % 60).padStart(2, '0');
+    el.textContent = `Expira em ${min}:${seg}`;
+}
+
+// Gera um link publico temporario que espelha o QR ja carregado na tela —
+// nunca gera QR novo, nunca permite nenhuma acao alem de ver o codigo e
+// saber se conectou. Reaproveita capCopiar() (js/captacao.js) para copiar.
+async function compartilharQrComResponsavel() {
+    if (!currentWaInstance) return;
+    const qrSrc = $('waQrImage')?.src;
+    if (!qrSrc || !qrSrc.startsWith('data:image/')) {
+        toast('Gere o QR Code primeiro.', 'error');
+        return;
+    }
+    const btn = $('btnCompartilharWa');
+    const original = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = 'Gerando link...';
+    try {
+        const r = await authFetch('/api/wa-connect-share-create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(waComClienteSelecionado({ instanceName: currentWaInstance, qr_base64: qrSrc })),
+        });
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error || 'Falha ao gerar o link.');
+
+        const url = `${window.location.origin}/wa-connect.html?token=${encodeURIComponent(data.token)}`;
+        if (typeof capCopiar === 'function') {
+            capCopiar(url, 'Link copiado! Válido por poucos minutos e uso único.');
+        } else {
+            await navigator.clipboard.writeText(url);
+            toast('Link copiado! Válido por poucos minutos e uso único.', 'success');
+        }
+    } catch (e) {
+        toast(e.message, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = original;
+    }
+}
+
 function setWaView(view) {
     if (waPollTimer) {
         clearInterval(waPollTimer);
         waPollTimer = null;
     }
+    pararCountdownWaQr();
+    const btnCompartilhar = $('btnCompartilharWa');
+    if (btnCompartilhar) btnCompartilhar.style.display = 'none';
     ['waList','waCreate','waQrView','waConnectedView'].forEach(id => {
         const el = $(id); if (el) el.style.display = 'none';
     });
@@ -389,15 +466,103 @@ async function verConexao(name) {
     checkWaStatus(true);
 }
 
-async function deletarConexao(name) {
-    if (!confirm(`Excluir permanentemente a conexão "${name}"? Isso remove da Evolution também.`)) return;
+// Modal generico de confirmacao para acoes destrutivas de instancia WhatsApp
+// (substitui confirm() nativo — regra ja documentada no CLAUDE.md para toda
+// acao destrutiva do painel, aplicada aqui do mesmo jeito que em leads/links).
+const WA_CONFIRM_TIPOS = {
+    excluir: {
+        icone: 'trash-2', cor: '#ef4444', corFundo: 'rgba(239,68,68,.12)',
+        corBorda: 'rgba(239,68,68,.25)', corAvisoFundo: 'rgba(239,68,68,.07)',
+        titulo: 'Excluir esta conexão?',
+        subtitulo: 'Confirme a exclusão permanente',
+        aviso: 'A instância será removida da Evolution e não poderá ser recuperada.',
+        botaoTexto: 'Excluir permanentemente', botaoCorTexto: '#fff',
+        verboGerundio: 'Excluindo',
+    },
+    logout: {
+        icone: 'wifi-off', cor: '#ef4444', corFundo: 'rgba(239,68,68,.12)',
+        corBorda: 'rgba(239,68,68,.25)', corAvisoFundo: 'rgba(239,68,68,.07)',
+        titulo: 'Desconectar o WhatsApp?',
+        subtitulo: 'O aparelho será deslogado remotamente',
+        aviso: 'Você precisará escanear o QR Code novamente para reconectar este número.',
+        botaoTexto: 'Sim, desconectar', botaoCorTexto: '#fff',
+        verboGerundio: 'Desconectando',
+    },
+    desvincular: {
+        icone: 'unplug', cor: '#f59e0b', corFundo: 'rgba(245,158,11,.12)',
+        corBorda: 'rgba(245,158,11,.28)', corAvisoFundo: 'rgba(245,158,11,.07)',
+        titulo: 'Desvincular esta instância?',
+        subtitulo: 'Remove só o vínculo com o painel',
+        aviso: 'O número continua ativo no WhatsApp; só deixa de aparecer aqui no painel.',
+        botaoTexto: 'Desvincular', botaoCorTexto: '#111827',
+        verboGerundio: 'Desvinculando',
+    },
+};
+
+let _waConfirmPendente = null;
+
+function abrirModalConfirmarWa({ tipo, nome, onConfirmar }) {
+    const cfg = WA_CONFIRM_TIPOS[tipo];
+    if (!cfg) return;
+    _waConfirmPendente = { onConfirmar, botaoTextoOriginal: cfg.botaoTexto, verboGerundio: cfg.verboGerundio };
+
+    const icone = $('iconeConfirmarWa');
+    icone.style.background = cfg.corFundo;
+    icone.style.color = cfg.cor;
+    icone.innerHTML = `<i data-lucide="${cfg.icone}" style="width:22px;height:22px;"></i>`;
+
+    $('tituloConfirmarWa').textContent = cfg.titulo;
+    $('subtituloConfirmarWa').textContent = cfg.subtitulo;
+    $('nomeConfirmarWa').textContent = nome;
+    $('textoConfirmarWa').textContent = cfg.aviso;
+
+    const avisoBox = $('avisoConfirmarWa');
+    avisoBox.style.border = `1px solid ${cfg.corBorda}`;
+    avisoBox.style.background = cfg.corAvisoFundo;
+
+    const btn = $('btnConfirmarWa');
+    btn.style.background = cfg.cor;
+    btn.style.color = cfg.botaoCorTexto;
+    btn.textContent = cfg.botaoTexto;
+    btn.disabled = false;
+
+    $('modalConfirmarWa').classList.add('open');
+    if (window.lucide) lucide.createIcons({ nodes: [$('modalConfirmarWa')] });
+}
+
+function fecharModalConfirmarWa() {
+    $('modalConfirmarWa').classList.remove('open');
+    _waConfirmPendente = null;
+}
+
+async function confirmarAcaoWaPendente() {
+    if (!_waConfirmPendente) return;
+    const { onConfirmar, verboGerundio, botaoTextoOriginal } = _waConfirmPendente;
+    const btn = $('btnConfirmarWa');
+    btn.disabled = true;
+    btn.textContent = `${verboGerundio}...`;
     try {
-        const r = await authFetch('/api/evo-manager', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(waComClienteSelecionado({action:'delete', instanceName: name})) });
-        const data = await r.json();
-        if (!r.ok) throw new Error(data.error || 'Erro ao excluir');
-        toast("Conexão excluída da Evolution.", "success");
-        await carregarListaWa();
-    } catch(e) { toast('Erro ao excluir: ' + e.message, 'error'); }
+        await onConfirmar();
+    } finally {
+        btn.disabled = false;
+        btn.textContent = botaoTextoOriginal;
+        fecharModalConfirmarWa();
+    }
+}
+
+async function deletarConexao(name) {
+    abrirModalConfirmarWa({
+        tipo: 'excluir', nome: name,
+        onConfirmar: async () => {
+            try {
+                const r = await authFetch('/api/evo-manager', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(waComClienteSelecionado({action:'delete', instanceName: name})) });
+                const data = await r.json();
+                if (!r.ok) throw new Error(data.error || 'Erro ao excluir');
+                toast("Conexão excluída da Evolution.", "success");
+                await carregarListaWa();
+            } catch(e) { toast('Erro ao excluir: ' + e.message, 'error'); }
+        },
+    });
 }
 
 async function checkWaStatus(fetchQrIfNotOpen = false) {
@@ -429,6 +594,8 @@ async function checkWaStatus(fetchQrIfNotOpen = false) {
                     $('waQrImage').src = qd.base64;
                     $('waQrImage').style.display = 'block';
                     $('waWaitQr').style.display = 'none';
+                    $('btnCompartilharWa').style.display = '';
+                    iniciarCountdownWaQr();
                     if (!waPollTimer) waPollTimer = setInterval(() => checkWaStatus(false), 4000);
                 } else if (qd?.instance?.state === 'open') {
                     checkWaStatus(false);
@@ -469,8 +636,10 @@ async function waCreateInstance() {
             $('waQrImage').src = data.base64;
             $('waQrImage').style.display = 'block';
             $('waWaitQr').style.display = 'none';
+            $('btnCompartilharWa').style.display = '';
             toast("QR Code gerado! Aponte o celular.", "success");
-            
+            iniciarCountdownWaQr();
+
             if (waPollTimer) {
                 clearInterval(waPollTimer);
                 waPollTimer = null;
@@ -490,25 +659,33 @@ async function waCreateInstance() {
 }
 
 async function waLogout(name) {
-    if(!confirm(`Atenção: Deslogar permanentemente o aparelho conectado em "${name}"?`)) return;
-    try {
-        await authFetch('/api/evo-manager', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(waComClienteSelecionado({action:'logout', instanceName: name})) });
-        toast("Sessão encerrada remotamente.", "success");
-        await carregarListaWa();
-    } catch(e) {
-        toast("Erro ao tentar deslogar.", "error");
-    }
+    abrirModalConfirmarWa({
+        tipo: 'logout', nome: name,
+        onConfirmar: async () => {
+            try {
+                await authFetch('/api/evo-manager', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(waComClienteSelecionado({action:'logout', instanceName: name})) });
+                toast("Sessão encerrada remotamente.", "success");
+                await carregarListaWa();
+            } catch(e) {
+                toast("Erro ao tentar deslogar.", "error");
+            }
+        },
+    });
 }
 
 async function waDesvincular(name) {
-    if(!confirm(`Desvincular "${name}" do projeto?\n\nA instância continuará ativa no WhatsApp, apenas deixará de ser monitorada aqui.`)) return;
-    try {
-        await authFetch('/api/evo-manager', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({action:'unlink', instanceName: name}) });
-        toast("Instância desvinculada do projeto.", "success");
-        carregarListaWa();
-    } catch(e) {
-        toast("Erro ao desvincular: " + esc(e.message), "error");
-    }
+    abrirModalConfirmarWa({
+        tipo: 'desvincular', nome: name,
+        onConfirmar: async () => {
+            try {
+                await authFetch('/api/evo-manager', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({action:'unlink', instanceName: name}) });
+                toast("Instância desvinculada do projeto.", "success");
+                carregarListaWa();
+            } catch(e) {
+                toast("Erro ao desvincular: " + esc(e.message), "error");
+            }
+        },
+    });
 }
 
 // ── Captura de leads por instância (ctwa_only | all | keyword) ──────────────
