@@ -1787,7 +1787,7 @@
                 </div>
                 
                     <!-- Integrações (Meta Ads e Google Ads) -->
-                    <div class="card" style="padding:24px;margin-top:20px;">
+                    <form class="card" style="padding:24px;margin-top:20px;" onsubmit="salvarIntegracoesConta(); return false;">
                         <div style="font-size:15px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:8px;">
                             <i data-lucide="plug" style="width:16px;color:var(--blue);"></i>
                             Integrações (Meta e Google Ads)
@@ -1828,10 +1828,10 @@
                             <input type="text" id="contaGoogleLabel" class="form-control pad-md" placeholder="Ex: AbCdEfGhIj" style="width:100%;margin-bottom:12px;">
                         </div>
 
-                        <button class="btn btn-primary" onclick="salvarIntegracoesConta()" id="btnSalvarIntegracoes">
+                        <button type="submit" class="btn btn-primary" id="btnSalvarIntegracoes">
                             <i data-lucide="save" style="width:13px;"></i> Salvar Integrações
                         </button>
-                    </div>
+                    </form>
             </div>
         </div><!-- /aba-conta -->
 
