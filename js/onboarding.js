@@ -42,11 +42,24 @@ function onbTextos() {
     return ONB_TEXTOS[onbState.perfil] || ONB_TEXTOS.gestor_trafego;
 }
 
+function onbUsuarioEhAdmin(user = null) {
+    const u = user || JSON.parse(localStorage.getItem('adlytics_user') || '{}');
+    return u?.is_admin === true || u?.is_admin === 'true' || u?.is_admin === 1 || u?.is_admin === '1';
+}
+
+function onbNormalizarEtapaUsuario(direcao = 1, user = null) {
+    if (onbUsuarioEhAdmin(user)) return;
+    if (ONB_ETAPAS[onbState.etapaIdx] !== 'cliente') return;
+    const proxima = onbState.etapaIdx + (direcao >= 0 ? 1 : -1);
+    onbState.etapaIdx = Math.min(Math.max(proxima, 0), ONB_ETAPAS.length - 1);
+}
+
 // ── Abertura / fechamento ────────────────────────────────────────
 async function abrirWizardOnboarding(user) {
     if (sessionStorage.getItem(onbState._skipSessionKey) === '1') return;
 
     onbState.perfil = user?.onboarding_perfil || null;
+    const usuarioAdmin = onbUsuarioEhAdmin(user);
 
     // Decide onde retomar consultando o progresso real (nunca reinicia do
     // zero se o usuário já cumpriu marcos antes de fechar o wizard).
@@ -57,7 +70,7 @@ async function abrirWizardOnboarding(user) {
     } catch (e) { /* segue sem status — abre da etapa 1 */ }
 
     if (status) {
-        if (!status.cliente_criado) onbState.etapaIdx = ONB_ETAPAS.indexOf('cliente');
+        if (usuarioAdmin && !status.cliente_criado) onbState.etapaIdx = ONB_ETAPAS.indexOf('cliente');
         else if (!status.whatsapp_conectado) onbState.etapaIdx = ONB_ETAPAS.indexOf('whatsapp');
         else if (!status.tracking_criado) onbState.etapaIdx = ONB_ETAPAS.indexOf('rastreamento');
         else if (!status.conversao_configurada) onbState.etapaIdx = ONB_ETAPAS.indexOf('conversao');
@@ -83,10 +96,7 @@ function onbFechar() {
 function onbAvancar() {
     if (onbState.etapaIdx < ONB_ETAPAS.length - 1) {
         onbState.etapaIdx++;
-        const user = JSON.parse(localStorage.getItem('adlytics_user') || '{}');
-        if (ONB_ETAPAS[onbState.etapaIdx] === 'cliente' && !user.is_admin) {
-            onbState.etapaIdx++; // Pula etapa de cliente para usuário normal
-        }
+        onbNormalizarEtapaUsuario(1);
         onbRenderStep();
     }
 }
@@ -94,10 +104,7 @@ function onbAvancar() {
 function onbVoltar() {
     if (onbState.etapaIdx > 0) {
         onbState.etapaIdx--;
-        const user = JSON.parse(localStorage.getItem('adlytics_user') || '{}');
-        if (ONB_ETAPAS[onbState.etapaIdx] === 'cliente' && !user.is_admin) {
-            onbState.etapaIdx--; // Pula etapa de cliente para usuário normal
-        }
+        onbNormalizarEtapaUsuario(-1);
         onbRenderStep();
     }
 }
@@ -112,6 +119,7 @@ function onbAtualizarStepper() {
 }
 
 function onbRenderStep() {
+    onbNormalizarEtapaUsuario(1);
     onbAtualizarStepper();
     const etapa = ONB_ETAPAS[onbState.etapaIdx];
     const body = $('onbBody');
