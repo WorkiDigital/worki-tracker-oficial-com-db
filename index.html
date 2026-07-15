@@ -2776,6 +2776,8 @@ async function init() {
     }
 
     // Config + Auth
+    let user = null;
+    let onboardingCompleto = true;
     try {
         const cfg = await fetch('/api/config').then(r=>r.json());
         
@@ -2810,9 +2812,8 @@ async function init() {
                 $('splashLogoImg').alt = brandName;
             }
         }
-
         const token = localStorage.getItem('adlytics_token');
-        let user = JSON.parse(localStorage.getItem('adlytics_user'));
+        user = JSON.parse(localStorage.getItem('adlytics_user'));
 
         if (!token || !user) { window.location.href = 'login.html'; return; }
         AUTH_TOKEN = token;
@@ -2822,7 +2823,6 @@ async function init() {
         // só para não-admin): também é como descobrimos onboarding_completo/perfil
         // para os 3 tipos de usuário (admin do .env, admin de banco, cliente), já
         // que /api/me sabe bifurcar sozinho.
-        let onboardingCompleto = true;
         try {
             const meRes = await authFetch('/api/me');
             if (meRes.ok) {
