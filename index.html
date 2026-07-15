@@ -12,7 +12,7 @@
     <script defer src="https://cdn.jsdelivr.net/npm/lucide@0.469.0/dist/umd/lucide.min.js"></script>
     <!-- Chart.js, html2canvas e jsPDF são carregados sob demanda via loadScript() (utils.js).
          Não incluir aqui — evita baixar ~500KB em toda sessão mesmo sem abrir Anúncios ou exportar PDF. -->
-    <link rel="stylesheet" href="css/dashboard.css?v=20260715-filter1">
+    <link rel="stylesheet" href="css/dashboard.css?v=20260715-conta1">
     <link rel="stylesheet" href="css/splash.css?v=20260712-1">
     <link rel="stylesheet" href="css/funil.css?v=20260715-smart1">
     <link rel="stylesheet" href="css/onboarding.css?v=20260715-1">
@@ -1766,94 +1766,101 @@
 
         <!-- ABA: MINHA CONTA -->
         <div id="aba-conta" class="aba-oculta">
-            <div class="content">
-                <div style="max-width:560px;">
-                    <!-- Dados da conta -->
-                    <div class="card" style="padding:24px;margin-bottom:20px;">
-                        <div style="font-size:15px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:8px;">
-                            <i data-lucide="user" style="width:16px;color:var(--blue);"></i>
-                            Dados da Conta
-                        </div>
-                        <p style="font-size:13px;color:var(--muted);margin-bottom:18px;">Seu e-mail de acesso ao painel.</p>
-                        <label style="display:block;font-size:13px;font-weight:600;margin-bottom:8px;">E-mail</label>
-                        <input type="email" id="contaEmail" class="form-control" placeholder="seu@email.com"
-                               style="width:100%;padding:10px 14px;font-size:14px;border-radius:10px;border:1px solid var(--border);background:var(--bg);color:var(--text);margin-bottom:14px;">
-                        <button class="btn btn-primary" onclick="salvarEmailConta()">
-                            <i data-lucide="save" style="width:13px;"></i> Salvar e-mail
-                        </button>
-                    </div>
-
-                    <!-- Trocar senha -->
-                    <div class="card" style="padding:24px;">
-                        <div style="font-size:15px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:8px;">
-                            <i data-lucide="lock" style="width:16px;color:var(--blue);"></i>
-                            Trocar Senha
-                        </div>
-                        <p style="font-size:13px;color:var(--muted);margin-bottom:18px;">Para alterar, confirme sua senha atual.</p>
-                        <form onsubmit="salvarSenhaConta(); return false;">
-                        <input type="text" id="contaUsernameHidden" autocomplete="username" style="display:none;" aria-hidden="true" tabindex="-1">
-                        <label style="display:block;font-size:13px;font-weight:600;margin-bottom:8px;">Senha atual</label>
-                        <input type="password" id="contaSenhaAtual" class="form-control" placeholder="••••••••" autocomplete="current-password"
-                               style="width:100%;padding:10px 14px;font-size:14px;border-radius:10px;border:1px solid var(--border);background:var(--bg);color:var(--text);margin-bottom:14px;">
-                        <label style="display:block;font-size:13px;font-weight:600;margin-bottom:8px;">Nova senha</label>
-                        <input type="password" id="contaSenhaNova" class="form-control" placeholder="Mínimo 6 caracteres" autocomplete="new-password"
-                               style="width:100%;padding:10px 14px;font-size:14px;border-radius:10px;border:1px solid var(--border);background:var(--bg);color:var(--text);margin-bottom:14px;">
-                        <label style="display:block;font-size:13px;font-weight:600;margin-bottom:8px;">Confirmar nova senha</label>
-                        <input type="password" id="contaSenhaConfirma" class="form-control" placeholder="Repita a nova senha" autocomplete="new-password"
-                               style="width:100%;padding:10px 14px;font-size:14px;border-radius:10px;border:1px solid var(--border);background:var(--bg);color:var(--text);margin-bottom:16px;">
-                        <button type="submit" class="btn btn-primary">
-                            <i data-lucide="key" style="width:13px;"></i> Trocar senha
-                        </button>
-                        </form>
-                    </div>
-                </div>
-                
-                    <!-- Integrações (Meta Ads e Google Ads) -->
-                    <form class="card" style="padding:24px;margin-top:20px;" onsubmit="salvarIntegracoesConta(); return false;">
-                        <div style="font-size:15px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:8px;">
-                            <i data-lucide="plug" style="width:16px;color:var(--blue);"></i>
-                            Integrações (Meta e Google Ads)
-                        </div>
-                        <p style="font-size:13px;color:var(--muted);margin-bottom:18px;">
-                            Preencha seus tokens e IDs para ativar o rastreamento no painel. Apenas os últimos 4 dígitos dos tokens salvos serão exibidos.
-                        </p>
-                        
-                        <div style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:10px; padding:16px; margin-bottom:16px;">
-                            <h4 style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:12px;display:flex;align-items:center;gap:6px;">
-                                <img src="https://cdn.simpleicons.org/meta/1877f2" style="width:14px;"> Meta Ads
-                            </h4>
-                            <label style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;">Pixel Padrão</label>
-                            <input type="text" id="contaPixelPadrao" class="form-control pad-md" placeholder="Ex: 123456789" style="width:100%;margin-bottom:12px;">
-                            
-                            <label style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;">Token de Acesso (API de Conversões)</label>
-                            <input type="password" id="contaTokenMeta" autocomplete="new-password" class="form-control pad-md" placeholder="Token longo gerado no Gerenciador de Negócios" style="width:100%;margin-bottom:6px;">
-                            <div id="contaTokenMetaSalvo" style="font-size:11px;color:var(--blue);margin-bottom:12px;display:none;"></div>
-                            
-                            <div style="border-top:1px solid var(--border);margin:16px 0;padding-top:16px;">
-                                <label style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;">CAPI Web: Pixel (Para links rastreáveis)</label>
-                                <input type="text" id="contaCapiPixel" class="form-control pad-md" placeholder="Ex: 987654321" style="width:100%;margin-bottom:12px;">
-                                
-                                <label style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;">CAPI Web: Token de Acesso</label>
-                                <input type="password" id="contaCapiToken" autocomplete="new-password" class="form-control pad-md" placeholder="Token para eventos via web" style="width:100%;margin-bottom:6px;">
-                                <div id="contaCapiTokenSalvo" style="font-size:11px;color:var(--blue);margin-bottom:12px;display:none;"></div>
+            <div class="content conta-page">
+                <div class="conta-grid">
+                    <section class="card conta-card">
+                        <div class="conta-card-head">
+                            <i data-lucide="user" class="conta-card-icon"></i>
+                            <div>
+                                <h3>Dados da Conta</h3>
+                                <p>Seu e-mail de acesso ao painel.</p>
                             </div>
                         </div>
-
-                        <div style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:10px; padding:16px; margin-bottom:16px;">
-                            <h4 style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:12px;display:flex;align-items:center;gap:6px;">
-                                <img src="https://cdn.simpleicons.org/google/34a853" style="width:14px;"> Google Ads
-                            </h4>
-                            <label style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;">Conversion ID (Ex: AW-123456789)</label>
-                            <input type="text" id="contaGoogleId" class="form-control pad-md" placeholder="AW-000000000" style="width:100%;margin-bottom:12px;">
-                            
-                            <label style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;">Conversion Label (Opcional)</label>
-                            <input type="text" id="contaGoogleLabel" class="form-control pad-md" placeholder="Ex: AbCdEfGhIj" style="width:100%;margin-bottom:12px;">
+                        <label class="conta-label" for="contaEmail">E-mail</label>
+                        <input type="email" id="contaEmail" class="conta-input" placeholder="seu@email.com">
+                        <div class="conta-actions">
+                            <button class="btn btn-primary" onclick="salvarEmailConta()">
+                                <i data-lucide="save" style="width:13px;"></i> Salvar e-mail
+                            </button>
                         </div>
+                    </section>
 
+                    <section class="card conta-card">
+                        <div class="conta-card-head">
+                            <i data-lucide="lock" class="conta-card-icon"></i>
+                            <div>
+                                <h3>Trocar Senha</h3>
+                                <p>Para alterar, confirme sua senha atual.</p>
+                            </div>
+                        </div>
+                        <form class="conta-form" onsubmit="salvarSenhaConta(); return false;">
+                            <input type="text" id="contaUsernameHidden" autocomplete="username" style="display:none;" aria-hidden="true" tabindex="-1">
+                            <label class="conta-label" for="contaSenhaAtual">Senha atual</label>
+                            <input type="password" id="contaSenhaAtual" class="conta-input" placeholder="••••••••" autocomplete="current-password">
+                            <label class="conta-label" for="contaSenhaNova">Nova senha</label>
+                            <input type="password" id="contaSenhaNova" class="conta-input" placeholder="Mínimo 6 caracteres" autocomplete="new-password">
+                            <label class="conta-label" for="contaSenhaConfirma">Confirmar nova senha</label>
+                            <input type="password" id="contaSenhaConfirma" class="conta-input" placeholder="Repita a nova senha" autocomplete="new-password">
+                            <div class="conta-actions">
+                                <button type="submit" class="btn btn-primary">
+                                    <i data-lucide="key" style="width:13px;"></i> Trocar senha
+                                </button>
+                            </div>
+                        </form>
+                    </section>
+                </div>
+
+                <form class="card conta-card conta-integracoes-card" onsubmit="salvarIntegracoesConta(); return false;">
+                    <div class="conta-card-head">
+                        <i data-lucide="plug" class="conta-card-icon"></i>
+                        <div>
+                            <h3>Integrações (Meta e Google Ads)</h3>
+                            <p>Preencha tokens e IDs para ativar o rastreamento. Apenas os últimos 4 dígitos dos tokens salvos serão exibidos.</p>
+                        </div>
+                    </div>
+
+                    <div class="conta-integracoes-grid">
+                        <section class="conta-provider-card">
+                            <div class="conta-provider-title">
+                                <img src="https://cdn.simpleicons.org/meta/1877f2" alt="" aria-hidden="true">
+                                Meta Ads
+                            </div>
+                            <label class="conta-label" for="contaPixelPadrao">Pixel Padrão</label>
+                            <input type="text" id="contaPixelPadrao" class="conta-input" placeholder="Ex: 123456789">
+
+                            <label class="conta-label" for="contaTokenMeta">Token de Acesso (API de Conversões)</label>
+                            <input type="password" id="contaTokenMeta" autocomplete="new-password" class="conta-input" placeholder="Token longo gerado no Gerenciador de Negócios">
+                            <div id="contaTokenMetaSalvo" class="conta-token-status" style="display:none;"></div>
+
+                            <div class="conta-divider"></div>
+
+                            <label class="conta-label" for="contaCapiPixel">CAPI Web: Pixel (para links rastreáveis)</label>
+                            <input type="text" id="contaCapiPixel" class="conta-input" placeholder="Ex: 987654321">
+
+                            <label class="conta-label" for="contaCapiToken">CAPI Web: Token de Acesso</label>
+                            <input type="password" id="contaCapiToken" autocomplete="new-password" class="conta-input" placeholder="Token para eventos via web">
+                            <div id="contaCapiTokenSalvo" class="conta-token-status" style="display:none;"></div>
+                        </section>
+
+                        <section class="conta-provider-card">
+                            <div class="conta-provider-title">
+                                <img src="https://cdn.simpleicons.org/google/34a853" alt="" aria-hidden="true">
+                                Google Ads
+                            </div>
+                            <label class="conta-label" for="contaGoogleId">Conversion ID (Ex: AW-123456789)</label>
+                            <input type="text" id="contaGoogleId" class="conta-input" placeholder="AW-000000000">
+
+                            <label class="conta-label" for="contaGoogleLabel">Conversion Label (opcional)</label>
+                            <input type="text" id="contaGoogleLabel" class="conta-input" placeholder="Ex: AbCdEfGhIj">
+                        </section>
+                    </div>
+
+                    <div class="conta-actions">
                         <button type="submit" class="btn btn-primary" id="btnSalvarIntegracoes">
                             <i data-lucide="save" style="width:13px;"></i> Salvar Integrações
                         </button>
-                    </form>
+                    </div>
+                </form>
             </div>
         </div><!-- /aba-conta -->
 

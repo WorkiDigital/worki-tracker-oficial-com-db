@@ -199,6 +199,126 @@ select.bare option { background:var(--card); }
 .card-title { font-size:14px; font-weight:700; display:flex; align-items:center; gap:8px; letter-spacing:-0.01em; }
 .count-badge { background:var(--tag); color:var(--muted); font-size:11px; font-weight:600; padding:3px 8px; border-radius:20px; }
 
+/* Minha Conta */
+.conta-page {
+    display:flex;
+    flex-direction:column;
+    gap:20px;
+}
+.conta-grid,
+.conta-integracoes-grid {
+    display:grid;
+    grid-template-columns:repeat(2, minmax(0, 1fr));
+    gap:20px;
+    align-items:start;
+}
+.conta-card {
+    padding:24px;
+    overflow:visible;
+}
+.conta-card-head {
+    display:flex;
+    align-items:flex-start;
+    gap:10px;
+    margin-bottom:18px;
+}
+.conta-card-icon {
+    width:17px;
+    height:17px;
+    color:var(--blue);
+    flex-shrink:0;
+    margin-top:2px;
+}
+.conta-card-head h3 {
+    margin:0;
+    font-size:15px;
+    line-height:1.25;
+    font-weight:800;
+    color:var(--text-primary);
+}
+.conta-card-head p {
+    margin:6px 0 0;
+    font-size:13px;
+    line-height:1.45;
+    color:var(--muted);
+}
+.conta-form {
+    display:flex;
+    flex-direction:column;
+}
+.conta-label {
+    display:block;
+    margin:0 0 7px;
+    font-size:12px;
+    line-height:1.25;
+    font-weight:800;
+    color:var(--text-primary);
+}
+.conta-input {
+    width:100%;
+    min-height:40px;
+    margin:0 0 14px;
+    padding:10px 14px;
+    border-radius:10px;
+    border:1px solid var(--border);
+    background:var(--bg-secondary);
+    color:var(--text);
+    font-size:14px;
+    outline:none;
+    color-scheme:var(--scheme);
+    transition:border-color .15s, box-shadow .15s, background .15s;
+}
+.conta-input::placeholder {
+    color:var(--muted);
+    opacity:.85;
+}
+.conta-input:focus {
+    border-color:rgba(37,99,235,.55);
+    box-shadow:0 0 0 3px rgba(37,99,235,.12);
+    background:var(--card);
+}
+.conta-actions {
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-top:2px;
+}
+.conta-integracoes-card {
+    width:100%;
+}
+.conta-provider-card {
+    background:var(--bg-secondary);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:16px;
+    min-height:100%;
+}
+.conta-provider-title {
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-bottom:16px;
+    font-size:13px;
+    font-weight:800;
+    color:var(--text-primary);
+}
+.conta-provider-title img {
+    width:15px;
+    height:15px;
+    flex-shrink:0;
+}
+.conta-divider {
+    height:1px;
+    background:var(--border);
+    margin:4px 0 16px;
+}
+.conta-token-status {
+    margin:-6px 0 14px;
+    font-size:11px;
+    font-weight:700;
+    color:var(--blue);
+}
+
 table { width:100%; border-collapse:collapse; }
 thead th { color:var(--muted); font-size:10px; text-transform:uppercase; font-weight:600; letter-spacing:.5px; padding:12px 16px; border-bottom:1px solid var(--border); white-space:nowrap; user-select:none; text-align:center; }
 thead th.sortable { cursor:pointer; }
@@ -792,6 +912,8 @@ html.light .nav-item.active { box-shadow:inset 3px 0 0 var(--blue); background:r
     .metrics-grid { grid-template-columns:repeat(2,1fr); }
     .charts-grid  { grid-template-columns:repeat(2,1fr); }
     .ads-metrics  { grid-template-columns:repeat(2,1fr); }
+    .conta-grid,
+    .conta-integracoes-grid { grid-template-columns:1fr; }
     .content { padding:20px 16px; }
     .topbar { padding:16px; }
     .demo-grid { grid-template-columns:repeat(2,1fr); }
@@ -826,6 +948,12 @@ html.light .nav-item.active { box-shadow:inset 3px 0 0 var(--blue); background:r
 
     /* Content */
     .content { padding:16px; }
+    .conta-page { gap:16px; }
+    .conta-grid,
+    .conta-integracoes-grid { gap:16px; }
+    .conta-card,
+    .conta-provider-card { padding:18px; }
+    .conta-actions .btn { width:100%; justify-content:center; }
 
     /* Metrics */
     .metrics-grid { grid-template-columns:1fr 1fr; gap:10px; }
