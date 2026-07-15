@@ -21,7 +21,7 @@ export default async function handler(req, res) {
         id, nome, telefone, status, plataforma, instancia,
         created_at, event_time, first_response_at, sale_closed_at, qualified_at,
         utm_campaign, utm_medium, utm_content, utm_source, source_id,
-        mensagem_recebida, valor_venda, lead_score,
+        mensagem_recebida, valor_venda,
         email, cpf, endereco, cidade, estado, produto,
         ctw_aci_id, cliente_id, page_id, lead_origin,
         tracking_click_id, tracking_campaign_id, tracking_method,
@@ -124,7 +124,7 @@ export default async function handler(req, res) {
             id, nome, telefone, status, plataforma, instancia,
             created_at, event_time, first_response_at, sale_closed_at, qualified_at,
             utm_campaign, utm_medium, utm_content, source_id,
-            mensagem_recebida, valor_venda, lead_score,
+            mensagem_recebida, valor_venda,
             email, cpf, endereco, cidade, estado, produto,
             ctw_aci_id, cliente_id, page_id, lead_origin
           FROM leads_tracking WHERE id=$1

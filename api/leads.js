@@ -44,7 +44,7 @@ export default async function handler(req, res) {
         // event_source_url/anuncio_thumbnail_url). Inclui o que tabela, gráficos e CSV usam.
         const COLS = `l.id, l.nome, l.telefone, l.status, l.plataforma, l.instancia, l.event_time,
             l.created_at, l.utm_campaign, l.utm_medium, l.utm_content, l.mensagem_recebida, l.valor_venda,
-            l.lead_score, l.qualified_at, l.email, l.cpf, l.endereco, l.cidade, l.estado, l.produto,
+            l.qualified_at, l.email, l.cpf, l.endereco, l.cidade, l.estado, l.produto,
             l.ctw_aci_id, l.cliente_id, l.lead_origin, l.utm_source,
             l.tracking_click_id, l.tracking_campaign_id, l.tracking_method,
             tc.name AS tracking_campaign_name`;
@@ -67,7 +67,7 @@ export default async function handler(req, res) {
             try {
                 const legacyCols = `l.id, l.nome, l.telefone, l.status, l.plataforma, l.instancia, l.event_time,
                     l.created_at, l.utm_campaign, l.utm_medium, l.utm_content, l.mensagem_recebida, l.valor_venda,
-                    l.lead_score, l.qualified_at, l.email, l.cpf, l.endereco, l.cidade, l.estado, l.produto,
+                    l.qualified_at, l.email, l.cpf, l.endereco, l.cidade, l.estado, l.produto,
                     l.ctw_aci_id, l.cliente_id, l.lead_origin, l.utm_source`;
                 const fallback = await pool.query(
                     `SELECT ${legacyCols}

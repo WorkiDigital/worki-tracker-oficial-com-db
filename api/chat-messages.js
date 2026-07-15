@@ -255,7 +255,7 @@ export default async function handler(req, res) {
           l.instancia, l.created_at, l.event_time, l.first_response_at,
           l.sale_closed_at, l.qualified_at, l.utm_campaign, l.utm_medium,
           l.utm_content, l.utm_source, l.source_id, l.mensagem_recebida,
-          l.valor_venda, l.lead_score, l.email, l.cpf, l.endereco,
+          l.valor_venda, l.email, l.cpf, l.endereco,
           l.cidade, l.estado, l.produto, l.lead_origin,
           l.tracking_click_id, l.tracking_campaign_id, l.tracking_method,
           tc.name AS tracking_campaign_name
