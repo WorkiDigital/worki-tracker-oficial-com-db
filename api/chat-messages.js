@@ -193,7 +193,7 @@ export default async function handler(req, res) {
       addScopedClient(where, params, user, req.query.cliente_id);
 
       const result = await pool.query(`
-        SELECT m.id, m.cliente_id, m.instance, m.message_id, m.message_type, m.media_url
+        SELECT m.id, m.cliente_id, m.instance, m.message_id, m.message_type, m.media_url, m.from_me, m.remote_jid, m.telefone
         FROM public.chat_messages m
         WHERE ${where.join(' AND ')}
         LIMIT 1
@@ -210,10 +210,20 @@ export default async function handler(req, res) {
       }
 
       try {
+        const remoteJid = row.remote_jid || `${row.telefone}@s.whatsapp.net`;
         const evoRes = await fetch(`${EVO_URL}/chat/getBase64FromMediaMessage/${encodeURIComponent(row.instance)}`, {
           method: 'POST',
           headers: { 'apikey': EVO_KEY, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: { key: { id: row.message_id } }, convertToMp4: false })
+          body: JSON.stringify({ 
+            message: { 
+              key: { 
+                id: row.message_id,
+                fromMe: !!row.from_me,
+                remoteJid: remoteJid
+              } 
+            }, 
+            convertToMp4: false 
+          })
         });
         if (!evoRes.ok) {
           const text = await evoRes.text().catch(() => '');
