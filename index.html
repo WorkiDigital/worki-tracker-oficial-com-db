@@ -860,6 +860,10 @@
             <i data-lucide="send" style="width:17px;flex-shrink:0;"></i><span>Relat&oacute;rios Autom&aacute;ticos</span>
         </a>
 
+        <a id="btn-integracoes" class="nav-item" onclick="mudarAba('integracoes')">
+            <i data-lucide="plug" style="width:17px;flex-shrink:0;"></i><span>Integra&ccedil;&otilde;es</span>
+        </a>
+
         <a id="btn-conta" class="nav-item" onclick="mudarAba('conta')">
             <i data-lucide="user-cog" style="width:17px;flex-shrink:0;"></i><span>Minha Conta</span>
         </a>
@@ -1854,12 +1858,18 @@
                     </section>
                 </div>
 
+            </div>
+        </div><!-- /aba-conta -->
+
+        <!-- ABA: INTEGRACOES -->
+        <div id="aba-integracoes" class="aba-oculta">
+            <div class="content conta-page">
                 <form class="card conta-card conta-integracoes-card" onsubmit="salvarIntegracoesConta(); return false;">
                     <div class="conta-card-head">
                         <i data-lucide="plug" class="conta-card-icon"></i>
                         <div>
                             <h3>Integrações (Meta e Google Ads)</h3>
-                            <p>Preencha tokens e IDs para ativar o rastreamento. Apenas os últimos 4 dígitos dos tokens salvos serão exibidos.</p>
+                            <p id="integracoesClienteResumo">Preencha tokens e IDs para ativar o rastreamento do cliente selecionado.</p>
                         </div>
                     </div>
 
@@ -1906,7 +1916,7 @@
                     </div>
                 </form>
             </div>
-        </div><!-- /aba-conta -->
+        </div><!-- /aba-integracoes -->
 
         <!-- ABA: CONFIGURAÇÕES -->
         <div id="aba-config" class="aba-oculta">
@@ -2978,6 +2988,7 @@ async function init() {
                 'btn-captacao':        p.captacao       !== false,
                 'btn-inteligente':     p.inteligente    !== false,
                 'btn-zaprelatorios':   p.zaprelatorios  !== false,
+                'btn-integracoes':      p.config         !== false,
                 'btn-conta':           p.conta          !== false,
             };
             Object.entries(tabMap).forEach(([btnId, allowed]) => {
@@ -3065,7 +3076,7 @@ async function popularSeletorAdmin() {
     }
 }
 
-const ABAS_COM_FILTRO_CLIENTE = new Set(['leads','conversas','funil','relatorios','anuncios','captacao','inteligente','whatsapp']);
+const ABAS_COM_FILTRO_CLIENTE = new Set(['leads','conversas','funil','relatorios','anuncios','captacao','inteligente','whatsapp','integracoes']);
 
 function abaAtual() {
     return ABAS.find(a => !$('aba-' + a)?.classList.contains('aba-oculta')) || 'leads';
@@ -3101,6 +3112,7 @@ function trocarClienteAdmin(id) {
     if (!$('aba-funil')?.classList.contains('aba-oculta') && typeof funilCarregar === 'function') funilCarregar();
     if (!$('aba-relatorios')?.classList.contains('aba-oculta') && typeof recarregarRelatorios === 'function') recarregarRelatorios();
     if (!$('aba-anuncios')?.classList.contains('aba-oculta')) { adsCarregado = false; carregarContasAds(); }
+    if (!$('aba-integracoes')?.classList.contains('aba-oculta') && typeof carregarIntegracoesConta === 'function') carregarIntegracoesConta();
 }
 // ── Anúncios — Account picker ──────────────────────────────────
 let _todasContas = [];        // lista completa carregada da API
@@ -5500,7 +5512,7 @@ document.addEventListener('keydown', e => {
 });
 
 // ── Abas ───────────────────────────────────────────────────────
-const ABAS = ['leads','conversas','funil','relatorios','anuncios','captacao','inteligente','clientes','conta','config','ajustes','agencia','whatsapp','zaprelatorios','logs'];
+const ABAS = ['leads','conversas','funil','relatorios','anuncios','captacao','inteligente','clientes','integracoes','conta','config','ajustes','agencia','whatsapp','zaprelatorios','logs'];
 const TITULOS = {
     leads:          '<i data-lucide="users" style="color:var(--blue);"></i> Leads',
     conversas:      '<i data-lucide="messages-square" style="color:#25D366;"></i> Conversas',
@@ -5510,6 +5522,7 @@ const TITULOS = {
     captacao:       '<i data-lucide="link" style="color:var(--blue);"></i> Link de rastreamento',
     inteligente:    '<i data-lucide="workflow" style="color:var(--blue);"></i> Rastreamento inteligente',
     clientes:       '<i data-lucide="share-2" style="color:var(--blue);"></i> Compartilhar Dash',
+    integracoes:    '<i data-lucide="plug" style="color:var(--blue);"></i> Integra&ccedil;&otilde;es',
     conta:          '<i data-lucide="user-cog" style="color:var(--blue);"></i> Minha Conta',
     config:         '<i data-lucide="megaphone" style="color:var(--blue);"></i> Contas de Anúncio',
     ajustes:        '<i data-lucide="palette" style="color:var(--blue);"></i> Marca',
@@ -5543,6 +5556,7 @@ function mudarAba(aba) {
     if (aba === 'anuncios' && !adsCarregado) carregarContasAds();
     if (aba === 'captacao') { carregarCampanhasLink(); }
     if (aba === 'inteligente') { capIntCarregar(); }
+    if (aba === 'integracoes') { carregarIntegracoesConta(); }
     if (aba === 'conta')    { carregarMinhaConta(); }
     if (aba === 'config')   { renderConfigContas(); }
     if (aba === 'clientes') { renderShareLinks(); }
@@ -5560,30 +5574,62 @@ function carregarMinhaConta() {
     const user = JSON.parse(localStorage.getItem('adlytics_user') || '{}');
     if ($('contaEmail')) $('contaEmail').value = user.email || '';
     if ($('contaUsernameHidden')) $('contaUsernameHidden').value = user.email || '';
+}
 
-    // Load Integrations
-    authFetch('/api/me').then(r => r.json()).then(data => {
-        if (data.integracoes) {
-            const intg = data.integracoes;
-            if ($('contaPixelPadrao')) $('contaPixelPadrao').value = intg.pixel_padrao || '';
-            if ($('contaGoogleId')) $('contaGoogleId').value = intg.google_ads_conversion_id || '';
-            if ($('contaGoogleLabel')) $('contaGoogleLabel').value = intg.google_ads_conversion_label || '';
-            if ($('contaCapiPixel')) $('contaCapiPixel').value = intg.capi_pixel_id || '';
-            
-            if (intg.token_last4) {
-                $('contaTokenMetaSalvo').style.display = 'block';
-                $('contaTokenMetaSalvo').textContent = `Token ativo (final ${intg.token_last4})`;
-            } else {
-                $('contaTokenMetaSalvo').style.display = 'none';
-            }
-            if (intg.capi_token_last4) {
-                $('contaCapiTokenSalvo').style.display = 'block';
-                $('contaCapiTokenSalvo').textContent = `Token CAPI ativo (final ${intg.capi_token_last4})`;
-            } else {
-                $('contaCapiTokenSalvo').style.display = 'none';
-            }
+function integracoesClienteParam() {
+    const u = JSON.parse(localStorage.getItem('adlytics_user') || '{}');
+    return u?.is_admin && clienteAdminSelecionado ? String(clienteAdminSelecionado) : '';
+}
+
+function integracoesClienteNome() {
+    const sel = $('selectClienteAdmin');
+    if (sel?.value) return sel.options[sel.selectedIndex]?.textContent?.trim() || `Cliente #${sel.value}`;
+    const u = JSON.parse(localStorage.getItem('adlytics_user') || '{}');
+    return u?.nome || u?.email || 'cliente atual';
+}
+
+function limparCamposIntegracoes() {
+    ['contaPixelPadrao','contaGoogleId','contaGoogleLabel','contaCapiPixel','contaTokenMeta','contaCapiToken'].forEach(id => {
+        if ($(id)) $(id).value = '';
+    });
+    if ($('contaTokenMetaSalvo')) $('contaTokenMetaSalvo').style.display = 'none';
+    if ($('contaCapiTokenSalvo')) $('contaCapiTokenSalvo').style.display = 'none';
+}
+
+async function carregarIntegracoesConta() {
+    limparCamposIntegracoes();
+    const clienteId = integracoesClienteParam();
+    const params = new URLSearchParams();
+    if (clienteId) params.set('cliente_id', clienteId);
+
+    try {
+        const url = `/api/me-integracoes${params.toString() ? '?' + params.toString() : ''}`;
+        const r = await authFetch(url);
+        const data = await r.json();
+        if (!r.ok || data.error) throw new Error(data.error || 'Erro ao carregar integracoes');
+
+        if ($('integracoesClienteResumo')) {
+            $('integracoesClienteResumo').textContent =
+                `Configuracoes aplicadas ao cliente: ${data.cliente_nome || integracoesClienteNome()}. Apenas os ultimos digitos dos tokens salvos serao exibidos.`;
         }
-    }).catch(e => console.error('Erro ao carregar integrações da conta:', e));
+
+        const intg = data.integracoes || {};
+        if ($('contaPixelPadrao')) $('contaPixelPadrao').value = intg.pixel_padrao || '';
+        if ($('contaGoogleId')) $('contaGoogleId').value = intg.google_ads_conversion_id || '';
+        if ($('contaGoogleLabel')) $('contaGoogleLabel').value = intg.google_ads_conversion_label || '';
+        if ($('contaCapiPixel')) $('contaCapiPixel').value = intg.capi_pixel_id || '';
+
+        if (intg.token_last4) {
+            $('contaTokenMetaSalvo').style.display = 'block';
+            $('contaTokenMetaSalvo').textContent = `Token ativo (final ${intg.token_last4})`;
+        }
+        if (intg.capi_token_last4) {
+            $('contaCapiTokenSalvo').style.display = 'block';
+            $('contaCapiTokenSalvo').textContent = `Token CAPI ativo (final ${intg.capi_token_last4})`;
+        }
+    } catch(e) {
+        toast('Erro ao carregar integracoes: ' + e.message, 'error');
+    }
 }
 
 async function salvarEmailConta() {
@@ -5634,6 +5680,8 @@ async function salvarIntegracoesConta() {
         google_ads_conversion_label: $('contaGoogleLabel').value,
         capi_pixel_id: $('contaCapiPixel').value
     };
+    const clienteId = integracoesClienteParam();
+    if (clienteId) body.cliente_id = clienteId;
     
     const tokenMeta = $('contaTokenMeta').value;
     if (tokenMeta) body.token_meta = tokenMeta;
@@ -5653,7 +5701,7 @@ async function salvarIntegracoesConta() {
         
         $('contaTokenMeta').value = '';
         $('contaCapiToken').value = '';
-        carregarMinhaConta(); // Recarrega para atualizar os labels "Token salvo"
+        carregarIntegracoesConta(); // Recarrega para atualizar os labels "Token salvo"
     } catch(e) {
         toast('Erro: ' + e.message, 'error');
     } finally {
