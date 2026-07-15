@@ -1129,6 +1129,8 @@ html.light .chat-bubble.from-them::after { background:#fff; }
 .chat-media-image, .chat-media-video { max-width:260px; max-height:260px; border-radius:6px; object-fit:cover; }
 .chat-media-audio { width:260px; max-width:100%; height:36px; }
 .chat-media-chip, .chat-media-link { display:inline-flex; align-items:center; gap:7px; opacity:.85; font-size:12px; text-decoration:none; color:inherit; }
+.chat-media-unavailable { color:#ef4444; opacity:1; }
+.chat-media-unavailable i { width:14px; height:14px; flex-shrink:0; }
 .chat-media-link i { width:14px; height:14px; }
 .chat-media-audio-play, .chat-media-load-btn {
   display:inline-flex; align-items:center; gap:8px;

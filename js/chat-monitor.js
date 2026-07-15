@@ -520,6 +520,7 @@ async function chatAutoloadMediaQueue(messages, token) {
     const queue = messages.filter(m =>
         CHAT_AUTOLOAD_TYPES.has(m.message_type) &&
         chatSafeUrl(m.media_url) &&
+        m.message_id &&
         !m.from_me && // midia ENVIADA pelo painel: a Evolution getBase64FromMediaMessage
                       // e pensada pra midia RECEBIDA, e sistematicamente falha pra mensagens
                       // proprias — tentar de novo a cada poll so gera rajada de 429 sem nunca
@@ -536,7 +537,7 @@ async function chatAutoloadMediaQueue(messages, token) {
             // O usuario ainda pode reabrir a conversa (chatAutoloadedIds.clear()) ou,
             // pra documento, clicar manualmente pra tentar de novo.
             chatAutoloadedIds.add(m.id);
-            await chatLoadMedia(m.id, null, m.message_type);
+            await chatLoadMedia(m.id, null, m.message_type, m.cliente_id);
         }
     }
     const workers = Array.from({ length: Math.min(CHAT_AUTOLOAD_CONCURRENCY, queue.length) }, worker);
@@ -601,6 +602,13 @@ function chatRenderOptimisticMedia(m) {
 function chatRenderMedia(message) {
     const url = chatSafeUrl(message.media_url);
     if (!url) return message.body ? '' : `<div class="chat-media-chip">${esc(chatMediaLabel(message.message_type))}</div>`;
+    if (!message.message_id) {
+        return `<div class="chat-media-chip chat-media-unavailable">
+            <i data-lucide="alert-triangle"></i><span>Midia indisponivel</span>
+        </div>`;
+    }
+
+    const clienteIdAttr = esc(message.cliente_id || '');
 
     // Midia ENVIADA pelo painel: nao auto-carrega (ver chatAutoloadMediaQueue) porque
     // a Evolution sistematicamente nao consegue servir de volta midia propria via
@@ -615,36 +623,36 @@ function chatRenderMedia(message) {
             : message.message_type === 'image' || message.message_type === 'sticker' ? 'Ver imagem'
             : 'Ver documento';
         const wrapId = message.message_type === 'audio' ? `chat-audio-${message.id}` : `chat-media-${message.id}`;
-        return `<div class="chat-media-doc-wrap" id="${wrapId}">
-            <button type="button" class="chat-media-load-btn" onclick="chatLoadMedia(${message.id}, this)">
+        return `<div class="chat-media-doc-wrap" id="${wrapId}" data-cliente-id="${clienteIdAttr}">
+            <button type="button" class="chat-media-load-btn" data-cliente-id="${clienteIdAttr}" onclick="chatLoadMedia(${message.id}, this)">
                 <i data-lucide="${icon}"></i><span>${label}</span>
             </button>
         </div>`;
     }
 
     if (message.message_type === 'audio') {
-        return `<div class="chat-media-audio-wrap" id="chat-audio-${message.id}">
+        return `<div class="chat-media-audio-wrap" id="chat-audio-${message.id}" data-cliente-id="${clienteIdAttr}">
             <span class="chat-media-loading"><i data-lucide="loader-2" class="spinner"></i><span>Carregando audio...</span></span>
         </div>`;
     }
     if (message.message_type === 'image' || message.message_type === 'sticker') {
-        return `<div class="chat-media-image-wrap" id="chat-media-${message.id}">
+        return `<div class="chat-media-image-wrap" id="chat-media-${message.id}" data-cliente-id="${clienteIdAttr}">
             <span class="chat-media-loading"><i data-lucide="loader-2" class="spinner"></i><span>Carregando imagem...</span></span>
         </div>`;
     }
     if (message.message_type === 'video') {
-        return `<div class="chat-media-video-wrap" id="chat-media-${message.id}">
+        return `<div class="chat-media-video-wrap" id="chat-media-${message.id}" data-cliente-id="${clienteIdAttr}">
             <span class="chat-media-loading"><i data-lucide="loader-2" class="spinner"></i><span>Carregando video...</span></span>
         </div>`;
     }
-    return `<div class="chat-media-doc-wrap" id="chat-media-${message.id}">
-        <button type="button" class="chat-media-load-btn" onclick="chatLoadMedia(${message.id}, this)">
+    return `<div class="chat-media-doc-wrap" id="chat-media-${message.id}" data-cliente-id="${clienteIdAttr}">
+        <button type="button" class="chat-media-load-btn" data-cliente-id="${clienteIdAttr}" onclick="chatLoadMedia(${message.id}, this)">
             <i data-lucide="paperclip"></i><span>Ver documento</span>
         </button>
     </div>`;
 }
 
-async function chatLoadMedia(messageId, btn, messageType) {
+async function chatLoadMedia(messageId, btn, messageType, clienteId) {
     const wrap = btn
         ? btn.closest('[id^="chat-audio-"], [id^="chat-media-"]')
         : ($(`chat-audio-${messageId}`) || $(`chat-media-${messageId}`));
@@ -659,7 +667,11 @@ async function chatLoadMedia(messageId, btn, messageType) {
     }
     try {
         const params = new URLSearchParams({ action: 'get_media', id: messageId });
-        const cliente = $('chatClienteFilter')?.value || '';
+        const cliente = clienteId
+            || btn?.dataset?.clienteId
+            || wrap?.dataset?.clienteId
+            || chatState.selected?.cliente_id
+            || chatClienteFiltroAtual();
         if (cliente) params.set('cliente_id', cliente);
         const res = await authFetch(`/api/chat-messages?${params.toString()}`);
         const data = await readApiJson(res, 'Falha ao carregar midia');
