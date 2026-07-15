@@ -7,8 +7,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <link rel="stylesheet" href="css/login.css?v=20260712-1">
-    <!-- Config de runtime (window.APP_CONFIG.API_BASE_URL) — ver index.html. -->
-    <script src="/runtime-config.js"></script>
 </head>
 <body>
 
@@ -93,15 +91,6 @@
 </div>
 
 <script>
-// window.APP_CONFIG vem de /runtime-config.js (carregado no <head>); fallback
-// para window.API_BASE_URL cobre HTML servido sem essa rota disponível.
-function apiUrl(path) {
-    const baseUrl = window.APP_CONFIG?.API_BASE_URL || window.API_BASE_URL || '';
-    const normalizedBase = baseUrl.replace(/\/+$/, '');
-    const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-    return `${normalizedBase}${normalizedPath}`;
-}
-
 let TOKEN = localStorage.getItem('adlytics_token');
 
 // ── Inicialização ───────────────────────────────────────────────
@@ -114,7 +103,7 @@ async function init() {
 
 async function carregarWhiteLabel() {
     try {
-        const r = await fetch(apiUrl('/api/config'));
+        const r = await fetch('/api/config');
         const cfg = await r.json();
         const brandName = cfg.projectName || 'Adlytics';
         const brandLogo = cfg.projectLogo;
@@ -172,7 +161,7 @@ async function fazerLogin() {
     esconderAlerta();
 
     try {
-        const res = await fetch(apiUrl('/api/auth-login'), {
+        const res = await fetch('/api/auth-login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password: senha })
@@ -214,7 +203,7 @@ async function fazerCadastro() {
     esconderAlerta();
 
     try {
-        const res = await fetch(apiUrl('/api/auth-register'), {
+        const res = await fetch('/api/auth-register', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password: senha })

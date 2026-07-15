@@ -5,10 +5,7 @@
   "type": "module",
   "scripts": {
     "start": "node server.js",
-    "start:api": "node server-api.js",
-    "start:static": "node server-static.js",
     "dev": "node server.js",
-    "dev:api": "node server-api.js",
     "setup": "node setup-db.js",
     "delete:old-shares": "node delete-old-share-links.js"
   },

@@ -92,19 +92,6 @@ const server = http.createServer(async (req, res) => {
         return;
     }
 
-    // Config de runtime para o front: no legado (front+API juntos) API_BASE_URL
-    // é sempre vazio (mesma origem) — existe só para o HTML não dar 404 ao
-    // pedir esse script, mantendo paridade com server-static.js/server-api.js.
-    if (pathname === '/runtime-config.js') {
-        res.writeHead(200, {
-            'Content-Type': 'application/javascript; charset=utf-8',
-            'Cache-Control': 'no-store',
-            'X-Content-Type-Options': 'nosniff',
-        });
-        res.end('window.APP_CONFIG = Object.freeze({ API_BASE_URL: "" });\n');
-        return;
-    }
-
     // Detailed health check — DB + Redis + uptime
     if (pathname === '/health/detailed') {
         const token = req.headers.authorization?.replace(/^Bearer\s+/i, '').trim();
@@ -320,15 +307,8 @@ function pathToFileURL(p) { return new URL('file:///' + p.replace(/\\/g,'/')); }
 server.listen(PORT, () => {
     console.log(`✅ Dev server running at http://localhost:${PORT}`);
     console.log(`   API routes: /api/leads, /api/config, /api/ads, /api/ads-accounts`);
-    // Desligável via ENABLE_CRONS=false: usado quando este serviço legado
-    // continua no ar como fallback ao lado do server-api.js separado, para
-    // não duplicar envio de relatórios nem limpeza de mensagens.
-    if (process.env.ENABLE_CRONS !== 'false') {
-        iniciarCronZap();
-        iniciarCronChatCleanup();
-    } else {
-        console.log('[Crons] desativados via ENABLE_CRONS=false');
-    }
+    iniciarCronZap();
+    iniciarCronChatCleanup();
 });
 
 async function iniciarCronZap() {

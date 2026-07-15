@@ -1,4 +1,0 @@
-API: npm run start:api
-Frontend: npm run start:static
-Frontend env: API_BASE_URL=https://api.seudominio.com
-API env: ALLOWED_ORIGINS=https://app.seudominio.com

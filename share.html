@@ -9,8 +9,6 @@
     <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
     <link rel="stylesheet" href="css/share.css?v=20260712-1">
-    <!-- Config de runtime (window.APP_CONFIG.API_BASE_URL) — ver index.html. -->
-    <script src="/runtime-config.js"></script>
     <script defer src="js/utils.js?v=20260712-1"></script>
 </head>
 <body>
@@ -167,7 +165,7 @@
     // White-Label Logic for Share Page
     (async () => {
         try {
-            const r = await fetch(apiUrl('/api/config'));
+            const r = await fetch('/api/config');
             const cfg = await r.json();
             const brandName = cfg.projectName || 'Adlytics';
             const brandLogo = cfg.projectLogo;
