@@ -4,6 +4,7 @@
 import { getPool } from './_db.js';
 import { verifyAuth } from './_auth.js';
 import { cors } from './_cors.js';
+import { ensureTrackingSchema } from './_tracking-schema.js';
 
 export default async function handler(req, res) {
   if (cors(req, res, ['GET'])) return;
@@ -23,6 +24,7 @@ export default async function handler(req, res) {
   let onboarding_completo = true;
   let onboarding_perfil = null;
   try {
+    await ensureTrackingSchema();
     const pool = getPool();
     const ob = await pool.query('SELECT onboarding_completo, onboarding_perfil FROM usuarios WHERE id = $1', [user.id]);
     if (ob.rows.length) {
