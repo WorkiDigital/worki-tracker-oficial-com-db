@@ -262,6 +262,13 @@ function onbRenderWhatsapp(body) {
             <button class="onb-btn onb-btn-ghost" id="btnCompartilharWa" onclick="compartilharQrComResponsavel()" style="display:none;margin-top:10px;">
                 <i data-lucide="share-2" style="width:14px;height:14px;"></i> Compartilhar com o responsável
             </button>
+            <div id="waLinkCompartilhadoBox" style="display:none;max-width:300px;margin:12px auto 0;text-align:left;">
+                <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:6px;">Link para o responsável (válido por poucos minutos, uso único):</label>
+                <div style="display:flex;gap:6px;">
+                    <input id="waLinkCompartilhado" type="text" readonly style="flex:1;min-width:0;font-size:11px;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--hover);color:var(--text);" onclick="this.select()">
+                    <button class="onb-btn onb-btn-ghost" onclick="waCopiarLinkCompartilhado()" title="Copiar link"><i data-lucide="copy" style="width:14px;"></i></button>
+                </div>
+            </div>
         </div>
         <div id="waConnectedView" style="display:none;text-align:center;margin-top:16px;">
             <i data-lucide="check-circle" style="width:40px;height:40px;color:var(--green);"></i>

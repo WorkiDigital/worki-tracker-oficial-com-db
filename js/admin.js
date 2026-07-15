@@ -289,12 +289,14 @@ async function compartilharQrComResponsavel() {
         if (!r.ok) throw new Error(data.error || 'Falha ao gerar o link.');
 
         const url = `${window.location.origin}/wa-connect.html?token=${encodeURIComponent(data.token)}`;
-        if (typeof capCopiar === 'function') {
-            capCopiar(url, 'Link copiado! Válido por poucos minutos e uso único.');
-        } else {
-            await navigator.clipboard.writeText(url);
-            toast('Link copiado! Válido por poucos minutos e uso único.', 'success');
+        const input = $('waLinkCompartilhado');
+        const box = $('waLinkCompartilhadoBox');
+        if (input && box) {
+            input.value = url;
+            box.style.display = '';
+            input.select();
         }
+        toast('Link gerado! Copie e envie para o responsável.', 'success');
     } catch (e) {
         toast(e.message, 'error');
     } finally {
@@ -303,19 +305,52 @@ async function compartilharQrComResponsavel() {
     }
 }
 
+function ocultarLinkCompartilhadoWa() {
+    const box = $('waLinkCompartilhadoBox');
+    const input = $('waLinkCompartilhado');
+    if (box) box.style.display = 'none';
+    if (input) input.value = '';
+}
+
+function waCopiarLinkCompartilhado() {
+    const input = $('waLinkCompartilhado');
+    if (!input || !input.value) return;
+    if (typeof capCopiar === 'function') {
+        capCopiar(input.value, 'Link copiado!');
+    } else {
+        input.select();
+        navigator.clipboard.writeText(input.value).then(() => toast('Link copiado!', 'success'));
+    }
+}
+
 function setWaView(view) {
     if (waPollTimer) {
         clearInterval(waPollTimer);
         waPollTimer = null;
     }
-    pararCountdownWaQr();
-    const btnCompartilhar = $('btnCompartilharWa');
-    if (btnCompartilhar) btnCompartilhar.style.display = 'none';
     ['waList','waCreate','waQrView','waConnectedView'].forEach(id => {
         const el = $(id); if (el) el.style.display = 'none';
     });
     const target = $(view); if (target) target.style.display = view === 'waList' || view === 'waCreate' ? 'block' : 'block'; // block/flex
     $('btnNovaConexao').style.display = view === 'waList' ? 'flex' : 'none';
+
+    // O botão de compartilhar (e o countdown) só fazem sentido junto de um QR
+    // já carregado — setWaView('waQrView') é chamada a cada poll de status
+    // (inclusive nos silenciosos, sem buscar QR novo), então a visibilidade
+    // precisa ser reavaliada aqui, de forma idempotente, e não só no momento
+    // em que o QR é buscado pela primeira vez.
+    const btnCompartilhar = $('btnCompartilharWa');
+    const qrImg = $('waQrImage');
+    const temQrCarregado = view === 'waQrView' && qrImg && qrImg.style.display !== 'none' && qrImg.src?.startsWith('data:image/');
+    if (btnCompartilhar) btnCompartilhar.style.display = temQrCarregado ? '' : 'none';
+    if (!temQrCarregado) {
+        pararCountdownWaQr();
+        // Saiu da tela de QR (ou o QR ainda não carregou) — o link
+        // compartilhado, se houver, apontava para o QR anterior e não faz
+        // mais sentido ficar visível.
+        const linkBox = $('waLinkCompartilhadoBox');
+        if (linkBox) linkBox.style.display = 'none';
+    }
 }
 
 async function carregarListaWa() {
@@ -595,6 +630,7 @@ async function checkWaStatus(fetchQrIfNotOpen = false) {
                     $('waQrImage').style.display = 'block';
                     $('waWaitQr').style.display = 'none';
                     $('btnCompartilharWa').style.display = '';
+                    ocultarLinkCompartilhadoWa(); // QR novo invalida o link anterior
                     iniciarCountdownWaQr();
                     if (!waPollTimer) waPollTimer = setInterval(() => checkWaStatus(false), 4000);
                 } else if (qd?.instance?.state === 'open') {
@@ -637,6 +673,7 @@ async function waCreateInstance() {
             $('waQrImage').style.display = 'block';
             $('waWaitQr').style.display = 'none';
             $('btnCompartilharWa').style.display = '';
+            ocultarLinkCompartilhadoWa(); // QR novo invalida o link anterior
             toast("QR Code gerado! Aponte o celular.", "success");
             iniciarCountdownWaQr();
 

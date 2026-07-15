@@ -2308,6 +2308,14 @@
                             <i data-lucide="share-2" style="width:12px;"></i> Compartilhar com o responsável
                         </button>
                     </div>
+
+                    <div id="waLinkCompartilhadoBox" style="display:none;max-width:340px;margin:14px auto 0;text-align:left;">
+                        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:6px;">Link para o responsável (válido por poucos minutos, uso único):</label>
+                        <div style="display:flex;gap:6px;">
+                            <input id="waLinkCompartilhado" type="text" readonly style="flex:1;min-width:0;font-size:11px;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--tag);color:var(--text);" onclick="this.select()">
+                            <button class="btn btn-ghost btn-sm" onclick="waCopiarLinkCompartilhado()" title="Copiar link"><i data-lucide="copy" style="width:14px;"></i></button>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- CONNECTED VIEW -->
@@ -3068,6 +3076,30 @@ const ACCT_KEY           = 'wt_saved_account';
 const STATUS_FILTER_KEY  = 'wt_status_filter';
 const ACCOUNTS_FILTER_KEY = 'wt_accounts_filter';
 
+function adsClienteSelecionadoId() {
+    const u = JSON.parse(localStorage.getItem('adlytics_user') || '{}');
+    return u?.is_admin && clienteAdminSelecionado ? String(clienteAdminSelecionado) : '';
+}
+
+function adsStorageKey(base) {
+    const u = JSON.parse(localStorage.getItem('adlytics_user') || '{}');
+    const scope = u?.is_admin
+        ? (clienteAdminSelecionado ? `cliente_${clienteAdminSelecionado}` : 'admin_sem_cliente')
+        : `cliente_${u?.cliente_id || 'self'}`;
+    return `${base}:${scope}`;
+}
+
+function adsAppendClienteParam(params) {
+    const clienteId = adsClienteSelecionadoId();
+    if (clienteId) params.set('cliente_id', clienteId);
+    return params;
+}
+
+function adsClienteQuery() {
+    const clienteId = adsClienteSelecionadoId();
+    return clienteId ? `&cliente_id=${encodeURIComponent(clienteId)}` : '';
+}
+
 function salvarFiltroStatus() {
     localStorage.setItem(STATUS_FILTER_KEY, $('filtroStatusAds').value);
 }
@@ -3099,14 +3131,18 @@ async function carregarContasAds() {
         restaurarFiltroStatus();
 
         // Tenta restaurar conta salva (baseado nas contas visíveis após filtro)
-        const visiveis = JSON.parse(ls(ACCOUNTS_FILTER_KEY) || 'null')
-            ? contas.filter(c => JSON.parse(ls(ACCOUNTS_FILTER_KEY)).includes(c.id))
+        const savedAccountsFilter = JSON.parse(ls(adsStorageKey(ACCOUNTS_FILTER_KEY)) || 'null');
+        const visiveis = savedAccountsFilter
+            ? contas.filter(c => savedAccountsFilter.includes(c.id))
             : contas;
-        const salva = JSON.parse(localStorage.getItem(ACCT_KEY) || 'null');
+        const salva = JSON.parse(localStorage.getItem(adsStorageKey(ACCT_KEY)) || 'null');
         const encontrada = salva && visiveis.find(c => c.id === salva.id);
         if (encontrada) {
             selecionarConta(encontrada, false); // false = não gravar de novo
             $('acctSavedBadge').style.display = 'inline';
+        } else if (visiveis.length === 1) {
+            selecionarConta(visiveis[0], false);
+            $('acctSavedBadge').style.display = 'none';
         }
 
         // Fecha dropdown ao clicar fora
@@ -3189,7 +3225,7 @@ async function selecionarConta(conta, salvar = true) {
     $('adsAccountSelect').value = conta.id;
     fecharDropdownContas();
     if (salvar) {
-        localStorage.setItem(ACCT_KEY, JSON.stringify(conta));
+        localStorage.setItem(adsStorageKey(ACCT_KEY), JSON.stringify(conta));
         $('acctSavedBadge').style.display = 'inline';
     }
 
@@ -3199,7 +3235,7 @@ async function selecionarConta(conta, salvar = true) {
 }
 
 function aplicarFiltroContas() {
-    const saved = JSON.parse(ls(ACCOUNTS_FILTER_KEY) || 'null');
+    const saved = JSON.parse(ls(adsStorageKey(ACCOUNTS_FILTER_KEY)) || 'null');
     _contasVisiveis = saved ? _todasContas.filter(c => saved.includes(c.id)) : _todasContas;
     const sel = $('adsAccountSelect');
     sel.innerHTML = _contasVisiveis.map(c => `<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('');
@@ -3283,7 +3319,7 @@ function atualizarLabelCfg() {
 
 function _renderCfgLista(q) {
     if (!_cfgInicializado) {
-        const saved = JSON.parse(ls(ACCOUNTS_FILTER_KEY) || 'null');
+        const saved = JSON.parse(ls(adsStorageKey(ACCOUNTS_FILTER_KEY)) || 'null');
         _todasContas.forEach(c => { if (!saved || saved.includes(c.id)) _cfgChecked.add(c.id); });
         _cfgInicializado = true;
     }
@@ -3316,7 +3352,7 @@ function filtrarCfgContas() {
 
 function salvarConfigContas() {
     const valor = _cfgChecked.size === _todasContas.length ? null : [..._cfgChecked];
-    ls(ACCOUNTS_FILTER_KEY, JSON.stringify(valor));
+    ls(adsStorageKey(ACCOUNTS_FILTER_KEY), JSON.stringify(valor));
     aplicarFiltroContas();
     fecharCfgDropdown();
     fecharModalGerenciarContas();
@@ -3579,7 +3615,7 @@ async function carregarAnuncios() {
     lucide.createIcons({ nodes:[btn] });
 
     try {
-        const data = await authFetch(`/api/ads?accountId=${encodeURIComponent(accountId)}&${dateQs}`).then(r=>r.json());
+        const data = await authFetch(`/api/ads?accountId=${encodeURIComponent(accountId)}&${dateQs}${adsClienteQuery()}`).then(r=>r.json());
         if (data.error) throw new Error(data.error);
         campanhasRaw = data.data || [];
         adsCarregado = true;
@@ -3799,6 +3835,7 @@ async function confirmarAumentoAdsBudget() {
                 entity_type:_adsBudgetTarget.entityType,
                 entity_id:_adsBudgetTarget.entityId,
                 new_budget_minor:novo,
+                cliente_id:adsClienteSelecionadoId() || undefined,
             }),
         });
         const result = await readApiJson(response, 'Falha ao alterar orçamento na Meta');
@@ -4637,7 +4674,7 @@ async function carregarDemograficos(campaignIds = '') {
     lucide.createIcons({ nodes: [$('demo-loading')] });
 
     const dateQs = _getDateQs() || `datePreset=last_30d`;
-    const qs = `accountId=${encodeURIComponent(accountId)}&${dateQs}${campaignIds ? '&campaignIds=' + encodeURIComponent(campaignIds) : ''}`;
+    const qs = `accountId=${encodeURIComponent(accountId)}&${dateQs}${campaignIds ? '&campaignIds=' + encodeURIComponent(campaignIds) : ''}${adsClienteQuery()}`;
 
     try {
         // 5 breakdowns em paralelo
@@ -5042,7 +5079,7 @@ async function toggleExpand(level, parentId, btn, e) {
         const dp = $('adsDatePreset').value;
         const accountId = $('adsAccountSelect').value;
         const data = await authFetch(
-            `/api/ads-children?level=${level}&parentId=${encodeURIComponent(parentId)}&datePreset=${encodeURIComponent(dp)}&accountId=${encodeURIComponent(accountId)}`
+            `/api/ads-children?level=${level}&parentId=${encodeURIComponent(parentId)}&datePreset=${encodeURIComponent(dp)}&accountId=${encodeURIComponent(accountId)}${adsClienteQuery()}`
         ).then(r => r.json()).catch(() => ({ error: 'Erro de rede' }));
         if (data.error) {
             toast(data.error, 'error');
@@ -5134,6 +5171,7 @@ async function carregarMelhoresAnuncios() {
 
         if (statusFiltro) params.set('status', statusFiltro);
         if (campaignIds.length) params.set('campaignIds', campaignIds.slice(0, 100).join(','));
+        adsAppendClienteParam(params);
 
         const data = await authFetchJsonTimeout(
             `/api/ads-best?accountId=${encodeURIComponent(accountId)}&${params.toString()}`,
@@ -5235,7 +5273,7 @@ async function carregarBestThumbsHD(ads) {
                 return;
             }
             try {
-                const r = await authFetch(`/api/video-source?videoId=${encodeURIComponent(videoId)}&adId=${encodeURIComponent(ad.id)}`);
+                const r = await authFetch(`/api/video-source?videoId=${encodeURIComponent(videoId)}&adId=${encodeURIComponent(ad.id)}${adsClienteQuery()}`);
                 const data = await r.json();
                 if (data.error) return;
                 _bestHdCache[videoId] = { source: data.source || null, thumbnail: data.thumbnail || null };
