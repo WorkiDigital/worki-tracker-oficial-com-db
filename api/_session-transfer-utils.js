@@ -1,24 +1,19 @@
-// Utilitários do fluxo de Session Transfer. Reaproveita os helpers genéricos
-// já validados em produção pelo fluxo de pareamento (nunca o inverso — este
-// arquivo nunca é importado por _extension-pairing-utils.js) e adiciona só o
-// que é específico deste domínio.
 import crypto from 'crypto';
 
-export { normalizePhone, secondsFromEnv, fetchEvolutionJson } from './_extension-pairing-utils.js';
+export {
+  createPlatformCode,
+  fetchEvolutionJson,
+  hashPlatformCode,
+  normalizePhone,
+  normalizePlatformCode,
+  secondsFromEnv,
+} from './_extension-pairing-utils.js';
 
 export function hashPhone(phone) {
   if (typeof phone !== 'string' || !phone) return null;
   return crypto.createHash('sha256').update(phone).digest('hex');
 }
 
-// Reimplementação local do BufferJSON.replacer/reviver do Baileys 7.0.0-rc.9
-// (confirmado no código-fonte real da versão fixada em produção — ver
-// WhiskeySockets/Baileys src/Utils/generics.ts). Deliberadamente NÃO
-// instalamos o pacote "baileys": a versão exata que bateria com a produção
-// (7.0.0-rc.9) tem uma vulnerabilidade zero-day pública conhecida
-// (GHSA-qvv5-jq5g-4cgg). Como só precisamos desta função pura de
-// serialização (nunca abrimos socket nem processamos mensagens), reimplementar
-// evita trazer uma dependência com CVE conhecido para o projeto.
 export const BufferJSON = {
   replacer: (_key, value) => {
     if (Buffer.isBuffer(value) || value instanceof Uint8Array || value?.type === 'Buffer') {
@@ -27,29 +22,26 @@ export const BufferJSON = {
     return value;
   },
   reviver: (_key, value) => {
-    if (typeof value === 'object' && value !== null && value.type === 'Buffer' && typeof value.data === 'string') {
+    if (
+      typeof value === 'object' &&
+      value !== null &&
+      value.type === 'Buffer' &&
+      typeof value.data === 'string'
+    ) {
       return Buffer.from(value.data, 'base64');
     }
     if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
       const keys = Object.keys(value);
-      if (keys.length > 0 && keys.every(k => !isNaN(parseInt(k, 10)))) {
+      if (keys.length > 0 && keys.every(k => !Number.isNaN(Number.parseInt(k, 10)))) {
         const values = Object.values(value);
-        if (values.every(v => typeof v === 'number')) {
-          return Buffer.from(values);
-        }
+        if (values.every(v => typeof v === 'number')) return Buffer.from(values);
       }
     }
     return value;
   },
 };
 
-// Valida que credsJsonString é uma string que, ao ser parseada uma vez, ainda
-// é uma string (confirma a dupla serialização observada no schema real da
-// Evolution — Session.creds é text, e jsonb_typeof(creds::jsonb) = 'string').
-// Depois parseia essa string interna e checa uma chave estrutural mínima do
-// AuthenticationCreds do Baileys. Checagem estrutural leve, não validação
-// completa de schema — só para pegar "colou o arquivo errado" cedo.
-export function validateCredsStructure(credsJsonString) {
+function decodeCreds(credsJsonString) {
   if (typeof credsJsonString !== 'string' || !credsJsonString) {
     return { valid: false, reason: 'EMPTY_PAYLOAD' };
   }
@@ -60,27 +52,52 @@ export function validateCredsStructure(credsJsonString) {
   } catch {
     return { valid: false, reason: 'NOT_VALID_JSON' };
   }
-
   if (typeof innerString !== 'string') {
     return { valid: false, reason: 'NOT_DOUBLE_SERIALIZED' };
   }
 
-  let credsObject;
+  let creds;
   try {
-    credsObject = JSON.parse(innerString, BufferJSON.reviver);
+    creds = JSON.parse(innerString, BufferJSON.reviver);
   } catch {
     return { valid: false, reason: 'INNER_NOT_VALID_JSON' };
   }
-
-  if (typeof credsObject !== 'object' || credsObject === null || Array.isArray(credsObject)) {
+  if (!creds || typeof creds !== 'object' || Array.isArray(creds)) {
     return { valid: false, reason: 'NOT_AN_OBJECT' };
   }
 
-  const expectedKeys = ['noiseKey', 'signedIdentityKey', 'signedPreKey', 'registrationId', 'me', 'account'];
-  const hasExpectedKey = expectedKeys.some(k => k in credsObject);
-  if (!hasExpectedKey) {
+  const required = [
+    'noiseKey',
+    'signedIdentityKey',
+    'signedPreKey',
+    'registrationId',
+    'me',
+    'account',
+  ];
+  if (required.some(key => !(key in creds))) {
     return { valid: false, reason: 'MISSING_EXPECTED_FIELDS' };
   }
 
-  return { valid: true };
+  const phone = String(creds.me?.id || '').match(/^(\d{8,15})(?::\d+)?@/)?.[1] || null;
+  if (!phone) return { valid: false, reason: 'PHONE_NOT_DETECTED' };
+
+  return { valid: true, creds, phone };
+}
+
+export function validateCredsStructure(credsJsonString) {
+  const result = decodeCreds(credsJsonString);
+  return result.valid
+    ? { valid: true, detectedPhone: result.phone }
+    : { valid: false, reason: result.reason };
+}
+
+export function detectedPhoneFromCreds(credsJsonString) {
+  const result = decodeCreds(credsJsonString);
+  return result.valid ? result.phone : null;
+}
+
+export function payloadLimitBytes() {
+  const parsed = Number.parseInt(process.env.SESSION_TRANSFER_MAX_PAYLOAD_BYTES || '', 10);
+  if (!Number.isFinite(parsed)) return 512 * 1024;
+  return Math.min(Math.max(parsed, 64 * 1024), 2 * 1024 * 1024);
 }

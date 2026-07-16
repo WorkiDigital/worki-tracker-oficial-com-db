@@ -324,9 +324,9 @@ function waCopiarLinkCompartilhado() {
 }
 
 // ── Pareamento via extensão Chrome ────────────────────────────────────────
-// A extensão não gera código nenhum — o painel gera aqui (POST /pairing/create),
-// o usuário cola no popup da extensão, que troca por um JWT próprio e segue o
-// resto do fluxo sozinha (exchange → start → status), sem envolver o painel.
+// O painel gera uma autorização temporária vinculada à instância. Depois do
+// login no WhatsApp Web, a extensão troca esse código por um token curto,
+// transfere a sessão e aguarda a confirmação real da Evolution.
 let _extPareamentoCountdownTimer = null;
 
 function abrirModalExtensaoPareamento() {
@@ -352,7 +352,7 @@ async function gerarCodigoExtensao() {
     btn.textContent = 'Gerando...';
 
     try {
-        const r = await authFetch('/api/browser-extension/pairing/create', {
+        const r = await authFetch('/api/browser-extension/session-transfer/create', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(waComClienteSelecionado({

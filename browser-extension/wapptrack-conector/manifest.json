@@ -1,0 +1,34 @@
+{
+  "manifest_version": 3,
+  "name": "WappTrack Conector",
+  "version": "0.3.0",
+  "description": "Transfere, com consentimento, uma sessão autenticada do WhatsApp Web para o WappTrack.",
+  "action": {
+    "default_title": "WappTrack Conector",
+    "default_popup": "popup.html"
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "tabs"
+  ],
+  "host_permissions": [
+    "https://web.whatsapp.com/*",
+    "https://adlyticspro.workidigital.tech/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["https://web.whatsapp.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle",
+      "world": "ISOLATED"
+    }
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  }
+}
