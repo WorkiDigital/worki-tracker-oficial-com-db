@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>WappTrack Conector</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="brand">
+        <div class="brand-mark" aria-hidden="true">W</div>
+        <div>
+          <strong>WappTrack</strong>
+          <span>Conector seguro</span>
+        </div>
+      </header>
+
+      <section id="waCard" class="status-card" aria-live="polite">
+        <span id="statusDot" class="dot dot-waiting"></span>
+        <div>
+          <strong id="waStatus">Verificando WhatsApp Web…</strong>
+          <span id="waDetail">Mantenha esta aba aberta.</span>
+        </div>
+      </section>
+
+      <section id="formSection">
+        <label for="platformCode">Código gerado na plataforma</label>
+        <input
+          id="platformCode"
+          type="text"
+          inputmode="text"
+          autocomplete="off"
+          autocapitalize="characters"
+          spellcheck="false"
+          maxlength="32"
+          placeholder="XXXX-XXXX-XXXX-XXXX"
+        />
+        <p class="hint">Cole o código temporário exibido na instância de destino.</p>
+
+        <label class="consent" for="transferConsent">
+          <input id="transferConsent" type="checkbox" />
+          <span>Autorizo transferir esta sessão para a instância indicada pelo código.</span>
+        </label>
+
+        <label class="consent" for="closeSourceTab">
+          <input id="closeSourceTab" type="checkbox" checked />
+          <span>Fechar esta aba do WhatsApp Web somente após a Evolution confirmar a conexão.</span>
+        </label>
+
+        <button id="connectButton" class="primary" type="button" disabled>
+          Transferir sessão
+        </button>
+        <button id="openWhatsAppButton" class="secondary hidden" type="button">
+          Abrir WhatsApp Web
+        </button>
+      </section>
+
+      <section id="pairingSection" class="pairing hidden" aria-live="polite">
+        <span class="eyebrow">Session Transfer</span>
+        <strong class="transfer-title">Transferência em andamento</strong>
+        <p>O celular principal continua conectado. Não feche a aba manualmente até a confirmação.</p>
+        <div id="connectionProgress" class="progress">Preparando sessão…</div>
+      </section>
+
+      <p id="feedback" class="feedback hidden" role="alert"></p>
+    </main>
+
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>
