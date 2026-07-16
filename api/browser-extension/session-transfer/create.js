@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { verifyAuth } from '../../_auth.js';
 import { cors } from '../../_cors.js';
 import { getPool } from '../../_db.js';
@@ -19,7 +20,12 @@ export default async function handler(req, res) {
   if (!user) return;
   if (await rateLimit(req, res, user)) return;
 
-  await ensureSessionTransferSchema();
+  try {
+    await ensureSessionTransferSchema();
+  } catch (error) {
+    console.error('[session-transfer/schema] erro:', error.message);
+    return res.status(500).json({ code: 'TRANSFER_SCHEMA_FAILED' });
+  }
 
   const rawInstanceName = String(req.body?.instanceName || '').trim();
   const clienteId = user.is_admin
@@ -54,6 +60,7 @@ export default async function handler(req, res) {
   }
 
   const { raw, display } = createPlatformCode();
+  const transferRequestId = crypto.randomUUID();
   const codeHash = hashPlatformCode(raw);
   const ttl = secondsFromEnv('EXTENSION_PLATFORM_CODE_TTL_SECONDS', 300, 60, 600);
   const expiresAt = new Date(Date.now() + ttl * 1000);
@@ -72,9 +79,9 @@ export default async function handler(req, res) {
 
     const inserted = await client.query(
       `INSERT INTO wa_session_transfers
-       (code_hash, created_by, cliente_id, instance_name, expires_at)
-       VALUES ($1,$2,$3,$4,$5) RETURNING id`,
-      [codeHash, user.id || null, clienteId, instanceName, expiresAt],
+       (id, code_hash, created_by, cliente_id, instance_name, expires_at)
+       VALUES ($1,$2,$3,$4,$5,$6) RETURNING id`,
+      [transferRequestId, codeHash, user.id || null, clienteId, instanceName, expiresAt],
     );
     await client.query('COMMIT');
 
