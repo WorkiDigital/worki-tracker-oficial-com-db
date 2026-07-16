@@ -10,7 +10,7 @@ async function createSchema() {
 
     await client.query(`
       CREATE TABLE IF NOT EXISTS public.wa_session_transfers (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        id UUID PRIMARY KEY,
         code_hash CHAR(64),
         token_jti UUID,
         created_by INTEGER REFERENCES public.usuarios(id) ON DELETE SET NULL,
