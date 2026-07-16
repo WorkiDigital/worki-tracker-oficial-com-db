@@ -30,6 +30,13 @@ async function callApiHandler(modulePath, req, res) {
 
         await mod.default(req, res);
     } catch (e) {
+        let route = 'unknown';
+        try { route = new URL(modulePath).pathname.replace(__dirname, '') || 'unknown'; } catch {}
+        console.error('[api-handler] falha não tratada:', {
+            route,
+            code: e?.code || 'UNHANDLED_ERROR',
+            message: e?.message || 'Erro sem mensagem',
+        });
         res.writeHead(500, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: process.env.NODE_ENV === 'production' ? 'Erro interno.' : e.message }));
     }
