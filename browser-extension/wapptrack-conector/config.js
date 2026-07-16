@@ -1,4 +1,4 @@
-export const BACKEND_ORIGIN = 'https://app.seudominio.com';
+export const BACKEND_ORIGIN = 'https://adlyticspro.workidigital.tech';
 
 export const API_PATHS = Object.freeze({
   exchange: '/api/browser-extension/session-transfer/exchange',
