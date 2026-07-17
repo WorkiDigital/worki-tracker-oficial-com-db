@@ -3113,6 +3113,7 @@ function trocarClienteAdmin(id) {
     if (!$('aba-relatorios')?.classList.contains('aba-oculta') && typeof recarregarRelatorios === 'function') recarregarRelatorios();
     if (!$('aba-anuncios')?.classList.contains('aba-oculta')) { adsCarregado = false; carregarContasAds(); }
     if (!$('aba-integracoes')?.classList.contains('aba-oculta') && typeof carregarIntegracoesConta === 'function') carregarIntegracoesConta();
+    if (!$('aba-whatsapp')?.classList.contains('aba-oculta') && typeof carregarListaWa === 'function') carregarListaWa();
 }
 // ── Anúncios — Account picker ──────────────────────────────────
 let _todasContas = [];        // lista completa carregada da API
