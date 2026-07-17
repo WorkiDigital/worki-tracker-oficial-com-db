@@ -174,25 +174,36 @@ function _funilRenderOrigens(timeline) {
     }
 }
 
-// 3. Funil da Jornada de Compra
+// 3. Funil da Jornada de Compra — mesmo padrão trapezoidal do Funil de
+// Conversão (Meta Ads, .funil-trap) para manter o layout padrão em todo o painel.
 function _funilRenderJornada(ov) {
     const total = parseInt(ov.total_leads) || 0;
     const contato = parseInt(ov.first_contact) || 0;
     const venda = parseInt(ov.sales) || 0;
 
-    const pctContato = total > 0 ? ((contato / total) * 100).toFixed(2) : 0;
-    const pctVenda = total > 0 ? ((venda / total) * 100).toFixed(2) : 0;
+    const pctContato = total > 0 ? ((contato / total) * 100).toFixed(1) : '0.0';
+    const pctVenda = total > 0 ? ((venda / total) * 100).toFixed(1) : '0.0';
+    const taxaVenda = contato > 0 ? ((venda / contato) * 100).toFixed(1) : '0.0';
 
     const fjWrap = document.getElementById('fjWrap');
     if (fjWrap) {
         fjWrap.innerHTML = `
-            <div class="fj-bar" style="width: 100%; background-color: #bae6fd; color: #0284c7;">
-                <div class="fj-label">Fez Contato</div>
-                <div class="fj-val">${pctContato}% (${contato})</div>
-            </div>
-            <div class="fj-bar" style="width: ${pctVenda > 0 ? Math.max(pctVenda, 10) : 0}%; background-color: #7dd3fc; color: #0369a1;">
-                <div class="fj-label">Comprou</div>
-                <div class="fj-val">${pctVenda}% (${venda})</div>
+            <div class="funil-tri-wrap">
+                <div class="funil-trap" style="width:100%;background:#0ea5e9;">
+                    <div class="funil-trap-top">
+                        <span class="funil-trap-label">Fez Contato</span>
+                        <span class="funil-trap-num">${fmtN(contato)}</span>
+                    </div>
+                    <div class="funil-trap-cost">${pctContato}% dos leads</div>
+                </div>
+                <div class="funil-tri-rate">${taxaVenda}% Conversão</div>
+                <div class="funil-trap" style="width:46%;background:#0369a1;">
+                    <div class="funil-trap-top">
+                        <span class="funil-trap-label">Comprou</span>
+                        <span class="funil-trap-num">${fmtN(venda)}</span>
+                    </div>
+                    <div class="funil-trap-cost">${pctVenda}% dos leads</div>
+                </div>
             </div>
         `;
     }
