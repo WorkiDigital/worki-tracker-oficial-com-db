@@ -520,7 +520,8 @@ function renderWaLista(data, isAdminView) {
         for (const key of keys) {
             const g = groups[key];
             const totalUp = g.instances.filter(i => i.state === 'open').length;
-            const isOpen = !!savedState[key];
+            const isFiltering = window.waBusca && window.waBusca.value.trim().length > 0;
+            const isOpen = isFiltering || !!savedState[key];
             html += `
             <div style="margin-bottom:8px;border:1px solid var(--border);border-radius:10px;overflow:hidden;">
                 <div onclick="toggleWaGroup('${key}')" style="cursor:pointer;padding:12px 16px;display:flex;align-items:center;gap:10px;background:var(--tag);user-select:none;">
