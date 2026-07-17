@@ -524,12 +524,17 @@ export default async function handler(req, res) {
       try {
 
         // Monta o lead com os campos web que o módulo central espera (canal website).
+        // geo_city/geo_region vêm do clique (tracking_clicks) — mesmo enriquecimento
+        // já usado em Venda/Qualificado (leads-update.js), aqui aplicado no LeadSubmitted
+        // automático do link para não faltar ct/st nesse evento.
         const leadWeb = {
           ...lead,
           ctw_aci_id: null, // força canal website
           fbc: atr.fbc, fbp: atr.fbp,
           ip_address: atr.ip_address, user_agent: atr.user_agent,
           referrer: atr.referrer, event_source_url: atr.event_source_url,
+          cidade: lead.cidade || atr.geo_city || null,
+          estado: lead.estado || atr.geo_region || null,
         };
         const capi = await enviarConversao({ lead: leadWeb, concept: conceito, pool });
 
@@ -1012,7 +1017,7 @@ async function atribuirClique(client, { cliente_id, lead_id, clickTrackingId, tr
        AND status='clicked' AND converted_at IS NULL
        AND (expires_at IS NULL OR expires_at > NOW())
      RETURNING id, campaign_id, destination_id, utm_source, utm_campaign, utm_medium, utm_content,
-               fbc, fbp, ip_address, user_agent, referrer, event_source_url`,
+               fbc, fbp, ip_address, user_agent, referrer, event_source_url, geo_city, geo_region`,
     [lead_id, clickTrackingId, cliente_id, instance]
   );
   if (!r.rows.length) return null;
@@ -1047,7 +1052,8 @@ async function atribuirClique(client, { cliente_id, lead_id, clickTrackingId, tr
            utm_medium: c.utm_medium, utm_content: c.utm_content,
            fbc: c.fbc, fbp: c.fbp, ip_address: c.ip_address,
            user_agent: c.user_agent, referrer: c.referrer,
-           event_source_url: c.event_source_url };
+           event_source_url: c.event_source_url,
+           geo_city: c.geo_city, geo_region: c.geo_region };
 }
 
 function detectarPlataforma(sourceUrl, adReply) {
