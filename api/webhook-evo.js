@@ -1035,12 +1035,20 @@ async function atribuirClique(client, { cliente_id, lead_id, clickTrackingId, tr
        ))=$4
        AND status='clicked' AND converted_at IS NULL
        AND (expires_at IS NULL OR expires_at > NOW())
-     RETURNING id, campaign_id, utm_source, utm_campaign, utm_medium, utm_content,
+     RETURNING id, campaign_id, destination_id, utm_source, utm_campaign, utm_medium, utm_content,
                fbc, fbp, ip_address, user_agent, referrer, event_source_url`,
     [lead_id, clickTrackingId, cliente_id, instance]
   );
   if (!r.rows.length) return null;
   const c = r.rows[0];
+
+  if (c.destination_id) {
+    await client.query(
+      `UPDATE tracking_destinations SET total_captures = total_captures + 1 WHERE id = $1`,
+      [c.destination_id]
+    );
+  }
+
   const method = tracking_method || 'token';
   // Lado do lead — na MESMA transação do UPDATE do clique acima. Pulado quando
   // preservarLead (toque repetido): a origem do primeiro contato é mantida.

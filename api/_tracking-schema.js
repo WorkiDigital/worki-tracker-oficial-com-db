@@ -60,6 +60,7 @@ async function createTrackingSchema() {
         position INTEGER DEFAULT 0,
         enabled BOOLEAN DEFAULT true,
         total_redirects INTEGER DEFAULT 0,
+        total_captures INTEGER DEFAULT 0,
         last_selected_at TIMESTAMP,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
@@ -143,6 +144,16 @@ async function createTrackingSchema() {
       ADD COLUMN IF NOT EXISTS archived_at TIMESTAMP,
       ADD COLUMN IF NOT EXISTS conversion_event VARCHAR(40) DEFAULT 'lead',
       ADD COLUMN IF NOT EXISTS conversion_auto BOOLEAN DEFAULT false;
+
+      ALTER TABLE public.tracking_destinations
+      ADD COLUMN IF NOT EXISTS total_captures INTEGER DEFAULT 0;
+
+      UPDATE public.tracking_destinations d
+      SET total_captures = (
+        SELECT COUNT(*) FROM public.tracking_clicks tc 
+        WHERE tc.destination_id = d.id AND tc.status = 'converted'
+      )
+      WHERE total_captures = 0 OR total_captures IS NULL;
 
       ALTER TABLE public.clientes
       ADD COLUMN IF NOT EXISTS capi_pixel_id VARCHAR(255),

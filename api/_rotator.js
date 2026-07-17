@@ -44,8 +44,13 @@ export async function selecionarDestino(client, campaign) {
     // Prioridade fixa: sempre o de menor position habilitado (já ordenado).
     escolhido = dests[0];
   } else {
-    // round_robin: o que foi selecionado há mais tempo (NULL primeiro).
+    // round_robin: o que teve MENOS conversões reais (total_captures),
+    // usando last_selected_at como desempate (o selecionado há mais tempo).
     escolhido = [...dests].sort((a, b) => {
+      const capA = a.total_captures || 0;
+      const capB = b.total_captures || 0;
+      if (capA !== capB) return capA - capB;
+
       const ta = a.last_selected_at ? new Date(a.last_selected_at).getTime() : 0;
       const tb = b.last_selected_at ? new Date(b.last_selected_at).getTime() : 0;
       return ta - tb;
