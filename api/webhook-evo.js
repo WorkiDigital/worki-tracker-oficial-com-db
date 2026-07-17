@@ -59,30 +59,6 @@ export default async function handler(req, res) {
         } catch (stateErr) {
           log('warn', 'webhook_evo_state_persist_fail', { error: stateErr.message, instance, state });
         }
-
-        // Reflete o mesmo estado no pareamento pendente da extensão Chrome
-        // (se houver). Best-effort: nunca deve derrubar o webhook por causa
-        // de uma tabela que pode nem existir ainda (ambiente sem a feature).
-        try {
-          const normalizedState = String(state || '').toLowerCase();
-          const nextStatus = ['open', 'connected', 'online'].includes(normalizedState)
-            ? 'CONNECTED'
-            : normalizedState === 'connecting' ? 'CONNECTING' : null;
-
-          if (nextStatus) {
-            await pool.query(
-              `UPDATE wa_extension_pairings
-               SET status=$1,
-                   connected_at = CASE WHEN $1='CONNECTED' THEN NOW() ELSE connected_at END,
-                   pairing_code_enc = CASE WHEN $1='CONNECTED' THEN NULL ELSE pairing_code_enc END,
-                   updated_at=NOW()
-               WHERE instance_name=$2 AND status IN ('EXCHANGED','WAITING','CONNECTING')`,
-              [nextStatus, instance]
-            );
-          }
-        } catch (pairingErr) {
-          log('warn', 'extension_pairing_state_fail', { instance, error: pairingErr.message });
-        }
       }
       await pool.query(
         `INSERT INTO webhook_logs (cliente_id, instance, tag, level, message, data)
