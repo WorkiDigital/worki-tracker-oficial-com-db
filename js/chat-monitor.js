@@ -405,6 +405,36 @@ async function chatAbrirConversaPorTelefone(telefone, instance, clienteId, leadN
             );
         }
 
+        // A lista normal respeita busca/origem atuais e tem limite de 200 conversas.
+        // Portanto, o atalho do lead não pode concluir que a conversa inexiste apenas
+        // porque ela ficou fora dessa lista. Faz uma consulta pontual pelo telefone,
+        // sem herdar os filtros visuais da aba Conversas.
+        if (idx === -1) {
+            try {
+                const directParams = new URLSearchParams({
+                    action: 'list_conversations',
+                    search: tel,
+                });
+                if (clienteId != null) directParams.set('cliente_id', String(clienteId));
+
+                const directRes = await authFetch(`/api/chat-messages?${directParams.toString()}`);
+                const directRows = await readApiJson(directRes, 'Falha ao localizar conversa do lead');
+                const directConversation = (Array.isArray(directRows) ? directRows : []).find(c =>
+                    String(c.telefone || '').replace(/\D/g, '') === tel &&
+                    (clienteId == null || String(c.cliente_id) === String(clienteId))
+                );
+
+                if (directConversation) {
+                    chatState.conversations = [directConversation];
+                    chatState.allConversations = [directConversation];
+                    chatRenderConversations();
+                    idx = 0;
+                }
+            } catch (directError) {
+                console.warn('[chat-monitor] busca direta da conversa falhou:', directError.message);
+            }
+        }
+
         if (idx === -1) {
             toast('Sem conversa recente para este lead (retenção de 15 dias).', 'warning');
             chatRenderOpeningConversation(target, 'Sem conversa recente para este lead (retencao de 15 dias).', false);

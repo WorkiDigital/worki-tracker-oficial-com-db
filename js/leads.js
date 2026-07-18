@@ -1639,6 +1639,19 @@ function lpPreencherDados({ lead, jornada, interacoes }) {
     $('lpRowPlataforma').innerHTML = lpRow('Plataforma', lead.plataforma);
     $('lpRowDispositivo').innerHTML = lpRow('Dispositivo', lead.device && lead.device.label);
     $('lpRowEntrada').innerHTML  = lpRow('Data de entrada', lpFormatData(lead.created_at));
+    
+    let tempoPrimeiraResposta = '—';
+    if (lead.first_response_at && lead.created_at) {
+        const diffMs = new Date(lead.first_response_at) - new Date(lead.created_at);
+        if (diffMs >= 0) {
+            tempoPrimeiraResposta = lpFormatDuracao(diffMs / 60000) || '< 1 min';
+        }
+    }
+    const lpRowRespostaEl = $('lpRowPrimeiraResposta');
+    if (lpRowRespostaEl) {
+        lpRowRespostaEl.innerHTML = lpRow('Tempo da 1ª resposta', tempoPrimeiraResposta);
+    }
+
     $('lpMensagem').textContent  = lead.mensagem_recebida || '—';
 
     // ── Aba Anúncio ──
