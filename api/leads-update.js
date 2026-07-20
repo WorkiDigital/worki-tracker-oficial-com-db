@@ -35,6 +35,8 @@ export default async function handler(req, res) {
         setClauses.push(`sale_closed_at = NOW()`);
       } else if (status === 'Qualificado') {
         setClauses.push(`qualified_at = NOW()`);
+      } else if (status === 'Agendado') {
+        setClauses.push(`scheduled_at = NOW()`);
       }
     }
     if (valor_venda !== undefined){ setClauses.push(`valor_venda = $${queryIndex++}`);     values.push(valor_venda); }
@@ -70,7 +72,8 @@ export default async function handler(req, res) {
       let lead = updateResult.rows[0];
       let concept = null;
       if (status === 'Vendido' || status === 'Venda') concept = 'purchase';
-      else if (status === 'Qualificado') concept = 'qualified';
+      else if (status === 'Qualificado')              concept = 'qualified';
+      else if (status === 'Agendado')                 concept = 'appointment';
 
       // Enriquece o lead com dados do clique rastreável (fbc, fbp, ip, user_agent,
       // geo_city→cidade, geo_region→estado) que ficam em tracking_clicks, não em
@@ -107,6 +110,13 @@ export default async function handler(req, res) {
           currency: 'BRL', pool,
         });
         capi = { sent: capi.sent, error: capi.error, fbtrace_id: capi.fbtrace_id };
+
+        const conceptEventName = {
+          purchase:    'Purchase',
+          qualified:   'QualifiedLead',
+          appointment: 'Schedule',
+        }[concept] || concept;
+
         try {
           await pool.query(
             `INSERT INTO lead_journey_history
@@ -114,7 +124,7 @@ export default async function handler(req, res) {
                event_id, meta_status, meta_response, fbtrace_id, attempts, created_at, last_attempt_at)
              VALUES ($1,$2,$3,$4,$5,'BRL',$6,$7,$8,$9,$10,1,NOW(),NOW())`,
             [lead.id, lead.cliente_id, concept,
-             concept === 'purchase' ? 'Purchase' : 'QualifiedLead',
+             conceptEventName,
              concept === 'purchase' ? parseFloat(valor_venda || 0) : null,
              lead.ctw_aci_id ? 'business_messaging' : 'website',
              `j_${lead.id}_${concept}`,
