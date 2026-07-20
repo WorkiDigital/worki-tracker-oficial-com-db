@@ -378,7 +378,7 @@ function renderTable() {
         const leads  = getAct(ins, ['lead','offsite_conversion.lead']);
         const msgs   = getAct(ins, ['onsite_conversion.messaging_conversation_started_7d']);
         const lpv    = getAct(ins, ['landing_page_view']);
-        const pv     = parseInt(ins.instagram_profile_visits || 0) || getAct(ins, ['instagram_profile_visit']);
+        const pv     = parseInt(ins?.instagram_profile_visits || 0) || getAct(ins, ['instagram_profile_visit']);
         const totalVisits = lpv + pv;
         const seg    = getAct(ins, ['like','onsite_conversion.follow_button_click', 'instagram_follows']);
         const clicks = getAct(ins, ['link_click']);
