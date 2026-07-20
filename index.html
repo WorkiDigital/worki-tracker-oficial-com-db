@@ -3406,6 +3406,14 @@ async function renderShareLinks() {
     const area = $('shareLinksArea');
     area.innerHTML = '<p style="font-size:13px;color:var(--muted);">Carregando links...</p>';
 
+    // Tenta recuperar conta ativa do localStorage se não foi carregado via Meta Ads
+    if (!_contaSelecionada) {
+        try {
+            const salva = JSON.parse(localStorage.getItem(adsStorageKey(ACCT_KEY)) || 'null');
+            if (salva?.id) _contaSelecionada = salva;
+        } catch(_) {}
+    }
+
     try {
         const r = await authFetch('/api/share-list');
         const { tokens } = await r.json();
@@ -3426,13 +3434,44 @@ async function renderShareLinks() {
             };
         });
 
-        const lista = _contasVisiveis.length ? _contasVisiveis : _todasContas;
-        if (!lista.length) {
+        const listaBase = _contasVisiveis.length ? _contasVisiveis : _todasContas;
+        if (!listaBase.length) {
             area.innerHTML = '<p style="font-size:13px;color:var(--muted);">Nenhuma conta disponível. Salve as contas na seção acima.</p>';
             return;
         }
 
-        area.innerHTML = lista.map(c => {
+        // Se há uma conta selecionada no Meta Ads, destaca ela primeiro e filtra por padrão
+        const contaAtiva = _contaSelecionada;
+        const verTodas = area.dataset.verTodas === '1';
+        let lista = listaBase;
+        let filtroBanner = '';
+
+        if (contaAtiva && !verTodas) {
+            const contaFiltrada = listaBase.filter(c => c.id === contaAtiva.id);
+            if (contaFiltrada.length) {
+                lista = contaFiltrada;
+                filtroBanner = `
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;padding:8px 12px;background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);border-radius:8px;font-size:12px;color:var(--blue);">
+                    <i data-lucide="filter" style="width:13px;flex-shrink:0;"></i>
+                    <span style="flex:1;">Filtrando pela conta selecionada no Meta Ads: <strong>${esc(contaAtiva.name)}</strong></span>
+                    <button class="btn btn-ghost btn-sm" style="font-size:11px;padding:2px 8px;" onclick="$('shareLinksArea').dataset.verTodas='1';renderShareLinks();">Ver todas</button>
+                </div>`;
+            }
+        } else if (contaAtiva && verTodas) {
+            // Ordena colocando a conta ativa no topo
+            lista = [
+                ...listaBase.filter(c => c.id === contaAtiva.id),
+                ...listaBase.filter(c => c.id !== contaAtiva.id),
+            ];
+            filtroBanner = `
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;padding:8px 12px;background:var(--tag);border:1px solid var(--border);border-radius:8px;font-size:12px;color:var(--muted);">
+                    <i data-lucide="list" style="width:13px;flex-shrink:0;"></i>
+                    <span style="flex:1;">Mostrando todas as contas — <strong style="color:var(--text)">${esc(contaAtiva.name)}</strong> está no topo</span>
+                    <button class="btn btn-ghost btn-sm" style="font-size:11px;padding:2px 8px;" onclick="$('shareLinksArea').dataset.verTodas='0';renderShareLinks();">Filtrar conta ativa</button>
+                </div>`;
+        }
+
+        area.innerHTML = filtroBanner + lista.map(c => {
             const ex = _shareLinks[c.id];
             const expiryLabel = ex?.config?.expires_at
                 ? `Expira: ${new Date(ex.config.expires_at).toLocaleDateString('pt-BR')}`
@@ -5540,7 +5579,7 @@ function mudarAba(aba) {
     if (aba === 'integracoes') { carregarIntegracoesConta(); }
     if (aba === 'conta')    { carregarMinhaConta(); }
     if (aba === 'config')   { renderConfigContas(); }
-    if (aba === 'clientes') { renderShareLinks(); }
+    if (aba === 'clientes') { const a = $('shareLinksArea'); if(a) a.dataset.verTodas = '0'; renderShareLinks(); }
     if (aba === 'agencia')  { carregarClientesAdmin(); }
     if (aba === 'whatsapp')       { carregarListaWa(); }
     if (aba === 'zaprelatorios')  { carregarZapRelatorios(); }
