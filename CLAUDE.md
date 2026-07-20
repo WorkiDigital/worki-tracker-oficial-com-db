@@ -28,6 +28,7 @@ Bem-vindo ao projeto **Worki Tracker Oficial**. Este arquivo serve como um guia 
   - Adicionado suporte a qualificação manual via botão "Venda / Qualificar" no painel.
   - Gatilho automático configurável via painel (ex: o usuário responde `#qualificado` no WhatsApp, o sistema reconhece e envia o evento `QualifiedLead` pra Meta API).
 - **White-label Personalizado:** Admins podem trocar o Nome do Projeto e Logotipo na aba Configurações (que estava oculta e foi destravada recentemente).
+- **Métrica de Tempo de Primeira Resposta (Individual):** O tempo que um lead demora para ser respondido pela primeira vez (`first_response_at` vs `created_at`) agora é exibido formatado (em minutos, horas ou dias) diretamente no Drawer do Perfil do Lead.
 
 ## ⚠️ Atenção (Erros Comuns)
 - O `api/webhook-evo.js` é o coração do sistema. Nunca sobreponha ou apague partes deste arquivo a menos que saiba exatamente o impacto na captação dos leads.
@@ -1201,3 +1202,36 @@ mais no repositório**. Não recriar essa separação sem alinhamento explícito
   usar `git stash` para não perder mudanças não commitadas de outra frente (ex: remoção do sistema
   de Score, que rodava em paralelo) — depois `git stash pop` mescla sem conflito se os arquivos não
   se sobrepuserem.
+
+## 🔗 Compartilhar Dash — Filtro por conta ativa do Meta Ads (2026-07-20)
+
+**Problema corrigido:** A aba "Compartilhar Dash" mostrava todas as contas independente de qual conta estava selecionada na aba Meta Ads.
+
+**Solução (`index.html` → `renderShareLinks()`):**
+- Ao entrar na aba "Compartilhar Dash", a função verifica `_contaSelecionada` (conta ativa no Meta Ads).
+- Se há uma conta ativa, filtra a lista mostrando apenas essa conta + banner azul "Filtrando por: **Nome da Conta**" com botão "Ver todas".
+- "Ver todas" mostra todas as contas mas coloca a conta ativa **no topo** com banner informativo.
+- Cada vez que abre a aba, reseta para o modo filtrado (`dataset.verTodas = '0'`).
+- **Fallback via localStorage:** se o usuário for direto para Compartilhar Dash sem ter aberto Meta Ads antes, tenta recuperar a última conta usada via `adsStorageKey(ACCT_KEY)`.
+
+Commits: `88c1477`
+
+---
+
+## 🗓️ Evento Schedule (Agendamento) no Kanban/Pipeline (2026-07-20)
+
+**Problema:** O evento CAPI `appointment` (Schedule) **só era disparado pelo Rastreamento Inteligente** (via mensagem WhatsApp com palavra-chave). Ao mover um lead para a coluna "Agendado" no Kanban, o evento NÃO era disparado para a Meta e `scheduled_at` NÃO era gravado.
+
+**Causa:** Em `api/leads-update.js`, o mapeamento de conceito CAPI só cobria `purchase` e `qualified`. O status `Agendado` não tinha conceito mapeado.
+
+**Correção (`api/leads-update.js`):**
+1. `scheduled_at = NOW()` é agora gravado quando `status = 'Agendado'` (igual ao fluxo via mensagem).
+2. `concept = 'appointment'` adicionado ao mapeamento de status → concept CAPI.
+3. `event_name = 'Schedule'` adicionado ao mapa de nomes de eventos (`conceptEventName`), antes só tinha `Purchase` e `QualifiedLead`.
+4. O histórico em `lead_journey_history` é registrado com `event_name = 'Schedule'`, `concept = 'appointment'` para rastreabilidade.
+
+**Resultado:** os dois fluxos de agendamento agora disparam o evento `Schedule` para a Meta:
+- ✅ Via **Rastreamento Inteligente** (mensagem com palavra-chave configurada)
+- ✅ Via **Pipeline/Kanban** (arrastar card para coluna "Agendado")
+
+Commits: `f3fd30a`
