@@ -510,10 +510,16 @@ function getAdMetric(ad, key) {
     const ins = ad.insights?.data?.[0];
     if (!ins) return 0;
     if (key==='results') {
-        const RESULT_TYPES = ['lead','offsite_conversion.fb_pixel_purchase','omni_purchase','onsite_conversion.messaging_first_reply','onsite_conversion.lead_grouped','offsite_conversion.fb_pixel_lead','purchase'];
-        return (ins.actions||[]).filter(a=>RESULT_TYPES.includes(a.action_type)).reduce((s,a)=>s+(parseFloat(a.value)||0),0);
+        // "Resultado geral" do anúncio: pega o maior valor entre compras,
+        // leads ou mensagens — sem somar variantes do MESMO evento (ex:
+        // omni_purchase + purchase seriam a mesma compra contada 2x).
+        // Cada bloco usa first-match, igual index.html/js/utils.js.
+        const purchases = getActFirst(ins, ['omni_purchase','purchase']);
+        const leads      = getActFirst(ins, ['lead','offsite_conversion.lead']);
+        const msgs        = getActFirst(ins, ['onsite_conversion.messaging_first_reply']);
+        return Math.max(purchases, leads, msgs);
     }
-    if (key==='clicks') return parseFloat(ins.outbound_clicks?.[0]?.value||ins.clicks) || 0;
+    if (key==='clicks') return getAct(ins, ['link_click']);
     return parseFloat(ins[key]) || 0;
 }
 

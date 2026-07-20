@@ -1372,11 +1372,11 @@
                         <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
                             <span id="adsBudgetSubtitulo" style="font-size:13px;color:var(--text);min-width:90px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:0;"></span>
                             <div style="flex:1;display:flex;align-items:center;border:1.5px solid var(--border);border-radius:6px;overflow:hidden;background:var(--tag);transition:border-color .15s;" onfocusin="this.style.borderColor='var(--blue)'" onfocusout="this.style.borderColor=''">
-                                <span style="padding:9px 10px;color:var(--muted);font-size:12px;font-weight:600;border-right:1px solid var(--border);white-space:nowrap;">R$</span>
+                                <span id="adsBudgetSimbolo" style="padding:9px 10px;color:var(--muted);font-size:12px;font-weight:600;border-right:1px solid var(--border);white-space:nowrap;">R$</span>
                                 <input type="text" id="adsBudgetNovo" inputmode="decimal" placeholder="0,00"
                                     oninput="atualizarResumoAdsBudget()"
                                     style="flex:1;border:none;background:transparent;color:var(--text);font-size:14px;font-weight:700;padding:9px 8px;outline:none;min-width:0;">
-                                <span style="padding:9px 10px;color:var(--muted);font-size:11px;font-weight:700;border-left:1px solid var(--border);white-space:nowrap;">BRL</span>
+                                <span id="adsBudgetCodigo" style="padding:9px 10px;color:var(--muted);font-size:11px;font-weight:700;border-left:1px solid var(--border);white-space:nowrap;">BRL</span>
                             </div>
                         </div>
 
@@ -3796,6 +3796,13 @@ function abrirModalAdsBudget(entityType, entityId, event) {
     $('adsBudgetSubtitulo').textContent = budget.type === 'daily' ? 'Orçamento diário' : 'Orçamento total';
     $('adsBudgetNivel').textContent = entityType === 'campaign' ? 'Campanha' : 'Conjunto';
     $('adsBudgetTipo').textContent = '';
+    $('adsBudgetCodigo').textContent = currency;
+    try {
+        const parts = new Intl.NumberFormat('pt-BR', { style:'currency', currency }).formatToParts(0);
+        $('adsBudgetSimbolo').textContent = parts.find(p => p.type === 'currency')?.value || currency;
+    } catch {
+        $('adsBudgetSimbolo').textContent = currency;
+    }
     $('adsBudgetAtual').textContent = formatAdsMinor(budget.value, currency);
     $('adsBudgetNovo').value = adsMinorToInput(budget.value, currency);
     atualizarResumoAdsBudget();
@@ -3988,7 +3995,6 @@ const METRIC_META = {
     purchases:{category:'sales'}, purchase_value:{category:'sales'}, roas:{category:'sales'}, init_checkout:{category:'sales'},
     vv25:{category:'video'}, cpv25:{category:'video'}, vv50:{category:'video'}, cpv50:{category:'video'},
     vv75:{category:'video'}, cpv75:{category:'video'}, vv100:{category:'video'}, cpv100:{category:'video'},
-    hook:{category:'video'}, cphook:{category:'video'},
     eng_imp:{category:'engagement'}, eng_reach:{category:'engagement'}, cpeng:{category:'engagement'},
     save_rate:{category:'social'}, save_reach:{category:'social'}, cpsave:{category:'social'},
     share_rate:{category:'social'}, share_reach:{category:'social'}, cpshare:{category:'social'},
@@ -4498,7 +4504,7 @@ function calcMetricasAds(camps) {
         const roasVal = getRoas(ins);
         if (roasVal && sp) { roasSum += roasVal * sp; roasCount += sp; }
 
-        // Vídeo — campos top-level (arrays). p25/50/75/100 e 3s (hook).
+        // Vídeo — campos top-level (arrays). p25/50/75/100.
         vp25  += getVideoVal(ins, 'video_p25_watched_actions');
         vp50  += getVideoVal(ins, 'video_p50_watched_actions');
         vp75  += getVideoVal(ins, 'video_p75_watched_actions');

@@ -36,27 +36,37 @@ export function matchesCampaignFilters(campaign, filters = {}) {
 
 export function summarizeZapCampaigns(campaigns, filters = {}) {
   let spend = 0, impressions = 0, clicks = 0, leads = 0, msgs = 0,
-    reach = 0, roasValue = 0, campaign_count = 0;
+    reach = 0, roasWeightedSum = 0, roasSpendBase = 0, campaign_count = 0;
 
   for (const campaign of campaigns || []) {
     if (!matchesCampaignFilters(campaign, filters)) continue;
     const ins = campaign.insights?.data?.[0];
     if (!ins) continue;
     campaign_count++;
-    spend       += parseFloat(ins.spend       || 0);
+    const campSpend = parseFloat(ins.spend || 0);
+    spend       += campSpend;
     impressions += parseInt(ins.impressions   || 0, 10);
     clicks      += parseInt(ins.clicks        || 0, 10);
     reach       += parseInt(ins.reach         || 0, 10);
 
     for (const action of (ins.actions || [])) {
-      if (action.action_type === 'lead') leads += parseInt(action.value || 0, 10);
+      // Mesmo fallback usado em index.html/js/share-dash.js — algumas contas
+      // reportam leads como 'offsite_conversion.lead', não só 'lead'.
+      if (action.action_type === 'lead' || action.action_type === 'offsite_conversion.lead') {
+        leads += parseInt(action.value || 0, 10);
+      }
       if (action.action_type === 'onsite_conversion.messaging_conversation_started_7d') {
         msgs += parseInt(action.value || 0, 10);
       }
     }
 
-    for (const roas of (ins.purchase_roas || [])) {
-      if (roas.action_type === 'omni_purchase') roasValue += parseFloat(roas.value || 0);
+    // ROAS ponderado por gasto: Σ(roas×spend) / Σspend — nunca somar os
+    // ratios direto (regra documentada no CLAUDE.md, mesma fórmula usada em
+    // index.html e js/share-dash.js).
+    const campRoas = (ins.purchase_roas || []).find(r => r.action_type === 'omni_purchase');
+    if (campRoas && campSpend > 0) {
+      roasWeightedSum += parseFloat(campRoas.value || 0) * campSpend;
+      roasSpendBase   += campSpend;
     }
   }
 
@@ -65,7 +75,7 @@ export function summarizeZapCampaigns(campaigns, filters = {}) {
   const cpc  = clicks      > 0 ? spend / clicks : 0;
   const cpm  = impressions > 0 ? (spend / impressions) * 1000 : 0;
   const ctr  = impressions > 0 ? (clicks / impressions) * 100 : 0;
-  const roas = spend       > 0 ? roasValue / spend : 0;
+  const roas = roasSpendBase > 0 ? roasWeightedSum / roasSpendBase : 0;
 
   return {
     spend, impressions, clicks, reach, leads, msgs,

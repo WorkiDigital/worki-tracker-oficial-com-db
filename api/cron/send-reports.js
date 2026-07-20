@@ -117,6 +117,17 @@ export async function runCronJob() {
             continue;
         }
 
+        // Moeda real da conta — sem isso os relatórios saíam sempre em "R$"
+        // mesmo para contas em USD/EUR. Busca leve, 1 campo, antes das campanhas.
+        let accountCurrency = 'BRL';
+        try {
+            const curRes = await fetchMeta(`https://graph.facebook.com/v20.0/act_${accountId}?fields=currency&access_token=${token}`);
+            const curData = await curRes.json();
+            if (curData.currency) accountCurrency = curData.currency;
+        } catch (e) {
+            console.warn(`[CronZap] #${ag.id} falha ao obter moeda da conta, usando BRL:`, e.message);
+        }
+
         const periodoMap = {
             yesterday: 'yesterday', last_7_days: 'last_7d', last_14_days: 'last_14d',
             last_30_days: 'last_30d', current_month: 'this_month', previous_month: 'last_month',
@@ -152,7 +163,7 @@ export async function runCronJob() {
         const totalReach = totals.reach;
         const totalRoas = totals.roas;
 
-        const fmtBrl = v => new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' }).format(v);
+        const fmtBrl = v => new Intl.NumberFormat('pt-BR', { style:'currency', currency:accountCurrency }).format(v);
         // fmtVal: valor monetário SEM prefixo R$ (para templates onde o usuário já escreveu "R$ {gasto}")
         const fmtVal = v => new Intl.NumberFormat('pt-BR', { minimumFractionDigits:2, maximumFractionDigits:2 }).format(v || 0);
         const fmtNum = v => new Intl.NumberFormat('pt-BR').format(v);
