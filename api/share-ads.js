@@ -1,6 +1,7 @@
 import { getPool } from './_db.js';
 import { cors } from './_cors.js';
 import { decryptToken } from './_crypto.js';
+import { ensureShareSchema } from './_share-schema.js';
 
 const DEFAULT_SECTIONS = { campanhas: true, demograficos: true, melhores_criativos: true };
 const DEFAULT_METRICS  = ['spend','imps','reach','cpm','ctr','leads','cpl','msgs','cpr','active_campaigns'];
@@ -17,6 +18,7 @@ export default async function handler(req, res) {
   const pool = getPool();
   let row;
   try {
+    await ensureShareSchema();
     const { rows } = await pool.query(
       `SELECT st.account_id, st.account_name, st.client_name, st.visible_sections, st.visible_metrics, st.visible_columns, st.status_filter, st.currency, st.expires_at, c.token_meta, c.token_meta_enc
        FROM share_tokens st

@@ -3,6 +3,7 @@ import { getPool } from './_db.js';
 import { randomUUID } from 'crypto';
 import { verifyAccountAccess } from './_validate.js';
 import { cors } from './_cors.js';
+import { ensureShareSchema } from './_share-schema.js';
 
 const DEFAULT_SHARE_TTL_DAYS = parseInt(process.env.SHARE_TOKEN_DEFAULT_TTL_DAYS || '30', 10);
 
@@ -41,6 +42,12 @@ export default async function handler(req, res) {
   }
 
   const pool = getPool();
+  try {
+    await ensureShareSchema();
+  } catch (err) {
+    console.error('[share-create] falha ao garantir schema:', err.message);
+    return res.status(500).json({ error: 'Erro ao preparar o link de compartilhamento' });
+  }
   const token = randomUUID();
   const defaultExpiresAt = new Date(Date.now() + DEFAULT_SHARE_TTL_DAYS * 24 * 60 * 60 * 1000);
   const expiresAt = expires_at
