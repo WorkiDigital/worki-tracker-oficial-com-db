@@ -2805,7 +2805,18 @@ function tempoRelativo(iso) {
     return new Date(iso).toLocaleDateString('pt-BR');
 }
 
-function brl(n) { return 'R$ ' + parseFloat(n||0).toFixed(2).replace('.',','); }
+// Formata valor de Ads (spend/cpm/cpc/etc, já em unidade normal — não centavos)
+// na moeda real da conta selecionada. getAdsCurrency() é definida mais abaixo
+// no arquivo, mas como brl() só é chamada após uma conta ser selecionada
+// (ads-*), a função já está disponível em tempo de execução.
+function brl(n) {
+    const currency = (typeof getAdsCurrency === 'function') ? getAdsCurrency() : 'BRL';
+    try {
+        return new Intl.NumberFormat('pt-BR', { style:'currency', currency }).format(parseFloat(n||0));
+    } catch {
+        return `${currency} ${parseFloat(n||0).toFixed(2).replace('.',',')}`;
+    }
+}
 function fmtN(n) { return parseInt(n||0).toLocaleString('pt-BR'); }
 
 // ── Lazy load de Chart.js (só na aba Anúncios) ────────────────

@@ -30,10 +30,12 @@ export default async function handler(req, res) {
   let metaToken = await getTokenForUser(user);
   if (!metaToken) return res.status(403).json({ error: 'Token Meta não configurado.' });
 
+  let accountCurrency = 'BRL';
   try {
-    const check = await fetch(`https://graph.facebook.com/v20.0/${account_id}?fields=id&access_token=${metaToken}`);
+    const check = await fetch(`https://graph.facebook.com/v20.0/${account_id}?fields=id,currency&access_token=${metaToken}`);
     const checkData = await check.json();
     if (checkData.error) return res.status(403).json({ error: 'Conta inválida ou sem acesso' });
+    accountCurrency = checkData.currency || 'BRL';
   } catch {
     return res.status(500).json({ error: 'Erro ao verificar conta' });
   }
@@ -48,20 +50,21 @@ export default async function handler(req, res) {
   try {
     await pool.query(
       `INSERT INTO share_tokens (
-        token, account_id, account_name, user_id, client_name, 
-        visible_sections, visible_metrics, visible_columns, 
-        status_filter, expires_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+        token, account_id, account_name, user_id, client_name,
+        visible_sections, visible_metrics, visible_columns,
+        status_filter, currency, expires_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
       [
-        token, 
-        account_id, 
-        account_name || account_id, 
-        user.id, 
+        token,
+        account_id,
+        account_name || account_id,
+        user.id,
         client_name || null,
         visible_sections ? JSON.stringify(visible_sections) : null,
         visible_metrics ? JSON.stringify(visible_metrics) : null,
         visible_columns ? JSON.stringify(visible_columns) : null,
         status_filter || 'ACTIVE',
+        accountCurrency,
         expiresAt
       ]
     );

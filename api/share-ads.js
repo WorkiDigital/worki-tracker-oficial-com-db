@@ -18,7 +18,7 @@ export default async function handler(req, res) {
   let row;
   try {
     const { rows } = await pool.query(
-      `SELECT st.account_id, st.account_name, st.client_name, st.visible_sections, st.visible_metrics, st.visible_columns, st.status_filter, st.expires_at, c.token_meta, c.token_meta_enc
+      `SELECT st.account_id, st.account_name, st.client_name, st.visible_sections, st.visible_metrics, st.visible_columns, st.status_filter, st.currency, st.expires_at, c.token_meta, c.token_meta_enc
        FROM share_tokens st
        LEFT JOIN usuarios u ON u.id = st.user_id
        LEFT JOIN clientes c ON c.id = u.cliente_id
@@ -53,6 +53,7 @@ export default async function handler(req, res) {
       ...data,
       account_name: row.account_name,
       client_name: row.client_name || row.account_name,
+      currency: row.currency || 'BRL',
       config: {
         visible_sections: row.visible_sections || DEFAULT_SECTIONS,
         visible_metrics:  row.visible_metrics  || DEFAULT_METRICS,

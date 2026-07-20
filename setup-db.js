@@ -159,11 +159,19 @@ async function setup() {
           visible_metrics JSONB,
           visible_columns JSONB,
           status_filter VARCHAR(50) DEFAULT 'ACTIVE',
+          currency VARCHAR(10) DEFAULT 'BRL',
           expires_at TIMESTAMP,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
     console.log('✅ Tabela "share_tokens" verificada/criada.');
+
+    // Moeda real da conta de anúncios (para links criados antes desta coluna existir)
+    await client.query(`
+      ALTER TABLE public.share_tokens
+      ADD COLUMN IF NOT EXISTS currency VARCHAR(10) DEFAULT 'BRL';
+    `);
+    console.log('✅ Coluna "currency" injetada na tabela "share_tokens".');
 
     // Tabela de mapeamento: instâncias externas da Evolution → cliente
     await client.query(`

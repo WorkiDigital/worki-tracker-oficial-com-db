@@ -6,8 +6,16 @@ function fmt(n, decimals=0) {
     if (num >= 1e3) return (num/1e3).toFixed(1)+'K';
     return num.toLocaleString('pt-BR', { minimumFractionDigits:decimals, maximumFractionDigits:decimals });
 }
+// Moeda real da conta de anúncios do link compartilhado — atualizada assim
+// que /api/share-ads responde (currency vem de share_tokens.currency,
+// resolvida na Graph API no momento em que o link foi criado).
+let _shareCurrency = 'BRL';
 function fmtBRL(n) {
-    return 'R$ '+(parseFloat(n)||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+    try {
+        return new Intl.NumberFormat('pt-BR', { style:'currency', currency:_shareCurrency }).format(parseFloat(n)||0);
+    } catch {
+        return `${_shareCurrency} ${(parseFloat(n)||0).toFixed(2).replace('.',',')}`;
+    }
 }
 
 function toast(msg, type='info') {
@@ -110,6 +118,7 @@ async function carregarTudo() {
 
         _campaigns = adsData.data || [];
         _config = adsData.config || {};
+        _shareCurrency = adsData.currency || 'BRL';
 
         const displayName = adsData.client_name || adsData.account_name || 'Conta de Anúncios';
         $('accountName').textContent = displayName;
