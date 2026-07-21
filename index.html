@@ -2883,7 +2883,19 @@ async function init() {
     let user = null;
     let onboardingCompleto = true;
     try {
-        const cfg = await fetch(apiUrl('/api/config')).then(r=>r.json());
+        // Timeout curto e explícito: sem isso, uma rede lenta (ex: latência
+        // entre domínios separados de front/API) deixa esta fetch pendurada
+        // e qualquer falha aqui cai no catch abaixo — que antes mandava pro
+        // login mesmo sem ser um problema de sessão, causando loop com
+        // login.html (que manda de volta pra / ao ver o token ainda válido).
+        const configCtrl = new AbortController();
+        const configTimer = setTimeout(() => configCtrl.abort(), 10000);
+        let cfg;
+        try {
+            cfg = await fetch(apiUrl('/api/config'), { signal: configCtrl.signal }).then(r=>r.json());
+        } finally {
+            clearTimeout(configTimer);
+        }
         
         // Atualiza Marca (Sidebar e Topbar)
         const brandName = cfg.projectName || 'Adlytics';
@@ -2980,8 +2992,16 @@ async function init() {
                 mudarAba(abaName);
             }
         }
-    } catch(_) {
-        window.location.href = 'login.html';
+    } catch(err) {
+        // Só manda pro login se for realmente falta de sessão (token/user
+        // ausentes) ou 401 explícito — authFetch já trata 401 de qualquer
+        // outra chamada autenticada e redireciona sozinho quando é o caso.
+        // Qualquer outro erro aqui (rede lenta, timeout do /api/config,
+        // exceção de DOM) NÃO deve mandar pro login: preserva o dashboard
+        // já carregado em vez de criar loop com login.html (que manda de
+        // volta pra / assim que vê um token ainda válido no localStorage).
+        console.error('[init] erro não relacionado a sessão, mantendo dashboard:', err);
+        document.body.classList.remove('app-loading');
         return;
     }
 
