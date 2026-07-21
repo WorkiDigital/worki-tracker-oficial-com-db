@@ -309,11 +309,13 @@ export default async function handler(req, res) {
           journey_stages: stages.rows,
         });
       }
-      // Lista com contagem de cliques/conversões
+      // Lista com contagem de cliques/conversões — usa os contadores materializados
+      // (total_clicks/total_conversions) em vez de COUNT(*) correlato por linha,
+      // que fazia 2 scans em tracking_clicks por campanha (não escala com volume).
       const r = await pool.query(
         `SELECT c.*,
-           (SELECT COUNT(*) FROM tracking_clicks k WHERE k.campaign_id=c.id) AS cliques,
-           (SELECT COUNT(*) FROM tracking_clicks k WHERE k.campaign_id=c.id AND k.status='converted') AS conversoes
+           c.total_clicks AS cliques,
+           c.total_conversions AS conversoes
          FROM tracking_campaigns c
          WHERE c.cliente_id=$1 AND c.archived_at IS NULL
          ORDER BY c.created_at DESC`,

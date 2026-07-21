@@ -3,25 +3,28 @@ import { verifyAuth } from './_auth.js';
 import bcrypt from 'bcryptjs';
 import { cors } from './_cors.js';
 import { encryptToken } from './_crypto.js';
+import { ensureTrackingSchema } from './_tracking-schema.js';
 
 export default async function handler(req, res) {
   if (cors(req, res, ['GET', 'POST', 'PATCH', 'DELETE'])) return;
 
   // Bloqueio de Segurança Externa
   const user = await verifyAuth(req, res);
-  if (!user) return; 
+  if (!user) return;
 
   // Bloqueio Multi-tenant: Apenas Donos/Admins podem manipular clientes
   if (!user.is_admin) {
       return res.status(403).json({ error: 'Acesso negado: Você não é administrador da plataforma.' });
   }
 
+  await ensureTrackingSchema();
   const pool = getPool();
 
   if (req.method === 'GET') {
       try {
           // Lista todos os clientes para montar o painel Admin (EXCLUI token_meta por segurança)
-          const result = await pool.query('SELECT id, nome, email_contato, pixel_padrao, account_id, permissoes, template_venda, template_qualificacao, capi_pixel_id, google_ads_conversion_id, google_ads_conversion_label, criado_em FROM clientes ORDER BY id DESC');
+          // Clientes arquivados (soft-delete) não aparecem na listagem.
+          const result = await pool.query("SELECT id, nome, email_contato, pixel_padrao, account_id, permissoes, template_venda, template_qualificacao, capi_pixel_id, google_ads_conversion_id, google_ads_conversion_label, criado_em FROM clientes WHERE archived_at IS NULL ORDER BY id DESC");
           return res.status(200).json(result.rows);
       } catch (err) {
           console.error(err);
@@ -140,9 +143,15 @@ export default async function handler(req, res) {
       const { id } = req.body;
       if (!id) return res.status(400).json({ error: 'ID obrigatório' });
       try {
-          await pool.query('DELETE FROM usuarios WHERE cliente_id=$1 AND is_admin=false', [id]);
-          await pool.query('DELETE FROM leads_tracking WHERE cliente_id=$1', [id]);
-          const r = await pool.query('DELETE FROM clientes WHERE id=$1 RETURNING id', [id]);
+          // Soft-delete: um cliente com muitos leads/cliques (ON DELETE CASCADE em
+          // várias tabelas grandes) travava o banco por minutos ao apagar de verdade.
+          // "Excluir" agora arquiva — mesmo padrão já usado em tracking_campaigns.
+          // Login do usuário vinculado é bloqueado (ver auth-login.js); os dados
+          // continuam intactos para auditoria/reversão.
+          const r = await pool.query(
+              'UPDATE clientes SET archived_at=NOW(), atualizado_em=NOW() WHERE id=$1 AND archived_at IS NULL RETURNING id',
+              [id]
+          );
           if (r.rowCount === 0) return res.status(404).json({ error: 'Cliente não encontrado' });
           return res.status(200).json({ message: 'Cliente excluído com sucesso' });
       } catch(err) {

@@ -306,6 +306,31 @@ async function createTrackingSchema() {
       ALTER TABLE public.tracking_clicks
       ADD COLUMN IF NOT EXISTS visitor_id VARCHAR(60),
       ADD COLUMN IF NOT EXISTS source VARCHAR(20) DEFAULT 'redirect';
+
+      -- Contadores materializados: a listagem de campanhas (tracking-campaigns.js)
+      -- fazia 2 subqueries COUNT(*) correlatas por linha (scan de tracking_clicks
+      -- inteira por campanha). Com volume alto de cliques isso não escala — os
+      -- contadores são incrementados no INSERT do clique (redirect.js) e na
+      -- conversão (webhook-evo.js/atribuirClique), na mesma transação, então
+      -- nunca ficam fora de sincronia com os dados reais.
+      ALTER TABLE public.tracking_campaigns
+      ADD COLUMN IF NOT EXISTS total_clicks INTEGER DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS total_conversions INTEGER DEFAULT 0;
+
+      UPDATE public.tracking_campaigns c
+      SET total_clicks = (SELECT COUNT(*) FROM public.tracking_clicks k WHERE k.campaign_id = c.id),
+          total_conversions = (SELECT COUNT(*) FROM public.tracking_clicks k WHERE k.campaign_id = c.id AND k.status = 'converted')
+      WHERE total_clicks = 0 AND total_conversions = 0;
+
+      -- Soft-delete de clientes: excluir um cliente com muitos leads/cliques
+      -- disparava DELETE em cascata (ON DELETE CASCADE) em várias tabelas
+      -- grandes, travando o banco por minutos. "Excluir" no painel agora
+      -- arquiva (mesmo padrão já usado em tracking_campaigns) em vez de apagar.
+      ALTER TABLE public.clientes
+      ADD COLUMN IF NOT EXISTS archived_at TIMESTAMP;
+
+      CREATE INDEX IF NOT EXISTS idx_clientes_archived
+        ON public.clientes(archived_at);
     `);
 
     // Integridade da atribuição: um clique que já virou lead (status='converted')

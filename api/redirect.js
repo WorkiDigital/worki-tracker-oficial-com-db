@@ -330,6 +330,10 @@ export default async function handler(req, res) {
          placement, ad_id, adset_id, metaCampaignId, gclid, googleAdsKeyword,
          gbraid, wbraid]
       );
+      await client.query(
+        'UPDATE tracking_campaigns SET total_clicks = total_clicks + 1 WHERE id = $1',
+        [campaign.id]
+      );
     }
 
     await client.query('COMMIT');

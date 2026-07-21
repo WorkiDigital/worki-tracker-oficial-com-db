@@ -78,8 +78,13 @@ export default async function handler(req, res) {
     // Busca permissões do cliente (se não for admin)
     let permissoes = { leads: true, anuncios: true, relatorios: true, whatsapp: true, config: true };
     if (!user.is_admin && user.cliente_id) {
-        const cliRes = await pool.query('SELECT permissoes FROM clientes WHERE id = $1', [user.cliente_id]);
-        if (cliRes.rows.length > 0 && cliRes.rows[0].permissoes) {
+        const cliRes = await pool.query('SELECT permissoes, archived_at FROM clientes WHERE id = $1', [user.cliente_id]);
+        // Cliente arquivado (soft-delete) — bloqueia login como se tivesse sido excluído.
+        if (cliRes.rows.length === 0 || cliRes.rows[0].archived_at) {
+            _recordFail(ip);
+            return res.status(401).json({ error: 'Email ou senha incorretos.' });
+        }
+        if (cliRes.rows[0].permissoes) {
             permissoes = cliRes.rows[0].permissoes;
         }
     }

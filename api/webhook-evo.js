@@ -8,6 +8,27 @@ import { enviarConversao, extrairValor } from './_capi.js';
 import { log } from './_logger.js';
 import { limparTextoDecorativo } from './_text-sanitize.js';
 import { ensureChatMessagesSchema } from './_chat-schema.js';
+import { getQueue, registerWorker, isQueueEnabled } from './_queue.js';
+
+const QUEUE_NAME = 'webhook-evo-messages';
+
+// Worker: processa mensagens em background quando há Redis disponível. Registrado
+// uma única vez por processo (server-api.js/server.js importam este módulo 1x).
+if (isQueueEnabled()) {
+  registerWorker(QUEUE_NAME, async (job) => {
+    const result = await processarMensagem(job.data.body);
+    // status >= 500 é falha real (ex: banco fora do ar) — lança pra acionar o
+    // retry com backoff do BullMQ. 4xx/2xx são decisões de negócio (duplicado,
+    // ignorado, etc.) e não devem ser reprocessadas.
+    if (result.status >= 500) {
+      throw new Error(result.json?.error || 'Falha ao processar mensagem do webhook.');
+    }
+    return result.json;
+  }, { concurrency: 8 });
+  console.log('[webhook-evo] fila de mensagens ativa (BullMQ + Redis)');
+} else {
+  console.log('[webhook-evo] sem REDIS_URL — mensagens processadas de forma síncrona (sem fila)');
+}
 
 // ── Handler principal — recebe payload bruto da Evolution API ──
 export default async function handler(req, res) {
@@ -82,6 +103,32 @@ export default async function handler(req, res) {
     return res.status(200).json({ ignored: true, reason: `Evento ${event} ignorado.` });
   }
 
+  // ── Enfileira o processamento pesado (queries + Graph API + CAPI) e responde
+  // 200 imediatamente. Com muitos webhooks simultâneos, isso evita saturar o
+  // pool de conexões do Postgres segurando uma request HTTP por lead. Sem
+  // REDIS_URL configurado, cai no processamento síncrono de sempre (mesma
+  // lógica, só sem a fila) — nenhum ambiente fica sem funcionar.
+  const queue = getQueue(QUEUE_NAME);
+  if (queue) {
+    try {
+      await queue.add('message', { body }, { jobId: undefined });
+      return res.status(200).json({ ok: true, queued: true });
+    } catch (e) {
+      log('warn', 'webhook_evo_enqueue_fail', { error: e.message });
+      // Falha ao enfileirar (ex: Redis fora do ar) — processa inline como fallback.
+    }
+  }
+
+  const result = await processarMensagem(body);
+  return res.status(result.status).json(result.json);
+}
+
+// ── Processa uma mensagem messages.upsert já filtrada (passos 3+ do fluxo
+// original). Roda tanto inline (fallback sem fila) quanto dentro do worker
+// da fila (background) — chamado com o `body` bruto do webhook em ambos os
+// casos. Retorna {status, json} em vez de escrever direto em `res`, já que o
+// worker não tem uma response HTTP para responder.
+async function processarMensagem(body) {
   // ── 3. Extrair dados da mensagem ──
   // A Evolution pode mandar em formatos diferentes dependendo da versão.
   // Formato v1: body.data.key, body.data.message, body.data.pushName
@@ -92,7 +139,7 @@ export default async function handler(req, res) {
     : body;
 
   if (!msgData) {
-    return res.status(200).json({ ignored: true, reason: 'Payload sem dados de mensagem.' });
+    return { status: 200, json: { ignored: true, reason: 'Payload sem dados de mensagem.' } };
   }
 
   const key = msgData.key || {};
@@ -158,15 +205,15 @@ export default async function handler(req, res) {
         log('warn', 'webhook_evo_first_response_fail', { error: e.message });
       }
     }
-    return res.status(200).json({ ignored: true, reason: 'Mensagem enviada (fromMe) - first_response_at atualizado se aplicavel.' });
+    return { status: 200, json: { ignored: true, reason: 'Mensagem enviada (fromMe) - first_response_at atualizado se aplicavel.' } };
   }
   // ── 5. Extrair telefone do remoteJid ──
   // -- 5/6. Validar conversa privada e telefone ja normalizados --
   if (!isMensagemPrivada) {
-    return res.status(200).json({ ignored: true, reason: 'Mensagem de grupo/broadcast ignorada.' });
+    return { status: 200, json: { ignored: true, reason: 'Mensagem de grupo/broadcast ignorada.' } };
   }
   if (!telefone) {
-    return res.status(200).json({ ignored: true, reason: 'Sem telefone valido.' });
+    return { status: 200, json: { ignored: true, reason: 'Sem telefone valido.' } };
   }
   // A Evolution manda o contextInfo em locais diferentes conforme a versão.
   // Em algumas versões vem direto em body.data.contextInfo (msgData.contextInfo),
@@ -207,17 +254,17 @@ export default async function handler(req, res) {
   // -- 8/9. Instancia e cliente_id ja foram resolvidos acima para salvar o chat --
   if (!cliente_id) {
     log('warn', 'webhook_evo_no_client', { instance, telefone });
-    return res.status(400).json({
+    return { status: 400, json: {
       error: 'Instância não reconhecida. Vincule-a a um cliente no painel.',
       instance
-    });
+    } };
   }
 
   try {
     await ensureTrackingSchema();
   } catch (e) {
     log('error', 'webhook_evo_tracking_schema_fail', { error: e.message });
-    return res.status(500).json({ error: 'Falha ao preparar estrutura de captação.' });
+    return { status: 500, json: { error: 'Falha ao preparar estrutura de captação.' } };
   }
 
   // ── 10. Classificação de origem (captura configurável + link rastreável) ──
@@ -301,10 +348,10 @@ export default async function handler(req, res) {
             token_detectado: !!clickTrackingId
           }
         });
-        return res.status(200).json({
+        return { status: 200, json: {
           ignored: true,
           reason: 'Contato sem ctwaClid e fora do modo de captura — ignorado.'
-        });
+        } };
       }
     }
   }
@@ -404,10 +451,10 @@ export default async function handler(req, res) {
           });
           if (!atr) {
             await writeClient.query('ROLLBACK');
-            return res.status(200).json({
+            return { status: 200, json: {
               ignored: true,
               reason: 'Clique rastreável já convertido ou expirado.'
-            });
+            } };
           }
           // Marca o toque mais recente (a coluna já existe em leads_tracking).
           await writeClient.query(
@@ -416,13 +463,13 @@ export default async function handler(req, res) {
           );
           await writeClient.query('COMMIT');
           await vincularChatAoLeadBestEffort({ cliente_id, telefone, leadId: lead.id });
-          return res.status(200).json({
+          return { status: 200, json: {
             ok: true,
             interaction: true,
             reason: 'Novo toque registrado na jornada do lead existente.',
             lead_id: lead.id,
             click_id: atr.click_id
-          });
+          } };
         }
         // Sem lead do telefone → segue para o INSERT normal (lead novo).
       }
@@ -452,11 +499,11 @@ export default async function handler(req, res) {
       if (dupeCheck.rows.length > 0) {
         await writeClient.query('ROLLBACK');
         await vincularChatAoLeadBestEffort({ cliente_id, telefone, leadId: dupeCheck.rows[0].id });
-        return res.status(200).json({
+        return { status: 200, json: {
           ignored: true,
           reason: `Lead duplicado (${lead_origin}).`,
           existing_id: dupeCheck.rows[0].id
-        });
+        } };
       }
 
       const insertResult = await writeClient.query(`
@@ -480,10 +527,10 @@ export default async function handler(req, res) {
         });
         if (!atr) {
           await writeClient.query('ROLLBACK');
-          return res.status(200).json({
+          return { status: 200, json: {
             ignored: true,
             reason: 'Clique rastreável já convertido ou expirado.'
-          });
+          } };
         }
         lead.tracking_click_id = atr.click_id;
         lead.tracking_method = atr.method;
@@ -595,15 +642,15 @@ export default async function handler(req, res) {
       lead_id: lead.id, cliente_id, telefone, instance, ctwaClid
     });
 
-    return res.status(200).json({
+    return { status: 200, json: {
       success: true,
       message: 'Lead salvo com sucesso (Evolution direto)',
       lead_id: lead.id
-    });
+    } };
 
   } catch (error) {
     log('error', 'webhook_evo_error', { error: error.message, instance, telefone });
-    return res.status(500).json({ error: error.message });
+    return { status: 500, json: { error: error.message } };
   }
 }
 
@@ -1027,6 +1074,12 @@ async function atribuirClique(client, { cliente_id, lead_id, clickTrackingId, tr
     await client.query(
       `UPDATE tracking_destinations SET total_captures = total_captures + 1 WHERE id = $1`,
       [c.destination_id]
+    );
+  }
+  if (c.campaign_id) {
+    await client.query(
+      `UPDATE tracking_campaigns SET total_conversions = total_conversions + 1 WHERE id = $1`,
+      [c.campaign_id]
     );
   }
 
