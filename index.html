@@ -3103,13 +3103,17 @@ function trocarClienteAdmin(id) {
     if (i && i.value !== String(id ?? '')) i.value = id ?? '';
     if (chat && chat.value !== String(id ?? '')) chat.value = id ?? '';
 
+    // Invalida a carga de anúncios para que recarregue os dados do novo cliente
+    adsCarregado = false;
+    _contaSelecionada = null;
+
     recarregarLeads();
     if (!$('aba-conversas')?.classList.contains('aba-oculta') && typeof chatMonitorRefreshCliente === 'function') chatMonitorRefreshCliente();
     if (!$('aba-captacao')?.classList.contains('aba-oculta')) carregarCampanhasLink();
     if (!$('aba-inteligente')?.classList.contains('aba-oculta')) capIntCarregar();
     if (!$('aba-funil')?.classList.contains('aba-oculta') && typeof funilCarregar === 'function') funilCarregar();
     if (!$('aba-relatorios')?.classList.contains('aba-oculta') && typeof recarregarRelatorios === 'function') recarregarRelatorios();
-    if (!$('aba-anuncios')?.classList.contains('aba-oculta')) { adsCarregado = false; carregarContasAds(); }
+    if (!$('aba-anuncios')?.classList.contains('aba-oculta')) carregarContasAds();
     if (!$('aba-integracoes')?.classList.contains('aba-oculta') && typeof carregarIntegracoesConta === 'function') carregarIntegracoesConta();
     if (!$('aba-whatsapp')?.classList.contains('aba-oculta') && typeof carregarListaWa === 'function') carregarListaWa();
 }
@@ -3170,6 +3174,11 @@ async function carregarContasAds() {
             const lbl = $('acctBtnLabel');
             if (lbl) { lbl.textContent = 'Nenhuma conta vinculada'; lbl.classList.add('placeholder'); }
             $('acctSavedBadge').style.display = 'none';
+            campanhasRaw = [];
+            adsCarregado = false;
+            const contEl = $('adsContent'); if (contEl) contEl.style.display = 'none';
+            const errEl = $('adsError'); if (errEl) errEl.style.display = 'none';
+            const loadEl = $('adsLoading'); if (loadEl) loadEl.style.display = 'none';
             return;
         }
 
@@ -3189,7 +3198,7 @@ async function carregarContasAds() {
         if (encontrada) {
             selecionarConta(encontrada, false); // false = não gravar de novo
             $('acctSavedBadge').style.display = 'inline';
-        } else if (visiveis.length === 1) {
+        } else if (visiveis.length >= 1) {
             selecionarConta(visiveis[0], false);
             $('acctSavedBadge').style.display = 'none';
         }
