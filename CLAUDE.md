@@ -1235,3 +1235,34 @@ Commits: `88c1477`
 - ✅ Via **Pipeline/Kanban** (arrastar card para coluna "Agendado")
 
 Commits: `f3fd30a`
+
+---
+
+## 💱 Moeda real da conta (não fixo em R$) + auditoria de métricas de Ads (2026-07)
+
+**Problema:** cards/tabela de Ads, dashboard público (`share-dash.js`) e Relatórios Automáticos (WhatsApp) sempre formatavam valores em `R$` fixo, mesmo para contas Meta em USD/EUR. O painel já tinha `getAdsCurrency()`/`formatAdsMinor()` prontos (usados só no fluxo de orçamento), mas não conectados às métricas.
+
+**Correção — painel admin (`index.html`):** `brl()` internamente passou a chamar `getAdsCurrency()` via `Intl.NumberFormat`, sem precisar tocar nas ~30 chamadas espalhadas (cards, tabela, demografia, melhores anúncios, drill-down). Modal de orçamento (`#modalAdsBudget`) também parou de fixar "R$"/"BRL".
+
+**Correção — dashboard público (`share-dash.js`):** aqui a moeda **não existia em nenhum ponto do pipeline**. Solução: nova coluna `share_tokens.currency`, resolvida na Graph API (`fields=id,currency`) no momento de **criar o link** (`api/share-create.js`), devolvida por `api/share-ads.js`, guardada em `_shareCurrency` e usada por `fmtBRL()`. Links criados **antes** dessa mudança ficam em `BRL` (fallback) até serem recriados — sem correção retroativa automática.
+
+**Correção — Relatórios Automáticos (`api/cron/send-reports.js`):** não fazia parte do fix anterior. Agora busca `currency` da conta (`act_{id}?fields=currency`) antes de montar a mensagem de WhatsApp.
+
+### ⚠️ Armadilha: coluna nova em tabela existente exige bootstrap automático, não só `setup-db.js`
+Adicionar `currency` só no `CREATE TABLE` de `setup-db.js` **não bastou** — `setup-db.js` só roda manualmente via terminal, não a cada deploy. Resultado: `/api/share-ads` caiu em `500` em produção (`column st.currency does not exist`) até ser criado `api/_share-schema.js` (mesmo padrão lazy de `_extension-pairing-schema.js`: `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` com `pg_advisory_xact_lock`, chamado no início de `share-ads.js`/`share-create.js`). **Lição: toda coluna nova em tabela que já existe em produção precisa de um bootstrap automático chamado pelo próprio endpoint — nunca confiar só no `setup-db.js` manual.**
+
+### Auditoria de métricas (4 bugs reais encontrados e corrigidos)
+Comparação das 4 fontes que calculam métricas de Ads (`index.html`, `js/share-dash.js`, `api/cron/send-reports.js` + `api/zap-preview-metrics.js` via `api/_zap-report-metrics.js`) contra as regras já documentadas neste arquivo (nunca somar variantes de `action_type`, ROAS via `purchase_roas` ponderado por spend):
+1. **ROAS errado nos Relatórios/Preview** (`api/_zap-report-metrics.js`): calculava `Σ(roas por campanha) / Σspend` em vez de `Σ(roas×spend) / Σspend`. Testado com 2 campanhas: fórmula antiga dava `0.0109`, a correta `2.7273` — divergência grave, não cosmética.
+2. **Leads subcontados** no mesmo arquivo: só contava `action_type === 'lead'`, faltava o fallback `'offsite_conversion.lead'` que `index.html`/`share-dash.js` já usam.
+3. **Métrica "Resultados" inflada** no ranking de Melhores Anúncios do dashboard público (`js/share-dash.js`, `getAdMetric`): somava `omni_purchase`+`purchase`+`offsite_conversion.fb_pixel_purchase` (mesma compra 2-3x) misturado com leads/mensagens. Testado: uma compra de valor 10 aparecia como 33. Corrigido para o maior valor entre compras/leads/mensagens, cada um via first-match.
+4. **Moeda fixa em BRL nos Relatórios Automáticos** — ver acima.
+
+Também corrigidos: campo de "Cliques" inconsistente no ranking de Melhores Anúncios (`outbound_clicks` em vez de `link_click`, padrão usado no resto do arquivo); chaves mortas `hook`/`cphook` em `METRIC_META` (resíduo da remoção do Hook Rate, nunca renderizadas).
+
+### Crash de null em `renderTable()` (`js/share-dash.js`)
+Campanhas sem `insights` no período (`ins = null`) quebravam a tabela inteira com `Cannot read properties of null (reading 'instagram_profile_visits')` — um acesso direto `ins.instagram_profile_visits` sem `?.`, enquanto o resto da mesma linha (`ins?.spend`, `getAct`/`getActFirst`/`getRoas`) já era seguro. Corrigido para `ins?.instagram_profile_visits`.
+
+**Padrão a seguir:** ao adicionar/editar leitura de `ins` num `.map()`/`.forEach()` sem guarda `if (!ins) return` anterior, sempre usar `?.` — nunca assumir que toda campanha do período tem insights.
+
+Commits: `877c96b`, `5ce451d`, `c49c88d`, `bfa28e6`, `a08fd7e`
