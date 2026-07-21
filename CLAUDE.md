@@ -1266,3 +1266,23 @@ Campanhas sem `insights` no período (`ins = null`) quebravam a tabela inteira c
 **Padrão a seguir:** ao adicionar/editar leitura de `ins` num `.map()`/`.forEach()` sem guarda `if (!ins) return` anterior, sempre usar `?.` — nunca assumir que toda campanha do período tem insights.
 
 Commits: `877c96b`, `5ce451d`, `c49c88d`, `bfa28e6`, `a08fd7e`
+
+---
+
+## ⚡ Escalabilidade, Fila de Webhooks (BullMQ), Soft-Delete e Filtro de Cliques/Filtro Meta Ads (2026-07-21)
+
+### 1. Paridade no Contador de Cliques (Cabeçalho vs. Tabela)
+- **Problema:** O card de métricas no cabeçalho ("72 Cliques") filtrava robôs (`HUMAN_CLICK_SQL`), mas a subquery na listagem de campanhas (`api/tracking-campaigns.js`) contava todos os registros (`COUNT(*)`), incluindo crawlers do Facebook/WhatsApp.
+- **Correção (`api/tracking-campaigns.js`):** Adicionada a cláusula `BOT_FILTER` em ambas as subqueries da listagem (`cliques` e `conversoes`), garantindo números consistentes entre o cabeçalho e a tabela.
+
+### 2. Escalabilidade P0/P1 para 1.000 Agências × 20 Clientes cada
+- **Fila BullMQ (`api/_queue.js`):** O webhook da Evolution (`api/webhook-evo.js`) processava tudo inline (consultas SQL + Graph API + CAPI) segurando a conexão HTTP e saturando o pool de conexões sob picos. Agora responde `200 OK` imediatamente e enfileira no Redis via BullMQ com fallback síncrono transparente se o Redis não estiver ativo.
+- **Contadores Materializados (`tracking_campaigns`):** Criadas as colunas `total_clicks` e `total_conversions` na tabela `tracking_campaigns`, incrementadas nas transações de clique (`api/redirect.js`) e conversão. Elimina os `COUNT(*)` correlatos pesados na listagem.
+- **Soft-Delete de Clientes (`clientes.archived_at`):** A exclusão de um cliente em `api/clientes.js` executava `DELETE FROM leads_tracking` em cascata, travando o banco de dados por minutos em contas com muitos leads. Agora utiliza soft-delete (`archived_at`), e a autenticação em `api/auth-login.js` nega o login de contas associadas a clientes arquivados.
+
+### 3. Sincronização do Filtro de Cliente na Aba Meta Ads (`index.html`)
+- **Problema:** Ao alterar o cliente no seletor global (`selectClienteAdmin`) estando em outra aba (ex: Conversas ou Leads), a função `trocarClienteAdmin` não invalidava o estado da aba Meta Ads porque checava `!$('aba-anuncios')?.classList.contains('aba-oculta')`. Ao navegar para Meta Ads em seguida, `adsCarregado` continuava `true`, mantendo os anúncios do cliente anterior na tela.
+- **Correção (`index.html`):** `trocarClienteAdmin` agora reseta incondicionalmente `adsCarregado = false` e `_contaSelecionada = null`. Em `carregarContasAds()`, se o cliente novo não possuir uma conta salva no `localStorage`, seleciona automaticamente a primeira conta disponível (`visiveis.length >= 1`).
+
+Commits: `4aeb608`, `b2ad7e0`
+
