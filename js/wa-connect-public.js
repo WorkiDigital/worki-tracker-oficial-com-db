@@ -5,6 +5,16 @@
 (function () {
     'use strict';
 
+    // Esta página não carrega js/utils.js — apiUrl() local, mesmo padrão do
+    // login.html. window.APP_CONFIG vem de /runtime-config.js (carregado no
+    // <head> de wa-connect.html, sem defer, antes deste script).
+    function apiUrl(path) {
+        const baseUrl = window.APP_CONFIG?.API_BASE_URL || window.API_BASE_URL || '';
+        const normalizedBase = baseUrl.replace(/\/+$/, '');
+        const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+        return `${normalizedBase}${normalizedPath}`;
+    }
+
     const params = new URLSearchParams(window.location.search);
     const token = params.get('token');
     const conteudo = document.getElementById('conteudo');
@@ -68,7 +78,7 @@
 
     async function consultar() {
         try {
-            const r = await fetch(`/api/wa-connect-public?token=${encodeURIComponent(token)}`);
+            const r = await fetch(apiUrl(`/api/wa-connect-public?token=${encodeURIComponent(token)}`));
             const data = await r.json();
             if (!r.ok) {
                 renderErro(data.error || 'Não foi possível carregar o link.');

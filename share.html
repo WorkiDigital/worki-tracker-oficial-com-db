@@ -9,6 +9,8 @@
     <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
     <link rel="stylesheet" href="css/share.css?v=20260712-1">
+    <!-- Config de runtime (window.APP_CONFIG.API_BASE_URL) — ver index.html. -->
+    <script src="/runtime-config.js"></script>
     <script defer src="js/utils.js?v=20260712-1"></script>
 </head>
 <body>
@@ -164,8 +166,17 @@
 <script>
     // White-Label Logic for Share Page
     (async () => {
+        // Este script não usa defer (roda antes de js/utils.js terminar de
+        // carregar) — fallback local para apiUrl() caso a versão de utils.js
+        // ainda não esteja disponível neste ponto.
+        const apiUrlLocal = typeof apiUrl === 'function' ? apiUrl : (path => {
+            const baseUrl = window.APP_CONFIG?.API_BASE_URL || window.API_BASE_URL || '';
+            const normalizedBase = baseUrl.replace(/\/+$/, '');
+            const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+            return `${normalizedBase}${normalizedPath}`;
+        });
         try {
-            const r = await fetch('/api/config');
+            const r = await fetch(apiUrlLocal('/api/config'));
             const cfg = await r.json();
             const brandName = cfg.projectName || 'Adlytics';
             const brandLogo = cfg.projectLogo;

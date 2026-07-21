@@ -112,7 +112,7 @@ async function carregarTudo() {
 
     try {
         // ── Fase 1: campanhas (rápido) ─────────────────────────────
-        const adsResp = await fetch(`/api/share-ads?token=${TOKEN}&datePreset=${datePreset}`);
+        const adsResp = await fetch(apiUrl(`/api/share-ads?token=${TOKEN}&datePreset=${datePreset}`));
         const adsData = await adsResp.json();
         if (adsData.error) { showError(adsData.error); return; }
 
@@ -153,8 +153,8 @@ async function carregarTudo() {
         const demoResps = await Promise.all(
             DEMO_BREAKDOWNS.map(b => showDemo
                 ? (b.key === 'platform_position'
-                    ? fetch(`/api/share-placement?token=${TOKEN}&datePreset=${datePreset}`)
-                    : fetch(`/api/share-demo?token=${TOKEN}&datePreset=${datePreset}&breakdown=${b.key}`))
+                    ? fetch(apiUrl(`/api/share-placement?token=${TOKEN}&datePreset=${datePreset}`))
+                    : fetch(apiUrl(`/api/share-demo?token=${TOKEN}&datePreset=${datePreset}&breakdown=${b.key}`)))
                 : Promise.resolve(null)
             )
         );
@@ -176,7 +176,7 @@ async function carregarMelhoresAnuncios() {
 
     try {
         const datePreset = $('datePreset').value;
-        const resp = await fetch(`/api/share-best?token=${TOKEN}&datePreset=${datePreset}`);
+        const resp = await fetch(apiUrl(`/api/share-best?token=${TOKEN}&datePreset=${datePreset}`));
         const data = await resp.json();
         if (data.error) { toast(data.error, 'error'); return; }
 
@@ -629,7 +629,7 @@ async function carregarThumbsHD(visible) {
                 return;
             }
             try {
-                const resp = await fetch(`/api/share-video?token=${TOKEN}&videoId=${encodeURIComponent(videoId)}&adId=${encodeURIComponent(ad.id)}`);
+                const resp = await fetch(apiUrl(`/api/share-video?token=${TOKEN}&videoId=${encodeURIComponent(videoId)}&adId=${encodeURIComponent(ad.id)}`));
                 if (!resp.ok) return;
                 const data = await resp.json();
                 if (data.error) return;
@@ -710,7 +710,7 @@ async function abrirMedia(idx) {
 
     if (!cached) {
         try {
-            const resp = await fetch(`/api/share-video?token=${TOKEN}&videoId=${encodeURIComponent(videoId)}&adId=${encodeURIComponent(ad.id)}`);
+            const resp = await fetch(apiUrl(`/api/share-video?token=${TOKEN}&videoId=${encodeURIComponent(videoId)}&adId=${encodeURIComponent(ad.id)}`));
             const data = await resp.json();
             if (!data.error) {
                 _videoDataMap[videoId] = { source: data.source || null, thumbnail: data.thumbnail || null, permalink_url: data.permalink_url || null };
@@ -733,7 +733,7 @@ async function abrirMedia(idx) {
         let previewBody = null;
         if (adId) {
             try {
-                const pr = await fetch(`/api/share-preview?token=${TOKEN}&adId=${encodeURIComponent(adId)}`);
+                const pr = await fetch(apiUrl(`/api/share-preview?token=${TOKEN}&adId=${encodeURIComponent(adId)}`));
                 const pd = await pr.json();
                 if (!pd.error && pd.body) previewBody = pd.body;
             } catch { /* ignora */ }

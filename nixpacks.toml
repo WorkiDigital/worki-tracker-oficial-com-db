@@ -4,5 +4,16 @@ NODE_ENV = "production"
 [phases.build]
 cmds = ["npm install --omit=dev"]
 
+# O comando de start deste bloco é lido pelo Nixpacks e tem prioridade sobre o
+# campo "Comando de início" da UI do EasyPanel — foi a causa raiz de uma
+# separação anterior falhar (o serviço "API" acabava rodando o monolito por
+# baixo, porque este arquivo forçava "node server.js" independente do que a UI
+# dizia). Para os serviços de API/frontend separados, defina a variável de
+# ambiente NIXPACKS_START_CMD (lida diretamente pelo Nixpacks, numa camada
+# diferente deste arquivo e da UI) com "node server-api.js" ou
+# "node server-static.js" — ela tem prioridade sobre este [start] abaixo.
+# Este [start] permanece como fallback seguro: se NIXPACKS_START_CMD não for
+# lida por algum motivo, o serviço roda o monolito (server.js) em vez de um
+# comando indefinido — degrada para o comportamento conhecido, nunca quebra.
 [start]
 cmd = "node server.js"

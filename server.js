@@ -99,6 +99,18 @@ const server = http.createServer(async (req, res) => {
         return;
     }
 
+    // Paridade com server-static.js: aqui (monolito, mesma origem) API_BASE_URL
+    // é sempre vazio. Evita 404 nas páginas que carregam <script src="/runtime-config.js">.
+    if (pathname === '/runtime-config.js') {
+        res.writeHead(200, {
+            'Content-Type': 'application/javascript; charset=utf-8',
+            'Cache-Control': 'no-store',
+            'X-Content-Type-Options': 'nosniff',
+        });
+        res.end('window.APP_CONFIG = Object.freeze({ API_BASE_URL: "" });\n');
+        return;
+    }
+
     // Detailed health check — DB + Redis + uptime
     if (pathname === '/health/detailed') {
         const token = req.headers.authorization?.replace(/^Bearer\s+/i, '').trim();
@@ -314,8 +326,16 @@ function pathToFileURL(p) { return new URL('file:///' + p.replace(/\\/g,'/')); }
 server.listen(PORT, () => {
     console.log(`✅ Dev server running at http://localhost:${PORT}`);
     console.log(`   API routes: /api/leads, /api/config, /api/ads, /api/ads-accounts`);
-    iniciarCronZap();
-    iniciarCronChatCleanup();
+    // Desligável via ENABLE_CRONS=false para rodar este monolito ao lado de um
+    // server-api.js separado durante a migração, sem duplicar envio de
+    // relatórios nem limpeza de mensagens. Ausente/não-setado = crons ligados
+    // (comportamento atual, sem mudança).
+    if (process.env.ENABLE_CRONS !== 'false') {
+        iniciarCronZap();
+        iniciarCronChatCleanup();
+    } else {
+        console.log('[Crons] desativados via ENABLE_CRONS=false');
+    }
 });
 
 async function iniciarCronZap() {
