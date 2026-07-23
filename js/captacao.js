@@ -13,7 +13,10 @@ let _capIntEtapas = [];     // jornada geral CTWA do cliente selecionado
 let _capIntLoadSeq = 0;     // impede resposta antiga ao trocar de cliente
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
-const baseUrl = () => window.location.origin;
+// window.APP_CONFIG.API_BASE_URL (runtime-config.js) em vez de window.location.origin:
+// com front e API em domínios separados, o link /redirect/<slug> só existe no
+// domínio da API — usar a origem do painel (front) gerava links 404 pros clientes.
+const baseUrl = () => window.APP_CONFIG?.API_BASE_URL || window.location.origin;
 
 function capUsuario() {
   try { return JSON.parse(localStorage.getItem('adlytics_user') || '{}'); }
@@ -638,7 +641,8 @@ function capSwitchModalTab(tab) {
 function capAtualizarScriptSnippet() {
   const campanha = _capEditId ? _capCampanhas.find(c => Number(c.id) === Number(_capEditId)) : null;
   const slug = campanha?.slug || null;
-  const origin = window.location.origin;
+  // /js/wapptrack.js só existe no domínio da API (front devolve 404 pra essa rota).
+  const origin = baseUrl();
   if (!slug) {
     $('capScriptSnippet').value = 'Salve o link primeiro para gerar o slug e o script correspondente.';
     $('capScriptBotaoExemplo').value = '';
