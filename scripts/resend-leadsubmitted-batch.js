@@ -128,7 +128,9 @@ async function main() {
       console.log(`✅ CAPI aceito (fbtrace_id: ${resp.fbtrace_id})`);
       ok++;
     } else {
-      console.log(`❌ CAPI rejeitado: ${resp.error?.message || JSON.stringify(resp)}`);
+      // error_subcode diz a causa exata (regra do CLAUDE.md: nunca adivinhar).
+      const err = resp.error || {};
+      console.log(`❌ CAPI rejeitado: [subcode ${err.error_subcode || '?'}] ${err.error_user_msg || err.message} (fbtrace_id: ${err.fbtrace_id})`);
       rejeitados++;
     }
     await sleep(DELAY_MS);
