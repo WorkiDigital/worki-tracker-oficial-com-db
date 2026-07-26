@@ -678,7 +678,17 @@ async function resolverClienteIdPorInstancia(instance) {
   return clienteId;
 }
 
-function extrairTextoMensagem(message = {}) {
+function unwrapMessage(msg = {}) {
+  if (!msg) return {};
+  if (msg.viewOnceMessage?.message) return unwrapMessage(msg.viewOnceMessage.message);
+  if (msg.viewOnceMessageV2?.message) return unwrapMessage(msg.viewOnceMessageV2.message);
+  if (msg.ephemeralMessage?.message) return unwrapMessage(msg.ephemeralMessage.message);
+  if (msg.documentWithCaptionMessage?.message) return unwrapMessage(msg.documentWithCaptionMessage.message);
+  return msg;
+}
+
+function extrairTextoMensagem(rawMessage = {}) {
+  const message = unwrapMessage(rawMessage);
   return message.conversation ||
     message.extendedTextMessage?.text ||
     message.imageMessage?.caption ||
@@ -686,22 +696,29 @@ function extrairTextoMensagem(message = {}) {
     message.documentMessage?.caption ||
     message.buttonsResponseMessage?.selectedDisplayText ||
     message.listResponseMessage?.title ||
+    message.templateButtonReplyMessage?.selectedDisplayText ||
+    message.interactiveResponseMessage?.body?.text ||
+    message.locationMessage?.name ||
+    message.contactMessage?.displayName ||
     '';
 }
 
-function detectarTipoMensagem(message = {}) {
+function detectarTipoMensagem(rawMessage = {}) {
+  const message = unwrapMessage(rawMessage);
   if (message.imageMessage) return 'image';
   if (message.audioMessage) return 'audio';
-  if (message.videoMessage) return 'video';
+  if (message.videoMessage || message.ptvMessage) return 'video';
   if (message.documentMessage) return 'document';
   if (message.stickerMessage) return 'sticker';
-  if (message.buttonsResponseMessage) return 'button';
-  if (message.listResponseMessage) return 'list';
+  if (message.locationMessage || message.liveLocationMessage) return 'location';
+  if (message.contactMessage || message.contactsArrayMessage) return 'contact';
+  if (message.buttonsResponseMessage || message.listResponseMessage || message.templateButtonReplyMessage || message.interactiveResponseMessage) return 'button';
   if (message.conversation || message.extendedTextMessage) return 'text';
   return 'unknown';
 }
 
-function extrairMediaUrl(message = {}) {
+function extrairMediaUrl(rawMessage = {}) {
+  const message = unwrapMessage(rawMessage);
   return message.imageMessage?.url || message.imageMessage?.mediaUrl ||
     message.audioMessage?.url || message.audioMessage?.mediaUrl ||
     message.videoMessage?.url || message.videoMessage?.mediaUrl ||

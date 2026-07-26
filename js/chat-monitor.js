@@ -1165,8 +1165,17 @@ function chatInitials(value) {
 }
 
 function chatMediaLabel(type) {
-    const labels = { image: 'Imagem', audio: 'Audio', video: 'Video', document: 'Documento', sticker: 'Figurinha' };
-    return labels[type] || 'Mensagem';
+    const labels = {
+        image: '📷 Imagem',
+        audio: '🎵 Áudio',
+        video: '🎥 Vídeo',
+        document: '📄 Documento',
+        sticker: '🎨 Figurinha',
+        location: '📍 Localização',
+        contact: '👤 Contato',
+        button: '🔘 Resposta de Botão'
+    };
+    return labels[type] || '📩 Mensagem';
 }
 
 function chatSafeUrl(url) {

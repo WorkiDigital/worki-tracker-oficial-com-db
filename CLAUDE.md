@@ -1286,3 +1286,26 @@ Commits: `877c96b`, `5ce451d`, `c49c88d`, `bfa28e6`, `a08fd7e`
 
 Commits: `4aeb608`, `b2ad7e0`
 
+---
+
+## 🔗 Links de captação apontando pro domínio errado após a separação Front/API (2026-07-22/23)
+
+### O bug
+Após a separação de `server.js` em `server-static.js` (front) + `server-api.js` (API) em domínios distintos (`adlyticspro...` / `adlyticsapi...`), `js/captacao.js` continuou montando os links `/redirect/<slug>` e o snippet `<script src=".../js/wapptrack.js">` com `window.location.origin` — o domínio de onde o painel é acessado (o **front**). Só que `/redirect/*` e `/js/wapptrack.js` só existem no serviço de **API** (`server-static.js` devolve 404 de propósito pra essas rotas — ver bloco "O frontend separado jamais deve responder rotas da API ou tracking" em `server-static.js`). Resultado: **todo link de campanha copiado do painel desde a separação ficava 404 para quem clicasse.**
+
+- **Correção (`js/captacao.js`):** `baseUrl()` passou a usar `window.APP_CONFIG?.API_BASE_URL || window.location.origin` (o mesmo `runtime-config.js` já usado em outros pontos), com fallback pra `location.origin` quando não há separação (modo legado, tudo no mesmo domínio). Usado tanto no link `/redirect/<slug>` quanto no snippet do `wapptrack.js`.
+- **Links criados ANTES do fix continuam com o slug correto no banco** — o que estava errado era só o domínio mostrado/copiado na tela, não o dado salvo. Reabrir/copiar de novo do painel (já corrigido) resolve; anúncios que já saíram com o link antigo (`adlyticspro.../redirect/...`) precisam ser atualizados manualmente para `adlyticsapi.../redirect/...`.
+
+### ⚠️ Armadilha de deploy no EasyPanel (recorrente, já aconteceu 2x) — SEMPRE checar antes de assumir "não corrigiu"
+Depois de um `git push` com a correção, o `index.html`/JS servido em produção **pode continuar com o código antigo por horas**, mesmo com commits novos no GitHub e mesmo o serviço já respondendo no domínio certo. Causa: o Nixpacks deste projeto tem um `nixpacks.toml` com `[start] cmd = "node server.js"` fixo como **fallback de segurança** — os serviços separados (`worki-tracker-oficial-2-front`/`-api`) dependem da env `NIXPACKS_START_CMD` (`node server-static.js` / `node server-api.js`) para rodar o arquivo certo. Se essa env não estiver setada corretamente NO SERVIÇO CERTO, o Nixpacks roda o monolito por baixo do domínio errado (o log de build mostra `start │ node server.js` na tabela do plano — sinal claro do problema).
+
+**Diagnóstico correto, nesta ordem, ANTES de mexer em código de novo:**
+1. `curl https://<dominio>/health` — deve retornar `{"status":"ok","service":"frontend"}` ou `{"...,"service":"api"}`. Sem o campo `service`, é o monolito rodando.
+2. Se o `/health` já estiver certo mas o comportamento continuar errado: `curl https://<dominio>/index.html | grep "nome-do-arquivo.js?v="` — confirma se o HTML servido referencia a versão (`?v=`) do JS que você acabou de bumpar no commit. Pode estar desatualizado mesmo com `/health` correto (o serviço trocou de arquivo mas não pegou o commit mais recente).
+3. Corrigir/confirmar `NIXPACKS_START_CMD` no serviço certo (front → `server-static.js`; API → `server-api.js`) **e depois rodar rebuild SEM CACHE** (não o redeploy normal — já confirmado 2x que o redeploy comum não é suficiente para pegar o commit mais novo nem para reprocessar a env var).
+4. Só depois de `/health` E a versão do `?v=` baterem com o commit mais recente, testar o comportamento de novo.
+
+**Nunca assumir que uma correção "não funcionou" sem passar pelos passos acima primeiro** — nas duas ocorrências reais (loop de redirect e link de captação com domínio errado), o código já estava certo no repositório; o problema era sempre deploy travado no serviço errado/desatualizado.
+
+Commit: `d371009`
+
