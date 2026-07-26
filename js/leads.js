@@ -1502,8 +1502,53 @@ async function abrirPerfilLead(leadId) {
         lucide.createIcons({ nodes: [drawer] });
         // Histórico de eventos de conversão (jornada) — best-effort, não bloqueia o perfil.
         lpCarregarEventos(leadId, _lpDados.lead?.cliente_id);
+        // Índice de Engajamento Comercial — best-effort, não bloqueia o perfil.
+        lpCarregarEngajamento(leadId);
     } catch(e) {
         $('lpLoading').innerHTML = `<span style="color:var(--muted)">Erro ao carregar: ${e.message}</span>`;
+    }
+}
+
+// Busca e renderiza o Índice de Engajamento Comercial na aba Venda. Combina
+// Primeira Resposta (humana), Tempo Médio de Resposta (mediana) e Taxa de
+// Engajamento (volume de mensagens). Componentes 2 e 3 só são confiáveis
+// dentro da janela de retenção de chat_messages (15 dias) — quando faltar
+// dado, o backend redistribui o peso e a UI avisa quantos componentes foram
+// usados, em vez de fingir uma precisão que não existe.
+async function lpCarregarEngajamento(leadId) {
+    const box = $('lpEngajamento');
+    if (!box) return;
+    try {
+        const r = await authFetch(`/api/engagement-metrics?lead_id=${leadId}`);
+        if (!r.ok) throw new Error('Erro ao buscar índice de engajamento');
+        const dados = await r.json();
+
+        if (dados.indice == null) {
+            box.innerHTML = `<div style="font-size:12px;color:var(--muted);">Sem dados suficientes para calcular o índice ainda.</div>`;
+            return;
+        }
+
+        const cor = dados.indice >= 75 ? '#10b981' : dados.indice >= 50 ? '#f59e0b' : '#ef4444';
+        const d = dados.detalhe;
+        const linhaSub = (label, valor) => `
+            <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);padding:4px 0;">
+                <span>${label}</span><span style="color:var(--text);font-weight:600;">${valor}</span>
+            </div>`;
+
+        box.innerHTML = `
+            <div style="display:flex;align-items:center;gap:14px;margin-bottom:10px;">
+                <div style="font-size:28px;font-weight:800;color:${cor};">${dados.indice}</div>
+                <div style="font-size:11px;color:var(--muted);">
+                    de 100 pontos<br>
+                    calculado com ${dados.componentesUsados} de ${dados.totalComponentes} componentes
+                </div>
+            </div>
+            ${linhaSub('Primeira resposta', d.first_response.minutos != null ? (lpFormatDuracao(d.first_response.minutos) || '< 1 min') : '—')}
+            ${linhaSub('Tempo médio (mediana)', d.avg_response.mediana_minutos != null ? (lpFormatDuracao(d.avg_response.mediana_minutos) || '< 1 min') : 'sem dado (fora dos 15 dias)')}
+            ${linhaSub('Mensagens trocadas', d.engagement_rate.volume_mensagens != null ? d.engagement_rate.volume_mensagens : 'sem dado (fora dos 15 dias)')}
+        `;
+    } catch (e) {
+        box.innerHTML = `<div style="font-size:12px;color:var(--muted);">Não foi possível calcular o índice agora.</div>`;
     }
 }
 

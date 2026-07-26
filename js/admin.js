@@ -124,7 +124,7 @@ async function carregarClientesAdmin() {
 }
 
 function switchEditTab(tab) {
-    ['dados','meta','google'].forEach(t => {
+    ['dados','meta','google','engajamento'].forEach(t => {
         const panel = $('editPanel-' + t);
         if (panel) panel.style.display = t === tab ? '' : 'none';
         const btn = $('editTab-' + t);
@@ -132,6 +132,73 @@ function switchEditTab(tab) {
         btn.style.background = t === tab ? 'var(--blue)' : 'transparent';
         btn.style.color      = t === tab ? '#fff' : 'var(--text-muted)';
     });
+    if (tab === 'engajamento') engCarregarConfig();
+}
+
+function engToggleBusinessHours() {
+    $('engBusinessHoursFields').style.display = $('engBusinessHoursEnabled').checked ? '' : 'none';
+}
+
+// Carrega a config de engajamento do cliente atualmente aberto no modal
+// (endpoint separado de api/clientes.js — engagement_settings é uma tabela à
+// parte, ver api/_engagement-schema.js). Best-effort: se falhar, mantém os
+// defaults já preenchidos nos campos (definidos no HTML).
+async function engCarregarConfig() {
+    const clienteId = parseInt($('editCliId').value);
+    if (!clienteId) return;
+    try {
+        const r = await authFetch(`/api/engagement-settings?cliente_id=${clienteId}`);
+        if (!r.ok) return;
+        const cfg = await r.json();
+        $('engBotThreshold').value = cfg.bot_threshold_seconds ?? 5;
+        $('engBusinessHoursEnabled').checked = !!cfg.business_hours_enabled;
+        engToggleBusinessHours();
+        $('engBusinessStart').value = (cfg.business_hours_start || '09:00').slice(0, 5);
+        $('engBusinessEnd').value   = (cfg.business_hours_end   || '18:00').slice(0, 5);
+        const dias = new Set((cfg.business_days || [1,2,3,4,5]).map(Number));
+        document.querySelectorAll('.eng-business-day').forEach(cb => { cb.checked = dias.has(Number(cb.value)); });
+        $('engWeightFirstResponse').value  = cfg.weight_first_response  ?? 45;
+        $('engWeightAvgResponse').value    = cfg.weight_avg_response    ?? 35;
+        $('engWeightEngagementRate').value = cfg.weight_engagement_rate ?? 20;
+    } catch (_) {
+        // best-effort — mantém os defaults já preenchidos no HTML
+    }
+}
+
+async function engSalvarConfig(clienteId) {
+    const businessDays = Array.from(document.querySelectorAll('.eng-business-day:checked')).map(cb => Number(cb.value));
+    const pesos = [
+        parseInt($('engWeightFirstResponse').value, 10),
+        parseInt($('engWeightAvgResponse').value, 10),
+        parseInt($('engWeightEngagementRate').value, 10),
+    ];
+    if (pesos.reduce((a, b) => a + b, 0) !== 100) {
+        toast('Os 3 pesos do índice de engajamento devem somar 100.', 'error');
+        throw new Error('pesos_invalidos');
+    }
+    const body = {
+        cliente_id: clienteId,
+        bot_threshold_seconds: parseInt($('engBotThreshold').value, 10) || 5,
+        business_hours_enabled: $('engBusinessHoursEnabled').checked,
+        business_hours_start: $('engBusinessStart').value || '09:00',
+        business_hours_end: $('engBusinessEnd').value || '18:00',
+        business_days: businessDays.length ? businessDays : [1,2,3,4,5],
+        weight_first_response: pesos[0],
+        weight_avg_response: pesos[1],
+        weight_engagement_rate: pesos[2],
+        engagement_volume_tiers: [
+            { min: 0, max: 3, score: 30 },
+            { min: 4, max: 10, score: 65 },
+            { min: 11, max: null, score: 100 },
+        ],
+    };
+    const r = await authFetch('/api/engagement-settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+    });
+    const data = await r.json();
+    if (!r.ok || data.error) throw new Error(data.error || `Erro ao salvar engajamento (HTTP ${r.status})`);
 }
 
 function abrirEditCliente(id, abaInicial = 'dados') {
@@ -203,6 +270,9 @@ async function salvarEdicaoCliente() {
         });
         const data = await r.json();
         if (!r.ok || data.error) throw new Error(data.error || `Erro ao salvar (HTTP ${r.status})`);
+        // engagement_settings é uma tabela à parte (api/engagement-settings.js) —
+        // salva junto, no mesmo botão, para não exigir uma ação separada do usuário.
+        await engSalvarConfig(id);
         toast('Cliente atualizado!', 'success');
         $('modalEditCliente').classList.remove('open');
         carregarClientesAdmin();

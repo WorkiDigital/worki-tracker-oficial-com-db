@@ -34,7 +34,12 @@ export async function ensureChatMessagesSchema() {
           ADD COLUMN IF NOT EXISTS message_type VARCHAR(50) DEFAULT 'text',
           ADD COLUMN IF NOT EXISTS media_url TEXT,
           ADD COLUMN IF NOT EXISTS message_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+          ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          -- Índice de Engajamento Comercial: marca se uma mensagem fromMe=true foi
+          -- provavelmente enviada por bot/saudação automática (resposta rápida demais
+          -- após a última mensagem do lead) — calculada e gravada no momento do INSERT
+          -- em webhook-evo.js, não recalculada na leitura das métricas.
+          ADD COLUMN IF NOT EXISTS is_bot_reply BOOLEAN NOT NULL DEFAULT FALSE;
         CREATE INDEX IF NOT EXISTS idx_chat_messages_cliente_instance
           ON public.chat_messages(cliente_id, instance, message_at DESC);
         CREATE INDEX IF NOT EXISTS idx_chat_messages_cliente_at

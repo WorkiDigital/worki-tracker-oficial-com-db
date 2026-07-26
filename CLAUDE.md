@@ -1309,3 +1309,84 @@ Depois de um `git push` com a correção, o `index.html`/JS servido em produçã
 
 Commit: `d371009`
 
+---
+
+## 🎯 Índice de Engajamento Comercial (2026-07-25)
+
+Combina 3 sinais num score 0-100 por lead: Primeira Resposta humana, Tempo Médio de Resposta
+(mediana) e Taxa de Engajamento (volume bruto de mensagens trocadas). Exibido só no **Drawer de
+Perfil do Lead, aba Venda** — não é uma feature de CRM (sem tarefas/lembretes/follow-up manual).
+
+### Onde mora a heurística anti-bot (arquitetura central)
+Em `api/webhook-evo.js`, `salvarChatMessageBestEffort(...)` grava **toda** mensagem (inclusive
+`fromMe`) em `chat_messages` — e faz isso **antes** do bloco que atualiza
+`leads_tracking.first_response_at`. Isso permite calcular a heurística "isso é bot?" **no momento
+do INSERT**, comparando o timestamp da mensagem `fromMe` atual com a última mensagem do lead
+(`from_me=false`) do mesmo telefone/instância/cliente já salva — sem recalcular em toda leitura de
+métrica. Resultado gravado na nova coluna `chat_messages.is_bot_reply` (calculada 1x na escrita,
+consumida como `WHERE is_bot_reply = false` na leitura — barato).
+
+Algoritmo (`calcularIsBotReply` em `webhook-evo.js`): se não existir mensagem anterior do lead,
+`is_bot_reply = false` (nada a comparar). Se existir, `is_bot_reply = true` quando o gap entre a
+resposta e a última mensagem do lead for menor que `bot_threshold_seconds` (config por cliente,
+default 5s) — heurística de 1 mensagem por vez, não modela sequências longas de bot.
+
+> ⚠️ **`first_response_at` legado (card "Resposta Média") NÃO foi alterado** — decisão deliberada
+> para não mudar o comportamento de uma métrica já em produção. O card antigo continua contando
+> qualquer `fromMe`, incluindo bot (a mesma limitação já documentada na seção "Primeira Resposta da
+> Empresa" acima). O índice novo é uma camada adicional, mais precisa, calculada separadamente.
+
+### ⚠️ Limitação aceita: janela de 15 dias
+`chat_messages` retém só 15 dias (cron de limpeza, não alterado — decisão de design por volume/
+mídia). Os componentes "Tempo Médio" e "Taxa de Engajamento" só são calculáveis dentro dessa
+janela. Fora dela: o componente "Primeira Resposta" cai de volta no `first_response_at` legado (sem
+filtro anti-bot); os outros 2 ficam `null` ("sem dado") e o peso é redistribuído proporcionalmente
+entre os componentes disponíveis — nunca zerado (zerar penalizaria injustamente leads antigos só
+por falta de retenção). A UI (`js/leads.js`, `lpCarregarEngajamento`) mostra "calculado com N de 3
+componentes" para nunca fingir uma precisão que não existe.
+
+### Cálculo — sem tabela de score persistida
+Tudo calculado em tempo real via `api/engagement-metrics.js` (padrão de `api/metrics-temporal.js`:
+auth+cors+permissão, `cliente_id`/`lead_id` no query string). Uma tabela persistida ficaria presa
+em valores antigos assim que a janela de 15 dias avançasse — por isso não existe.
+
+- **Primeira Resposta**: `MIN(message_at)` do lead até `MIN(message_at)` da 1ª resposta
+  `is_bot_reply=false`. Faixas: ≤5min=100, 6-15min=80, 16-30min=60, 31-60min=40, >60min=10, sem
+  resposta=0.
+- **Tempo Médio**: pareia cada mensagem do lead com a próxima resposta humana subsequente; agrega
+  com média E mediana (`PERCENTILE_CONT` equivalente em JS, já que o cálculo roda em memória sobre
+  as linhas de `chat_messages` do período, não em SQL agregado puro). **A pontuação usa a MEDIANA**
+  — evita que uma única resposta tardia distorça o score; a média fica só como dado complementar.
+  Faixas: ≤5min=100, 6-15min=85, 16-30min=65, 31-60min=40, >60min=15.
+- **Taxa de Engajamento**: `COUNT(*)` de mensagens do par (ambos os lados, sem comparar proporção)
+  na janela de 15 dias. Pontuação via `engagement_settings.engagement_volume_tiers` (JSONB
+  configurável, **não hardcoded** — os valores de partida em `_engagement-schema.js` são só
+  placeholder, a calibrar com dados reais).
+
+### Configuração por cliente (`engagement_settings`, `api/_engagement-schema.js`)
+Lazy-bootstrap (mesmo padrão `pg_advisory_xact_lock` de `_tracking-schema.js`), 1 linha por
+`cliente_id`, com fallback nos defaults globais (`ENGAGEMENT_DEFAULTS`) quando não existe linha —
+não popula automaticamente para todo cliente. Campos: `bot_threshold_seconds`,
+`business_hours_enabled/start/end/days/timezone`, `weight_first_response/avg_response/
+engagement_rate` (devem somar 100), `engagement_volume_tiers`. CRUD em `api/engagement-settings.js`
+(GET/PUT), UI na aba **"Engajamento"** do modal Editar Cliente (`index.html` + `js/admin.js`,
+mesmo padrão das abas Meta Ads/Google Ads). Salvo junto do botão "Salvar Alterações" do cliente
+(`engSalvarConfig`, chamado dentro de `salvarEdicaoCliente`) — endpoint separado por ser tabela à
+parte, não uma coluna de `clientes`.
+
+### Horário comercial (opt-in, `business_hours_enabled=false` por padrão)
+Escopo mínimo deliberado: 1 janela fixa (`HH:MM`-`HH:MM`) + dias úteis (array ISO 1-7) + timezone,
+**sem feriados, sem exceções, sem múltiplos turnos**. Implementado como função pura testável
+`calcBusinessMinutes(startTs, endTs, config)` em `api/_business-hours.js` (itera dia a dia, soma só
+a interseção com a janela) — não como SQL nativo, mais simples de escrever/testar e o volume por
+requisição é pequeno o bastante para não exigir push-down ao banco. Reaproveitada pelos componentes
+Primeira Resposta e Tempo Médio. Desativado por padrão preserva 100% de compatibilidade (cálculo
+de diferença bruta de timestamps, igual ao card "Resposta Média" legado).
+
+### Recalibrar o limiar anti-bot depois de mudar a configuração
+Mensagens já gravadas NÃO são reclassificadas automaticamente quando `bot_threshold_seconds` muda —
+o valor foi calculado e persistido no momento do INSERT. Use `scripts/recalc-bot-flag.js`
+(`RECALC_CLIENTE_ID=<id> RECALC_DRY_RUN=true node -r dotenv/config scripts/recalc-bot-flag.js`)
+para reprocessar `chat_messages` dos últimos 15 dias sob demanda, mesmo espírito de
+`scripts/fix-page-id.js`.
+

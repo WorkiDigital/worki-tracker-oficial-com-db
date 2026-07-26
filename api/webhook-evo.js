@@ -8,6 +8,7 @@ import { enviarConversao, extrairValor } from './_capi.js';
 import { log } from './_logger.js';
 import { limparTextoDecorativo } from './_text-sanitize.js';
 import { ensureChatMessagesSchema } from './_chat-schema.js';
+import { getEngagementSettings } from './_engagement-schema.js';
 import { getQueue, registerWorker, isQueueEnabled } from './_queue.js';
 
 const QUEUE_NAME = 'webhook-evo-messages';
@@ -739,6 +740,30 @@ function extrairDataMensagem(msgData = {}) {
   return Number.isFinite(parsed) ? new Date(parsed) : new Date();
 }
 
+// Índice de Engajamento Comercial: heurística anti-bot. Uma resposta fromMe=true
+// que chega rápido demais após a última mensagem do lead (abaixo do limiar
+// configurado do cliente) é provavelmente saudação automática, não atendente
+// humano — marcada aqui, gravada 1x no INSERT, sem recalcular na leitura das
+// métricas (ver api/_engagement-schema.js e CLAUDE.md).
+async function calcularIsBotReply(pool, { cliente_id, instance, telefone, fromMe, messageAt }) {
+  if (!fromMe) return false;
+  try {
+    const settings = await getEngagementSettings(cliente_id);
+    const ultimaDoLead = await pool.query(
+      `SELECT message_at FROM chat_messages
+       WHERE cliente_id = $1 AND instance = $2 AND telefone = $3 AND from_me = false
+       ORDER BY message_at DESC LIMIT 1`,
+      [cliente_id, instance, telefone]
+    );
+    if (!ultimaDoLead.rows.length) return false; // nada a comparar (ex: 1º contato feito pela empresa)
+    const gapSeconds = (new Date(messageAt).getTime() - new Date(ultimaDoLead.rows[0].message_at).getTime()) / 1000;
+    return gapSeconds >= 0 && gapSeconds < settings.bot_threshold_seconds;
+  } catch (e) {
+    log('warn', 'webhook_evo_bot_heuristic_fail', { error: e.message, instance, telefone });
+    return false; // best-effort: falha na heurística nunca deve bloquear o salvamento da mensagem.
+  }
+}
+
 async function salvarChatMessageBestEffort({
   cliente_id, instance, telefone, remoteJid, pushName, fromMe, messageId,
   body, messageType, mediaUrl, messageAt
@@ -754,12 +779,16 @@ async function salvarChatMessageBestEffort({
       [cliente_id, telefone]
     );
     const leadId = leadRes.rows[0]?.id || null;
+    const resolvedMessageAt = messageAt || new Date();
+    const isBotReply = await calcularIsBotReply(pool, {
+      cliente_id, instance, telefone, fromMe, messageAt: resolvedMessageAt
+    });
 
     await pool.query(`
       INSERT INTO public.chat_messages
         (cliente_id, lead_id, instance, telefone, remote_jid, push_name, from_me,
-         message_id, body, message_type, media_url, message_at)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+         message_id, body, message_type, media_url, message_at, is_bot_reply)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
       ON CONFLICT (instance, message_id) WHERE message_id IS NOT NULL
       DO UPDATE SET
         lead_id = COALESCE(public.chat_messages.lead_id, EXCLUDED.lead_id),
@@ -779,7 +808,8 @@ async function salvarChatMessageBestEffort({
       body,
       messageType || 'unknown',
       mediaUrl || null,
-      messageAt || new Date()
+      resolvedMessageAt,
+      isBotReply
     ]);
   } catch (e) {
     log('warn', 'webhook_evo_chat_save_fail', { error: e.message, instance, telefone });
