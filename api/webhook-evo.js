@@ -692,6 +692,7 @@ function extrairTextoMensagem(rawMessage = {}) {
   const message = unwrapMessage(rawMessage);
   return message.conversation ||
     message.extendedTextMessage?.text ||
+    message.reactionMessage?.text ||
     message.imageMessage?.caption ||
     message.videoMessage?.caption ||
     message.documentMessage?.caption ||
@@ -706,6 +707,7 @@ function extrairTextoMensagem(rawMessage = {}) {
 
 function detectarTipoMensagem(rawMessage = {}) {
   const message = unwrapMessage(rawMessage);
+  if (message.reactionMessage) return 'reaction';
   if (message.imageMessage) return 'image';
   if (message.audioMessage) return 'audio';
   if (message.videoMessage || message.ptvMessage) return 'video';

@@ -652,8 +652,12 @@ function chatRenderOptimisticMedia(m) {
 }
 
 function chatRenderMedia(message) {
+    if (message.message_type === 'reaction') {
+        const emoji = esc(message.body || '👍');
+        return `<div class="chat-media-chip">Reagiu com ${emoji}</div>`;
+    }
     const url = chatSafeUrl(message.media_url);
-    if (!url) return message.body ? '' : `<div class="chat-media-chip">${esc(chatMediaLabel(message.message_type))}</div>`;
+    if (!url) return message.body ? '' : `<div class="chat-media-chip">${esc(chatMediaLabel(message.message_type, message.body))}</div>`;
     if (!message.message_id) {
         return `<div class="chat-media-chip chat-media-unavailable">
             <i data-lucide="alert-triangle"></i><span>Midia indisponivel</span>
@@ -1179,8 +1183,9 @@ function chatInitials(value) {
     return (parts[0][0] + parts[1][0]).toUpperCase();
 }
 
-function chatMediaLabel(type) {
+function chatMediaLabel(type, body = '') {
     const labels = {
+        reaction: body ? `Reagiu ${body}` : 'Reação',
         image: '📷 Imagem',
         audio: '🎵 Áudio',
         video: '🎥 Vídeo',
