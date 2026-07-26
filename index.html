@@ -1024,7 +1024,7 @@
                     <div class="big-number" id="avgResponseTime" style="font-size:24px;font-weight:700;color:var(--text);">-</div>
                     <p style="font-size:11px;color:var(--muted);">minutos</p>
                 </div>
-                <div class="metric-card pad-lg" style="background:var(--card);border-radius:12px;border:1px solid var(--border);text-align:center;border-left:4px solid #ef4444;box-shadow:var(--shadow-sm);">
+                <div class="metric-card pad-lg" id="cardLeadsEsquecidos" onclick="toggleFiltroEsquecidos()" style="cursor:pointer;background:var(--card);border-radius:12px;border:1px solid var(--border);text-align:center;border-left:4px solid #ef4444;box-shadow:var(--shadow-sm);" title="Clique para filtrar a lista abaixo">
                     <h3 style="font-size:12px;color:var(--muted);text-transform:uppercase;margin-bottom:8px;font-weight:600;">⚠️ Leads Esquecidos</h3>
                     <div class="big-number" id="leadsAtRisk" style="font-size:24px;font-weight:700;color:#ef4444;">-</div>
                     <p style="font-size:11px;color:var(--muted);">sem contato há +48h</p>
@@ -6605,7 +6605,7 @@ function resetLeadSearchAutofill() {
     input.defaultValue = '';
 }
 </script>
-<script defer src="js/leads.js?v=20260725-engagement2"></script>
+<script defer src="js/leads.js?v=20260725-esquecidos1"></script>
 <script defer src="js/chat-monitor.js?v=20260726-scroll-reaction1"></script>
 <script defer src="js/admin.js?v=20260726-wa-responsive1"></script>
 <script defer src="js/reports-auto.js?v=20260712-1"></script>

@@ -281,6 +281,32 @@ function calcRangePrevio(range) {
     return [new Date(ini.getTime() - duracao), new Date(ini.getTime())];
 }
 
+// Mesmo critério do card "Leads Esquecidos" (api/metrics-temporal.js):
+// last_interaction_at com +48h e status fora do funil concluído. Comparação
+// sempre com .toLowerCase() — grafias de status são inconsistentes no banco
+// (ver CLAUDE.md, "Inconsistência de STATUS dos leads").
+const STATUS_CONCLUIDO_ESQUECIDOS = new Set(['venda_fechada', 'perdido', 'vendido', 'agendado']);
+let filtroEsquecidosAtivo = false;
+
+function leadEstaEsquecido(l) {
+    const ultimaInteracao = new Date(l.last_interaction_at || l.created_at || 0);
+    const horasSemContato = (Date.now() - ultimaInteracao.getTime()) / 3600000;
+    if (horasSemContato < 48) return false;
+    return !STATUS_CONCLUIDO_ESQUECIDOS.has((l.status || '').toLowerCase());
+}
+
+function toggleFiltroEsquecidos() {
+    filtroEsquecidosAtivo = !filtroEsquecidosAtivo;
+    // Sem classe CSS dedicada (cards são estilizados inline) — aplica o estado
+    // ativo direto no style, mesmo padrão do resto do card.
+    const card = $('cardLeadsEsquecidos');
+    if (card) {
+        card.style.background = filtroEsquecidosAtivo ? 'rgba(239,68,68,0.08)' : 'var(--card)';
+        card.style.boxShadow  = filtroEsquecidosAtivo ? '0 0 0 2px #ef4444' : 'var(--shadow-sm)';
+    }
+    aplicarFiltros();
+}
+
 function aplicarFiltros() {
     const busca   = ($('inputBusca').value||'').toLowerCase().trim();
     const periodo = $('periodoSelect')?.value || 'hojeOntem';
@@ -310,6 +336,7 @@ function aplicarFiltros() {
             const d = new Date(l.event_time || l.created_at || 0);
             if (d < range[0] || d >= range[1]) return false;
         }
+        if (filtroEsquecidosAtivo && !leadEstaEsquecido(l)) return false;
         return true;
     });
 
