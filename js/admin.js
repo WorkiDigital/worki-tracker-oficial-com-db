@@ -524,14 +524,14 @@ function renderWaLista(data, isAdminView) {
                     </div>
                 </div>
                 <div id="wa-group-${key}" style="display:${isOpen ? 'block' : 'none'};padding:10px;border-top:1px solid var(--border);">
-                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%, 200px), 280px));gap:8px;">
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(300px, 1fr));gap:12px;">
                         ${g.instances.map(renderWaCard).join('')}
                     </div>
                 </div>
             </div>`;
         }
     } else {
-        html = `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%, 200px), 280px));gap:8px;">${data.map(renderWaCard).join('')}</div>`;
+        html = `<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(300px, 1fr));gap:12px;">${data.map(renderWaCard).join('')}</div>`;
     }
 
     listEl.innerHTML = html;
