@@ -1390,3 +1390,31 @@ o valor foi calculado e persistido no momento do INSERT. Use `scripts/recalc-bot
 para reprocessar `chat_messages` dos últimos 15 dias sob demanda, mesmo espírito de
 `scripts/fix-page-id.js`.
 
+### Card agregado "Engajamento" nos Relatórios (ao lado de Resposta Média)
+`api/engagement-metrics.js` sem `lead_id` retorna a **média do índice** de até 200 leads mais
+recentes do cliente/período (`LIMITE_AMOSTRA` — teto de segurança, já que calcular o índice de cada
+lead exige 1 query de `chat_messages` por lead; sem teto, um período com milhares de leads pesaria
+demais). Card novo no grid de métricas de Leads (`index.html`, `#avgEngagementScore`), 5º card ao
+lado de Ciclo Médio/Resposta Média/Leads Esquecidos/Vendas Rápidas. Carregado via
+`carregarEngajamentoMedio()` em `js/leads.js`, chamada separada e best-effort dentro de
+`carregarMetricasTemporais()` — uma falha aqui não trava os outros 4 cards que já funcionavam.
+
+### Card "Leads Esquecidos" agora filtra a lista (clicável)
+O card era só um número, sem ação. `toggleFiltroEsquecidos()` (`js/leads.js`) faz o card funcionar
+como toggle: ao clicar, filtra `dadosFiltrados` pelo **mesmo critério exato** já usado no cálculo do
+card (`api/metrics-temporal.js`) — `last_interaction_at` com +48h sem contato E status fora de
+`venda_fechada/perdido/vendido/agendado` (comparado com `.toLowerCase()`, pela inconsistência de
+grafias já documentada acima). Filtro 100% client-side sobre `rawData` (mesmo padrão do
+heatmap/comparativo/relatório) — **por isso `api/leads.js` precisou passar a retornar
+`last_interaction_at` no payload**, coluna que antes só `metrics-temporal.js` usava (não vinha na
+lista de leads). Clicar de novo remove o filtro; feedback visual aplicado direto no `style` do card
+(sem classe CSS dedicada — os cards de métrica são estilizados 100% inline neste projeto).
+
+### Busca de leads também encontra por campanha/conjunto/anúncio
+O campo de busca (`#inputBusca`) só comparava contra `nome`/`telefone`. Passou a também casar contra
+`utm_campaign`, `utm_medium`, `utm_content` e `tracking_campaign_name` — os mesmos 4 campos já
+exibidos na coluna "Campanha / Anúncio" da tabela (ver seção "Enriquecimento de UTMs" acima). Sem
+mudança de backend: esses campos já vinham no payload de `api/leads.js`, só não entravam na
+comparação de busca em `aplicarFiltros()` (`js/leads.js`). Placeholder do campo atualizado para
+"Buscar nome, telefone ou anúncio...".
+
