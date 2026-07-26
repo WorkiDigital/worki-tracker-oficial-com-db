@@ -328,9 +328,18 @@ function aplicarFiltros() {
         }
 
         if (busca) {
-            const n = (l.nome||'').toLowerCase();
-            const t = (l.telefone||'').toLowerCase();
-            if (!n.includes(busca) && !t.includes(busca)) return false;
+            const n  = (l.nome||'').toLowerCase();
+            const t  = (l.telefone||'').toLowerCase();
+            // Também busca por campanha/conjunto/anúncio (mesmos campos exibidos
+            // na coluna "Campanha / Anúncio" da tabela) e pelo nome do link
+            // rastreável, para achar leads por nome de anúncio, não só nome/telefone.
+            const camp = (l.utm_campaign||'').toLowerCase();
+            const med  = (l.utm_medium||'').toLowerCase();
+            const cont = (l.utm_content||'').toLowerCase();
+            const link = (l.tracking_campaign_name||'').toLowerCase();
+            const bate = n.includes(busca) || t.includes(busca) ||
+                camp.includes(busca) || med.includes(busca) || cont.includes(busca) || link.includes(busca);
+            if (!bate) return false;
         }
         if (range) {
             const d = new Date(l.event_time || l.created_at || 0);
