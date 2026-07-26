@@ -581,11 +581,21 @@ async function chatAutoloadMediaQueue(messages, token) {
     await Promise.all(workers);
 }
 
+function chatScrollToBottom() {
+    const box = $('chatMessagesList');
+    if (!box) return;
+    const scroll = () => { box.scrollTop = box.scrollHeight + 999999; };
+    scroll();
+    requestAnimationFrame(scroll);
+    setTimeout(scroll, 50);
+    setTimeout(scroll, 200);
+}
+
 function chatMergeMessagesForRender() {
     return [...(chatState.currentThreadMessages || []), ...chatState.optimisticMessages];
 }
 
-function chatRenderMessages(messages) {
+function chatRenderMessages(messages, forceScroll = false) {
     const box = $('chatMessagesList');
     if (!box) return;
     if (!Array.isArray(messages) || !messages.length) {
@@ -593,11 +603,12 @@ function chatRenderMessages(messages) {
         lucide.createIcons({ nodes: [box] });
         return;
     }
-    // So gruda o scroll no fim se o usuario ja estava perto do fim (ou e o
-    // primeiro render). Se ele rolou pra cima pra ler historico, um poll novo
-    // nao deve arrancar a tela dele de volta pro final.
-    const wasNearBottom = box.scrollHeight === 0 ||
-        (box.scrollHeight - box.scrollTop - box.clientHeight) < 80;
+    const currentKey = chatState.selected ? chatConversationKey(chatState.selected) : '';
+    const isInitialLoad = !box.dataset.renderedKey || box.dataset.renderedKey !== currentKey;
+    box.dataset.renderedKey = currentKey;
+
+    const wasNearBottom = forceScroll || isInitialLoad || box.scrollHeight === 0 ||
+        (box.scrollHeight - box.scrollTop - box.clientHeight) < 150;
 
     box.innerHTML = messages.map(m => `
         <div class="chat-message-row ${m.from_me ? 'from-me' : 'from-them'}">
@@ -611,8 +622,12 @@ function chatRenderMessages(messages) {
             </div>
         </div>
     `).join('');
-    if (wasNearBottom) box.scrollTop = box.scrollHeight;
+
     lucide.createIcons({ nodes: [box] });
+
+    if (wasNearBottom) {
+        chatScrollToBottom();
+    }
 
     const token = ++chatAutoloadToken;
     chatAutoloadMediaQueue(messages.filter(m => !m.__tempId), token);
