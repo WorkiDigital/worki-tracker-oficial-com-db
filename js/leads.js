@@ -141,9 +141,32 @@ async function carregarMetricasTemporais() {
         if ($('leadsAtRisk')) $('leadsAtRisk').textContent = data.leadsAtRisk;
         if ($('fastSales')) $('fastSales').textContent = data.fastSales;
         if ($('fastSalesPercentLabel')) $('fastSalesPercentLabel').textContent = `${data.fastSalesPercent}% das vendas em 24h`;
-        
+
+        carregarEngajamentoMedio(url, params);
     } catch (e) {
         console.error('Erro ao carregar métricas temporais:', e);
+    }
+}
+
+// Card "Engajamento" (média do Índice de Engajamento Comercial no período) —
+// chamada separada de metrics-temporal.js porque é uma feature própria
+// (api/engagement-metrics.js), reaproveitando os mesmos filtros de
+// cliente_id/período já resolvidos em carregarMetricasTemporais. Best-effort:
+// falha aqui não deve travar os outros 4 cards.
+async function carregarEngajamentoMedio(_urlBase, params) {
+    try {
+        const response = await authFetch('/api/engagement-metrics?' + params.toString());
+        const data = await readApiJson(response, 'Falha ao carregar engajamento médio');
+        if ($('avgEngagementScore')) {
+            $('avgEngagementScore').textContent = data.indiceMedio != null ? data.indiceMedio : '—';
+        }
+        if ($('avgEngagementLabel')) {
+            $('avgEngagementLabel').textContent = data.amostra
+                ? `de 100 pontos (${data.amostra} lead${data.amostra !== 1 ? 's' : ''})`
+                : 'sem dados no período';
+        }
+    } catch (e) {
+        console.error('Erro ao carregar engajamento médio:', e);
     }
 }
 

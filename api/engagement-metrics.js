@@ -180,7 +180,63 @@ export default async function handler(req, res) {
       return res.status(200).json(resultado);
     }
 
-    return res.status(400).json({ error: 'Informe lead_id.' });
+    // ── Agregado (sem lead_id): card "Engajamento Médio" nos Relatórios ──
+    // Card ao lado de "Resposta Média" — mesmo padrão de filtro de cliente_id
+    // opcional (admin) e período (start/end) de api/metrics-temporal.js.
+    const cliente_id = user.is_admin ? (req.query.cliente_id || user.cliente_id) : user.cliente_id;
+    if (!user.is_admin && !cliente_id) {
+      return res.status(403).json({ error: 'Usuário sem cliente associado.' });
+    }
+
+    const where = [];
+    const params = [];
+    let i = 1;
+    if (cliente_id) { where.push(`cliente_id = $${i++}`); params.push(cliente_id); }
+    if (req.query.start && req.query.end) {
+      where.push(`created_at >= $${i++} AND created_at < $${i++}`);
+      params.push(req.query.start, req.query.end);
+    } else {
+      where.push(`created_at > NOW() - INTERVAL '30 days'`);
+    }
+    const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
+
+    // Teto de segurança: calcular o índice de cada lead individualmente exige 1
+    // query de chat_messages por lead — sem teto, um período com milhares de
+    // leads pesaria demais. 200 é uma amostra representativa para uma média.
+    const LIMITE_AMOSTRA = 200;
+    const leadsRes = await pool.query(
+      `SELECT id, cliente_id, telefone, instancia, created_at, first_response_at
+       FROM leads_tracking ${whereSql}
+       ORDER BY created_at DESC LIMIT ${LIMITE_AMOSTRA}`,
+      params
+    );
+
+    if (!leadsRes.rows.length) {
+      return res.status(200).json({ indiceMedio: null, amostra: 0 });
+    }
+
+    const settingsCache = {};
+    const indices = [];
+    for (const lead of leadsRes.rows) {
+      if (!settingsCache[lead.cliente_id]) {
+        settingsCache[lead.cliente_id] = await getEngagementSettings(lead.cliente_id);
+      }
+      const resultado = await calcularParaLead(pool, {
+        cliente_id: lead.cliente_id,
+        telefone: lead.telefone,
+        instancia: lead.instancia,
+        created_at: lead.created_at,
+        first_response_at: lead.first_response_at,
+        settings: settingsCache[lead.cliente_id],
+      });
+      if (resultado.indice != null) indices.push(resultado.indice);
+    }
+
+    const indiceMedio = indices.length
+      ? Math.round(indices.reduce((a, b) => a + b, 0) / indices.length)
+      : null;
+
+    return res.status(200).json({ indiceMedio, amostra: indices.length, totalLeads: leadsRes.rows.length });
   } catch (err) {
     console.error('[engagement-metrics]', err.message);
     return res.status(500).json({ error: 'Erro ao calcular índice de engajamento.' });
