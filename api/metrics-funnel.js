@@ -91,11 +91,11 @@ export default async function handler(req, res) {
       SELECT 
         COUNT(*) as total_leads,
         COUNT(*) FILTER (WHERE lead_origin IS NULL OR lead_origin = '' OR lead_origin = 'organic') as untracked,
-        COUNT(first_response_at) as first_contact,
+        COUNT(*) FILTER (WHERE first_response_at IS NOT NULL OR LOWER(COALESCE(status,'')) NOT IN ('lead','novo','')) as first_contact,
         COUNT(qualified_at) as qualified,
         COUNT(proposal_sent_at) as proposal_sent,
         COUNT(sale_closed_at) as sales,
-        AVG(EXTRACT(EPOCH FROM (first_response_at - created_at))/60) as avg_response_min,
+        AVG(EXTRACT(EPOCH FROM (first_response_at - created_at))/60) FILTER (WHERE first_response_at IS NOT NULL) as avg_response_min,
         AVG(EXTRACT(EPOCH FROM (sale_closed_at - created_at))/86400) as avg_cycle_days
       FROM leads_tracking
       WHERE ${leadsPeriodWhere}
