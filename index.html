@@ -718,36 +718,55 @@
         </div>
         <!-- Aba: Engajamento -->
         <div id="editPanel-engajamento" style="display:none;">
-            <p style="font-size:11px;color:var(--muted);margin:0 0 10px;">Configura o Índice de Engajamento Comercial (drawer de perfil do lead, aba Venda). Os componentes de tempo médio e volume de mensagens só são confiáveis nos últimos 15 dias (retenção de chat_messages).</p>
-            <div class="input-group"><label>Limiar anti-bot <span style="color:var(--muted);font-weight:400;font-size:11px;">(segundos; respostas mais rápidas que isso são tratadas como bot/saudação automática)</span></label><input type="number" id="engBotThreshold" min="0" max="300" value="5"></div>
-            <hr style="border:none;border-top:1px solid var(--border);margin:14px 0;">
-            <label class="pad-md" style="display:flex;align-items:center;gap:10px;background:var(--tag);border-radius:8px;cursor:pointer;margin-bottom:10px;">
-                <input class="cbx-md" type="checkbox" id="engBusinessHoursEnabled" onchange="engToggleBusinessHours()"><span style="font-size:13px;">Considerar apenas horário comercial nos cálculos de tempo</span>
-            </label>
-            <div id="engBusinessHoursFields" style="display:none;">
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-                    <div class="input-group"><label>Início</label><input type="time" id="engBusinessStart" value="09:00"></div>
-                    <div class="input-group"><label>Fim</label><input type="time" id="engBusinessEnd" value="18:00"></div>
+            <p style="font-size:11px;color:var(--muted);margin:0 0 14px;">Configura o Índice de Engajamento Comercial (drawer de perfil do lead, aba Venda). Os componentes de tempo médio e volume de mensagens só são confiáveis nos últimos 15 dias (retenção de chat_messages).</p>
+
+            <div style="background:var(--tag);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px;">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+                    <i data-lucide="bot" style="width:15px;color:var(--blue);"></i>
+                    <span style="font-size:13px;font-weight:700;color:var(--text);">Detectar bot</span>
                 </div>
-                <div class="input-group">
-                    <label>Dias úteis</label>
-                    <div style="display:flex;gap:6px;flex-wrap:wrap;">
-                        <label style="font-size:12px;display:flex;align-items:center;gap:4px;"><input type="checkbox" class="eng-business-day" value="1" checked>Seg</label>
-                        <label style="font-size:12px;display:flex;align-items:center;gap:4px;"><input type="checkbox" class="eng-business-day" value="2" checked>Ter</label>
-                        <label style="font-size:12px;display:flex;align-items:center;gap:4px;"><input type="checkbox" class="eng-business-day" value="3" checked>Qua</label>
-                        <label style="font-size:12px;display:flex;align-items:center;gap:4px;"><input type="checkbox" class="eng-business-day" value="4" checked>Qui</label>
-                        <label style="font-size:12px;display:flex;align-items:center;gap:4px;"><input type="checkbox" class="eng-business-day" value="5" checked>Sex</label>
-                        <label style="font-size:12px;display:flex;align-items:center;gap:4px;"><input type="checkbox" class="eng-business-day" value="6">Sáb</label>
-                        <label style="font-size:12px;display:flex;align-items:center;gap:4px;"><input type="checkbox" class="eng-business-day" value="7">Dom</label>
+                <div class="input-group" style="margin:0;"><label>Limiar anti-bot <span style="color:var(--muted);font-weight:400;font-size:11px;">(segundos; respostas mais rápidas que isso são tratadas como bot/saudação automática)</span></label><input type="number" id="engBotThreshold" min="0" max="300" value="5"></div>
+            </div>
+
+            <div style="background:var(--tag);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px;">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+                    <i data-lucide="clock" style="width:15px;color:var(--blue);"></i>
+                    <span style="font-size:13px;font-weight:700;color:var(--text);">Horário comercial</span>
+                </div>
+                <label class="pad-md" style="display:flex;align-items:center;gap:10px;background:var(--bg-primary);border-radius:8px;cursor:pointer;margin-bottom:10px;">
+                    <input class="cbx-md" type="checkbox" id="engBusinessHoursEnabled" onchange="engToggleBusinessHours()"><span style="font-size:13px;">Considerar apenas horário comercial nos cálculos de tempo</span>
+                </label>
+                <div id="engBusinessHoursFields" style="display:none;">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                        <div class="input-group"><label>Início</label><input type="time" id="engBusinessStart" value="09:00"></div>
+                        <div class="input-group"><label>Fim</label><input type="time" id="engBusinessEnd" value="18:00"></div>
+                    </div>
+                    <div class="input-group" style="margin-bottom:0;">
+                        <label>Dias úteis</label>
+                        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                            <label style="font-size:12px;display:flex;align-items:center;gap:4px;"><input type="checkbox" class="eng-business-day" value="1" checked>Seg</label>
+                            <label style="font-size:12px;display:flex;align-items:center;gap:4px;"><input type="checkbox" class="eng-business-day" value="2" checked>Ter</label>
+                            <label style="font-size:12px;display:flex;align-items:center;gap:4px;"><input type="checkbox" class="eng-business-day" value="3" checked>Qua</label>
+                            <label style="font-size:12px;display:flex;align-items:center;gap:4px;"><input type="checkbox" class="eng-business-day" value="4" checked>Qui</label>
+                            <label style="font-size:12px;display:flex;align-items:center;gap:4px;"><input type="checkbox" class="eng-business-day" value="5" checked>Sex</label>
+                            <label style="font-size:12px;display:flex;align-items:center;gap:4px;"><input type="checkbox" class="eng-business-day" value="6">Sáb</label>
+                            <label style="font-size:12px;display:flex;align-items:center;gap:4px;"><input type="checkbox" class="eng-business-day" value="7">Dom</label>
+                        </div>
                     </div>
                 </div>
             </div>
-            <hr style="border:none;border-top:1px solid var(--border);margin:14px 0;">
-            <p style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:8px;">Pesos do índice <span style="color:var(--muted);font-weight:400;font-size:11px;">(soma deve ser 100)</span></p>
-            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
-                <div class="input-group"><label style="font-size:11px;">Primeira resposta</label><input type="number" id="engWeightFirstResponse" min="0" max="100" value="45"></div>
-                <div class="input-group"><label style="font-size:11px;">Tempo médio</label><input type="number" id="engWeightAvgResponse" min="0" max="100" value="35"></div>
-                <div class="input-group"><label style="font-size:11px;">Engajamento</label><input type="number" id="engWeightEngagementRate" min="0" max="100" value="20"></div>
+
+            <div style="background:var(--tag);border:1px solid var(--border);border-radius:10px;padding:14px;">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+                    <i data-lucide="scale" style="width:15px;color:var(--blue);"></i>
+                    <span style="font-size:13px;font-weight:700;color:var(--text);">Pesos do índice</span>
+                    <span style="font-size:11px;color:var(--muted);font-weight:400;">(soma deve ser 100)</span>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+                    <div class="input-group" style="margin:0;"><label style="font-size:11px;">Primeira resposta</label><input type="number" id="engWeightFirstResponse" min="0" max="100" value="45"></div>
+                    <div class="input-group" style="margin:0;"><label style="font-size:11px;">Tempo médio</label><input type="number" id="engWeightAvgResponse" min="0" max="100" value="35"></div>
+                    <div class="input-group" style="margin:0;"><label style="font-size:11px;">Engajamento</label><input type="number" id="engWeightEngagementRate" min="0" max="100" value="20"></div>
+                </div>
             </div>
         </div>
         <button class="btn-confirm" id="btnSalvarEditCliente" onclick="salvarEdicaoCliente()">Salvar Alterações</button>
