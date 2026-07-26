@@ -469,7 +469,7 @@ function renderWaLista(data, isAdminView) {
         const badgeColor = up ? '#10b981' : mid ? '#f59e0b' : '#ef4444';
         const statusLabel = up ? '● Conectado' : mid ? '● Conectando...' : '● Desconectado';
         return `
-        <div style="background:var(--card);border:1px solid ${up ? 'rgba(16,185,129,0.3)' : 'var(--border)'};border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:10px;min-width:0;">
+        <div style="background:var(--card);border:1px solid ${up ? 'rgba(16,185,129,0.3)' : 'var(--border)'};border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:10px;min-width:0;width:100%;">
             <div style="display:flex;align-items:center;gap:10px;">
                 <div style="width:36px;height:36px;border-radius:9px;background:${up ? 'rgba(37,211,102,0.12)' : 'rgba(156,163,175,0.08)'};display:flex;align-items:center;justify-content:center;flex-shrink:0;border:1px solid ${up ? 'rgba(37,211,102,0.2)' : 'var(--border)'};">
                     <i data-lucide="smartphone" style="color:${up ? '#25D366' : 'var(--muted)'};width:17px;"></i>
@@ -479,17 +479,17 @@ function renderWaLista(data, isAdminView) {
                     <span style="display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;background:${badgeBg};color:${badgeColor};margin-top:3px;">${statusLabel}</span>
                 </div>
             </div>
-            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
                 ${up
-                    ? `<button class="btn btn-ghost btn-sm" onclick="waDesvincular('${esc(inst.fullName)}')" style="font-size:11px;padding:4px 10px;color:var(--red);border-color:rgba(239,68,68,0.3);"><i data-lucide="link-2-off" style="width:11px;"></i> Desvincular</button>`
-                    : `<button class="btn btn-green btn-sm" onclick="verConexao('${esc(inst.displayName)}')" style="font-size:11px;padding:4px 10px;"><i data-lucide="qr-code" style="width:11px;"></i> Conectar QR</button>`
+                    ? `<button class="btn btn-ghost btn-sm" onclick="waDesvincular('${esc(inst.fullName)}')" style="font-size:11px;padding:5px 10px;color:var(--red);border-color:rgba(239,68,68,0.3);flex:1 1 auto;justify-content:center;"><i data-lucide="link-2-off" style="width:11px;"></i> Desvincular</button>`
+                    : `<button class="btn btn-green btn-sm" onclick="verConexao('${esc(inst.displayName)}')" style="font-size:11px;padding:5px 10px;flex:1 1 auto;justify-content:center;"><i data-lucide="qr-code" style="width:11px;"></i> Conectar QR</button>`
                 }
-                <button class="btn btn-ghost btn-sm" onclick="abrirCaptura('${esc(inst.fullName)}', ${inst.cliente_id || 'null'})" title="Configurar captura de leads" style="font-size:11px;padding:4px 10px;"><i data-lucide="filter" style="width:11px;"></i> Captura</button>
-                <button class="btn btn-ghost btn-sm" onclick="deletarConexao('${esc(inst.displayName)}')" title="Excluir" style="padding:4px 8px;"><i data-lucide="trash-2" style="width:11px;color:var(--red);"></i></button>
+                <button class="btn btn-ghost btn-sm" onclick="abrirCaptura('${esc(inst.fullName)}', ${inst.cliente_id || 'null'})" title="Configurar captura de leads" style="font-size:11px;padding:5px 10px;flex:1 1 auto;justify-content:center;"><i data-lucide="filter" style="width:11px;"></i> Captura</button>
+                <button class="btn btn-ghost btn-sm" onclick="deletarConexao('${esc(inst.displayName)}')" title="Excluir" style="padding:5px 9px;justify-content:center;"><i data-lucide="trash-2" style="width:11px;color:var(--red);"></i></button>
             </div>
-            <div style="padding-top:8px;border-top:1px solid var(--border);display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+            <div style="padding-top:8px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap;">
                 <code style="font-family:monospace;font-size:10px;background:var(--tag);padding:2px 6px;border-radius:4px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;">${esc(inst.fullName)}</code>
-                ${up ? `<span style="font-size:10px;color:#10b981;white-space:nowrap;">✓ Ativo</span>` : ''}
+                ${up ? `<span style="font-size:10px;color:#10b981;white-space:nowrap;font-weight:600;">✓ Ativo</span>` : ''}
             </div>
         </div>`;
     };
@@ -514,22 +514,24 @@ function renderWaLista(data, isAdminView) {
             const isFiltering = window.waBusca && window.waBusca.value.trim().length > 0;
             const isOpen = isFiltering || !!savedState[key];
             html += `
-            <div style="margin-bottom:8px;border:1px solid var(--border);border-radius:10px;overflow:hidden;">
-                <div onclick="toggleWaGroup('${key}')" style="cursor:pointer;padding:12px 16px;display:flex;align-items:center;gap:10px;background:var(--tag);user-select:none;">
+            <div style="margin-bottom:10px;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--card);">
+                <div onclick="toggleWaGroup('${key}')" style="cursor:pointer;padding:12px 16px;display:flex;align-items:center;gap:10px;background:var(--tag);user-select:none;flex-wrap:wrap;">
                     <i data-lucide="chevron-right" id="wa-chevron-${key}" style="width:14px;color:var(--muted);transition:transform .2s;flex-shrink:0;${isOpen ? 'transform:rotate(90deg);' : ''}"></i>
-                    <span style="font-size:12px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:.05em;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(g.nome)}</span>
-                    <span style="font-size:11px;color:var(--muted);background:var(--border);padding:1px 8px;border-radius:20px;flex-shrink:0;">${g.instances.length} instância${g.instances.length !== 1 ? 's' : ''}</span>
-                    ${totalUp > 0 ? `<span style="font-size:11px;color:#10b981;font-weight:600;flex-shrink:0;">${totalUp} online</span>` : ''}
+                    <span style="font-size:12px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:.05em;flex:1;min-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(g.nome)}</span>
+                    <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;margin-left:auto;">
+                        <span style="font-size:11px;color:var(--muted);background:var(--border);padding:2px 8px;border-radius:20px;">${g.instances.length} instância${g.instances.length !== 1 ? 's' : ''}</span>
+                        ${totalUp > 0 ? `<span style="font-size:11px;color:#10b981;font-weight:600;background:rgba(16,185,129,0.12);padding:2px 8px;border-radius:20px;">${totalUp} online</span>` : ''}
+                    </div>
                 </div>
-                <div id="wa-group-${key}" style="display:${isOpen ? 'block' : 'none'};padding:12px;border-top:1px solid var(--border);">
-                    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;">
+                <div id="wa-group-${key}" style="display:${isOpen ? 'block' : 'none'};padding:14px;border-top:1px solid var(--border);">
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%, 280px), 360px));gap:12px;">
                         ${g.instances.map(renderWaCard).join('')}
                     </div>
                 </div>
             </div>`;
         }
     } else {
-        html = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;">${data.map(renderWaCard).join('')}</div>`;
+        html = `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%, 280px), 360px));gap:12px;">${data.map(renderWaCard).join('')}</div>`;
     }
 
     listEl.innerHTML = html;
