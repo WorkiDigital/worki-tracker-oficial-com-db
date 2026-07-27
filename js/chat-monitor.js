@@ -472,15 +472,22 @@ async function chatSelectConversation(index) {
 }
 
 // ── Navegacao mobile (lista / conversa / lead como telas separadas) ──
+// A mesma classe é espelhada em #aba-conversas (pai da toolbar de filtros e do
+// shell) para que o CSS possa esconder a toolbar quando uma conversa está
+// aberta no mobile, sem depender de :has() nem duplicar o estado em JS.
 function chatMobileShowList() {
     $('chatMonitorShell')?.classList.remove('mobile-show-thread', 'mobile-show-lead');
+    $('aba-conversas')?.classList.remove('mobile-show-thread', 'mobile-show-lead');
 }
 function chatMobileShowThread() {
     $('chatMonitorShell')?.classList.remove('mobile-show-lead');
     $('chatMonitorShell')?.classList.add('mobile-show-thread');
+    $('aba-conversas')?.classList.remove('mobile-show-lead');
+    $('aba-conversas')?.classList.add('mobile-show-thread');
 }
 function chatMobileShowLead() {
     $('chatMonitorShell')?.classList.add('mobile-show-thread', 'mobile-show-lead');
+    $('aba-conversas')?.classList.add('mobile-show-thread', 'mobile-show-lead');
 }
 
 async function chatLoadMessages(conversation, silent = false) {

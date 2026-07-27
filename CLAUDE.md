@@ -1502,3 +1502,34 @@ plataforma). O gráfico de Evolução Diária (linha do tempo) e o Heatmap de Ho
 são visualizações de série temporal/matriz, não fazem sentido como pizza. Meta Ads (cards/tabela)
 também ficou de fora — usa outro pipeline de renderização (`getAdsMetricCellValue`), fora do escopo.
 
+## 📱 Monitor de Conversas — toolbar de filtros no mobile (2026-07-26)
+
+No celular, a barra de filtros da aba Conversas (`.chat-monitor-toolbar`: Cliente, Instância, Origem,
+busca, nota de retenção, botão Atualizar) ficava **sempre visível no topo**, inclusive quando o
+usuário já estava dentro de uma conversa — competindo por espaço vertical com a área de mensagens,
+que é o que mais importa numa tela pequena.
+
+### O que mudou
+1. **Toolbar some ao entrar numa conversa/no painel de lead.** `chatMobileShowThread()` e
+   `chatMobileShowLead()` (`js/chat-monitor.js`) passaram a espelhar as classes `mobile-show-thread`/
+   `mobile-show-lead` também em `#aba-conversas` (não só em `#chatMonitorShell`, que já tinha esse
+   controle antes). O CSS (`dashboard-base.css`, bloco `@media(max-width:1180px)`) usa isso pra
+   esconder `.chat-monitor-toolbar` e dar mais altura ao `.chat-monitor-shell` nesses dois estados.
+   `chatMobileShowList()` (botão "voltar") remove as classes dos dois lados e a toolbar volta.
+2. **Instância e Origem lado a lado.** Na tela de lista de conversas (onde a toolbar continua
+   visível), os selects `#chatInstanceFilter`/`#chatOrigemFilter` dividem a mesma linha
+   (`calc(50% - 4px)` cada) em vez de empilhar um embaixo do outro — Cliente (só admin) e a busca
+   continuam em linha própria por serem mais largos/importantes de ler por completo.
+
+### Por que espelhar a classe em vez de usar `:has()`
+`.chat-monitor-toolbar` e `.chat-monitor-shell` são elementos **irmãos** no DOM (a toolbar vem antes
+do shell) — não dá pra alcançar a toolbar a partir de uma classe no shell com seletores CSS comuns.
+Em vez de `:has()` (suportado, mas menos legível/depurável), o JS simplesmente aplica a mesma classe
+no pai comum (`#aba-conversas`), e o CSS lê dali. Mesmo padrão de "estado replicado no pai" já usado
+noutros pontos do projeto para casos de irmãos não-adjacentes.
+
+### Não afeta o modal de conversa aberto a partir de Leads
+`abrirConversaDoLead()`/`fecharConversaModal()` (`js/leads.js`) movem `.chat-thread-panel` para
+`#chatModalSlot`, **fora** de `#aba-conversas` — usam `display:flex` no overlay diretamente, sem
+depender das classes `mobile-show-*`. A mudança não toca nesse fluxo.
+

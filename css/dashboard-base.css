@@ -1242,6 +1242,22 @@ html.light .chat-bubble.from-them { background:#f8fafc; }
   .chat-monitor-filters, .chat-monitor-search, .chat-monitor-select { width:100%; max-width:none; }
   .chat-monitor-note { white-space:normal; }
 
+  /* Instância e Origem dividem a mesma linha (cada um ~metade da largura) —
+     Cliente (admin, opcional) e a busca continuam em linha própria por serem
+     mais largos/importantes. Reduz a altura total da barra de filtros. */
+  #chatInstanceFilter, #chatOrigemFilter {
+    width:calc(50% - 4px); max-width:none; flex:1 1 calc(50% - 4px);
+  }
+
+  /* Dentro de uma conversa (ou do painel de lead) no mobile, a barra de
+     filtros/busca some — o cabeçalho da própria thread já dá contexto, e
+     as mensagens ganham o espaço vertical que os filtros ocupavam. Volta
+     a aparecer ao tocar "voltar" (chatMobileShowList remove as classes). */
+  #aba-conversas.mobile-show-thread .chat-monitor-toolbar,
+  #aba-conversas.mobile-show-lead .chat-monitor-toolbar { display:none; }
+  #aba-conversas.mobile-show-thread .chat-monitor-shell,
+  #aba-conversas.mobile-show-lead .chat-monitor-shell { height:calc(100vh - 130px); }
+
   .chat-monitor-shell {
     grid-template-columns:1fr; grid-template-rows:1fr;
     height:calc(100vh - 190px); min-height:480px;
