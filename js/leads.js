@@ -970,13 +970,15 @@ async function renderRelatorios(leadsRelatorio = relatoriosData) {
     const mapAV = agrupar(vendas, 'utm_content');
     const mapPV = agrupar(vendas, 'plataforma');
 
-    criarGrafico('cCampLeads','lCampLeads', mapCamp, 'bar');
-    criarGrafico('cAdsetLeads','lAdsetLeads', mapAdset, 'bar');
-    criarGrafico('c1','l1',mapA,'doughnut');
-    criarGrafico('c2','l2',mapP,'doughnut');
-    criarGrafico('c3','l3',mapAV,'bar');
-    criarGrafico('c4','l4',mapPV,'doughnut');
-    
+    const tiposGrafico = getReportChartTypes();
+    criarGrafico('cCampLeads','lCampLeads', mapCamp, tiposGrafico.cCampLeads);
+    criarGrafico('cAdsetLeads','lAdsetLeads', mapAdset, tiposGrafico.cAdsetLeads);
+    criarGrafico('c1','l1',mapA,tiposGrafico.c1);
+    criarGrafico('c2','l2',mapP,tiposGrafico.c2);
+    criarGrafico('c3','l3',mapAV,tiposGrafico.c3);
+    criarGrafico('c4','l4',mapPV,tiposGrafico.c4);
+    montarChartTypeToggles();
+
     // NOVO: Gráfico de Linha do Tempo
     renderTimelineChart(base);
     
@@ -1328,12 +1330,58 @@ function agrupar(arr, campo) {
     return arr.reduce((acc,l) => { const k=l[campo]||'Direto'; acc[k]=(acc[k]||0)+1; return acc; }, {});
 }
 
+// ── Tipo de gráfico escolhido por card (Campanhas, Conjuntos, Anúncios, etc.) ──
+// Persistido no navegador (mesmo padrão de wt_metrics_cfg) — cada card lembra
+// bar/doughnut entre sessões. Defaults iguais ao comportamento original.
+const REPORT_CHART_TYPES_KEY = 'wt_report_chart_types';
+const REPORT_CHART_DEFAULTS = { cCampLeads:'bar', cAdsetLeads:'bar', c1:'doughnut', c2:'doughnut', c3:'bar', c4:'doughnut' };
+let _reportChartTypes = null;
+// Guarda o último mapa/legendId usados em cada canvas, pra poder re-renderizar
+// ao trocar o tipo sem precisar refazer o agrupamento dos dados.
+const _reportChartLastData = {};
+
+function getReportChartTypes() {
+    if (_reportChartTypes) return _reportChartTypes;
+    try {
+        const salvo = JSON.parse(localStorage.getItem(REPORT_CHART_TYPES_KEY) || '{}');
+        _reportChartTypes = { ...REPORT_CHART_DEFAULTS, ...salvo };
+    } catch { _reportChartTypes = { ...REPORT_CHART_DEFAULTS }; }
+    return _reportChartTypes;
+}
+
+function trocarTipoGrafico(canvasId, tipo) {
+    const tipos = getReportChartTypes();
+    if (tipos[canvasId] === tipo) return;
+    tipos[canvasId] = tipo;
+    try { localStorage.setItem(REPORT_CHART_TYPES_KEY, JSON.stringify(tipos)); } catch {}
+
+    const ultimo = _reportChartLastData[canvasId];
+    if (ultimo) criarGrafico(canvasId, ultimo.legendId, ultimo.mapa, tipo);
+    montarChartTypeToggles();
+}
+
+// Desenha os botões bar/doughnut em cada .chart-type-toggle e marca o ativo.
+function montarChartTypeToggles() {
+    const tipos = getReportChartTypes();
+    document.querySelectorAll('.chart-type-toggle').forEach(el => {
+        const canvasId = el.dataset.canvas;
+        const atual = tipos[canvasId] || 'bar';
+        el.innerHTML = `
+            <button type="button" class="${atual==='bar'?'active':''}" title="Barras" onclick="trocarTipoGrafico('${canvasId}','bar')"><i data-lucide="chart-column"></i></button>
+            <button type="button" class="${atual==='doughnut'?'active':''}" title="Pizza" onclick="trocarTipoGrafico('${canvasId}','doughnut')"><i data-lucide="chart-pie"></i></button>`;
+    });
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
 function criarGrafico(canvasId, legendId, mapa, tipo) {
+    _reportChartLastData[canvasId] = { mapa, legendId };
     if (graficos[canvasId]) graficos[canvasId].destroy();
     const labels = Object.keys(mapa).slice(0,8);
     const values = labels.map(k=>mapa[k]);
     const total  = values.reduce((a,b)=>a+b,0);
     const ctx    = $(canvasId); if (!ctx) return;
+    const wrap   = ctx.closest('.canvas-wrap');
+    if (wrap) wrap.classList.toggle('bar', tipo === 'bar');
 
     const isDark = !document.documentElement.classList.contains('light');
     const gridC  = isDark ? '#1f2937' : '#e5e7eb';

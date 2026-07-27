@@ -1465,3 +1465,40 @@ nova. Breakpoints 960px/768px já existentes ganharam regras extras pros blocos 
 > exige bumpar o `?v=` **desse `@import`** E o `?v=` do próprio `dashboard.css?v=...` no `index.html`
 > (o navegador cacheia os dois separadamente) — só um dos dois não basta.
 
+## 📊 Seletor de tipo de gráfico (bar/pizza) nos Relatórios (2026-07-26)
+
+Os 6 gráficos de distribuição da aba Relatórios (Campanhas, Conjuntos, Anúncios, Plataformas,
+Anúncios/Vendas, Plataformas/Vendas) ganharam um mini-toggle **Barras ⇄ Pizza** no canto do título
+(`.chart-type-toggle`), com a escolha **persistida no navegador** (`localStorage`, chave
+`wt_report_chart_types`) — mesmo padrão já usado em `wt_metrics_cfg` (config de métricas de Ads).
+
+### Como funciona
+- `criarGrafico(canvasId, legendId, mapa, tipo)` (`js/leads.js`) passou a guardar o `mapa`/`legendId`
+  de cada canvas em `_reportChartLastData` — permite **re-renderizar o gráfico ao trocar o tipo sem
+  refazer o agrupamento dos dados** (`agrupar()` não roda de novo, só `criarGrafico` de novo com o
+  mesmo `mapa` e o novo `tipo`).
+- `getReportChartTypes()` lê do `localStorage` com fallback pros defaults originais
+  (`REPORT_CHART_DEFAULTS`: Campanhas/Conjuntos/Anúncios-Vendas em barra, o resto em pizza — o mesmo
+  comportamento de antes da feature).
+- `trocarTipoGrafico(canvasId, tipo)` salva a escolha e chama `criarGrafico` de novo com o tipo novo.
+- `montarChartTypeToggles()` desenha os 2 botões (ícones `chart-column`/`chart-pie`) em cada
+  `.chart-type-toggle` do HTML e marca o ativo — chamada ao final de `renderRelatorios()` (depois dos
+  6 `criarGrafico`, pra já nascer com o estado salvo refletido).
+- `criarGrafico` também alterna a classe `.bar` no `.canvas-wrap` do canvas (`wrap.classList.toggle`)
+  — essa classe controla o aspect ratio do card (barra é retangular, pizza é quadrada via
+  `.canvas-wrap` vs `.canvas-wrap.bar` no CSS). Sem isso, trocar pra pizza manteria o formato de barra.
+
+### ⚠️ Nomes de ícone lucide mudaram na v0.469.0 (pinada no projeto)
+Os nomes antigos `bar-chart-3`/`pie-chart` (comuns em versões antigas do lucide, muito citados em
+exemplos na internet) **retornam 404** na v0.469.0 usada aqui (`cdn.jsdelivr.net/npm/lucide@0.469.0`).
+Os nomes corretos nessa versão são **`chart-column`** e **`chart-pie`** — confirmado via
+`curl .../lucide-static@0.469.0/icons/<nome>.svg`. **Sempre validar o nome do ícone contra essa versão
+antes de usar** (mesma lição já registrada para adicionar campo novo na API de Ads: não confiar em
+exemplos genéricos, testar contra a versão real fixada no projeto).
+
+### Escopo desta entrega
+Só a aba Relatórios (os 6 gráficos de distribuição leads/vendas por campanha-conjunto-anúncio-
+plataforma). O gráfico de Evolução Diária (linha do tempo) e o Heatmap de Horários não entraram —
+são visualizações de série temporal/matriz, não fazem sentido como pizza. Meta Ads (cards/tabela)
+também ficou de fora — usa outro pipeline de renderização (`getAdsMetricCellValue`), fora do escopo.
+
