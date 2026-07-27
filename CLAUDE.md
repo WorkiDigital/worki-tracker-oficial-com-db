@@ -1591,3 +1591,28 @@ some/reduz com o teclado ativo na maioria dos navegadores mobile), então não s
 do teclado. Ainda não é pixel-perfect ao WhatsApp nativo (diferença de padding interno do
 `.chat-composer-row`), mas reduz a distância visível na faixa que o print mostrou.
 
+## 📱 Filtros da aba Leads em grid 2 colunas no mobile (2026-07-26)
+
+Print mostrou os 6 controles da topbar (Cliente, Instância, Origem, Busca, Período, CSV) empilhados
+1 por linha no celular, cada um ocupando a largura inteira da tela — a lista de leads só aparecia
+depois de rolar bastante. Causa: `.ctrl-box`/`select.bare` não tinham `width` fixo, então cada um
+ficava do tamanho do próprio conteúdo (ex: "Rodrigo Mendanha", "Todas instâncias"), e o
+`flex-wrap:wrap` do `#filterControls`/`#leadsControls` quebrava linha sempre que não cabia mais um
+item ao lado — na prática, 1 por linha na maioria dos casos.
+
+**Decisão do usuário:** manter todos os filtros sempre visíveis (sem escondê-los atrás de um botão),
+só compactar o layout — diferente da solução adotada no Monitor de Conversas (que colapsa a toolbar
+completamente dentro de uma conversa, ver seção acima). Contextos diferentes: em Leads os filtros
+continuam relevantes com a lista visível ao mesmo tempo; em Conversas, a thread aberta já basta.
+
+**Correção (`css/dashboard-base.css`, bloco `@media(max-width:768px)`):**
+- `#filterControls`/`#leadsControls` viram `display:grid; grid-template-columns:1fr 1fr` (2 colunas)
+  em vez do `flex-wrap` que empilhava 1 por linha.
+- `.ctrl-box { width:100% }` — cada filtro passa a ocupar a célula do grid, não o tamanho do próprio
+  texto. Selects nativos truncam o texto selecionado automaticamente quando mais estreitos que o
+  conteúdo (comportamento padrão do browser) — a opção completa aparece ao abrir o dropdown.
+- `#adminClienteFilter` (nome do cliente, só admin) e `#areaPersonalizada` (datas do período
+  personalizado) usam `grid-column:1 / -1` — ocupam a linha inteira, por serem mais longos/compostos.
+- Resultado: 5-6 controles cabem em ~3 linhas em vez de até 6, empurrando bem menos a lista de leads
+  pra baixo da dobra.
+
