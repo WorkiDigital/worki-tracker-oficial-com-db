@@ -75,7 +75,8 @@ function chatBindEvents() {
     $('chatOrigemFilter')?.addEventListener('change', () => {
         chatState.selected = null;
         chatApplyOrigemFilter();
-        if (chatState.conversations.length) chatSelectConversation(0);
+        if (chatIsMobileLayout()) { chatRenderEmptyThread(); chatMobileShowList(); }
+        else if (chatState.conversations.length) chatSelectConversation(0);
         else chatRenderEmptyThread();
     });
     $('chatClienteFilter')?.addEventListener('change', async () => {
@@ -222,7 +223,13 @@ async function chatLoadConversations(silent = false) {
             // Auto-selecionar a primeira aqui causa flash da conversa errada.
             return true;
         }
-        if (!stillExists && chatState.conversations.length) {
+        if (!stillExists && chatState.conversations.length && chatIsMobileLayout()) {
+            // Mobile: fica na lista em vez de auto-abrir a 1ª conversa (o auto-open
+            // pulava direto pra tela de thread, escondendo a lista sem o usuário clicar).
+            chatState.selected = null;
+            chatRenderEmptyThread();
+            chatMobileShowList();
+        } else if (!stillExists && chatState.conversations.length) {
             await chatSelectConversation(0);
         } else if (!chatState.conversations.length) {
             chatState.selected = null;
@@ -263,6 +270,14 @@ function chatApplyOrigemFilter() {
 
 function chatConversationKey(c) {
     return `${c.cliente_id}|${c.instance}|${c.telefone}`;
+}
+
+// No mobile os 3 painéis (lista/thread/lead) viram telas cheias empilhadas
+// (ver dashboard-base.css, @media(max-width:1180px)) — auto-abrir a 1ª
+// conversa nesse layout esconderia a lista assim que a aba/filtro carrega.
+// No desktop os painéis convivem lado a lado, então o auto-select continua.
+function chatIsMobileLayout() {
+    return window.matchMedia('(max-width: 1180px)').matches;
 }
 
 function chatRenderOpeningConversation(target, message = 'Carregando conversa...', loading = true) {

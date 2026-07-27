@@ -1533,3 +1533,18 @@ noutros pontos do projeto para casos de irmãos não-adjacentes.
 `#chatModalSlot`, **fora** de `#aba-conversas` — usam `display:flex` no overlay diretamente, sem
 depender das classes `mobile-show-*`. A mudança não toca nesse fluxo.
 
+### "Já abre a conversa sozinho" no mobile — não era cache, era auto-select intencional
+Ao entrar na aba (ou trocar o filtro de Origem), `chatLoadConversations()` sempre auto-selecionava a
+**1ª conversa da lista** (`if (!stillExists && conversations.length) await chatSelectConversation(0)`)
+— decisão original pensada pro desktop, onde os 3 painéis convivem lado a lado e abrir a 1ª conversa
+de cara é conveniente. No mobile, como os painéis viram telas cheias empilhadas (`mobile-show-thread`
+troca a lista pela thread), esse auto-select pulava direto pra dentro de uma conversa sem o usuário
+clicar em nada, escondendo a lista — sensação de "já abre a conversa" / bug de cache, mas era
+comportamento determinístico do código.
+
+**Correção:** `chatIsMobileLayout()` (novo helper, `window.matchMedia('(max-width: 1180px)')` — mesmo
+breakpoint do CSS responsivo) guarda os 2 pontos de auto-select (`chatLoadConversations` e o listener
+de `#chatOrigemFilter`). No mobile, em vez de `chatSelectConversation(0)`, chama `chatRenderEmptyThread()`
++ `chatMobileShowList()` (garante voltar pra lista mesmo se uma thread antiga estava aberta antes da
+troca de filtro). **No desktop o comportamento não mudou** — continua auto-abrindo a 1ª conversa.
+
