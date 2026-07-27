@@ -285,7 +285,7 @@ const server = http.createServer(async (req, res) => {
             'X-Frame-Options': 'DENY',
             'X-XSS-Protection': '1; mode=block',
             'Referrer-Policy': 'strict-origin-when-cross-origin',
-            'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+            'Permissions-Policy': 'camera=(), microphone=(self), geolocation=()',
             'Cache-Control': cacheControl,
             'Last-Modified': stat.mtime.toUTCString(),
             'ETag': `W/"${stat.size.toString(16)}-${Math.floor(stat.mtimeMs).toString(16)}"`,
