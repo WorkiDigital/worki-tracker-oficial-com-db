@@ -1263,12 +1263,17 @@ html.light .chat-bubble.from-them { background:#f8fafc; }
     height:calc(100vh - 190px); min-height:480px;
     position:relative; overflow:hidden;
   }
-  .chat-panel + .chat-panel { border-left:0; border-top:0; }
-  .chat-panel { position:absolute; inset:0; width:100%; }
+  /* Escopado a .chat-monitor-shell (não .chat-panel isolado): esses mesmos
+     elementos .chat-thread-panel/.chat-lead-panel são movidos para dentro do
+     modal de popup (abrirConversaDoLead) via JS, que tem seu próprio layout
+     flex/grid — position:absolute vazando pra lá quebrava a altura do
+     composer (ficava gigante/vazio, sem position:relative no ancestral). */
+  .chat-monitor-shell .chat-panel + .chat-panel { border-left:0; border-top:0; }
+  .chat-monitor-shell .chat-panel { position:absolute; inset:0; width:100%; }
 
-  .chat-list-panel { transform:translateX(0); transition:transform .25s ease; z-index:1; }
-  .chat-thread-panel { transform:translateX(100%); transition:transform .25s ease; z-index:2; }
-  .chat-lead-panel { transform:translateX(100%); transition:transform .25s ease; z-index:3; grid-column:auto; min-height:0; border-top:0 !important; }
+  .chat-monitor-shell .chat-list-panel { transform:translateX(0); transition:transform .25s ease; z-index:1; }
+  .chat-monitor-shell .chat-thread-panel { transform:translateX(100%); transition:transform .25s ease; z-index:2; }
+  .chat-monitor-shell .chat-lead-panel { transform:translateX(100%); transition:transform .25s ease; z-index:3; grid-column:auto; min-height:0; border-top:0 !important; }
 
   .chat-monitor-shell.mobile-show-thread .chat-list-panel { transform:translateX(-100%); }
   .chat-monitor-shell.mobile-show-thread .chat-thread-panel { transform:translateX(0); }

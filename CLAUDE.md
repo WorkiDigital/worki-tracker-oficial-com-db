@@ -1548,3 +1548,33 @@ de `#chatOrigemFilter`). No mobile, em vez de `chatSelectConversation(0)`, chama
 + `chatMobileShowList()` (garante voltar pra lista mesmo se uma thread antiga estava aberta antes da
 troca de filtro). **No desktop o comportamento não mudou** — continua auto-abrindo a 1ª conversa.
 
+### Bug real: composer "gigante"/vazio no modal de conversa (popup de Leads) no mobile
+Reportado com print comparando o WhatsApp real (caixa de texto compacta, só cresce com o conteúdo) com
+o popup do painel (`abrirConversaDoLead`, aberto pelo botão verde na tabela de Leads) — no celular a
+área acima do composer aparecia como um vazio branco enorme, muito diferente do padrão do WhatsApp.
+
+**Causa:** o bloco `@media(max-width:1180px)` tinha `.chat-panel { position:absolute; inset:0; width:100%; }`
+**sem escopo** — pensado só pro `.chat-monitor-shell` (onde os 3 painéis viram telas cheias sobrepostas
+com `translateX`). Só que `.chat-thread-panel`/`.chat-lead-panel` são os **mesmos elementos DOM**
+movidos para dentro de `#chatModalSlot` via JS quando o popup abre (`abrirConversaDoLead` em
+`js/leads.js`, comentado como "preserva IDs e listeners"). No mobile essa regra genérica também
+capturava o painel dentro do modal, e como `.chat-modal-slot` não tem `position:relative`, o
+`position:absolute` "vazava" para o ancestral posicionado errado — quebrando a distribuição vertical
+flex (mensagens ocupando espaço indevido, composer com altura inconsistente).
+
+**Correção (`css/dashboard-base.css`):** todas as regras do bloco responsivo que só fazem sentido no
+shell principal (`.chat-panel`, `.chat-panel + .chat-panel`, `.chat-list-panel`, `.chat-thread-panel`,
+`.chat-lead-panel` e os `translateX`) passaram a ser escopadas com o prefixo `.chat-monitor-shell `.
+**Regra geral daqui pra frente:** qualquer CSS responsivo novo para essas classes de painel do chat
+deve ser escopado a `.chat-monitor-shell` (ou a `.chat-modal-slot`, se for exclusivo do modal) — nunca
+`.chat-panel`/`.chat-thread-panel` soltos, porque os mesmos elementos vivem nos dois contextos.
+
+### Limite de ~5 linhas no campo de mensagem já existe (não precisou de mudança)
+O usuário também perguntou sobre o comportamento do WhatsApp real onde o campo de texto cresce até um
+limite e depois passa a rolar internamente (texto mais antigo sai de vista pra cima). Isso **já estava
+implementado** e funcionando: `.chat-composer-input` tem `max-height:124px` + `overflow:auto` +
+`resize:none` (CSS), e o listener de `input` em `chatBindComposerEvents()` (`js/chat-monitor.js`) faz
+o auto-grow via `input.style.height = Math.min(input.scrollHeight, 120) + 'px'`. Com `font-size:14px`/
+`line-height:1.38`, isso corresponde a ~5.5 linhas antes de travar a altura e começar a rolar — mesma
+faixa do WhatsApp nativo. Nenhuma mudança necessária aqui.
+
