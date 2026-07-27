@@ -1418,3 +1418,50 @@ mudança de backend: esses campos já vinham no payload de `api/leads.js`, só n
 comparação de busca em `aplicarFiltros()` (`js/leads.js`). Placeholder do campo atualizado para
 "Buscar nome, telefone ou anúncio...".
 
+## 🎨 Hierarquia visual da aba Relatórios (2026-07-26)
+
+Reorganização puramente visual — **nenhuma função de cálculo mudou** (`calcMetricasRelatorio`,
+`renderComparativoPeriodo`, `agrupar`, `criarGrafico` seguem intocadas). O problema era hierarquia
+plana: os 5 cards de métrica tinham peso visual idêntico e os 6 gráficos ficavam num grid único sem
+agrupamento temático, competindo pela mesma atenção.
+
+### 1. Card herói de Receita + faixa de apoio
+Receita e Conversão saíram do grid de 5 colunas e viraram um bloco `.report-hero` no topo: Receita
+grande (34px, gradiente azul sutil de fundo) com o delta de período em badge colorido logo abaixo, e
+Conversão + **Ticket Médio** (métrica nova, `receita / vendas.length`) como cards menores ao lado.
+Abaixo, `.report-strip` com 4 cards de apoio no mesmo peso: Total, Qualificados, Vendas e **Leads
+Esquecidos** (novo card aqui, mesmo critério de `leadEstaEsquecido()` já usado no filtro clicável da
+aba Leads — mas aqui é só informativo, sem `onclick`, porque Relatórios não tem uma tabela de leads
+visível para filtrar).
+
+### 2. Rótulos de seção agrupando os gráficos por tema
+Os 6 gráficos que viviam soltos em `.charts-grid` agora ficam em blocos com título
+(`.report-section-title` + ícone lucide): **Evolução** (linha do tempo), **Horários** (heatmap),
+**Origem dos leads** (Campanhas/Conjuntos/Anúncios/Plataformas — os 4 gráficos de leads) e **Funil
+de vendas** (Anúncios/Vendas e Plataformas/Vendas — os 2 gráficos de vendas, agora num grid de 2
+colunas em vez de misturado com os de leads).
+
+### 3. Delta de Receita em badge (não mais texto pequeno ao lado do label)
+`setDelta()` (`js/leads.js`) ganhou um modo badge só para `delta-receita` (`elId === 'delta-receita'`):
+fundo colorido (`rgba(verde/vermelho,0.12)`) + texto completo "▲ 18% vs. período anterior", em vez do
+"▲ 18%" pequeno que os outros 4 cards continuam usando. Mesma função, output condicional — não
+duplicou lógica de cálculo de variação.
+
+### 4. Espaçamento por seção, não uniforme
+Nova classe `.report-section` (`margin-bottom:32px`) envolve cada bloco temático (Resumo, Evolução,
+Horários, Origem, Funil); dentro de cada seção o espaçamento continua o `gap` original dos grids
+(14-16px). Antes tudo usava o mesmo `margin-bottom` plano, sem diferenciar "descanso entre temas" de
+"espaço dentro de um tema".
+
+### Onde estão as classes novas
+`css/dashboard-base.css` (`.report-hero`, `.report-hero-main`, `.report-hero-side`,
+`.report-hero-mini`, `.report-strip`, `.report-section-title`, `.report-section`) — todas construídas
+só com tokens já existentes (`--blue`, `--card`, `--border`, `--muted`, `--radius-*`), nenhuma cor
+nova. Breakpoints 960px/768px já existentes ganharam regras extras pros blocos novos (hero empilha em
+1 coluna, strip cai pra 2 colunas).
+
+> ⚠️ `css/dashboard-base.css` não é linkado direto no `index.html` — é importado via `@import` dentro
+> de `css/dashboard.css` (`@import url("./dashboard-base.css?v=...")`). Editar `dashboard-base.css`
+> exige bumpar o `?v=` **desse `@import`** E o `?v=` do próprio `dashboard.css?v=...` no `index.html`
+> (o navegador cacheia os dois separadamente) — só um dos dois não basta.
+

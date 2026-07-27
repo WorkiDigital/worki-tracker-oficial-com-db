@@ -949,12 +949,16 @@ async function renderRelatorios(leadsRelatorio = relatoriosData) {
     );
     const receita = vendas.reduce((s,l) => s + parseFloat(l.valor_venda||0), 0);
     const conv   = total ? ((vendas.length/total)*100).toFixed(1) : 0;
+    const ticketMedio = vendas.length ? receita / vendas.length : 0;
+    const esquecidos = base.filter(leadEstaEsquecido).length;
 
     $('val-total').textContent   = total;
     $('val-vendas').textContent  = vendas.length;
     if ($('val-qualificados')) $('val-qualificados').textContent = qualificados.length;
     $('val-conv').textContent    = conv + '%';
     $('val-receita').textContent = brl(receita);
+    if ($('val-ticket')) $('val-ticket').textContent = brl(ticketMedio);
+    if ($('val-esquecidos')) $('val-esquecidos').textContent = esquecidos;
 
     // Comparação vs período anterior (busca leve, não bloqueia o render principal).
     renderComparativoPeriodo(base);
@@ -1013,24 +1017,47 @@ async function renderComparativoPeriodo(leadsAtuais = relatoriosData) {
 }
 
 // Renderiza a seta + percentual de variação num elemento de delta.
+// delta-receita é o badge do hero (fundo colorido, mais visível); os demais
+// continuam no formato pequeno inline ao lado do label do card.
 function setDelta(elId, atual, anterior) {
     const el = $(elId);
     if (!el) return;
+    const isBadge = elId === 'delta-receita';
+
     if (anterior === 0) {
         // Sem base de comparação: mostra "novo" se há valor agora, senão nada.
-        el.innerHTML = atual > 0 ? '<span style="color:var(--green);">novo</span>' : '';
+        if (!atual) { el.innerHTML = ''; return; }
+        el.innerHTML = isBadge
+            ? 'novo'
+            : '<span style="color:var(--green);">novo</span>';
+        if (isBadge) { el.style.color = 'var(--green)'; el.style.background = 'rgba(74,222,128,0.12)'; }
         return;
     }
+
     const variacao = ((atual - anterior) / anterior) * 100;
     const subiu = variacao >= 0;
     const cor = variacao === 0 ? 'var(--muted)' : (subiu ? 'var(--green)' : 'var(--red)');
+    const bg  = variacao === 0 ? 'var(--tag)' : (subiu ? 'rgba(74,222,128,0.12)' : 'rgba(239,68,68,0.12)');
     const seta = variacao === 0 ? '→' : (subiu ? '▲' : '▼');
-    el.innerHTML = `<span style="color:${cor};font-size:11px;font-weight:600;">${seta} ${Math.abs(variacao).toFixed(0)}%</span>`;
+    const texto = `${seta} ${Math.abs(variacao).toFixed(0)}% vs. período anterior`;
+
+    if (isBadge) {
+        el.style.color = cor;
+        el.style.background = bg;
+        el.textContent = texto;
+    } else {
+        el.innerHTML = `<span style="color:${cor};font-size:11px;font-weight:600;">${seta} ${Math.abs(variacao).toFixed(0)}%</span>`;
+    }
 }
 
 function limparComparativo() {
     ['delta-total','delta-vendas','delta-qualificados','delta-conv','delta-receita']
-        .forEach(id => { if ($(id)) $(id).innerHTML = ''; });
+        .forEach(id => {
+            const el = $(id);
+            if (!el) return;
+            el.innerHTML = '';
+            if (id === 'delta-receita') { el.style.background = ''; el.style.color = ''; }
+        });
 }
 
 // Exporta a aba Relatórios como PDF (html2canvas + jsPDF, ambos via CDN deferida).
