@@ -1286,6 +1286,12 @@ html.light .chat-bubble.from-them { background:#f8fafc; }
   .chat-conversations-list { max-height:none; }
   .chat-messages-list { min-height:0; }
   .chat-bubble { max-width:88%; }
+
+  /* No WhatsApp real o composer cola direto na borda do teclado. O padding-
+     bottom de repouso (14px) sobrava como folga visível acima do teclado no
+     celular — reduzido aqui, com safe-area só pra quando o teclado NÃO está
+     aberto (home indicator do iPhone), sem exagerar quando está. */
+  .chat-composer { padding:8px 10px calc(6px + env(safe-area-inset-bottom, 0px)); gap:6px; }
 }
 
 .chat-composer { flex-shrink:0; border-top:1px solid rgba(148,163,184,.18); background:linear-gradient(180deg, rgba(248,250,252,.94), rgba(241,245,249,.98)); padding:12px 16px 14px; display:flex; flex-direction:column; gap:10px; box-shadow:0 -10px 28px rgba(15,23,42,.07); }

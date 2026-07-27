@@ -1578,3 +1578,16 @@ o auto-grow via `input.style.height = Math.min(input.scrollHeight, 120) + 'px'`.
 `line-height:1.38`, isso corresponde a ~5.5 linhas antes de travar a altura e começar a rolar — mesma
 faixa do WhatsApp nativo. Nenhuma mudança necessária aqui.
 
+### Distância do composer até o teclado, comparado ao WhatsApp real
+Print de comparação mostrou o composer do WhatsApp nativo colado quase direto na borda do teclado,
+enquanto o painel tinha uma folga visível maior abaixo da caixa de texto quando o teclado abria no
+celular. Causa: `.chat-composer` tinha `padding:12px 16px 14px` fixo, pensado pro estado de repouso
+(sem teclado) — o padding-bottom de 14px sobrava como espaço morto acima do teclado.
+
+**Correção:** dentro do bloco `@media(max-width:1180px)`, `.chat-composer` ganhou padding reduzido
+(`8px 10px calc(6px + env(safe-area-inset-bottom, 0px))`) — o `env(safe-area-inset-bottom)` preserva
+o respiro necessário pro home indicator do iPhone **só quando o teclado não está aberto** (a área seguro
+some/reduz com o teclado ativo na maioria dos navegadores mobile), então não soma folga extra em cima
+do teclado. Ainda não é pixel-perfect ao WhatsApp nativo (diferença de padding interno do
+`.chat-composer-row`), mas reduz a distância visível na faixa que o print mostrou.
+
