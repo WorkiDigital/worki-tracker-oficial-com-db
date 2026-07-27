@@ -1616,3 +1616,88 @@ continuam relevantes com a lista visível ao mesmo tempo; em Conversas, a thread
 - Resultado: 5-6 controles cabem em ~3 linhas em vez de até 6, empurrando bem menos a lista de leads
   pra baixo da dobra.
 
+> **Superado pela seção seguinte** ("Topbar em 3 linhas no mobile") — o Cliente saiu do grid e voltou
+> pra linha do título; o grid de 2 colunas descrito acima continua valendo só pra Instância/Origem/
+> Busca/Período/CSV (`#leadsControls`), não mais pro `#filterControls` inteiro.
+
+## 📱 Topbar em 3 linhas no mobile: título+Cliente / Tema / filtros (2026-07-27)
+
+Refinamento do layout acima — o usuário pediu uma organização mais específica: **Cliente ao lado do
+título** (não mais dentro do grid de filtros), **Tema sozinho numa linha**, e só o resto dos filtros
+formando o grid. Vale **só no mobile** (desktop continua idêntico a antes) e **em todas as 9 abas**
+que mostram o filtro de Cliente pra admin (`ABAS_COM_FILTRO_CLIENTE`, `index.html:3174`), não só Leads
+— decisão confirmada com o usuário via AskUserQuestion.
+
+### Mudança estrutural no HTML
+`#adminClienteFilter` **saiu de dentro de `#filterControls`/`.topbar-right`** e virou filho direto de
+`.topbar`, posicionado logo após a nova `.topbar-title-group` (classe adicionada à div do título — antes
+era uma `<div>` sem classe, só com `style` inline). Confirmado via 2 agentes Explore antes de mover:
+nenhum JS depende de posição/aninhamento desses elementos no DOM, só de `$('id')` — `trocarClienteAdmin`,
+`atualizarVisibilidadeFiltroCliente` (`index.html:3180-3187`) e `mudarAba` continuam funcionando sem
+alteração, porque todos acessam por id, não por relação de pai/filho.
+
+### CSS desktop (fora de media query) — preserva o layout de antes
+`.topbar` tem 3 filhos diretos agora: `.topbar-title-group`, `#adminClienteFilter`, `.topbar-right`.
+Pra manter a aparência desktop idêntica à anterior (Cliente dentro do grupo da direita, colado no
+resto dos filtros), usa `order` + `margin-left:auto`:
+```css
+.topbar { justify-content:flex-start; /* era space-between */ }
+.topbar-title-group { order:1; }
+.topbar #adminClienteFilter { order:2; margin-left:auto; }
+.topbar-right { order:3; }
+```
+O `margin-left:auto` no Cliente empurra ele (e tudo depois, via `order`) pra direita, reproduzindo o
+`space-between` visual sem abrir um gap indevido entre o título e o Cliente quando ambos os grupos
+"da direita" (Cliente + topbar-right) estão perto um do outro.
+
+### CSS mobile (`@media(max-width:768px)`) — as 3 linhas
+- **Linha 1**: `.topbar-title-group` (`flex:1 1 auto`, encolhe) + `#adminClienteFilter`
+  (`flex:0 0 auto`, `max-width:118px`) — mesma linha do wrap. O `<h1>` do título ganhou
+  `overflow:hidden; text-overflow:ellipsis; white-space:nowrap` (antes não tinha — sem isso o título
+  "Leads"/nome de outras abas não truncava, e um `min-width:0` sozinho nos containers pais não é
+  suficiente pra fazer um elemento de texto truncar, precisa do trio completo no próprio elemento de
+  texto). `#selectClienteAdmin` ganhou `max-width:80px` — trunca o nome do cliente (dropdown mostra
+  completo ao abrir, comportamento nativo do `<select>`).
+- **Linha 2**: `.topbar-right` com `order:3; flex:1 1 100%` — força quebra de linha própria, sobra só
+  `.refresh-badge` (oculto em telas ≤480px por regra já existente) + `#btnTheme`.
+- **Linha 3+**: `#filterControls` (`order:4; flex:1 1 100%; display:block`) só serve de wrapper agora —
+  tem 1 filho só (`#leadsControls`, já que o Cliente saiu). Quem é o grid de 2 colunas de verdade é
+  **`#leadsControls`** diretamente (antes era `#filterControls` E `#leadsControls` juntos, um grid
+  dentro do outro com um único item — desperdiçava metade da largura; corrigido nesta mudança).
+
+### Armadilha real encontrada e corrigida: regra antiga conflitante
+Existia uma regra **pré-existente**, dentro do mesmo bloco `@media(max-width:768px)` mas ~100 linhas
+abaixo (seção "Leads controls: wrap full width"): `#adminClienteFilter { min-width:170px; }`. Como
+estava depois no arquivo, vencia em empate de especificidade sobre o `max-width:118px` novo — um
+`min-width` maior que o `max-width` força o `min-width` a vencer (regra do box model), estourando a
+largura calculada pra caber ao lado do título. Removida junto com 2 regras órfãs do mesmo bloco
+(`#selectClienteAdmin { min-width:125px; max-width:190px; }` e `#leadsControls { width:100% }`
+duplicado) que pertenciam ao layout antigo (Cliente dentro do grid) e não faziam mais sentido.
+**Lição:** ao adicionar uma regra pra um id/classe já existente no CSS, sempre `grep` o nome completo
+primeiro — regras conflitantes no mesmo media query, especialmente longe uma da outra no arquivo, são
+fáceis de não perceber e o efeito (min-width vencendo silenciosamente) não é óbvio no código, só no
+resultado renderizado.
+
+### `min-width:0` em cascata — por que cada nível do grid precisa dele
+Confirmado por trial-and-error com `getBoundingClientRect()`: um item de grid/flex **não encolhe além
+do tamanho do próprio conteúdo por padrão** (`min-width:auto` implícito), mesmo com `width:100%`
+declarado. `#leadsControls`, `#filterControls` e `.ctrl-box` (mais `input[type=text/search]` dentro
+dela) todos precisaram de `min-width:0` explícito — sem isso em qualquer um desses 3 níveis, o texto
+mais longo de uma opção de select (ex: "Todas instâncias") força a célula do grid a estourar a coluna,
+e como `.main { overflow:hidden }` esconde o excesso sem scroll, o sintoma é conteúdo cortado/ausente
+sem nenhum erro visível — parece bug de renderização, mas é só a regra de encolhimento padrão do CSS.
+
+### Nota de ferramenta: `--window-size` do Chrome headless não confiável neste ambiente
+Durante a verificação visual desta mudança, o Chrome headless (`--headless=new`) neste ambiente Windows
+sempre reportou `window.innerWidth=500`, **independente** do `--window-size` pedido (testado 375, 390,
+800) ou do `<meta name="viewport">` (testado `device-width` e `width=340` fixo). Não é cache (testado
+com `user-data-dir` novo, nome de arquivo novo, `--disable-cache` — resultado idêntico byte-a-byte).
+Sem `puppeteer`/`playwright`/`ws` instalados no projeto pra usar CDP via WebSocket e contornar isso.
+**Solução usada:** validar a matemática do CSS via `getComputedStyle`/`getBoundingClientRect` (dados
+reais do motor de layout, confiáveis independente do bug de screenshot) confirmando `FITS` em 500px
+(ainda dentro do breakpoint mobile de 768px), mais um cálculo manual reproduzindo as mesmas contas pra
+375px (a menor largura de celular comum) — resultado: cabe com folga (343px disponíveis vs. 166px
+mínimo necessário). A screenshot "vazia"/sem o elemento em telas menores era o próprio overlay de
+debug (`position:fixed; z-index:99999`) cobrindo a topbar, não um bug de CSS — confirmado removendo o
+overlay e testando limpo em 500px, onde o layout apareceu perfeito.
+

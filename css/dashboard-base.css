@@ -156,10 +156,18 @@ input[type="checkbox"] { position:relative; min-width:18px; min-height:18px; pad
 
 /* ── Layout ─────────────────────────────── */
 .main { flex:1; display:flex; flex-direction:column; overflow:hidden; }
-.topbar { display:flex; align-items:center; justify-content:space-between; padding:20px 32px; border-bottom:1px solid var(--border); flex-wrap:wrap; gap:14px; background:var(--sidebar); backdrop-filter:blur(16px) saturate(1.3); -webkit-backdrop-filter:blur(16px) saturate(1.3); flex-shrink:0; }
+/* .topbar tem 3 filhos diretos: .topbar-title-group, #adminClienteFilter, .topbar-right.
+   #adminClienteFilter foi movido para fora de .topbar-right (era filho dela antes)
+   para poder ficar ao lado do título só no mobile (ver @media(max-width:768px)).
+   No desktop, justify-content:flex-start + margin-left:auto no 2º grupo (título
+   order:1, cliente+direita order:2/3 colados) reproduz o space-between visual de
+   antes sem abrir um gap extra entre o título e o cliente. */
+.topbar { display:flex; align-items:center; justify-content:flex-start; padding:20px 32px; border-bottom:1px solid var(--border); flex-wrap:wrap; gap:14px; background:var(--sidebar); backdrop-filter:blur(16px) saturate(1.3); -webkit-backdrop-filter:blur(16px) saturate(1.3); flex-shrink:0; }
+.topbar-title-group { order:1; }
+.topbar #adminClienteFilter { order:2; margin-left:auto; }
 .title-area h1 { font-size:20px; font-weight:700; display:flex; align-items:center; gap:10px; letter-spacing:-0.03em; }
 .title-area p  { color:var(--muted); font-size:12px; margin-top:3px; }
-.topbar-right { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.topbar-right { order:3; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
 
 /* ── Controls ───────────────────────────── */
 .ctrl-box { display:flex; align-items:center; background:var(--card); padding:7px 13px; border-radius:10px; border:1px solid var(--border); gap:8px; transition:border-color .2s; }
@@ -1024,19 +1032,48 @@ html.light .nav-item.active { box-shadow:inset 3px 0 0 var(--blue); background:r
     .topbar { padding:12px 16px; gap:8px; }
     .title-area h1 { font-size:16px; }
     .title-area p  { display:none; }
-    .topbar-right  { gap:6px; width:100%; }
+
+    /* Reorganização em 3 linhas: (1) título + Cliente lado a lado, (2) tema
+       sozinho, (3) demais filtros em grid. .topbar-title-group e
+       #adminClienteFilter mantêm seus `order` (1 e 2, ver regra fora de
+       media query) e ficam na mesma linha do wrap — o título encolhe
+       (flex:1 1 auto, min-width:0 propagado até o <h1> pra truncar com
+       ellipsis em vez de estourar) e o Cliente não estica (flex:0 0 auto,
+       max-width menor que no desktop pra caber ao lado do título). */
+    .topbar-title-group { flex:1 1 auto; min-width:0; overflow:hidden; }
+    .topbar-title-group .title-area { min-width:0; overflow:hidden; }
+    .topbar-title-group .title-area h1 {
+        min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+    }
+    .topbar-title-group .title-area h1 span,
+    .topbar-title-group .title-area h1 i { flex-shrink:0; }
+    .topbar #adminClienteFilter {
+        margin-left:0; flex:0 0 auto; min-width:0; max-width:118px; padding:7px 10px;
+    }
+    #selectClienteAdmin { min-width:0; max-width:80px; }
+
+    /* Linha 2: só o badge de refresh (oculto em telas pequenas por regra
+       já existente) + o botão de tema — força quebra de linha própria. */
+    .topbar-right { order:3; gap:6px; flex:1 1 100%; width:100%; }
 
     /* Filtros da topbar (aba Leads): cada select/input ocupava a largura do
        próprio conteúdo e o flex-wrap empilhava 1 por linha, empurrando a
-       lista de leads pra fora da tela. Vira grid de 2 colunas — os itens
-       ficam do tamanho da célula, não do texto (Cliente/Instância/Origem/
-       Busca/Período/CSV cabem em 3 linhas em vez de até 6). */
-    #filterControls, #leadsControls {
-        width:100%; display:grid !important; grid-template-columns:1fr 1fr; gap:8px;
+       lista de leads pra fora da tela. #leadsControls vira grid de 2 colunas
+       na 3ª linha — os itens ficam do tamanho da célula, não do texto
+       (Instância/Origem/Busca/Período/CSV cabem em 3 linhas em vez de até
+       5). #filterControls é só o wrapper (1 filho só aqui: #leadsControls,
+       já que #adminClienteFilter saiu para ficar ao lado do título) —
+       display:block evita um grid vazio de 2 colunas em volta de 1 item só. */
+    #filterControls { order:4; flex:1 1 100%; width:100%; min-width:0; display:block !important; }
+    #leadsControls {
+        width:100%; min-width:0; display:grid !important; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:8px;
     }
-    #adminClienteFilter { grid-column:1 / -1; }
-    .ctrl-box { width:100%; box-sizing:border-box; }
-    .ctrl-box input[type=text], .ctrl-box input[type=search] { width:100%; }
+    /* min-width:0 é essencial: por padrão um grid/flex item não encolhe além do
+       tamanho do próprio conteúdo (aqui, o texto da option selecionada do
+       select), então mesmo com width:100% a célula estourava a coluna do grid
+       e empurrava tudo pra fora da tela (overflow escondido por .main). */
+    .ctrl-box { width:100%; min-width:0; box-sizing:border-box; }
+    .ctrl-box input[type=text], .ctrl-box input[type=search] { width:100%; min-width:0; }
     .ctrl-box select.bare { width:100%; min-width:0; }
     #areaPersonalizada { grid-column:1 / -1; flex-wrap:wrap; }
     #areaPersonalizada input[type=date] { flex:1 1 110px; min-width:0; }
@@ -1082,9 +1119,6 @@ html.light .nav-item.active { box-shadow:inset 3px 0 0 var(--blue); background:r
     .ads-filters { gap:8px; }
 
     /* Leads controls: wrap full width */
-    #leadsControls { width:100%; }
-    #adminClienteFilter { min-width:170px; }
-    #selectClienteAdmin { min-width:125px; max-width:190px; }
     .ctrl-box input[type=text] { width:140px; }
 }
 
