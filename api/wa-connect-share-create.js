@@ -1,10 +1,11 @@
 // POST /api/wa-connect-share-create
-// Gera um link publico de curta duracao que espelha um QR Code de conexao
-// WhatsApp JA GERADO pelo painel — nunca gera QR novo, nunca permite
-// nenhuma acao (delete/logout/etc) atraves do link. Pensado para o admin
+// Gera um link publico que espelha um QR Code de conexao WhatsApp JA GERADO
+// pelo painel — nunca permite nenhuma acao alem da propria renovacao do QR
+// (delete/logout/etc nao existem atraves do link). Pensado para o admin
 // compartilhar com quem tem o celular fisico, sem precisar dar acesso ao
-// painel. Token de uso unico + expira em poucos minutos (WA_QR_TTL_SECONDS,
-// mesma janela estimada de validade do proprio QR).
+// painel. Token de uso unico; o QR individual expira rapido (renovado
+// sozinho por api/wa-connect-public.js), mas o LINK fica valido por mais
+// tempo (WA_LINK_TTL_SECONDS) para nao pressionar quem recebeu o link.
 import { getPool } from './_db.js';
 import { verifyAuth } from './_auth.js';
 import { cors } from './_cors.js';
@@ -12,7 +13,7 @@ import { rateLimit } from './_rate-limit.js';
 import { ensureTrackingSchema } from './_tracking-schema.js';
 import { randomUUID } from 'crypto';
 
-const WA_QR_TTL_SECONDS = 60; // mantido em sincronia com a constante do front (js/admin.js)
+const WA_LINK_TTL_SECONDS = 15 * 60; // 15 minutos — mantido em sincronia com api/wa-connect-public.js
 
 export default async function handler(req, res) {
   if (cors(req, res, ['POST'])) return;
@@ -52,7 +53,7 @@ export default async function handler(req, res) {
     }
     if (!token) return res.status(500).json({ error: 'Não foi possível gerar o link agora. Tente novamente.' });
 
-    const expiresAt = new Date(Date.now() + WA_QR_TTL_SECONDS * 1000);
+    const expiresAt = new Date(Date.now() + WA_LINK_TTL_SECONDS * 1000);
 
     await pool.query(
       `INSERT INTO wa_connect_links (token, instance_name, cliente_id, qr_base64, created_by, expires_at)

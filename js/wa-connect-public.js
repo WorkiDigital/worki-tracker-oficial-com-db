@@ -1,6 +1,9 @@
 // Página pública de conexão remota do WhatsApp (wa-connect.html).
 // Sem login, sem sidebar — só lê o token da URL, mostra o QR já gerado pelo
-// painel e faz polling limitado até detectar conexão ou o link expirar.
+// painel e faz polling até detectar conexão ou o link expirar de vez.
+// O QR individual expira rápido (a Evolution renova o código a cada ~1min),
+// mas o próprio backend (api/wa-connect-public.js) busca um QR novo sozinho
+// quando isso acontece — o link inteiro (link_expires_at) dura bem mais.
 // Nunca expõe nenhuma ação (delete/logout/etc), é 100% leitura.
 (function () {
     'use strict';
@@ -21,6 +24,7 @@
 
     let pollTimer = null;
     let countdownTimer = null;
+    let ultimoQrBase64 = null;
 
     function renderErro(msg) {
         pararPolling();
@@ -33,8 +37,9 @@
     }
 
     function renderQr(data) {
+        ultimoQrBase64 = data.qr_base64;
         conteudo.innerHTML = `
-            <div class="qr-box"><img src="${data.qr_base64}" alt="QR Code WhatsApp"></div>
+            <div class="qr-box"><img id="wcQrImg" src="${data.qr_base64}" alt="QR Code WhatsApp"></div>
             <p class="countdown" id="wcCountdown"></p>
             <div class="instrucoes">
                 <ol>
@@ -44,9 +49,17 @@
                     <li>Aponte a câmera para o QR Code acima.</li>
                 </ol>
             </div>
-            <p class="nota">Se o código não funcionar, peça um novo link.</p>
+            <p class="nota">O código se renova sozinho automaticamente.</p>
         `;
-        iniciarCountdown(data.expires_at);
+        iniciarCountdown(data.qr_expires_at);
+    }
+
+    function atualizarQrSeMudou(data) {
+        if (data.qr_base64 === ultimoQrBase64) return;
+        ultimoQrBase64 = data.qr_base64;
+        const img = document.getElementById('wcQrImg');
+        if (img) img.src = data.qr_base64;
+        iniciarCountdown(data.qr_expires_at);
     }
 
     function iniciarCountdown(expiresAtIso) {
@@ -56,12 +69,12 @@
         const atualizar = () => {
             const restanteMs = new Date(expiresAtIso).getTime() - Date.now();
             if (restanteMs <= 0) {
-                el.textContent = 'Expirado';
+                el.textContent = 'Renovando código...';
                 clearInterval(countdownTimer);
                 return;
             }
             const seg = Math.ceil(restanteMs / 1000);
-            el.textContent = `Expira em ${Math.floor(seg / 60)}:${String(seg % 60).padStart(2, '0')}`;
+            el.textContent = `Código válido por mais ${Math.floor(seg / 60)}:${String(seg % 60).padStart(2, '0')}`;
         };
         atualizar();
         countdownTimer = setInterval(atualizar, 1000);
@@ -88,8 +101,10 @@
                 renderSucesso();
                 return;
             }
-            // Só remonta o QR se ainda não estiver desenhado (evita piscar a cada poll).
+            // Desenha o QR na primeira vez; nas próximas só troca a imagem se o
+            // backend tiver renovado o código (evita piscar a tela a cada poll).
             if (!document.querySelector('.qr-box')) renderQr(data);
+            else atualizarQrSeMudou(data);
         } catch (e) {
             // Falha de rede pontual não deve interromper o polling.
         }

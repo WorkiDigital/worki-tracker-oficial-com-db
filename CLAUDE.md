@@ -1701,3 +1701,49 @@ mínimo necessário). A screenshot "vazia"/sem o elemento em telas menores era o
 debug (`position:fixed; z-index:99999`) cobrindo a topbar, não um bug de CSS — confirmado removendo o
 overlay e testando limpo em 500px, onde o layout apareceu perfeito.
 
+## 🔗 Link público de conexão WhatsApp — QR renovado automaticamente (2026-07-27)
+
+O link público (`wa-connect.html`, gerado por "Compartilhar" na aba Conexão WhatsApp — pensado pra
+mandar pra quem tem o celular físico, sem dar acesso ao painel) expirava em **60s fixos**, tempo
+curto demais na prática: a pessoa recebia o link, precisava abrir, entender as instruções e escanear
+tudo dentro desse minuto, senão via "Este link expirou. Peça um novo link." mesmo sem ter feito nada
+de errado.
+
+### Causa raiz
+O link só espelhava uma **imagem estática** do QR (a mesma capturada no momento do clique em
+"Compartilhar" no painel) — sem o auto-refresh que a tela normal do painel tem
+(`checkWaStatus(true)` em `js/admin.js`, que busca um QR novo sozinho quando o atual expira). Como o
+QR real do WhatsApp também expira rápido (~60s, estimativa de UX — a Evolution não retorna
+expiração real), o link precisava morrer nesse mesmo intervalo pra não mostrar um código morto sem
+avisar.
+
+### Correção: separar validade do LINK da validade do QR individual
+`api/wa-connect-public.js` agora distingue dois tempos:
+- **`WA_QR_TTL_SECONDS = 60`** — quando o QR atual fica velho. Ao vencer, o próprio endpoint busca
+  um QR **novo** direto na Evolution (`GET /instance/connect/{instance}`, mesma chamada que
+  `api/evo-manager.js` usa no painel) e atualiza `qr_base64`/`created_at` no banco — tudo
+  server-side, a chave da API nunca é exposta ao público.
+- **`WA_LINK_TTL_SECONDS = 15 * 60`** (15 minutos) — quando a página inteira para de funcionar
+  de vez. Substituiu o antigo `WA_QR_TTL_SECONDS` de 60s que controlava isso antes.
+
+`api/wa-connect-share-create.js` (cria o link) usa `WA_LINK_TTL_SECONDS` pro `expires_at` gravado —
+mesma constante duplicada nos dois arquivos (comentário cruzado pra manter em sincronia, mesmo
+padrão já usado entre `js/admin.js`/`api/wa-connect-share-create.js` antes desta mudança).
+
+### Resposta da API mudou de `expires_at` único para dois campos
+`qr_expires_at` (quando a imagem atual fica velha — renova sozinha no próximo poll) e
+`link_expires_at` (quando a página para de funcionar). `js/wa-connect-public.js` foi atualizado:
+- Countdown mostra `qr_expires_at` ("Código válido por mais X:XX" — texto trocado de "Expira em",
+  já que agora renovar é automático, não é mais uma ameaça de fim de sessão).
+- Ao vencer o countdown do QR, não trava mais em "Expirado" — mostra "Renovando código..." e o
+  polling de 4s (`setInterval` já existente) pega a imagem nova do backend no próximo ciclo.
+- **Nova função `atualizarQrSeMudou(data)`**: como agora a imagem pode trocar no meio da sessão
+  (antes nunca trocava, só existia 1 render), o polling compara `data.qr_base64` com o último
+  renderizado — só re-renderiza o `<img src>` quando muda de verdade, sem re-montar o HTML inteiro
+  (evita piscar a cada poll de 4s).
+
+### Não migra links antigos
+`expires_at` de links já criados antes do deploy continua valendo a estimativa antiga (~60s desde a
+criação) até expirarem — sem UPDATE retroativo no banco. Só links criados depois do deploy usam os
+15 minutos novos.
+
