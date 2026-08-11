@@ -103,13 +103,34 @@ export default async function handler(req, res) {
     `, params);
 
     // 2. Timeline Origem das Conversas (por dia)
+    // ATENÇÃO: lead_origin é sobre o MECANISMO de captura (ctwa/organic/bio/
+    // campaign_link/rotator/intelligent) — nunca vale 'google', então o filtro
+    // antigo (lead_origin = 'google') sempre dava 0 e todo lead vindo do
+    // Google Ads via link rastreável caía em "other". A plataforma de anúncio
+    // real vem de `plataforma`, com fallback em `utm_source` — mesmo critério
+    // já usado na coluna Plataforma da tabela de Leads (js/leads.js, função
+    // renderTabela). CTWA é sempre Meta (não tem como um anúncio de clique-
+    // pra-WhatsApp nativo ser do Google).
     const timelineQ = await pool.query(`
-      SELECT 
+      SELECT
         TO_CHAR(created_at, 'DD Mon') as date_label,
         DATE(created_at) as date_val,
-        COUNT(*) FILTER (WHERE lead_origin = 'ctwa') as meta_ads,
-        COUNT(*) FILTER (WHERE lead_origin = 'google') as google_ads,
-        COUNT(*) FILTER (WHERE lead_origin != 'ctwa' AND lead_origin != 'google' AND lead_origin IS NOT NULL AND lead_origin != '') as other,
+        COUNT(*) FILTER (
+          WHERE lead_origin = 'ctwa'
+             OR LOWER(COALESCE(plataforma,'')) IN ('facebook','instagram')
+             OR (COALESCE(plataforma,'') = '' AND (LOWER(COALESCE(utm_source,'')) LIKE '%fb%' OR LOWER(COALESCE(utm_source,'')) LIKE '%face%' OR LOWER(COALESCE(utm_source,'')) LIKE '%ig%' OR LOWER(COALESCE(utm_source,'')) LIKE '%insta%'))
+        ) as meta_ads,
+        COUNT(*) FILTER (
+          WHERE lead_origin != 'ctwa'
+            AND (LOWER(COALESCE(plataforma,'')) = 'google'
+                 OR (COALESCE(plataforma,'') = '' AND (LOWER(COALESCE(utm_source,'')) LIKE '%google%' OR LOWER(COALESCE(utm_source,'')) LIKE '%adwords%')))
+        ) as google_ads,
+        COUNT(*) FILTER (
+          WHERE lead_origin != 'ctwa'
+            AND lead_origin IS NOT NULL AND lead_origin != '' AND lead_origin != 'organic'
+            AND LOWER(COALESCE(plataforma,'')) NOT IN ('facebook','instagram','google')
+            AND NOT (COALESCE(plataforma,'') = '' AND (LOWER(COALESCE(utm_source,'')) LIKE '%fb%' OR LOWER(COALESCE(utm_source,'')) LIKE '%face%' OR LOWER(COALESCE(utm_source,'')) LIKE '%ig%' OR LOWER(COALESCE(utm_source,'')) LIKE '%insta%' OR LOWER(COALESCE(utm_source,'')) LIKE '%google%' OR LOWER(COALESCE(utm_source,'')) LIKE '%adwords%'))
+        ) as other,
         COUNT(*) FILTER (WHERE lead_origin IS NULL OR lead_origin = '' OR lead_origin = 'organic') as untracked
       FROM leads_tracking
       WHERE ${leadsPeriodWhere}

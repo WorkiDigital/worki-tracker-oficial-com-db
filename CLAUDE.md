@@ -1747,3 +1747,44 @@ padrão já usado entre `js/admin.js`/`api/wa-connect-share-create.js` antes des
 criação) até expirarem — sem UPDATE retroativo no banco. Só links criados depois do deploy usam os
 15 minutos novos.
 
+## 🐛 Funil de Vendas — card "Origem das Conversas" nunca contava Google Ads (2026-07-27)
+
+O card "Origem das Conversas" (aba Funil) sempre mostrava **Google Ads: 0**, mesmo com leads
+claramente vindos do Google (confirmado com um cliente real: 47 conversas Meta + 36 "Outras", 0
+Google — mas a aba Leads do mesmo cliente/período mostrava vários leads com `plataforma: Google`
+via link rastreável).
+
+### Causa raiz
+`api/metrics-funnel.js` classificava a origem comparando **`lead_origin = 'google'`** — só que
+`lead_origin` é sobre o **mecanismo de captura** (`ctwa`, `organic`, `bio`, `campaign_link`,
+`rotator`, `intelligent` — ver `obterOrigemLead()` em `js/leads.js`), **nunca** sobre a plataforma de
+anúncio. Um lead vindo de um anúncio do Google Ads via link rastreável tem `lead_origin =
+'campaign_link'`, igual a um lead vindo de um anúncio do Meta pelo mesmo mecanismo — a diferença
+entre as duas plataformas está em **`plataforma`** (coluna do banco) ou, se vazia, no **`utm_source`**
+(fallback). Resultado: `lead_origin = 'google'` nunca era verdadeiro → Google Ads sempre 0, e todo
+lead do Google caía no bucket "Outras Origens" (não era `ctwa` nem `'google'`, mas tinha uma origem
+rastreada válida).
+
+### Correção
+A query SQL de `timelineQ` (`api/metrics-funnel.js`) foi reescrita pra replicar o **mesmo critério
+já usado na coluna Plataforma da tabela de Leads** (`js/leads.js`, dentro de `renderTabela()`):
+- **Meta Ads**: `lead_origin = 'ctwa'` (CTWA é sempre Meta) OU `plataforma` em
+  `facebook`/`instagram` OU (`plataforma` vazia E `utm_source` contém `fb`/`face`/`ig`/`insta`).
+- **Google Ads**: `plataforma = 'google'` OU (`plataforma` vazia E `utm_source` contém
+  `google`/`adwords`) — sempre excluindo CTWA (nunca pode ser Google).
+- **Outras Origens**: tem `lead_origin` rastreado (não é nulo/vazio/`organic`) mas não bateu em
+  nenhum critério de Meta nem Google acima.
+- **Não rastreadas**: `lead_origin` nulo/vazio/`organic` — comportamento que já estava correto,
+  não mudou.
+
+As 4 categorias são **mutuamente exclusivas e exaustivas** (validado com 12 casos de teste em Node,
+espelhando a tradução SQL antes de aplicar) — todo lead cai em exatamente 1 bucket, nunca em 0 nem em
+2+. Sem acesso ao banco de produção neste ambiente para testar a query real; validação feita via
+simulação da lógica equivalente em JS puro.
+
+> Mesma armadilha do tipo já documentado alhures neste arquivo: **nunca assumir que um campo tem um
+> valor só porque "faria sentido"** — sempre conferir contra `obterOrigemLead()`/os valores reais
+> gravados pelo webhook antes de escrever um filtro. `lead_origin` e `plataforma` são conceitos
+> diferentes (mecanismo de captura vs. rede de anúncio) e não devem ser confundidos em nenhuma query
+> nova que precise diferenciar Meta de Google.
+
