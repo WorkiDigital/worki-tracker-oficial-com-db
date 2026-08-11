@@ -87,20 +87,35 @@ export default async function handler(req, res) {
     const salesPeriodWhere = periodoFunilSql('sale_closed_at', periodo, periodIdx);
 
     // 1. Overview and Funnel
+    // total_leads/untracked/first_contact/qualified/proposal_sent contam por
+    // ENTRADA do lead no período (created_at) — faz sentido, é sobre o topo
+    // do funil. "sales" (usado no card "Comprou") é calculado À PARTE logo
+    // abaixo, filtrando por sale_closed_at — senão um lead que entrou fora
+    // do período mas comprou dentro dele nunca aparecia aqui, divergindo do
+    // card de Faturamento ao lado (que já usa sale_closed_at corretamente).
+    // Confirmado com dados reais: 3 vendas fecharam no período "hoje e
+    // ontem", mas só 1 lead tinha ENTRADO também dentro dessa janela.
     const overviewQ = await pool.query(`
-      SELECT 
+      SELECT
         COUNT(*) as total_leads,
         COUNT(*) FILTER (WHERE lead_origin IS NULL OR lead_origin = '' OR lead_origin = 'organic') as untracked,
         COUNT(*) FILTER (WHERE first_response_at IS NOT NULL OR LOWER(COALESCE(status,'')) NOT IN ('lead','novo','')) as first_contact,
         COUNT(qualified_at) as qualified,
         COUNT(proposal_sent_at) as proposal_sent,
-        COUNT(sale_closed_at) as sales,
         AVG(EXTRACT(EPOCH FROM (first_response_at - created_at))/60) FILTER (WHERE first_response_at IS NOT NULL) as avg_response_min,
         AVG(EXTRACT(EPOCH FROM (sale_closed_at - created_at))/86400) as avg_cycle_days
       FROM leads_tracking
       WHERE ${leadsPeriodWhere}
       ${cliWhere}
     `, params);
+
+    const salesCountQ = await pool.query(`
+      SELECT COUNT(*) as sales
+      FROM leads_tracking
+      WHERE ${salesPeriodWhere}
+      ${cliWhere}
+    `, params);
+    overviewQ.rows[0].sales = salesCountQ.rows[0].sales;
 
     // 2. Timeline Origem das Conversas (por dia)
     // ATENÇÃO: lead_origin é sobre o MECANISMO de captura (ctwa/organic/bio/

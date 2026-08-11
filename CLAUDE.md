@@ -1788,3 +1788,48 @@ simulação da lógica equivalente em JS puro.
 > diferentes (mecanismo de captura vs. rede de anúncio) e não devem ser confundidos em nenhuma query
 > nova que precise diferenciar Meta de Google.
 
+## 🐛 Funil de Vendas — card "Comprou" divergia do card "Total de Vendas" (2026-08-11)
+
+Na aba Funil, com o período "Hoje e Ontem", o card **"Comprou"** (dentro de "Funil da Jornada de
+Compra") mostrava um número diferente do card **"Total de Vendas"** (dentro de "Faturamento Total"),
+apesar de ambos os cards estarem na mesma tela sob o mesmo seletor de período.
+
+### Diagnóstico — confirmado com SQL direto no banco (não só leitura de código)
+O usuário rodou 3 queries no banco de produção comparando os dois critérios lado a lado. Resultado
+real: 3 vendas fecharam no período (`sale_closed_at` dentro de "hoje e ontem"), mas os leads por trás
+delas tinham `created_at` em datas diferentes — um deles (`Big Frio Climatização`) **entrou 8 dias
+antes** (`created_at = 03/08`) e só fechou a venda no dia 11/08. Confirma que a causa era ciclo de
+venda mais longo que a janela do período, não um bug de cálculo.
+
+### Causa raiz
+`api/metrics-funnel.js`, `overviewQ`: **todas** as métricas (`total_leads`, `qualified`, `sales`, etc.)
+vinham do mesmo `SELECT` filtrado por `WHERE ${leadsPeriodWhere}` — ou seja, por `created_at` (quando
+o **lead entrou**). Fazia sentido pro topo do funil (quantos leads chegaram), mas `sales` (usado no
+card "Comprou") deveria responder "quantas vendas **fecharam** no período" — a mesma pergunta que o
+card de Faturamento ao lado já respondia corretamente via `salesQ` (filtrado por `sale_closed_at`).
+Um lead que entrou fora do período mas comprou dentro dele nunca era contado em "Comprou", mesmo
+aparecendo certinho no card de Faturamento — os dois cards, lado a lado, respondiam perguntas
+diferentes sem avisar isso ao usuário.
+
+### Correção
+`sales` foi tirado do `SELECT` de `overviewQ` e movido para uma query separada (`salesCountQ`),
+filtrada por `${salesPeriodWhere}` (o mesmo `sale_closed_at` que `salesQ` já usa) — reaproveita o
+mesmo `cliWhere`/`params` do resto do handler. `overviewQ.rows[0].sales` é atribuído depois, antes de
+montar a resposta. As demais métricas de `overviewQ` (`total_leads`, `untracked`, `first_contact`,
+`qualified`, `proposal_sent`) **continuam filtradas por `created_at`** — de propósito, já que são
+sobre entrada de lead, não sobre fechamento de venda.
+
+Validado com os dados reais confirmados no banco (simulação em Node reproduzindo os 3 leads e as
+datas exatas): antes da correção o card contaria 1-2 vendas dependendo do timezone exato do corte;
+depois da correção, bate exatamente com os 3 confirmados no banco.
+
+### Efeito colateral aceito (não é bug)
+`js/funil.js` (`_funilRenderJornada`) calcula `% dos leads` e `% Conversão` como `sales / total_leads`
+e `sales / first_contact`. Como agora `sales` conta por uma janela de tempo diferente da base
+(`total_leads`/`first_contact`, que contam por `created_at`), esses percentuais podem soar estranhos
+em períodos com ciclo de venda longo (ex: teoricamente passar de 100% se muitas vendas de leads
+antigos fecharem num período curto). Decisão deliberada: melhor ter o número absoluto de vendas
+correto (e consistente com o card de Faturamento) do que uma % "bonita" calculada sobre uma base que
+não representa de fato os compradores daquele período. Não alterado nesta correção — fora do escopo
+do que foi pedido.
+
