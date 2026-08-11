@@ -1833,3 +1833,73 @@ correto (e consistente com o card de Faturamento) do que uma % "bonita" calculad
 não representa de fato os compradores daquele período. Não alterado nesta correção — fora do escopo
 do que foi pedido.
 
+## 🐛 Editar Cliente: trocar senha não fazia nada em clientes sem usuário vinculado (2026-08-11)
+
+Admin trocava a senha de um cliente ("Frigorífico o Eron") pelo modal Editar Cliente, via
+"Cliente atualizado!" (sucesso), mas o login continuava dando "Email ou senha incorretos" — com
+**qualquer** senha, não só a nova.
+
+### Diagnóstico — confirmado com SQL direto no banco
+```sql
+SELECT u.id AS usuario_id, u.email, u.is_admin, u.cliente_id, c.id AS cliente_id_real, c.nome
+FROM clientes c LEFT JOIN usuarios u ON u.cliente_id = c.id
+WHERE c.nome ILIKE '%Eron%';
+```
+Resultado: `usuario_id = NULL`. O cliente existia em `clientes`, mas **não tinha nenhuma linha em
+`usuarios`** — provavelmente criado fora do fluxo normal (script/migração antiga), já que o `POST`
+de criação de cliente sempre cria os dois juntos (`clientes` + `usuarios`, ver linhas 45-67).
+
+### Causa raiz
+`api/clientes.js`, método `PATCH`: o e-mail e a senha eram atualizados só via `UPDATE usuarios SET
+... WHERE cliente_id=$2 AND is_admin=false` — **sem checar `rowCount`**. Quando não existe usuário
+pra aquele `cliente_id`, o `UPDATE` afeta 0 linhas silenciosamente, e o handler retornava sucesso
+igual, mascarando completamente o problema. É a mesma classe de bug do card do Funil corrigido
+acima (efeito colateral silencioso de uma query que não afeta o que deveria) — **sempre checar
+`rowCount`/`RETURNING` em `UPDATE`s que o resto do fluxo assume terem funcionado**.
+
+### Correção
+- `api/clientes.js` (`PATCH`): agora guarda o `rowCount` dos `UPDATE`s de e-mail/senha. Se nenhum
+  afetou nenhuma linha **e** uma senha foi informada, **cria o usuário do zero** (mesmo INSERT do
+  fluxo `POST`), usando o e-mail do próprio formulário (`email_contato` sempre vem preenchido do
+  campo da tela, mesmo sem edição — confirmado em `js/admin.js:239`). Se não houver e-mail
+  suficiente pra criar (caso raro), a resposta volta com `senha_salva: false` e uma mensagem
+  explicando exatamente o que falta, em vez de fingir sucesso.
+- `js/admin.js` (`salvarEdicaoCliente`): antes **ignorava `data.message`** do backend e sempre
+  mostrava o texto fixo "Cliente atualizado!" — por isso o aviso de senha não salva nunca chegava a
+  aparecer, mesmo que o backend já soubesse do problema. Agora usa `data.message` (com fallback pro
+  texto genérico) e mostra como erro (`toast(..., 'error')`) quando `senha_salva === false`.
+
+### Como confirmar que outros clientes não têm o mesmo problema
+```sql
+SELECT c.id, c.nome, c.email_contato
+FROM clientes c
+LEFT JOIN usuarios u ON u.cliente_id = c.id AND u.is_admin = false
+WHERE u.id IS NULL AND c.archived_at IS NULL;
+```
+Clientes que aparecerem aqui nunca conseguiram logar, independente de quantas vezes a senha foi
+"salva" pelo painel antes desta correção — a próxima vez que um admin salvar e-mail+senha pelo
+modal Editar Cliente, o usuário é criado automaticamente (não precisa de script de migração à parte).
+
+## 🔍 Diagnóstico de tokens Meta — cada token só enxerga as contas do seu Business Manager
+
+Durante a investigação do bug acima, vários tokens de acesso da Meta foram testados diretamente
+contra a Graph API (`GET /v20.0/me/adaccounts`) pra diagnosticar problemas de "Nenhuma conta
+vinculada" em clientes específicos. Lição confirmada com dados reais, útil pra qualquer investigação
+futura do tipo: **um token da Meta só lista as contas de anúncio do Business Manager/usuário que o
+gerou** — não existe "token universal" que enxergue todas as contas de todos os clientes da agência
+automaticamente. Um token pode ser perfeitamente válido (`is_valid: true`, escopos corretos como
+`ads_management`/`ads_read`/`business_management`) e ainda assim retornar 0 ou poucas contas, se
+essas contas não tiverem sido compartilhadas com aquele System User específico no Business Manager.
+
+- **`GET /v20.0/debug_token?input_token=X&access_token=X`** mostra `type` (`SYSTEM_USER` é o tipo
+  recomendado pra integração server-side — não expira por troca de senha, diferente de token de
+  usuário comum), `is_valid`, `expires_at`, `scopes`/`granular_scopes`. Útil pra confirmar rapidamente
+  se um token tem os escopos certos antes de gastar tempo testando `me/adaccounts`.
+- **`error_subcode 460`** (`code: 190`) — "The session has been invalidated because the user changed
+  their password or Facebook has changed the session for security reasons." — token de usuário comum
+  invalidado; não tem conserto via código, precisa gerar um token novo (idealmente `SYSTEM_USER`,
+  que não sofre desse problema).
+- Cada `token_meta_enc` de cliente (aba Meta Ads do modal Editar Cliente) deve ser o token **daquele
+  Business Manager específico** — colar um token de outro cliente/agência ali não funciona mesmo que
+  o token seja válido, porque ele não vê a conta configurada em `clientes.account_id` daquele cliente.
+

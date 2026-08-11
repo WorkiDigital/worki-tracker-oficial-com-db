@@ -273,7 +273,16 @@ async function salvarEdicaoCliente() {
         // engagement_settings é uma tabela à parte (api/engagement-settings.js) —
         // salva junto, no mesmo botão, para não exigir uma ação separada do usuário.
         await engSalvarConfig(id);
-        toast('Cliente atualizado!', 'success');
+        // senha_salva=false: cliente sem usuário de login vinculado e sem
+        // e-mail suficiente pra criar um agora (ver api/clientes.js PATCH) —
+        // mostra a mensagem detalhada do backend em vez do genérico
+        // "Cliente atualizado!", que escondia esse caso (a senha nunca
+        // era salva, mas o toast de sucesso não deixava isso claro).
+        if (data.senha_salva === false) {
+            toast(data.message || 'Cliente atualizado, mas a senha não foi salva.', 'error');
+        } else {
+            toast(data.message || 'Cliente atualizado!', 'success');
+        }
         $('modalEditCliente').classList.remove('open');
         carregarClientesAdmin();
     } catch(e) {

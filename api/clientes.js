@@ -117,19 +117,69 @@ export default async function handler(req, res) {
               await pool.query(`UPDATE clientes SET ${fields.join(', ')} WHERE id=$${idx}`, values);
           }
 
-          // Atualizar e-mail do usuário vinculado (se informado)
+          // Atualizar e-mail do usuário vinculado (se informado). Guarda o
+          // rowCount: clientes criados fora do fluxo normal de POST (ex: via
+          // script/migração antiga) podem não ter nenhum usuário na tabela
+          // usuarios — UPDATE nesse caso afeta 0 linhas silenciosamente, e o
+          // admin via "Cliente atualizado!" achando que o login foi trocado
+          // quando na verdade nada mudou (login continuava impossível).
+          let usuarioAfetado = false;
           if (email_contato) {
-              await pool.query('UPDATE usuarios SET email=$1 WHERE cliente_id=$2 AND is_admin=false', [email_contato, id]);
+              const rEmail = await pool.query('UPDATE usuarios SET email=$1 WHERE cliente_id=$2 AND is_admin=false', [email_contato, id]);
+              usuarioAfetado = usuarioAfetado || rEmail.rowCount > 0;
           }
 
           // Atualizar senha do usuário vinculado (se informada)
+          let senhaTrocada = false;
           if (senha_acesso) {
               const salt = await bcrypt.genSalt(10);
               const hash = await bcrypt.hash(senha_acesso, salt);
-              await pool.query('UPDATE usuarios SET senha_hash=$1 WHERE cliente_id=$2 AND is_admin=false', [hash, id]);
+              const rSenha = await pool.query('UPDATE usuarios SET senha_hash=$1 WHERE cliente_id=$2 AND is_admin=false', [hash, id]);
+              senhaTrocada = rSenha.rowCount > 0;
+              usuarioAfetado = usuarioAfetado || senhaTrocada;
           }
 
-          return res.status(200).json({ message: 'Cliente atualizado com sucesso!' });
+          // Nenhum UPDATE acima encontrou usuário: cria um agora, desde que
+          // haja e-mail + senha suficientes (mesma exigência do POST). Sem
+          // isso, o cliente nunca conseguiria logar mesmo com o toast de
+          // sucesso — precisa de e-mail (existente ou recém-informado) e
+          // senha pra criar a conta de acesso pela primeira vez aqui.
+          let usuarioCriado = false;
+          if (!usuarioAfetado && senha_acesso) {
+              const emailLogin = String(email_contato || '').trim().toLowerCase();
+              if (emailLogin) {
+                  const salt = await bcrypt.genSalt(10);
+                  const hash = await bcrypt.hash(senha_acesso, salt);
+                  try {
+                      await pool.query(
+                          'INSERT INTO usuarios (email, senha_hash, cliente_id, is_admin) VALUES ($1, $2, $3, false)',
+                          [emailLogin, hash, id]
+                      );
+                      usuarioCriado = true;
+                      senhaTrocada = true;
+                  } catch (errInsert) {
+                      if (errInsert.code === '23505') {
+                          return res.status(400).json({ error: 'Este e-mail já está em uso por outro usuário — não foi possível criar o acesso deste cliente.' });
+                      }
+                      throw errInsert;
+                  }
+              }
+          }
+
+          // Avisa explicitamente quando uma senha foi digitada mas não há
+          // como confirmar que ela ficou de fato salva (sem e-mail conhecido
+          // pra criar o usuário do zero) — evita o "sucesso" enganoso.
+          if (senha_acesso && !senhaTrocada) {
+              return res.status(200).json({
+                  message: 'Cliente atualizado, mas a senha NÃO foi salva: nenhum usuário de login existe para este cliente e não há e-mail suficiente para criar um agora. Preencha o campo E-mail (Login) e salve novamente.',
+                  senha_salva: false,
+              });
+          }
+
+          const msg = usuarioCriado
+              ? 'Cliente atualizado! Conta de acesso (login) criada agora — este cliente não tinha usuário vinculado.'
+              : 'Cliente atualizado com sucesso!';
+          return res.status(200).json({ message: msg, senha_salva: senha_acesso ? true : undefined });
       } catch (err) {
           console.error(err);
           if (err.code === '23505') {
