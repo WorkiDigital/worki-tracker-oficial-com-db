@@ -1983,6 +1983,14 @@ nenhuma separação visual forte (só `margin-top`), parecia fazer parte do mesm
 da Marca" ao renderizar. Adicionado um `<hr>` explícito entre as duas seções dentro da aba
 Configurações — mesma aba (só-admin), mas visualmente claro que são configurações independentes.
 
+### Item de menu renomeado: "Marca" → "Alerta de Saldo"
+A aba continua a mesma (`aba-ajustes`, mesmo conteúdo: White-label + Alerta de Saldo com o `<hr>`
+acima) — só o rótulo do menu lateral (`#btn-ajustes`) e o título mostrado no topo da página
+(`TITULOS.ajustes`, `index.html`) mudaram, de "Marca"/ícone `palette` pra "Alerta de Saldo"/ícone
+`bell-ring`. Decisão do usuário: o item de menu deve refletir o que ele mais usa/associa àquela
+tela, mesmo com o White-label continuando lá dentro (não removido, só não é mais o nome de destaque
+no menu).
+
 ## ⚡ Link Direto sem delay (`?direct=1`) — mesmo slug, dois comportamentos (2026-08-12)
 
 O redirecionador `/r/<slug>` sempre passava por uma página HTML intermediária antes de abrir o
