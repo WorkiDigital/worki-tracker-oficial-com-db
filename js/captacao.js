@@ -653,10 +653,7 @@ function capAtualizarScriptSnippet() {
   $('capScriptSnippet').value =
 `<script src="${origin}/js/wapptrack.js" data-campaign="${slug}"></script>`;
   $('capScriptBotaoExemplo').value =
-`<a href="#" data-wapptrack-button>${textoBotao}</a>
-
-<!-- Mensagem específica deste botão (opcional): -->
-<a href="#" data-wapptrack-button data-wapp-message="Olá! Vim da página {{page_title}}.">${textoBotao}</a>`;
+`${origin}/r/${slug}`;
 }
 
 function capCopiarScriptSnippet() {
