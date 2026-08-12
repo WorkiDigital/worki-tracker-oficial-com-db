@@ -1977,6 +1977,12 @@ que **uma configuração ÚNICA e global** (não por cliente/campanha).
 > (mesma razão de Relatórios Automáticos ter migrado de env fixa para seletor: menos deploy, mais
 > autonomia do admin pra trocar o destino sem mexer em código/infra).
 
+### Correção visual: separado da seção Marca/White-label
+`#alertaSaldoCard` já era uma `<div>` irmã de `#whiteLabelCard` no HTML (não filha) — mas sem
+nenhuma separação visual forte (só `margin-top`), parecia fazer parte do mesmo bloco "Personalização
+da Marca" ao renderizar. Adicionado um `<hr>` explícito entre as duas seções dentro da aba
+Configurações — mesma aba (só-admin), mas visualmente claro que são configurações independentes.
+
 ## ⚡ Link Direto sem delay (`?direct=1`) — mesmo slug, dois comportamentos (2026-08-12)
 
 O redirecionador `/r/<slug>` sempre passava por uma página HTML intermediária antes de abrir o
