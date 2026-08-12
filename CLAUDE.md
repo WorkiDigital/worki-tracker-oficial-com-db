@@ -1903,3 +1903,59 @@ essas contas não tiverem sido compartilhadas com aquele System User específico
   Business Manager específico** — colar um token de outro cliente/agência ali não funciona mesmo que
   o token seja válido, porque ele não vê a conta configurada em `clientes.account_id` daquele cliente.
 
+## 💰 Alerta de saldo baixo na conta de anúncios Meta (WhatsApp) — 2026-08-11
+
+Novo cron que avisa o admin via WhatsApp quando o saldo de uma conta de anúncios Meta fica abaixo
+de um limite configurável por cliente. Campo `balance` (saldo pré-pago disponível, minor unit —
+centavos) confirmado via teste real contra a Graph API durante a investigação de tokens acima —
+`GET act_{id}?fields=name,balance,currency`.
+
+### Decisões do usuário (via AskUserQuestion)
+- Monitora **todas** as contas com `account_id` configurado (não uma lista manual à parte).
+- Destino do alerta é **um único número/grupo fixo do admin da agência** — não por cliente. Todos os
+  alertas de saldo de todos os clientes chegam no mesmo WhatsApp.
+- Limite de saldo é **configurável por cliente** (contas grandes e pequenas têm escalas diferentes).
+- Checagem a cada **6 horas**.
+
+### Arquivos
+- `api/cron/check-ads-balance.js` (novo) — `runCheckAdsBalance()`: varre `clientes` com
+  `account_id` E `saldo_alerta_minimo` preenchidos, busca `balance` na Graph API (token do cliente
+  via `token_meta_enc`/`token_meta`, fallback `META_ADS_TOKEN` global — mesma cascata de
+  `getTokenForUser`), compara com o limite e envia `POST {EVOLUTION_API_URL}/message/sendText/
+  {instance}` (mesmo endpoint/padrão de `api/cron/send-reports.js`) quando estiver abaixo.
+- `server.js`: `iniciarCronCheckAdsBalance()` registra o `setInterval` de 6h (mesmo padrão de
+  `iniciarCronZap`/`iniciarCronChatCleanup`) e roda uma vez já na subida do servidor (`tick()` fora
+  do interval), não só depois de 6h — evita ficar até 6h sem checar após um deploy/restart.
+- `api/_tracking-schema.js`: 2 colunas novas em `clientes` — `saldo_alerta_minimo NUMERIC(12,2)`
+  (limite em reais; `NULL`/`0` = alerta desativado para o cliente) e `saldo_alerta_disparado_em
+  TIMESTAMP` (controle de anti-spam). O próprio `check-ads-balance.js` também roda o mesmo `ALTER
+  TABLE ... ADD COLUMN IF NOT EXISTS` no início da função — não depende só de `ensureTrackingSchema()`
+  ter rodado antes (mesmo padrão defensivo já usado nesta parte do projeto).
+- `api/clientes.js` (`PATCH`): aceita `saldo_alerta_minimo` — string vazia desativa (`NULL`), número
+  ativa/atualiza **e zera `saldo_alerta_disparado_em`** (evita perder um alerta se o saldo já estiver
+  abaixo do valor novo configurado). `GET` inclui a coluna na listagem pro front conseguir
+  pré-preencher o campo ao abrir o modal.
+- `index.html`: campo "Alerta de saldo baixo (R$)" na aba Meta Ads do modal Editar Cliente, logo
+  abaixo de "ID da Conta de Anúncios".
+- `js/admin.js`: `abrirEditCliente`/`salvarEdicaoCliente` leem/escrevem o campo novo.
+
+### Variáveis de ambiente necessárias (configurar no EasyPanel)
+```
+ALERTA_SALDO_INSTANCE=<nome da instância WhatsApp já conectada que vai enviar os alertas>
+ALERTA_SALDO_DESTINO=<número (5511...) ou JID de grupo (...@g.us) que vai receber>
+```
+Reaproveita `EVOLUTION_API_URL`/`EVOLUTION_GLOBAL_KEY` já existentes — não precisa de credencial
+nova. **Sem essas 2 variáveis, o cron roda e loga um aviso, mas não envia nada** (não quebra o
+servidor) — confirmado em teste local. Instância e destino ficaram como env var em vez de campo no
+painel de propósito: é uma decisão operacional única da agência (não varia por cliente).
+
+### Anti-spam
+Um alerta por cliente a cada 24h enquanto o saldo continuar abaixo do limite (mesmo rodando o cron
+a cada 6h). Quando o saldo volta a ficar acima do limite, `saldo_alerta_disparado_em` é zerado —
+permite alertar de novo se cair abaixo outra vez no futuro (não é um "alertou uma vez, nunca mais").
+
+### Escopo desta entrega
+Só a Meta Ads — Google Ads não tem um campo equivalente de saldo simples exposto sem OAuth2/
+developer token (mesma limitação já documentada na seção "Conversão Google Ads no link rastreável").
+Não implementado nesta entrega.
+

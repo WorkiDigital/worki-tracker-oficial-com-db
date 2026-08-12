@@ -331,6 +331,16 @@ async function createTrackingSchema() {
 
       CREATE INDEX IF NOT EXISTS idx_clientes_archived
         ON public.clientes(archived_at);
+
+      -- Alerta de saldo baixo na conta de anúncios Meta (WhatsApp pro admin
+      -- via api/cron/check-ads-balance.js). saldo_alerta_minimo NULL/0 =
+      -- alerta desativado para o cliente (não monitora por padrão).
+      -- saldo_alerta_disparado_em: controla o anti-spam (1 alerta por dia
+      -- enquanto o saldo continuar abaixo do limite); zera quando o saldo
+      -- volta a ficar acima do limite, permitindo alertar de novo se cair.
+      ALTER TABLE public.clientes
+      ADD COLUMN IF NOT EXISTS saldo_alerta_minimo NUMERIC(12,2),
+      ADD COLUMN IF NOT EXISTS saldo_alerta_disparado_em TIMESTAMP;
     `);
 
     // Integridade da atribuição: um clique que já virou lead (status='converted')

@@ -209,6 +209,7 @@ function abrirEditCliente(id, abaInicial = 'dados') {
     $('editCliPixel').value     = c.pixel_padrao || '';
     $('editCliToken').value     = c.token_meta || '';
     $('editCliAccountId').value = c.account_id || '';
+    $('editCliSaldoAlertaMinimo').value = c.saldo_alerta_minimo ?? '';
     $('editCliCapiPixel').value = c.capi_pixel_id || '';
     $('editCliCapiToken').value = ''; // nunca exibe o token (write-only)
     $('editCliGoogleAdsId').value    = c.google_ads_conversion_id || '';
@@ -240,6 +241,7 @@ async function salvarEdicaoCliente() {
         pixel_padrao:  $('editCliPixel').value.trim() || undefined,
         token_meta:    $('editCliToken').value.trim() || undefined,
         account_id:     $('editCliAccountId').value.trim() || undefined,
+        saldo_alerta_minimo: $('editCliSaldoAlertaMinimo').value.trim(),
         capi_pixel_id:  $('editCliCapiPixel').value.trim() || undefined,
         capi_token:     $('editCliCapiToken').value.trim() || undefined,
         google_ads_conversion_id:    $('editCliGoogleAdsId').value.trim() || undefined,

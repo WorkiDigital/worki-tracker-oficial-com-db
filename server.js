@@ -333,6 +333,7 @@ server.listen(PORT, () => {
     if (process.env.ENABLE_CRONS !== 'false') {
         iniciarCronZap();
         iniciarCronChatCleanup();
+        iniciarCronCheckAdsBalance();
     } else {
         console.log('[Crons] desativados via ENABLE_CRONS=false');
     }
@@ -349,6 +350,21 @@ async function iniciarCronZap() {
         console.log('[CronZap] iniciado - verifica agendamentos a cada 60s');
     } catch (e) {
         console.error('[CronZap] Falha ao iniciar:', e.message);
+    }
+}
+
+async function iniciarCronCheckAdsBalance() {
+    try {
+        const { runCheckAdsBalance } = await import('./api/cron/check-ads-balance.js');
+        const tick = async () => {
+            try { await runCheckAdsBalance(); }
+            catch (e) { console.error('[CheckAdsBalance]', e.message); }
+        };
+        setInterval(tick, 6 * 60 * 60_000);
+        tick(); // roda uma vez já na subida do servidor, não só depois de 6h
+        console.log('[CheckAdsBalance] iniciado - checa saldo das contas de anuncios a cada 6h');
+    } catch (e) {
+        console.error('[CheckAdsBalance] Falha ao iniciar:', e.message);
     }
 }
 

@@ -24,7 +24,7 @@ export default async function handler(req, res) {
       try {
           // Lista todos os clientes para montar o painel Admin (EXCLUI token_meta por segurança)
           // Clientes arquivados (soft-delete) não aparecem na listagem.
-          const result = await pool.query("SELECT id, nome, email_contato, pixel_padrao, account_id, permissoes, template_venda, template_qualificacao, capi_pixel_id, google_ads_conversion_id, google_ads_conversion_label, criado_em FROM clientes WHERE archived_at IS NULL ORDER BY id DESC");
+          const result = await pool.query("SELECT id, nome, email_contato, pixel_padrao, account_id, permissoes, template_venda, template_qualificacao, capi_pixel_id, google_ads_conversion_id, google_ads_conversion_label, saldo_alerta_minimo, criado_em FROM clientes WHERE archived_at IS NULL ORDER BY id DESC");
           return res.status(200).json(result.rows);
       } catch (err) {
           console.error(err);
@@ -77,7 +77,7 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'PATCH') {
-      const { id, nome, email_contato, pixel_padrao, token_meta, account_id, senha_acesso, permissoes, template_venda, template_qualificacao, capi_pixel_id, capi_token, google_ads_conversion_id, google_ads_conversion_label } = req.body;
+      const { id, nome, email_contato, pixel_padrao, token_meta, account_id, senha_acesso, permissoes, template_venda, template_qualificacao, capi_pixel_id, capi_token, google_ads_conversion_id, google_ads_conversion_label, saldo_alerta_minimo } = req.body;
       if (!id) return res.status(400).json({ error: 'ID do cliente é obrigatório' });
 
       try {
@@ -88,6 +88,24 @@ export default async function handler(req, res) {
           if (nome)         { fields.push(`nome=$${idx++}`);         values.push(nome); }
           if (email_contato){ fields.push(`email_contato=$${idx++}`);values.push(email_contato); }
           if (pixel_padrao) { fields.push(`pixel_padrao=$${idx++}`); values.push(pixel_padrao); }
+          // Alerta de saldo (api/cron/check-ads-balance.js). undefined = campo
+          // nem foi enviado, não mexe; string vazia = usuário limpou o campo
+          // de propósito, desativa o alerta (NULL); número = ativa/atualiza.
+          if (saldo_alerta_minimo !== undefined) {
+              const valorLimite = String(saldo_alerta_minimo).trim();
+              if (valorLimite === '') {
+                  fields.push(`saldo_alerta_minimo=$${idx++}`); values.push(null);
+              } else {
+                  const num = Number(valorLimite);
+                  if (!Number.isFinite(num) || num < 0) {
+                      return res.status(400).json({ error: 'Alerta de saldo baixo deve ser um número maior ou igual a zero.' });
+                  }
+                  fields.push(`saldo_alerta_minimo=$${idx++}`); values.push(num);
+                  // Novo limite configurado: zera o controle de anti-spam pra
+                  // não perder um alerta se o saldo já estiver abaixo do novo valor.
+                  fields.push(`saldo_alerta_disparado_em=$${idx++}`); values.push(null);
+              }
+          }
           if (token_meta)   {
               fields.push(`token_meta_enc=$${idx++}`);   values.push(encryptToken(token_meta));
               fields.push(`token_last4=$${idx++}`);     values.push(token_meta.slice(-6));
