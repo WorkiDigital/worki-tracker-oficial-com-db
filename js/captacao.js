@@ -796,6 +796,8 @@ async function abrirModalCampanha(id, duplicar = false) {
     const el = $(i); if (el) el.value = '';
   });
   const bgEl = $('capRedirectBgColor'); if (bgEl) bgEl.value = '#e5ddd5';
+  const noDelayEl = $('capNoDelayRedirect'); if (noDelayEl) noDelayEl.checked = false;
+  capOnNoDelayChange();
   const modeEl = $('capModo'); if (modeEl) modeEl.value = 'single';
   const origEl = $('capOrigem'); if (origEl) origEl.value = 'bio';
   $('capConversionAuto').checked = false;
@@ -833,6 +835,8 @@ async function abrirModalCampanha(id, duplicar = false) {
       $('capRedirectTitle').value = c.redirect_title || '';
       $('capRedirectSubtitle').value = c.redirect_subtitle || '';
       $('capRedirectBgColor').value = c.redirect_bg_color || '#e5ddd5';
+      $('capNoDelayRedirect').checked = c.no_delay_redirect === true;
+      capOnNoDelayChange();
       _capDestinos = (c.destinations || []).map(d => {
         const copia = { ...d };
         if (duplicar) delete copia.id;
@@ -896,6 +900,17 @@ function capAutoResizeMensagem() {
   const altura = Math.min(220, Math.max(48, input.scrollHeight));
   input.style.height = `${altura}px`;
   input.style.overflowY = input.scrollHeight > 220 ? 'auto' : 'hidden';
+}
+
+// "Link sem delay" (capNoDelayRedirect): sem a página HTML intermediária,
+// título/subtítulo/cor de fundo não têm efeito — desabilita visualmente pra
+// deixar isso claro, sem apagar valores já digitados (voltam se desmarcar).
+function capOnNoDelayChange() {
+  const ativo = $('capNoDelayRedirect')?.checked === true;
+  const area = $('capRedirectPersonalizacao');
+  if (!area) return;
+  area.style.opacity = ativo ? '.45' : '';
+  area.style.pointerEvents = ativo ? 'none' : '';
 }
 
 function capToggleModo() {
@@ -1128,6 +1143,7 @@ async function salvarCampanha() {
     redirect_title:    $('capRedirectTitle')?.value.trim()    || null,
     redirect_subtitle: $('capRedirectSubtitle')?.value.trim() || null,
     redirect_bg_color: $('capRedirectBgColor')?.value.trim()  || null,
+    no_delay_redirect: $('capNoDelayRedirect')?.checked === true,
     destinations:    _capDestinos,
     journey_stages:  _capJornadaEtapas.map((stage, position) => ({ ...stage, position })),
   });

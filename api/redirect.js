@@ -426,12 +426,22 @@ export default async function handler(req, res) {
     });
     const mensagem = inserirTokenNaMensagem(baseMsg, encodeToken(trackingId));
 
-    // 5. Página intermediária com Pixel (PageView no navegador) + redireciona.
-    // Se houver pixel CAPI Web, serve a página com Pixel e delay curto para o
-    // PageView disparar (dedup via event_id com o CAPI server). Sem pixel,
-    // mantém o redirect rápido (delay mínimo).
+    // 5. Redireciona pro WhatsApp.
+    // "Link Sem Delay" (campaign.no_delay_redirect): 302 direto, sem página
+    // HTML intermediária — mesmo comportamento do Tintim (clicou, já abre o
+    // WhatsApp). O PageView de Pixel/Google Ads Conversion do NAVEGADOR não
+    // dispara nesse modo (não há página pra rodar o script); o CAPI Web
+    // server-side acima (enviarCapiWebPageView) já rodou antes desta resposta
+    // e continua registrando a visita no backend normalmente. Sem essa
+    // configuração (padrão, default false), mantém a página com Pixel/delay
+    // de sempre — nenhum link existente muda de comportamento.
     const numero = (destino.whatsapp_number || '').replace(/\D/g, '');
     const waUrl = `https://api.whatsapp.com/send/?phone=${numero}&text=${encodeURIComponent(mensagem)}&type=phone_number&app_absent=0`;
+
+    if (campaign.no_delay_redirect) {
+      res.writeHead(302, { Location: waUrl, 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' });
+      return res.end();
+    }
 
     res.writeHead(200, {
       'Content-Type': 'text/html; charset=utf-8',

@@ -1977,3 +1977,46 @@ que **uma configuração ÚNICA e global** (não por cliente/campanha).
 > (mesma razão de Relatórios Automáticos ter migrado de env fixa para seletor: menos deploy, mais
 > autonomia do admin pra trocar o destino sem mexer em código/infra).
 
+## ⚡ Link Sem Delay (redirect HTTP puro, igual ao Tintim) — 2026-08-12
+
+O redirecionador `/r/<slug>` sempre passava por uma página HTML intermediária antes de abrir o
+WhatsApp (300ms sem Pixel, 1.4s com Pixel — tempo pro Pixel/gtag do navegador disparar antes de
+sair da página). Usuário queria um modo "clicou, já abre" — igual ao comportamento do Tintim —
+mesmo sabendo que isso significa abrir mão do PageView/Pixel client-side nesse clique.
+
+### Como funciona
+- Coluna nova `tracking_campaigns.no_delay_redirect BOOLEAN DEFAULT false` (migração lazy em
+  `api/_tracking-schema.js`, como sempre — `ADD COLUMN IF NOT EXISTS`). Default `false` preserva o
+  comportamento de todos os links já existentes.
+- `api/redirect.js`: quando `campaign.no_delay_redirect === true`, responde **`302 Location:
+  waUrl`** direto — sem chamar `htmlPagePixel()`, sem servir HTML nenhum. Único IF novo, logo antes
+  do `res.writeHead(200, ...)` que monta a página normal.
+- **O que continua funcionando nesse modo:** registro do clique em `tracking_clicks` (UTMs, IP,
+  geo, `ad_id`/`adset_id`/etc.), o token invisível na mensagem, a atribuição do lead quando ele
+  responder no WhatsApp, e o **CAPI Web PageView server-side** (`enviarCapiWebPageView`, que já
+  roda antes da resposta HTTP de qualquer forma — não depende de HTML/JS no navegador).
+- **O que NÃO dispara nesse modo:** o Pixel do Meta e a conversão do Google Ads **do navegador**
+  (`fbq('track','PageView')`/`gtag(...)`) — eles só existem dentro da página HTML que deixa de ser
+  servida. Avisado explicitamente no texto do toggle no painel, não é um bug/limitação escondida.
+
+### UI (`index.html` + `js/captacao.js`)
+Checkbox **"Link sem delay"** dentro da seção "Página de redirecionamento" (modal de link, aba
+Configuração) — mesmo padrão visual de `cap-conversion-toggle` já usado pra "Disparar conversão
+automaticamente". Ao marcar, os campos de título/subtítulo/cor de fundo (que só fazem sentido na
+página HTML) ficam visualmente desabilitados (`capOnNoDelayChange()`, opacidade + `pointer-events:
+none` no `#capRedirectPersonalizacao`) — sem apagar o que já estava digitado, caso o usuário
+desmarque de novo depois.
+
+### Backend (`api/tracking-campaigns.js`)
+`no_delay_redirect` incluído no `INSERT` (criação de link) e na allow-list de campos do `UPDATE`
+(edição) — mesmo padrão dos outros campos de `redirect_*`. `SELECT *`/`c.*` já usados no `GET`
+trazem a coluna nova automaticamente, sem precisar listar campo por campo lá.
+
+### Por que não reaproveitar o mecanismo do `wapptrack.js`
+`js/wapptrack.js` (script de site externo) já é "sem delay real" — o clique chama
+`/api/site-whatsapp-click` via JS e abre o WhatsApp na hora, sem nenhuma página intermediária.
+Mas isso é um mecanismo **client-side via script**, não uma URL estática pronta pra colar num
+`href`. O pedido aqui era especificamente sobre o link `/r/<slug>` (usado em anúncios, bio, etc.,
+onde não há como rodar JS antes do clique) — por isso a solução é no próprio redirecionador
+server-side, não uma adaptação do `wapptrack.js`.
+

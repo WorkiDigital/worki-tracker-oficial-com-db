@@ -301,6 +301,15 @@ async function createTrackingSchema() {
       ADD COLUMN IF NOT EXISTS redirect_subtitle VARCHAR(200),
       ADD COLUMN IF NOT EXISTS redirect_bg_color VARCHAR(20);
 
+      -- "Link Sem Delay": quando true, o redirect.js responde 302 direto pro
+      -- WhatsApp (sem a pagina HTML intermediaria com Pixel/gtag). Mais rapido
+      -- (igual ao Tintim), mas o PageView de Pixel/Google Ads Conversion desse
+      -- clique NAO dispara — so o registro do clique no banco (rastreamento de
+      -- quem virou lead continua funcionando normalmente). Default false
+      -- preserva o comportamento atual em todos os links ja existentes.
+      ALTER TABLE public.tracking_campaigns
+      ADD COLUMN IF NOT EXISTS no_delay_redirect BOOLEAN DEFAULT false;
+
       -- Vincula o clique nascido do script de site ao visitor_id do PageView,
       -- permitindo correlacionar PageView → clique → lead na jornada.
       ALTER TABLE public.tracking_clicks
