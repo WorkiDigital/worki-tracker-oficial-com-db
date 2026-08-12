@@ -8,17 +8,37 @@ import { getPool } from '../_db.js';
 import { fetchMeta } from '../_meta-client.js';
 import { decryptToken } from '../_crypto.js';
 
-// Destino fixo do admin (não por cliente — decisão do usuário: um único
-// número/grupo recebe todos os alertas de saldo de todos os clientes).
-// Preencher no .env do EasyPanel; sem eles, o cron não envia nada (mas
-// continua rodando/logando, sem quebrar o resto do servidor).
-const ALERTA_INSTANCE = process.env.ALERTA_SALDO_INSTANCE;
-const ALERTA_DESTINO  = process.env.ALERTA_SALDO_DESTINO; // número (5511...) ou JID de grupo (...@g.us)
-
 function formatEvolutionNumber(jid) {
   const value = String(jid || '').trim();
   if (value.endsWith('@g.us')) return value;
   return value.replace(/@s\.whatsapp\.net$/i, '').replace(/\D/g, '');
+}
+
+// Destino fixo do admin (não por cliente — decisão do usuário: um único
+// número/grupo recebe todos os alertas de saldo de todos os clientes).
+// Configurável pelo painel (aba Configurações → Alerta de Saldo), salvo em
+// configuracoes_sistema via api/alerta-saldo-config.js. Fallback nas env
+// vars ALERTA_SALDO_INSTANCE/ALERTA_SALDO_DESTINO por retrocompatibilidade
+// (primeira versão desta feature, antes do seletor no painel existir).
+async function getDestinoAlerta(pool) {
+  try {
+    const { rows } = await pool.query(
+      `SELECT chave, valor FROM configuracoes_sistema
+       WHERE chave IN ('alerta_saldo_instance','alerta_saldo_destino_jid')`
+    );
+    const map = {};
+    rows.forEach(r => { map[r.chave] = r.valor; });
+    if (map.alerta_saldo_instance && map.alerta_saldo_destino_jid) {
+      return { instance: map.alerta_saldo_instance, destino: map.alerta_saldo_destino_jid };
+    }
+  } catch (e) {
+    console.warn('[CheckAdsBalance] Falha ao ler configuracoes_sistema:', e.message);
+  }
+  // Fallback: env vars antigas (compatibilidade com quem já tinha configurado assim).
+  if (process.env.ALERTA_SALDO_INSTANCE && process.env.ALERTA_SALDO_DESTINO) {
+    return { instance: process.env.ALERTA_SALDO_INSTANCE, destino: process.env.ALERTA_SALDO_DESTINO };
+  }
+  return null;
 }
 
 function formatMoeda(valorMinorUnit, currency) {
@@ -40,11 +60,23 @@ export async function runCheckAdsBalance() {
     ADD COLUMN IF NOT EXISTS saldo_alerta_minimo NUMERIC(12,2),
     ADD COLUMN IF NOT EXISTS saldo_alerta_disparado_em TIMESTAMP
   `).catch(() => {});
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS public.configuracoes_sistema (
+      id SERIAL PRIMARY KEY,
+      chave VARCHAR(100) UNIQUE NOT NULL,
+      valor TEXT NOT NULL,
+      criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `).catch(() => {});
 
-  if (!ALERTA_INSTANCE || !ALERTA_DESTINO) {
-    console.warn('[CheckAdsBalance] ALERTA_SALDO_INSTANCE/ALERTA_SALDO_DESTINO não configurados — pulando checagem.');
+  const destino = await getDestinoAlerta(pool);
+  if (!destino) {
+    console.warn('[CheckAdsBalance] Nenhum destino configurado (painel: Configurações → Alerta de Saldo) — pulando checagem.');
     return;
   }
+  const ALERTA_INSTANCE = destino.instance;
+  const ALERTA_DESTINO  = destino.destino;
 
   const EVO_URL = process.env.EVOLUTION_API_URL;
   const EVO_KEY = process.env.EVOLUTION_GLOBAL_KEY;

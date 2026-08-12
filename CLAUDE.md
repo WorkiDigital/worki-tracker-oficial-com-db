@@ -1939,16 +1939,6 @@ centavos) confirmado via teste real contra a Graph API durante a investigação 
   abaixo de "ID da Conta de Anúncios".
 - `js/admin.js`: `abrirEditCliente`/`salvarEdicaoCliente` leem/escrevem o campo novo.
 
-### Variáveis de ambiente necessárias (configurar no EasyPanel)
-```
-ALERTA_SALDO_INSTANCE=<nome da instância WhatsApp já conectada que vai enviar os alertas>
-ALERTA_SALDO_DESTINO=<número (5511...) ou JID de grupo (...@g.us) que vai receber>
-```
-Reaproveita `EVOLUTION_API_URL`/`EVOLUTION_GLOBAL_KEY` já existentes — não precisa de credencial
-nova. **Sem essas 2 variáveis, o cron roda e loga um aviso, mas não envia nada** (não quebra o
-servidor) — confirmado em teste local. Instância e destino ficaram como env var em vez de campo no
-painel de propósito: é uma decisão operacional única da agência (não varia por cliente).
-
 ### Anti-spam
 Um alerta por cliente a cada 24h enquanto o saldo continuar abaixo do limite (mesmo rodando o cron
 a cada 6h). Quando o saldo volta a ficar acima do limite, `saldo_alerta_disparado_em` é zerado —
@@ -1958,4 +1948,32 @@ permite alertar de novo se cair abaixo outra vez no futuro (não é um "alertou 
 Só a Meta Ads — Google Ads não tem um campo equivalente de saldo simples exposto sem OAuth2/
 developer token (mesma limitação já documentada na seção "Conversão Google Ads no link rastreável").
 Não implementado nesta entrega.
+
+### Destino do alerta configurável pelo painel (evolução — substitui as env vars)
+A primeira versão usava `ALERTA_SALDO_INSTANCE`/`ALERTA_SALDO_DESTINO` fixas no `.env`. Substituído
+por um seletor na aba **Configurações** (`aba-ajustes`, admin-only, junto do White-label) — mesmo
+padrão de Instância → Grupo/Contato já usado no modal de Relatórios Automáticos (`zapModal*`), só
+que **uma configuração ÚNICA e global** (não por cliente/campanha).
+
+- `api/alerta-saldo-config.js` (novo) — `GET`/`PATCH`, admin-only. Guarda 4 chaves na tabela
+  genérica `configuracoes_sistema` (chave/valor, já usada pelo white-label em
+  `api/config-update.js`): `alerta_saldo_instance`, `alerta_saldo_tipo` (`grupo`/`contato`),
+  `alerta_saldo_destino_jid`, `alerta_saldo_destino_nome` (só para exibição). Reaproveitar essa
+  tabela evitou criar uma nova só para 4 valores — diferente de `zap_destinos`, que é por cliente e
+  tem volume que justifica tabela própria.
+- `api/cron/check-ads-balance.js`: `getDestinoAlerta(pool)` lê essas 4 chaves; se não encontrar
+  (nunca configurado pelo painel), cai no **fallback das env vars antigas**
+  (`ALERTA_SALDO_INSTANCE`/`ALERTA_SALDO_DESTINO`) por retrocompatibilidade — quem já tinha
+  configurado via `.env` continua funcionando sem precisar reconfigurar pelo painel.
+- `index.html`: seção "Alerta de Saldo de Anúncios" na aba Configurações (`#alertaSaldoCard`,
+  visível só pra admin, mesmo `if (user.is_admin)` que revela o `#whiteLabelCard`). Funções
+  `alertaSaldoOnTipoChange`/`alertaSaldoOnInstanciaChange`/`salvarAlertaSaldoConfig` espelham as
+  `zapOnTipoChange`/`zapModalOnInstanciaChange`/`salvarZapDestino` já existentes, reaproveitando
+  `_popularGruposSelect()` (função global) para não duplicar a lógica de listar grupos da Evolution.
+  Carregado ao entrar na aba `ajustes` (`carregarAlertaSaldoConfig()`, chamada em `mudarAba`).
+
+> As env vars antigas continuam funcionando como fallback — não é obrigatório reconfigurar pelo
+> painel se já estava funcionando via `.env`, mas o painel é a forma recomendada daqui pra frente
+> (mesma razão de Relatórios Automáticos ter migrado de env fixa para seletor: menos deploy, mais
+> autonomia do admin pra trocar o destino sem mexer em código/infra).
 

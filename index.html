@@ -610,8 +610,8 @@
 
             <div class="input-group">
                 <label>Exemplo de botão do WhatsApp</label>
-                <textarea id="capScriptBotaoExemplo" readonly rows="3" style="width:100%;font-family:monospace;font-size:12px;resize:vertical;"></textarea>
-                <p style="font-size:11px;color:var(--muted);margin-top:6px;">O script intercepta o clique nesse botão e abre o WhatsApp com a mensagem do link. Para uma mensagem diferente por botão, use o atributo <code>data-wapp-message</code>. Se o botão tiver ícone, marque o texto com <code>data-wapptrack-label</code> para o texto configurado acima trocar só o texto, preservando o ícone.</p>
+                <textarea id="capScriptBotaoExemplo" readonly rows="2" style="width:100%;font-family:monospace;font-size:12px;resize:vertical;"></textarea>
+                <p style="font-size:11px;color:var(--muted);margin-top:6px;">Copie e cole este link direto no seu site. Ele redireciona o visitante para o WhatsApp de forma instantânea, garantindo o rastreio da origem sem depender de carregamento de scripts adicionais.</p>
             </div>
 
             <div class="input-group">
@@ -2088,6 +2088,61 @@
 
                     </div>
                 </div>
+
+                <!-- Alerta de Saldo de Anúncios (Admin Only) -->
+                <div id="alertaSaldoCard" style="display:none;margin-top:24px;">
+                    <div style="margin-bottom:20px;">
+                        <div style="font-size:15px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:8px;">
+                            <i data-lucide="bell-ring" style="width:16px;color:var(--blue);"></i>
+                            Alerta de Saldo de Anúncios
+                        </div>
+                        <p style="font-size:13px;color:var(--muted);">Escolha para onde vai o aviso de WhatsApp quando o saldo de uma conta de anúncios Meta ficar baixo. O limite de cada cliente é configurado no modal Editar Cliente (aba Meta Ads).</p>
+                    </div>
+
+                    <div class="card" style="padding:24px;max-width:520px;">
+                        <div class="input-group">
+                            <label>Instância WhatsApp <span style="color:#ef4444;">*</span></label>
+                            <select id="alertaSaldoInstancia" class="form-control" style="width:100%;" onchange="alertaSaldoOnInstanciaChange()">
+                                <option value="">Carregando instâncias...</option>
+                            </select>
+                        </div>
+
+                        <div style="margin:16px 0 12px;">
+                            <div style="display:flex;gap:0;border:1px solid var(--border);border-radius:6px;overflow:hidden;">
+                                <label id="alertaSaldoTipoGrupoLabel" style="flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:6px 10px;cursor:pointer;font-size:12px;font-weight:600;background:var(--blue);color:#fff;transition:all .15s;">
+                                    <input type="radio" name="alertaSaldoTipo" value="grupo" checked onchange="alertaSaldoOnTipoChange()" style="display:none;">
+                                    <i data-lucide="users" style="width:12px;"></i> Grupo
+                                </label>
+                                <label id="alertaSaldoTipoContatoLabel" style="flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:6px 10px;cursor:pointer;font-size:12px;font-weight:600;background:transparent;color:var(--muted);transition:all .15s;">
+                                    <input type="radio" name="alertaSaldoTipo" value="contato" onchange="alertaSaldoOnTipoChange()" style="display:none;">
+                                    <i data-lucide="user" style="width:12px;"></i> Contato Direto
+                                </label>
+                            </div>
+                        </div>
+
+                        <div id="alertaSaldoGrupoArea" class="input-group">
+                            <label style="display:flex;align-items:center;gap:4px;">Grupo WhatsApp <span style="color:#ef4444;">*</span>
+                                <button type="button" onclick="delete _alertaSaldoGruposCache[$('alertaSaldoInstancia')?.value];alertaSaldoOnInstanciaChange();" title="Atualizar lista de grupos" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:0 2px;line-height:1;margin-left:2px;">↻</button>
+                            </label>
+                            <select id="alertaSaldoGrupoSelect" class="form-control" style="width:100%;opacity:.5;" disabled>
+                                <option value="">— Selecione a instância primeiro —</option>
+                            </select>
+                        </div>
+
+                        <div id="alertaSaldoContatoArea" class="input-group" style="display:none;">
+                            <label>Número (com DDI) <span style="color:#ef4444;">*</span></label>
+                            <input type="tel" id="alertaSaldoContatoInput" class="form-control" placeholder="Ex: 5511999999999" style="width:100%;">
+                        </div>
+
+                        <div style="display:flex;gap:12px;align-items:center;padding-top:6px;border-top:1px solid var(--border);margin-top:6px;">
+                            <button class="btn btn-primary" onclick="salvarAlertaSaldoConfig()" style="padding:10px 22px;font-size:13px;border-radius:10px;gap:6px;">
+                                <i data-lucide="save" style="width:14px;"></i> Salvar Destino do Alerta
+                            </button>
+                            <span id="alertaSaldoSalvoMsg" style="font-size:12px;color:#10b981;font-weight:600;display:none;">✓ Salvo!</span>
+                        </div>
+                        <p id="alertaSaldoAtual" style="font-size:11px;color:var(--muted);margin:12px 0 0;"></p>
+                    </div>
+                </div>
             </div>
         </div><!-- /aba-ajustes -->
 
@@ -3068,6 +3123,7 @@ async function init() {
                 $('cfgProjetoNome').value = brandName;
                 $('cfgProjetoLogo').value = cfg.projectLogo || '';
             }
+            if ($('alertaSaldoCard')) $('alertaSaldoCard').style.display = 'block';
         } else {
             // Aplicar permissões do cliente — ocultar abas sem acesso
             const p = user.permissoes || {};
@@ -5719,6 +5775,7 @@ function mudarAba(aba) {
     if (aba === 'whatsapp')       { carregarListaWa(); }
     if (aba === 'zaprelatorios')  { carregarZapRelatorios(); }
     if (aba === 'logs')           { carregarLogs(); }
+    if (aba === 'ajustes')        { carregarAlertaSaldoConfig(); }
     // Fecha sidebar mobile ao trocar de aba
     $('sidebar').classList.remove('mobile-open');
     $('sidebarOverlay').classList.remove('open');
@@ -6563,6 +6620,166 @@ async function salvarWhiteLabel() {
         toast('Marca atualizada com sucesso!', 'success');
         $('cfgWhiteLabelSalvo').style.display = 'inline';
         setTimeout(() => { window.location.reload(); }, 1500);
+    } catch(e) {
+        toast(e.message, 'error');
+    }
+}
+
+// ── Alerta de Saldo de Anúncios (Configurações → destino global do WhatsApp) ──
+// Mesmo padrão de seleção Instância/Grupo/Contato já usado no modal de
+// Relatórios Automáticos (zapModal*), mas para uma config ÚNICA e global
+// (não por cliente) — salva em configuracoes_sistema via api/alerta-saldo-config.js.
+const _alertaSaldoGruposCache = {};
+
+async function carregarAlertaSaldoConfig() {
+    if (!$('alertaSaldoInstancia')) return;
+    await Promise.all([_alertaSaldoCarregarInstancias(), _alertaSaldoCarregarAtual()]);
+}
+
+async function _alertaSaldoCarregarInstancias() {
+    const sel = $('alertaSaldoInstancia');
+    if (!sel) return;
+    sel.innerHTML = '<option value="">Carregando instâncias...</option>';
+    sel.disabled = true;
+    try {
+        const r = await authFetch('/api/evo-manager?action=list');
+        if (!r.ok) throw new Error('Falha');
+        const data = await r.json();
+        const instancias = Array.isArray(data) ? data : [];
+        const abertas = instancias.filter(i => i.state === 'open');
+        if (abertas.length === 0) {
+            sel.innerHTML = '<option value="">Nenhuma instância conectada</option>';
+        } else {
+            sel.innerHTML = '<option value="">— Selecione a instância —</option>' +
+                abertas.map(i => {
+                    const label = i.cliente_nome ? `${i.cliente_nome} (${i.displayName})` : i.displayName;
+                    return `<option value="${esc(i.fullName)}">${esc(label)}</option>`;
+                }).join('');
+        }
+    } catch {
+        sel.innerHTML = '<option value="">Erro ao carregar instâncias</option>';
+    } finally {
+        sel.disabled = false;
+    }
+}
+
+async function _alertaSaldoCarregarAtual() {
+    try {
+        const r = await authFetch('/api/alerta-saldo-config');
+        const data = await r.json();
+        if (!r.ok || data.error) return;
+
+        const tipo = data.tipo === 'contato' ? 'contato' : 'grupo';
+        document.querySelectorAll('input[name="alertaSaldoTipo"]').forEach(el => { el.checked = el.value === tipo; });
+        alertaSaldoOnTipoChange();
+
+        if (data.instance) {
+            const selInst = $('alertaSaldoInstancia');
+            // Só aplica se a instância salva ainda estiver na lista carregada.
+            if (selInst && [...selInst.options].some(o => o.value === data.instance)) {
+                selInst.value = data.instance;
+                if (tipo === 'grupo') await alertaSaldoOnInstanciaChange();
+            }
+        }
+        if (tipo === 'grupo' && data.jid) {
+            const gs = $('alertaSaldoGrupoSelect');
+            if (gs) {
+                if (![...gs.options].some(o => o.value === data.jid)) {
+                    const opt = document.createElement('option');
+                    opt.value = data.jid; opt.textContent = data.nome || data.jid;
+                    gs.appendChild(opt);
+                }
+                gs.value = data.jid;
+            }
+        } else if (tipo === 'contato' && data.jid) {
+            const ci = $('alertaSaldoContatoInput');
+            if (ci) ci.value = data.jid;
+        }
+
+        const atual = $('alertaSaldoAtual');
+        if (atual) {
+            atual.textContent = data.instance
+                ? `Destino atual: ${data.nome || data.jid} (instância ${data.instance})`
+                : 'Nenhum destino configurado ainda.';
+        }
+    } catch (_) { /* silencioso — página continua usável para configurar do zero */ }
+}
+
+function alertaSaldoOnTipoChange() {
+    const tipo = document.querySelector('input[name="alertaSaldoTipo"]:checked')?.value;
+    const isGrupo = tipo === 'grupo';
+    $('alertaSaldoGrupoArea').style.display   = isGrupo ? '' : 'none';
+    $('alertaSaldoContatoArea').style.display = isGrupo ? 'none' : '';
+    const lGrupo   = $('alertaSaldoTipoGrupoLabel');
+    const lContato = $('alertaSaldoTipoContatoLabel');
+    if (lGrupo)   { lGrupo.style.background   = isGrupo ? 'var(--blue)' : 'transparent'; lGrupo.style.color   = isGrupo ? '#fff' : 'var(--muted)'; }
+    if (lContato) { lContato.style.background = isGrupo ? 'transparent' : 'var(--blue)'; lContato.style.color = isGrupo ? 'var(--muted)' : '#fff'; }
+    if (isGrupo) alertaSaldoOnInstanciaChange();
+}
+
+async function alertaSaldoOnInstanciaChange() {
+    const instanceName = $('alertaSaldoInstancia')?.value;
+    const grupoSel = $('alertaSaldoGrupoSelect');
+    if (!grupoSel) return;
+    if (!instanceName) {
+        grupoSel.innerHTML = '<option value="">— Selecione a instância primeiro —</option>';
+        grupoSel.disabled = true; grupoSel.style.opacity = '.5';
+        return;
+    }
+    const tipo = document.querySelector('input[name="alertaSaldoTipo"]:checked')?.value;
+    if (tipo !== 'grupo') return;
+
+    const cached = _alertaSaldoGruposCache[instanceName];
+    if (cached && Date.now() - cached.ts < 5 * 60 * 1000) {
+        _popularGruposSelect(grupoSel, cached.grupos);
+        return;
+    }
+
+    grupoSel.innerHTML = '<option value="">Carregando grupos...</option>';
+    grupoSel.disabled = true; grupoSel.style.opacity = '.5';
+    try {
+        const r = await authFetch(`/api/evo-groups?instanceName=${encodeURIComponent(instanceName)}`);
+        const data = await r.json();
+        if (!r.ok || data.error) throw new Error(data.error || 'Erro na Evolution API');
+        const grupos = Array.isArray(data) ? data : [];
+        _alertaSaldoGruposCache[instanceName] = { grupos, ts: Date.now() };
+        _popularGruposSelect(grupoSel, grupos);
+    } catch(e) {
+        grupoSel.innerHTML = `<option value="">Falha: ${esc(e.message)}</option>`;
+    } finally {
+        grupoSel.disabled = false; grupoSel.style.opacity = '';
+    }
+}
+
+async function salvarAlertaSaldoConfig() {
+    const instance = $('alertaSaldoInstancia')?.value;
+    const tipo = document.querySelector('input[name="alertaSaldoTipo"]:checked')?.value || 'grupo';
+    let jid, nome;
+    if (tipo === 'grupo') {
+        const gs = $('alertaSaldoGrupoSelect');
+        jid = gs?.value;
+        nome = gs?.selectedOptions?.[0]?.textContent || '';
+    } else {
+        jid = $('alertaSaldoContatoInput')?.value?.trim().replace(/\D/g, '');
+        nome = jid;
+    }
+
+    if (!instance) return toast('Selecione a instância WhatsApp', 'error');
+    if (!jid) return toast(tipo === 'grupo' ? 'Selecione o grupo' : 'Informe o número de contato', 'error');
+
+    try {
+        const r = await authFetch('/api/alerta-saldo-config', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ instance, tipo, jid, nome })
+        });
+        const data = await r.json();
+        if (!r.ok || data.error) throw new Error(data.error || 'Falha ao salvar');
+
+        toast('Destino do alerta salvo!', 'success');
+        const msg = $('alertaSaldoSalvoMsg');
+        if (msg) { msg.style.display = 'inline'; setTimeout(() => { msg.style.display = 'none'; }, 2500); }
+        _alertaSaldoCarregarAtual();
     } catch(e) {
         toast(e.message, 'error');
     }
