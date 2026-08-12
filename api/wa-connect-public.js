@@ -13,8 +13,8 @@ import { ensureTrackingSchema } from './_tracking-schema.js';
 // QR individual — quando o QR expira, o próprio endpoint busca um novo na
 // Evolution, mesmo mecanismo que o painel usa via checkWaStatus). Vida do QR
 // em si continua curta (mesma estimativa de sempre), só não derruba o link.
-const WA_LINK_TTL_SECONDS = 15 * 60; // 15 minutos
-const WA_QR_TTL_SECONDS = 60;
+const WA_LINK_TTL_SECONDS = 24 * 60 * 60; // 24 horas
+const WA_QR_TTL_SECONDS = 10 * 60; // 10 minutos (600s)
 
 export default async function handler(req, res) {
   if (cors(req, res, ['GET'], { public: true })) return;
@@ -37,9 +37,8 @@ export default async function handler(req, res) {
     if (row.used_at) {
       return res.status(403).json({ error: 'Este link já foi utilizado. Peça um novo link.' });
     }
-    // expires_at é a validade do LINK inteiro (15min). Links criados antes
-    // desta mudança ficam com o expires_at antigo (~60s) até serem
-    // recriados — sem migração retroativa, apenas expiram mais rápido.
+    // expires_at é a validade do LINK inteiro (24h). Links antigos criados antes
+    // desta mudança entram pelo expires_at gravado no banco.
     if (new Date(row.expires_at) < new Date()) {
       return res.status(403).json({ error: 'Este link expirou. Peça um novo link.' });
     }
@@ -63,12 +62,16 @@ export default async function handler(req, res) {
             });
             if (evoRes.ok) {
               const data = await evoRes.json();
-              if (data?.base64) {
+              let newQr = data?.base64 || data?.qrcode?.base64 || data?.code;
+              if (newQr) {
+                if (!newQr.startsWith('data:image/')) {
+                  newQr = `data:image/png;base64,${newQr}`;
+                }
                 await pool.query(
                   'UPDATE wa_connect_links SET qr_base64 = $1, created_at = NOW() WHERE token = $2',
-                  [data.base64, token]
+                  [newQr, token]
                 );
-                row = { ...row, qr_base64: data.base64, created_at: new Date().toISOString() };
+                row = { ...row, qr_base64: newQr, created_at: new Date().toISOString() };
               }
             }
           } finally {

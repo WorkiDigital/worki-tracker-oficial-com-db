@@ -315,7 +315,7 @@ function waComClienteSelecionado(payload = {}) {
 // instance.state são consumidos). Ao chegar a 0, busca um QR novo sozinho
 // reaproveitando o polling que já existe (checkWaStatus), então mesmo se essa
 // estimativa estiver errada o usuário nunca fica travado com um QR morto.
-const WA_QR_TTL_SECONDS = 60;
+const WA_QR_TTL_SECONDS = 10 * 60; // 10 minutos (600s)
 let _waQrCountdownTimer = null;
 let _waQrCountdownRestante = WA_QR_TTL_SECONDS;
 

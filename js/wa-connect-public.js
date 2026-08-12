@@ -55,11 +55,14 @@
     }
 
     function atualizarQrSeMudou(data) {
-        if (data.qr_base64 === ultimoQrBase64) return;
-        ultimoQrBase64 = data.qr_base64;
-        const img = document.getElementById('wcQrImg');
-        if (img) img.src = data.qr_base64;
-        iniciarCountdown(data.qr_expires_at);
+        if (data.qr_base64 && data.qr_base64 !== ultimoQrBase64) {
+            ultimoQrBase64 = data.qr_base64;
+            const img = document.getElementById('wcQrImg');
+            if (img) img.src = data.qr_base64;
+        }
+        if (data.qr_expires_at) {
+            iniciarCountdown(data.qr_expires_at);
+        }
     }
 
     function iniciarCountdown(expiresAtIso) {

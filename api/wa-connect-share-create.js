@@ -13,7 +13,7 @@ import { rateLimit } from './_rate-limit.js';
 import { ensureTrackingSchema } from './_tracking-schema.js';
 import { randomUUID } from 'crypto';
 
-const WA_LINK_TTL_SECONDS = 15 * 60; // 15 minutos — mantido em sincronia com api/wa-connect-public.js
+const WA_LINK_TTL_SECONDS = 24 * 60 * 60; // 24 horas — mantido em sincronia com api/wa-connect-public.js
 
 export default async function handler(req, res) {
   if (cors(req, res, ['POST'])) return;
