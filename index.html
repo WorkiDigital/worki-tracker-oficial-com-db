@@ -897,6 +897,9 @@
             <i data-lucide="building" style="width:17px;flex-shrink:0;"></i><span>Gest&atilde;o de Clientes</span>
         </a>
         <a id="btn-ajustes" class="nav-item" onclick="mudarAba('ajustes')" style="display:none;">
+            <i data-lucide="palette" style="width:17px;flex-shrink:0;"></i><span>Marca</span>
+        </a>
+        <a id="btn-alertas" class="nav-item" onclick="mudarAba('alertas')" style="display:none;">
             <i data-lucide="bell-ring" style="width:17px;flex-shrink:0;"></i><span>Alerta de Saldo</span>
         </a>
         <a id="btn-logs" class="nav-item" onclick="mudarAba('logs')" style="display:none;">
@@ -2088,12 +2091,14 @@
 
                     </div>
                 </div>
+            </div>
+        </div><!-- /aba-ajustes -->
 
-                <!-- Separador: a partir daqui são configurações independentes da Marca/White-label -->
-                <hr style="border:none;border-top:1px solid var(--border);margin:32px 0;">
-
+        <!-- ABA: ALERTA DE SALDO -->
+        <div id="aba-alertas" class="aba-oculta">
+            <div class="content">
                 <!-- Alerta de Saldo de Anúncios (Admin Only) -->
-                <div id="alertaSaldoCard" style="display:none;">
+                <div id="alertaSaldoCard">
                     <div style="margin-bottom:20px;">
                         <div style="font-size:15px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:8px;">
                             <i data-lucide="bell-ring" style="width:16px;color:var(--blue);"></i>
@@ -2147,7 +2152,7 @@
                     </div>
                 </div>
             </div>
-        </div><!-- /aba-ajustes -->
+        </div><!-- /aba-alertas -->
 
         <!-- ABA: RELATÓRIOS -->
         <div id="aba-relatorios" class="aba-oculta">
@@ -3120,13 +3125,13 @@ async function init() {
         if (user.is_admin) {
             $('btn-agencia').style.display = 'flex';
             $('btn-ajustes').style.display = 'flex';
+            $('btn-alertas').style.display = 'flex';
             $('btn-logs').style.display = 'flex';
             if ($('whiteLabelCard')) {
                 $('whiteLabelCard').style.display = 'block';
                 $('cfgProjetoNome').value = brandName;
                 $('cfgProjetoLogo').value = cfg.projectLogo || '';
             }
-            if ($('alertaSaldoCard')) $('alertaSaldoCard').style.display = 'block';
         } else {
             // Aplicar permissões do cliente — ocultar abas sem acesso
             const p = user.permissoes || {};
@@ -5726,7 +5731,7 @@ document.addEventListener('keydown', e => {
 });
 
 // ── Abas ───────────────────────────────────────────────────────
-const ABAS = ['leads','conversas','funil','relatorios','anuncios','captacao','inteligente','clientes','integracoes','conta','config','ajustes','agencia','whatsapp','zaprelatorios','logs'];
+const ABAS = ['leads','conversas','funil','relatorios','anuncios','captacao','inteligente','clientes','integracoes','conta','config','ajustes','alertas','agencia','whatsapp','zaprelatorios','logs'];
 const TITULOS = {
     leads:          '<i data-lucide="users" style="color:var(--blue);"></i> Leads',
     conversas:      '<i data-lucide="messages-square" style="color:#25D366;"></i> Conversas',
@@ -5739,7 +5744,8 @@ const TITULOS = {
     integracoes:    '<i data-lucide="plug" style="color:var(--blue);"></i> Integra&ccedil;&otilde;es',
     conta:          '<i data-lucide="user-cog" style="color:var(--blue);"></i> Minha Conta',
     config:         '<i data-lucide="megaphone" style="color:var(--blue);"></i> Contas de Anúncio',
-    ajustes:        '<i data-lucide="bell-ring" style="color:var(--blue);"></i> Alerta de Saldo',
+    ajustes:        '<i data-lucide="palette" style="color:var(--blue);"></i> Marca',
+    alertas:        '<i data-lucide="bell-ring" style="color:var(--blue);"></i> Alerta de Saldo',
     agencia:        '<i data-lucide="building" style="color:var(--blue);"></i> Gestão de Clientes',
     whatsapp:       '<i data-lucide="smartphone" style="color:#25D366;"></i> Conexão WhatsApp',
     zaprelatorios:  '<i data-lucide="send" style="color:#25D366;"></i> Relatórios Automáticos',
@@ -5778,7 +5784,7 @@ function mudarAba(aba) {
     if (aba === 'whatsapp')       { carregarListaWa(); }
     if (aba === 'zaprelatorios')  { carregarZapRelatorios(); }
     if (aba === 'logs')           { carregarLogs(); }
-    if (aba === 'ajustes')        { carregarAlertaSaldoConfig(); }
+    if (aba === 'alertas')        { carregarAlertaSaldoConfig(); }
     // Fecha sidebar mobile ao trocar de aba
     $('sidebar').classList.remove('mobile-open');
     $('sidebarOverlay').classList.remove('open');

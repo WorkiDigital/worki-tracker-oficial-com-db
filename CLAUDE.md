@@ -1977,19 +1977,31 @@ que **uma configuração ÚNICA e global** (não por cliente/campanha).
 > (mesma razão de Relatórios Automáticos ter migrado de env fixa para seletor: menos deploy, mais
 > autonomia do admin pra trocar o destino sem mexer em código/infra).
 
-### Correção visual: separado da seção Marca/White-label
-`#alertaSaldoCard` já era uma `<div>` irmã de `#whiteLabelCard` no HTML (não filha) — mas sem
-nenhuma separação visual forte (só `margin-top`), parecia fazer parte do mesmo bloco "Personalização
-da Marca" ao renderizar. Adicionado um `<hr>` explícito entre as duas seções dentro da aba
-Configurações — mesma aba (só-admin), mas visualmente claro que são configurações independentes.
+### Evolução: de seção dentro de "Marca" para aba própria "Alerta de Saldo"
+Passou por 2 iterações antes de chegar no formato final:
+1. **Primeira tentativa**: `#alertaSaldoCard` como seção dentro de `aba-ajustes` (a aba "Marca"),
+   separada só por `margin-top` — sem indicação visual forte, parecia parte do White-label.
+2. **Segunda tentativa**: mesmo lugar, mas com `<hr>` explícito entre as duas seções, e o nome do
+   item de menu trocado de "Marca" pra "Alerta de Saldo" (mesma aba única).
+3. **Final (atual)**: usuário pediu pra reverter o nome do menu pra "Marca" (como sempre foi) e
+   criar uma **aba nova e independente**, só para o Alerta de Saldo — não mais compartilhando
+   espaço/nome com o White-label.
 
-### Item de menu renomeado: "Marca" → "Alerta de Saldo"
-A aba continua a mesma (`aba-ajustes`, mesmo conteúdo: White-label + Alerta de Saldo com o `<hr>`
-acima) — só o rótulo do menu lateral (`#btn-ajustes`) e o título mostrado no topo da página
-(`TITULOS.ajustes`, `index.html`) mudaram, de "Marca"/ícone `palette` pra "Alerta de Saldo"/ícone
-`bell-ring`. Decisão do usuário: o item de menu deve refletir o que ele mais usa/associa àquela
-tela, mesmo com o White-label continuando lá dentro (não removido, só não é mais o nome de destaque
-no menu).
+### Estrutura final
+- `aba-ajustes` voltou a ser só o White-label ("Marca", ícone `palette`, como sempre foi).
+- **Nova `aba-alertas`** (aba própria, admin-only): contém `#alertaSaldoCard` sozinho, sem `<hr>`
+  nem compartilhar espaço com nada — mesmo padrão de qualquer outra aba do sistema.
+- Novo item de menu **`#btn-alertas`** ("Alerta de Saldo", ícone `bell-ring`), logo depois de
+  `#btn-ajustes` ("Marca") na sidebar — os dois agora são itens de menu irmãos e independentes.
+- `TITULOS.alertas` adicionado (título mostrado no topo da página ao entrar na aba).
+- `ABAS` (array usado por `mudarAba()` para esconder/mostrar `aba-<nome>`/`btn-<nome>`) ganhou
+  `'alertas'`.
+- Visibilidade admin-only: `$('btn-alertas').style.display = 'flex'` no mesmo bloco `if
+  (user.is_admin)` que já revela `btn-agencia`/`btn-ajustes`/`btn-logs` — `#alertaSaldoCard` não
+  precisa mais de controle de visibilidade próprio (removido o `style="display:none"` + JS que
+  setava `display:block`), porque a aba inteira só é alcançável por quem vê o botão do menu.
+- `carregarAlertaSaldoConfig()` (carrega instância/destino salvos ao entrar na aba) migrou do hook
+  `if (aba === 'ajustes')` pra `if (aba === 'alertas')` em `mudarAba()`.
 
 ## ⚡ Link Direto sem delay (`?direct=1`) — mesmo slug, dois comportamentos (2026-08-12)
 
