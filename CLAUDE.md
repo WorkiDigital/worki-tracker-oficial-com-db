@@ -2003,6 +2003,20 @@ Passou por 2 iterações antes de chegar no formato final:
 - `carregarAlertaSaldoConfig()` (carrega instância/destino salvos ao entrar na aba) migrou do hook
   `if (aba === 'ajustes')` pra `if (aba === 'alertas')` em `mudarAba()`.
 
+### Preview da mensagem (dados de exemplo, sem chamar API)
+Pedido do usuário: ver como a mensagem chega, igual ao preview já existente em Relatórios
+Automáticos (`zapPreviewArea`/`zapAtualizarPreview`). Diferença importante: o preview do Relatório
+busca dados **reais** da Meta Ads porque a mensagem lá é um **template editável** com variáveis
+(`{gasto}`, `{leads}`, etc.). O Alerta de Saldo **não tem template** — a mensagem é fixa, montada em
+`api/cron/check-ads-balance.js` (linha ~140, `const msg = ...`), sem nenhum campo de edição no
+painel. Por isso o preview aqui é só **visual estático com dados de exemplo** ("Exemplo Ltda", "R$
+42,50"/"R$ 50,00") — mesmo bloco de layout do Zap (fundo `rgba(37,211,102,.04)`, ícone `eye`, texto
+em `<pre>`), mas sem nenhuma função JS de atualização dinâmica, porque não há nada pra recalcular.
+Se a mensagem do backend mudar de formato no futuro, **o texto do preview precisa ser atualizado
+manualmente em `index.html`** — não há sincronização automática entre os dois (são strings
+duplicadas propositalmente, dado que o preview roda no navegador e a mensagem real no cron
+server-side).
+
 ## ⚡ Link Direto sem delay (`?direct=1`) — mesmo slug, dois comportamentos (2026-08-12)
 
 O redirecionador `/r/<slug>` sempre passava por uma página HTML intermediária antes de abrir o

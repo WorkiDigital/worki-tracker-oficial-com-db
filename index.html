@@ -2107,48 +2107,71 @@
                         <p style="font-size:13px;color:var(--muted);">Escolha para onde vai o aviso de WhatsApp quando o saldo de uma conta de anúncios Meta ficar baixo. O limite de cada cliente é configurado no modal Editar Cliente (aba Meta Ads).</p>
                     </div>
 
-                    <div class="card" style="padding:24px;max-width:520px;">
-                        <div class="input-group">
-                            <label>Instância WhatsApp <span style="color:#ef4444;">*</span></label>
-                            <select id="alertaSaldoInstancia" class="form-control" style="width:100%;" onchange="alertaSaldoOnInstanciaChange()">
-                                <option value="">Carregando instâncias...</option>
-                            </select>
-                        </div>
-
-                        <div style="margin:16px 0 12px;">
-                            <div style="display:flex;gap:0;border:1px solid var(--border);border-radius:6px;overflow:hidden;">
-                                <label id="alertaSaldoTipoGrupoLabel" style="flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:6px 10px;cursor:pointer;font-size:12px;font-weight:600;background:var(--blue);color:#fff;transition:all .15s;">
-                                    <input type="radio" name="alertaSaldoTipo" value="grupo" checked onchange="alertaSaldoOnTipoChange()" style="display:none;">
-                                    <i data-lucide="users" style="width:12px;"></i> Grupo
-                                </label>
-                                <label id="alertaSaldoTipoContatoLabel" style="flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:6px 10px;cursor:pointer;font-size:12px;font-weight:600;background:transparent;color:var(--muted);transition:all .15s;">
-                                    <input type="radio" name="alertaSaldoTipo" value="contato" onchange="alertaSaldoOnTipoChange()" style="display:none;">
-                                    <i data-lucide="user" style="width:12px;"></i> Contato Direto
-                                </label>
+                    <div style="display:grid;grid-template-columns:minmax(0,520px) minmax(260px,340px);gap:20px;align-items:start;">
+                        <div class="card" style="padding:24px;">
+                            <div class="input-group">
+                                <label>Instância WhatsApp <span style="color:#ef4444;">*</span></label>
+                                <select id="alertaSaldoInstancia" class="form-control" style="width:100%;" onchange="alertaSaldoOnInstanciaChange()">
+                                    <option value="">Carregando instâncias...</option>
+                                </select>
                             </div>
+
+                            <div style="margin:16px 0 12px;">
+                                <div style="display:flex;gap:0;border:1px solid var(--border);border-radius:6px;overflow:hidden;">
+                                    <label id="alertaSaldoTipoGrupoLabel" style="flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:6px 10px;cursor:pointer;font-size:12px;font-weight:600;background:var(--blue);color:#fff;transition:all .15s;">
+                                        <input type="radio" name="alertaSaldoTipo" value="grupo" checked onchange="alertaSaldoOnTipoChange()" style="display:none;">
+                                        <i data-lucide="users" style="width:12px;"></i> Grupo
+                                    </label>
+                                    <label id="alertaSaldoTipoContatoLabel" style="flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:6px 10px;cursor:pointer;font-size:12px;font-weight:600;background:transparent;color:var(--muted);transition:all .15s;">
+                                        <input type="radio" name="alertaSaldoTipo" value="contato" onchange="alertaSaldoOnTipoChange()" style="display:none;">
+                                        <i data-lucide="user" style="width:12px;"></i> Contato Direto
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div id="alertaSaldoGrupoArea" class="input-group">
+                                <label style="display:flex;align-items:center;gap:4px;">Grupo WhatsApp <span style="color:#ef4444;">*</span>
+                                    <button type="button" onclick="delete _alertaSaldoGruposCache[$('alertaSaldoInstancia')?.value];alertaSaldoOnInstanciaChange();" title="Atualizar lista de grupos" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:0 2px;line-height:1;margin-left:2px;">↻</button>
+                                </label>
+                                <select id="alertaSaldoGrupoSelect" class="form-control" style="width:100%;opacity:.5;" disabled>
+                                    <option value="">— Selecione a instância primeiro —</option>
+                                </select>
+                            </div>
+
+                            <div id="alertaSaldoContatoArea" class="input-group" style="display:none;">
+                                <label>Número (com DDI) <span style="color:#ef4444;">*</span></label>
+                                <input type="tel" id="alertaSaldoContatoInput" class="form-control" placeholder="Ex: 5511999999999" style="width:100%;">
+                            </div>
+
+                            <div style="display:flex;gap:12px;align-items:center;padding-top:6px;border-top:1px solid var(--border);margin-top:6px;">
+                                <button class="btn btn-primary" onclick="salvarAlertaSaldoConfig()" style="padding:10px 22px;font-size:13px;border-radius:10px;gap:6px;">
+                                    <i data-lucide="save" style="width:14px;"></i> Salvar Destino do Alerta
+                                </button>
+                                <span id="alertaSaldoSalvoMsg" style="font-size:12px;color:#10b981;font-weight:600;display:none;">✓ Salvo!</span>
+                            </div>
+                            <p id="alertaSaldoAtual" style="font-size:11px;color:var(--muted);margin:12px 0 0;"></p>
                         </div>
 
-                        <div id="alertaSaldoGrupoArea" class="input-group">
-                            <label style="display:flex;align-items:center;gap:4px;">Grupo WhatsApp <span style="color:#ef4444;">*</span>
-                                <button type="button" onclick="delete _alertaSaldoGruposCache[$('alertaSaldoInstancia')?.value];alertaSaldoOnInstanciaChange();" title="Atualizar lista de grupos" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:0 2px;line-height:1;margin-left:2px;">↻</button>
-                            </label>
-                            <select id="alertaSaldoGrupoSelect" class="form-control" style="width:100%;opacity:.5;" disabled>
-                                <option value="">— Selecione a instância primeiro —</option>
-                            </select>
-                        </div>
+                        <!-- Preview da mensagem (mesmo padrão visual do preview de Relatórios
+                             Automáticos) — dados de EXEMPLO fixos, já que a mensagem do alerta é
+                             montada no backend (api/cron/check-ads-balance.js) sem template
+                             editável; o preview só mostra o FORMATO/visual de como ela chega. -->
+                        <div style="min-width:0;position:sticky;top:8px;">
+                            <div style="border:1px solid var(--border);border-radius:8px;padding:12px 14px;background:rgba(37,211,102,.04);">
+                                <div style="font-size:10px;font-weight:700;color:#25D366;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;display:flex;align-items:center;gap:5px;">
+                                    <i data-lucide="eye" style="width:11px;"></i> Preview (exemplo)
+                                </div>
+                                <pre style="margin:0;font-size:12px;line-height:1.7;color:var(--text,#f0f4ff);white-space:pre-wrap;word-break:break-word;font-family:inherit;">⚠️ *Saldo baixo de anúncios*
 
-                        <div id="alertaSaldoContatoArea" class="input-group" style="display:none;">
-                            <label>Número (com DDI) <span style="color:#ef4444;">*</span></label>
-                            <input type="tel" id="alertaSaldoContatoInput" class="form-control" placeholder="Ex: 5511999999999" style="width:100%;">
-                        </div>
+*Cliente:* Exemplo Ltda
+*Conta:* Exemplo Ltda - Conta Principal
+*Saldo atual:* R$ 42,50
+*Limite configurado:* R$ 50,00
 
-                        <div style="display:flex;gap:12px;align-items:center;padding-top:6px;border-top:1px solid var(--border);margin-top:6px;">
-                            <button class="btn btn-primary" onclick="salvarAlertaSaldoConfig()" style="padding:10px 22px;font-size:13px;border-radius:10px;gap:6px;">
-                                <i data-lucide="save" style="width:14px;"></i> Salvar Destino do Alerta
-                            </button>
-                            <span id="alertaSaldoSalvoMsg" style="font-size:12px;color:#10b981;font-weight:600;display:none;">✓ Salvo!</span>
+🤖 _Alerta automático — Adlytics Pro._</pre>
+                            </div>
+                            <p style="font-size:11px;color:var(--muted);margin:8px 0 0;">Mensagem enviada automaticamente pelo sistema — os valores acima são exemplos. Na mensagem real, "Cliente" e "Conta" vêm do cliente cadastrado, e "Saldo atual"/"Limite configurado" vêm do saldo real da Meta e do valor definido em Editar Cliente → Meta Ads.</p>
                         </div>
-                        <p id="alertaSaldoAtual" style="font-size:11px;color:var(--muted);margin:12px 0 0;"></p>
                     </div>
                 </div>
             </div>
