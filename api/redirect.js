@@ -427,18 +427,20 @@ export default async function handler(req, res) {
     const mensagem = inserirTokenNaMensagem(baseMsg, encodeToken(trackingId));
 
     // 5. Redireciona pro WhatsApp.
-    // "Link Sem Delay" (campaign.no_delay_redirect): 302 direto, sem página
-    // HTML intermediária — mesmo comportamento do Tintim (clicou, já abre o
-    // WhatsApp). O PageView de Pixel/Google Ads Conversion do NAVEGADOR não
-    // dispara nesse modo (não há página pra rodar o script); o CAPI Web
-    // server-side acima (enviarCapiWebPageView) já rodou antes desta resposta
-    // e continua registrando a visita no backend normalmente. Sem essa
-    // configuração (padrão, default false), mantém a página com Pixel/delay
-    // de sempre — nenhum link existente muda de comportamento.
+    // ?direct=1 (gerado no campo "Link de Rastreamento Direto" da aba "Script
+    // para site", js/captacao.js → capAtualizarScriptSnippet): 302 direto,
+    // sem página HTML intermediária — mesmo comportamento do Tintim (clicou,
+    // já abre o WhatsApp). É por PARÂMETRO da URL, não por configuração salva
+    // na campanha — o mesmo slug serve o link normal (Meta/Google Ads, com
+    // telinha) e o link direto (botões de site) ao mesmo tempo, sem o usuário
+    // precisar marcar nada. O PageView de Pixel/Google Ads Conversion do
+    // NAVEGADOR não dispara nesse modo (não há página pra rodar o script); o
+    // CAPI Web server-side acima (enviarCapiWebPageView) já rodou antes desta
+    // resposta e continua registrando a visita no backend normalmente.
     const numero = (destino.whatsapp_number || '').replace(/\D/g, '');
     const waUrl = `https://api.whatsapp.com/send/?phone=${numero}&text=${encodeURIComponent(mensagem)}&type=phone_number&app_absent=0`;
 
-    if (campaign.no_delay_redirect) {
+    if (req.query.direct === '1') {
       res.writeHead(302, { Location: waUrl, 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' });
       return res.end();
     }

@@ -301,12 +301,13 @@ async function createTrackingSchema() {
       ADD COLUMN IF NOT EXISTS redirect_subtitle VARCHAR(200),
       ADD COLUMN IF NOT EXISTS redirect_bg_color VARCHAR(20);
 
-      -- "Link Sem Delay": quando true, o redirect.js responde 302 direto pro
-      -- WhatsApp (sem a pagina HTML intermediaria com Pixel/gtag). Mais rapido
-      -- (igual ao Tintim), mas o PageView de Pixel/Google Ads Conversion desse
-      -- clique NAO dispara — so o registro do clique no banco (rastreamento de
-      -- quem virou lead continua funcionando normalmente). Default false
-      -- preserva o comportamento atual em todos os links ja existentes.
+      -- no_delay_redirect: coluna de uma primeira tentativa (checkbox por
+      -- campanha) que foi substituida por um parametro na URL (?direct=1,
+      -- ver api/redirect.js) — o mesmo slug agora atende o link normal
+      -- (Meta/Google Ads, com telinha) e o link direto (script de site,
+      -- sem telinha) ao mesmo tempo, sem precisar de configuracao salva.
+      -- Coluna mantida no schema por seguranca (nao removida em producao),
+      -- mas nao e mais lida por nenhum endpoint.
       ALTER TABLE public.tracking_campaigns
       ADD COLUMN IF NOT EXISTS no_delay_redirect BOOLEAN DEFAULT false;
 

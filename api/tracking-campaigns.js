@@ -331,7 +331,6 @@ export default async function handler(req, res) {
               default_message, utm_source, utm_medium, utm_campaign, utm_content,
               conversion_event = 'lead', conversion_auto = false, allowed_domains = [],
               button_text, redirect_title, redirect_subtitle, redirect_bg_color,
-              no_delay_redirect = false,
               destinations = [], journey_stages = [] } = req.body;
       if (!name) return res.status(400).json({ error: 'name é obrigatório.' });
       if (!ORIGIN_TYPES.has(origin_type)) return res.status(400).json({ error: 'origin_type inválido.' });
@@ -352,9 +351,8 @@ export default async function handler(req, res) {
           `INSERT INTO tracking_campaigns
             (cliente_id, name, slug, origin_type, rotation_mode, default_message,
              utm_source, utm_medium, utm_campaign, utm_content, conversion_event, conversion_auto,
-             allowed_domains, button_text, redirect_title, redirect_subtitle, redirect_bg_color,
-             no_delay_redirect)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18) RETURNING *`,
+             allowed_domains, button_text, redirect_title, redirect_subtitle, redirect_bg_color)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17) RETURNING *`,
           [cliente_id, String(name).trim().slice(0, 255), slug, origin_type, rotation_mode,
            default_message || null, utm_source || null, utm_medium || null, utm_campaign || null,
            utm_content || null, conversion_event, conversion_auto === true,
@@ -362,8 +360,7 @@ export default async function handler(req, res) {
            String(button_text || '').trim().slice(0, 80) || null,
            String(redirect_title || '').trim().slice(0, 120) || null,
            String(redirect_subtitle || '').trim().slice(0, 200) || null,
-           String(redirect_bg_color || '').trim().slice(0, 20) || null,
-           no_delay_redirect === true]
+           String(redirect_bg_color || '').trim().slice(0, 20) || null]
         );
         const campaign = camp.rows[0];
         await sincronizarDestinos(client, campaign.id, cliente_id, destinations);
@@ -422,7 +419,7 @@ export default async function handler(req, res) {
         const bodyAtualizacao = { ...req.body };
         delete bodyAtualizacao.slug;
 
-        const campos = ['name','origin_type','rotation_mode','default_message','utm_source','utm_medium','utm_campaign','utm_content','enabled','conversion_event','conversion_auto','allowed_domains','button_text','redirect_title','redirect_subtitle','redirect_bg_color','no_delay_redirect'];
+        const campos = ['name','origin_type','rotation_mode','default_message','utm_source','utm_medium','utm_campaign','utm_content','enabled','conversion_event','conversion_auto','allowed_domains','button_text','redirect_title','redirect_subtitle','redirect_bg_color'];
         const sets = [], vals = []; let i = 1;
         for (const campo of campos) {
           if (campo in bodyAtualizacao) {
@@ -434,7 +431,6 @@ export default async function handler(req, res) {
             if (campo === 'redirect_title') valor = String(valor || '').trim().slice(0, 120) || null;
             if (campo === 'redirect_subtitle') valor = String(valor || '').trim().slice(0, 200) || null;
             if (campo === 'redirect_bg_color') valor = String(valor || '').trim().slice(0, 20) || null;
-            if (campo === 'no_delay_redirect') valor = valor === true;
             vals.push(valor);
           }
         }

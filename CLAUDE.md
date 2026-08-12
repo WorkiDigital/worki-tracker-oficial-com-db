@@ -1977,46 +1977,53 @@ que **uma configuração ÚNICA e global** (não por cliente/campanha).
 > (mesma razão de Relatórios Automáticos ter migrado de env fixa para seletor: menos deploy, mais
 > autonomia do admin pra trocar o destino sem mexer em código/infra).
 
-## ⚡ Link Sem Delay (redirect HTTP puro, igual ao Tintim) — 2026-08-12
+## ⚡ Link Direto sem delay (`?direct=1`) — mesmo slug, dois comportamentos (2026-08-12)
 
 O redirecionador `/r/<slug>` sempre passava por uma página HTML intermediária antes de abrir o
-WhatsApp (300ms sem Pixel, 1.4s com Pixel — tempo pro Pixel/gtag do navegador disparar antes de
-sair da página). Usuário queria um modo "clicou, já abre" — igual ao comportamento do Tintim —
-mesmo sabendo que isso significa abrir mão do PageView/Pixel client-side nesse clique.
+WhatsApp (300ms sem Pixel, 1.4s com Pixel — tempo pro Pixel/gtag do navegador disparar). Usuário
+queria um modo "clicou, já abre" pro link colado em botões de site — igual ao Tintim — mas **sem
+perder** a telinha com Pixel no link usado em anúncios (Meta/Google Ads), que é o mesmo slug.
 
-### Como funciona
-- Coluna nova `tracking_campaigns.no_delay_redirect BOOLEAN DEFAULT false` (migração lazy em
-  `api/_tracking-schema.js`, como sempre — `ADD COLUMN IF NOT EXISTS`). Default `false` preserva o
-  comportamento de todos os links já existentes.
-- `api/redirect.js`: quando `campaign.no_delay_redirect === true`, responde **`302 Location:
-  waUrl`** direto — sem chamar `htmlPagePixel()`, sem servir HTML nenhum. Único IF novo, logo antes
-  do `res.writeHead(200, ...)` que monta a página normal.
-- **O que continua funcionando nesse modo:** registro do clique em `tracking_clicks` (UTMs, IP,
+### Tentativa 1 (revertida): checkbox por campanha
+Primeira versão adicionou um checkbox "Link sem delay" + coluna `tracking_campaigns.no_delay_redirect`
+— mas isso forçava a escolha **pro slug inteiro**: ativar sem delay pra usar num botão de site também
+tirava a telinha do mesmo link quando colado no Meta Ads. Usuário esclareceu que os dois usos
+(anúncio com telinha + botão de site sem telinha) precisavam conviver **no mesmo link/campanha ao
+mesmo tempo** — impossível com uma flag salva na campanha. Checkbox e coluna removidos do fluxo (a
+coluna `no_delay_redirect` ficou no schema por segurança — não é apagada em produção — mas não é mais
+lida por nenhum endpoint).
+
+### Solução final: parâmetro na URL, não configuração salva
+- `api/redirect.js`: quando a URL tem **`?direct=1`**, responde **`302 Location: waUrl`** direto —
+  sem chamar `htmlPagePixel()`, sem servir HTML nenhum. `if (req.query.direct === '1')`, logo antes
+  do `res.writeHead(200, ...)` que monta a página normal. Sem o parâmetro (comportamento padrão),
+  segue exatamente como sempre foi.
+- `js/captacao.js` (`capAtualizarScriptSnippet`, aba "Script para site" do modal de link): o campo
+  **"Link de Rastreamento Direto (URL)"** gera `${origin}/r/${slug}?direct=1` — sempre, sem
+  configuração nenhuma pra ativar. O link que você copia pra colar no Meta/Google Ads continua sendo
+  `${origin}/r/${slug}` (sem o parâmetro, com telinha) — **mesmo slug, duas URLs, dois
+  comportamentos, coexistindo**.
+- **O que continua funcionando com `?direct=1`:** registro do clique em `tracking_clicks` (UTMs, IP,
   geo, `ad_id`/`adset_id`/etc.), o token invisível na mensagem, a atribuição do lead quando ele
   responder no WhatsApp, e o **CAPI Web PageView server-side** (`enviarCapiWebPageView`, que já
   roda antes da resposta HTTP de qualquer forma — não depende de HTML/JS no navegador).
-- **O que NÃO dispara nesse modo:** o Pixel do Meta e a conversão do Google Ads **do navegador**
+- **O que NÃO dispara com `?direct=1`:** o Pixel do Meta e a conversão do Google Ads **do navegador**
   (`fbq('track','PageView')`/`gtag(...)`) — eles só existem dentro da página HTML que deixa de ser
-  servida. Avisado explicitamente no texto do toggle no painel, não é um bug/limitação escondida.
-
-### UI (`index.html` + `js/captacao.js`)
-Checkbox **"Link sem delay"** dentro da seção "Página de redirecionamento" (modal de link, aba
-Configuração) — mesmo padrão visual de `cap-conversion-toggle` já usado pra "Disparar conversão
-automaticamente". Ao marcar, os campos de título/subtítulo/cor de fundo (que só fazem sentido na
-página HTML) ficam visualmente desabilitados (`capOnNoDelayChange()`, opacidade + `pointer-events:
-none` no `#capRedirectPersonalizacao`) — sem apagar o que já estava digitado, caso o usuário
-desmarque de novo depois.
-
-### Backend (`api/tracking-campaigns.js`)
-`no_delay_redirect` incluído no `INSERT` (criação de link) e na allow-list de campos do `UPDATE`
-(edição) — mesmo padrão dos outros campos de `redirect_*`. `SELECT *`/`c.*` já usados no `GET`
-trazem a coluna nova automaticamente, sem precisar listar campo por campo lá.
+  servida. Trade-off aceito: o link usado em botão de site normalmente não tem Pixel configurado de
+  qualquer forma (quem quer Pixel completo em site usa o `wapptrack.js`, ver abaixo).
 
 ### Por que não reaproveitar o mecanismo do `wapptrack.js`
 `js/wapptrack.js` (script de site externo) já é "sem delay real" — o clique chama
-`/api/site-whatsapp-click` via JS e abre o WhatsApp na hora, sem nenhuma página intermediária.
-Mas isso é um mecanismo **client-side via script**, não uma URL estática pronta pra colar num
-`href`. O pedido aqui era especificamente sobre o link `/r/<slug>` (usado em anúncios, bio, etc.,
-onde não há como rodar JS antes do clique) — por isso a solução é no próprio redirecionador
-server-side, não uma adaptação do `wapptrack.js`.
+`/api/site-whatsapp-click` via JS e abre o WhatsApp na hora, sem nenhuma página intermediária, e
+com Pixel completo (client-side, dispara antes do redirect). Mas isso é um mecanismo **client-side
+via script**, não uma URL estática pronta pra colar num `href` puro. O `?direct=1` cobre o caso mais
+simples (link estático em botão sem instalar script nenhum) — quem precisa de Pixel/PageView
+completo em site usa o `wapptrack.js`, que já resolve isso melhor.
+
+### Nomenclatura da aba (revertida)
+A aba do modal de link foi renomeada de "Script para site" pra "Link Sem Delay / Script" e depois
+"Link de Rastreamento Sem Delay" durante a iteração — **revertida pro nome original "Script para
+site"** a pedido do usuário. O nome da aba não precisa descrever o comportamento sem delay porque
+isso já é automático no campo "Link de Rastreamento Direto" dentro dela, sem exigir nenhuma ação
+extra do usuário.
 
