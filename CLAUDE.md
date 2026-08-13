@@ -2067,3 +2067,35 @@ site"** a pedido do usuário. O nome da aba não precisa descrever o comportamen
 isso já é automático no campo "Link de Rastreamento Direto" dentro dela, sem exigir nenhuma ação
 extra do usuário.
 
+## 📈 Email/telefone hasheados no CAPI Web (Lead) — já implementado no caminho real (2026-08-13)
+
+Investigando o Gerenciador de Eventos (PageView com `fbc` 43.75%/`fbp` 33.33%), o usuário perguntou
+se dava pra melhorar o Event Match Quality enviando email/telefone hasheados quando o clique vira
+lead. **Proposta de fabricar `fbp` sintético foi recusada explicitamente** ("Nao, deixar so quando o
+cookie existir de verdade") — `fbp` só pode ser enviado quando o cookie `_fbp` real existir; nunca
+inventar um valor. O usuário aprovou a segunda opção: enviar email/telefone hasheados no evento Lead.
+
+**Investigação encontrou que isso já está implementado — não no `api/_capi-web.js`, que é código
+LEGADO** (`enviarCapiWebLead` não é chamado em lugar nenhum do projeto — só `enviarCapiWebPageView`
+segue em uso, disparado pelo `redirect.js`/`site-pageview.js` no momento do clique). **A conversão de
+lead de verdade passa pelo módulo central `api/_capi.js` (`enviarConversao`)**, chamado pelo
+`webhook-evo.js` quando o clique vira lead (bloco `if (atr?.fbc && conversionAuto)`) e por
+`leads-update.js` na Venda/Qualificação manual. Esse módulo **já envia**, para os dois canais
+(`business_messaging` e `website`), incondicional a qualquer chamador:
+- `ph` (telefone hasheado) — sempre que `lead.telefone` existir (praticamente 100% dos leads).
+- `em` (email hasheado) — sempre que `lead.email` existir.
+
+**Por que o email pode aparecer baixo/ausente na prática:** no fluxo automático do webhook (clique
+vira lead via WhatsApp), `lead.email` nunca é preenchido — não existe captura de email numa conversa
+de WhatsApp. `leads_tracking.email` só é preenchido manualmente pelo admin via `leads-update.js`
+(Venda/Qualificação, campo `email` do modal). Ou seja, o código já está correto e completo — a
+cobertura de email no Gerenciador de Eventos reflete quantos leads tiveram o campo preenchido
+manualmente, não uma lacuna de implementação. Nenhuma mudança de código foi necessária nesta
+investigação.
+
+> **`api/_capi-web.js` tem duas funções**: `enviarCapiWebPageView` (em uso, PageView do clique) e
+> `enviarCapiWebLead` (código morto, substituído por `_capi.js` na unificação documentada no próprio
+> cabeçalho do arquivo — nunca removido do repo, mas nenhuma chamada aponta pra ele). Se precisar
+> mexer no envio de Lead do canal web, editar `api/_capi.js` (bloco `else` / `channel === 'website'`
+> dentro de `enviarConversao`), não `_capi-web.js`.
+
