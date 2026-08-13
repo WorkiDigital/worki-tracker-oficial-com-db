@@ -47,6 +47,11 @@ export async function enviarCapiWebPageView(pool, { cliente_id, click, eventId }
   if (click.fbp) userData.fbp = click.fbp;
   if (click.ip_address) userData.client_ip_address = click.ip_address;
   if (click.user_agent) userData.client_user_agent = click.user_agent;
+  // ct/st (cidade/estado): a Meta exige hasheado SHA-256 (advanced matching),
+  // igual em/ph — nunca enviar cru. Vêm do geo-IP resolvido no clique
+  // (api/_geoip.js), mesmo dado já gravado em tracking_clicks.geo_city/geo_region.
+  if (click.geo_city)   userData.ct = [hash(click.geo_city)];
+  if (click.geo_region) userData.st = [hash(click.geo_region)];
 
   const payload = {
     data: [{

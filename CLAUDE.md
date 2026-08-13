@@ -2099,3 +2099,48 @@ investigação.
 > mexer no envio de Lead do canal web, editar `api/_capi.js` (bloco `else` / `channel === 'website'`
 > dentro de `enviarConversao`), não `_capi-web.js`.
 
+## 🌎 ct/st (cidade/estado) faltando no CAPI Web PageView — bug real corrigido (2026-08-13)
+
+Usuário perguntou por que o Gerenciador de Eventos não mostrava cidade/estado no PageView do link
+rastreável, já que o geo-IP do clique já é resolvido (ver seção "Geo-IP do clique" acima). Achado:
+**bug real, não limitação de dado ausente.**
+
+### Causa raiz
+`api/redirect.js` já calcula `geo = await lookupGeoIp(req, ip)` e já grava `geo.city`/`geo.region`
+em `tracking_clicks` — mas o objeto `click` passado para `enviarCapiWebPageView()` (que dispara o
+evento `PageView` à Meta) só incluía `fbc, fbp, ip_address, user_agent, referrer,
+event_source_url` — `geo_city`/`geo_region` nunca chegavam até lá. Dentro de
+`api/_capi-web.js`, `enviarCapiWebPageView` nunca lia nem montava `ct`/`st` no `user_data` — o
+campo simplesmente não existia no payload enviado à Meta, para nenhum clique, desde sempre.
+
+### Correção
+- `api/redirect.js`: o `click` passado para `enviarCapiWebPageView` agora inclui
+  `geo_city: geo?.city || null, geo_region: geo?.region || null`.
+- `api/_capi-web.js` (`enviarCapiWebPageView`): adiciona `ct`/`st` ao `userData`, **hasheados
+  SHA-256** via a função `hash()` local do arquivo — igual ao Lead automático em `api/_capi.js`
+  (`userData.ct = [hash(lead.cidade)]` / `userData.st = [hash(lead.estado)]`). A Meta exige `ct`/`st`
+  como parâmetros de advanced matching **hasheados**, nunca crus (diferente de `fbc`/`fbp`, que vão
+  crus por design). Mesmo padrão de normalização já usado no projeto (`toLowerCase().trim()`, sem
+  remover acentos/espaços internos — não alterado aqui para não mudar o hash de eventos já em
+  produção no Lead automático; qualquer normalização mais agressiva teria que ser decidida e aplicada
+  nos dois arquivos ao mesmo tempo, fora do escopo desta correção).
+- Usa `geo.region` (nome completo, ex: "São Paulo"), não `geo.region_code` (sigla, ex: "SP") — mesmo
+  campo que `api/leads-update.js` já usa para preencher `lead.estado` (`click.geo_region`), mantendo
+  consistência com o resto do projeto.
+
+### Efeito esperado
+Só cliques **novos** após o deploy passam a enviar `ct`/`st` — sem correção retroativa (mesma
+limitação já documentada pra geo-IP em geral: "não há geo retroativo"). No Gerenciador de Eventos, os
+percentuais de cobertura de cidade/estado no PageView do link devem subir gradualmente conforme
+cliques novos acontecem, nunca de uma vez para eventos já enviados.
+
+### Nota sobre a pergunta "olha a documentação da Meta" (não concluída)
+O usuário pediu pra consultar a documentação oficial da Meta antes de decidir como fazer — não houve
+tempo de buscar a doc externamente (sem acesso a internet neste ambiente); a implementação seguiu o
+padrão já validado e em produção no próprio código do projeto (`_capi.js`, que já hasheia `ct`/`st`
+do mesmo jeito para o evento Lead) em vez de uma fonte externa. Se precisar validar contra a doc
+oficial da Meta (developers.facebook.com/docs/marketing-api/conversions-api/parameters), os campos
+`ct`/`st` em Advanced Matching pedem string lowercase hasheada SHA-256 — o formato aqui já bate com
+isso; o único ponto não coberto é remoção de acentos/pontuação antes do hash, deliberadamente não
+alterado por já ser o padrão usado nos eventos já em produção.
+

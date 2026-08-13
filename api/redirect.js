@@ -401,7 +401,8 @@ export default async function handler(req, res) {
         cliente_id: campaign.cliente_id,
         eventId: pageviewEventId,
         click: { fbc, fbp, ip_address: ip, user_agent: userAgent,
-                 referrer, event_source_url: eventSourceUrl },
+                 referrer, event_source_url: eventSourceUrl,
+                 geo_city: geo?.city || null, geo_region: geo?.region || null },
       });
       try {
         await pool.query('UPDATE tracking_clicks SET capi_web_status=$1 WHERE tracking_id=$2',
