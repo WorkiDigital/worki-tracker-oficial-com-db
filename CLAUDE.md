@@ -2144,3 +2144,32 @@ oficial da Meta (developers.facebook.com/docs/marketing-api/conversions-api/para
 isso; o único ponto não coberto é remoção de acentos/pontuação antes do hash, deliberadamente não
 alterado por já ser o padrão usado nos eventos já em produção.
 
+## 🐛 Instância do Alerta de Saldo não vinha pré-selecionada ao reabrir a aba (2026-08-13)
+
+O destino era salvo corretamente ("Destino atual: 5585992494552 (instância
+cliente_8_adm_workidigital)" aparecia certo), mas o `<select>` "Instância WhatsApp" voltava pro
+placeholder "— Selecione a instância —" toda vez que a aba **Alerta de Saldo** era reaberta —
+parecia "não salvou", mas o dado estava certo no banco.
+
+### Causa raiz
+`carregarAlertaSaldoConfig()` disparava `_alertaSaldoCarregarInstancias()` (popula o `<select>` via
+`/api/evo-manager?action=list`) e `_alertaSaldoCarregarAtual()` (busca `/api/alerta-saldo-config` e
+tenta pré-selecionar `selInst.value = data.instance`) em **paralelo** (`Promise.all`).
+`_alertaSaldoCarregarAtual` só aplica a seleção se a `<option>` já existir na lista
+(`[...selInst.options].some(o => o.value === data.instance)`) — proteção correta contra selecionar
+um valor que não existe. Só que, por serem duas chamadas de rede independentes, `_alertaSaldoCarregarAtual`
+podia terminar **antes** de `_alertaSaldoCarregarInstancias` (o select ainda em "Carregando
+instâncias..."), a checagem falhava por corrida, e a seleção era descartada silenciosamente — sem
+erro nenhum, só o campo voltando ao padrão. Mesma classe de bug de corrida entre duas chamadas
+paralelas que dependem uma da outra.
+
+### Correção
+`carregarAlertaSaldoConfig()` (`index.html`) trocou `Promise.all([...])` por `await` sequencial:
+primeiro `_alertaSaldoCarregarInstancias()` completa (select populado), só depois
+`_alertaSaldoCarregarAtual()` roda e consegue pré-selecionar o valor salvo com segurança.
+
+> **Padrão a observar:** sempre que uma função de "aplicar valor salvo" depende de outra ter
+> terminado de popular as opções de um `<select>`, rodar as duas em `Promise.all` é uma corrida
+> latente — só funciona por sorte de timing de rede. Usar `await` sequencial (ou aguardar
+> explicitamente a promise da população antes de aplicar o valor) nesses casos.
+

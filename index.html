@@ -6665,7 +6665,13 @@ const _alertaSaldoGruposCache = {};
 
 async function carregarAlertaSaldoConfig() {
     if (!$('alertaSaldoInstancia')) return;
-    await Promise.all([_alertaSaldoCarregarInstancias(), _alertaSaldoCarregarAtual()]);
+    // Sequencial (não Promise.all): _alertaSaldoCarregarAtual precisa que o
+    // <select> de instâncias já esteja populado pra conseguir pré-selecionar o
+    // valor salvo (ela só aplica se a option já existir na lista). Rodando em
+    // paralelo, a checagem podia falhar por corrida e o select voltava pro
+    // placeholder mesmo com o destino salvo corretamente no banco.
+    await _alertaSaldoCarregarInstancias();
+    await _alertaSaldoCarregarAtual();
 }
 
 async function _alertaSaldoCarregarInstancias() {
