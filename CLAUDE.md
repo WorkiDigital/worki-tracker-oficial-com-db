@@ -2173,3 +2173,43 @@ primeiro `_alertaSaldoCarregarInstancias()` completa (select populado), só depo
 > latente — só funciona por sorte de timing de rede. Usar `await` sequencial (ou aguardar
 > explicitamente a promise da população antes de aplicar o valor) nesses casos.
 
+## 🐛 Monitor de Conversas: filtro de instância ficava preso no cliente anterior (2026-08-13)
+
+Print do usuário: dentro da aba Conversas, ao trocar de cliente admin (`selectClienteAdmin`) o
+dropdown "Instância" mostrava por um bom tempo as instâncias do cliente **anterior**
+(`Frigorifico-o-eron`) até finalmente atualizar para as do cliente novo — precisava de F5 pra
+corrigir. "Quando to em um filtro e mudo de pagina, demora um pouco para carregar os dados, olha a
+instancia que aparece o nome, é de outro cliente."
+
+### Causa raiz
+`chatMonitorInit()` (`js/chat-monitor.js`, chamada por `mudarAba('conversas')` toda vez que a aba é
+reaberta) tinha `chatLoadClientFilter()`/`chatLoadInstances()` presos dentro do guard
+`if (!chatState.initialized)` — pensado só pra impedir `chatBindEvents()` de duplicar listeners a
+cada reentrada na aba, mas **as duas cargas de dados foram presas no mesmo guard por engano**. Na
+prática, o `<select>` de instâncias só é populado **uma única vez por sessão de página** — em
+qualquer reentrada seguinte na aba, mesmo com o cliente admin diferente, a lista antiga permanece.
+
+`chatMonitorRefreshCliente()` (chamada por `trocarClienteAdmin()` em `index.html`) recarrega
+corretamente as instâncias — **mas só dispara se a aba Conversas já estiver visível no exato momento
+da troca** (`if (!$('aba-conversas')?.classList.contains('aba-oculta') ...)`). Se o cliente foi
+trocado enquanto o usuário estava em OUTRA aba, e ele volta pra Conversas depois, `chatMonitorInit()`
+é o único ponto que roda — e, pelo bug acima, não recarrega nada.
+
+### Correção
+`chatMonitorInit()` agora rastreia `chatState.lastClienteFiltro` (o cliente usado na última carga de
+instâncias). Em toda reentrada na aba (`else` do guard `initialized`), compara o cliente atual
+(`chatClienteFiltroAtual()`) com o último carregado — só recarrega `chatLoadInstances()` quando
+mudou, sem tocar em `chatBindEvents()` (que continua rodando só na primeira vez, evitando listener
+duplicado). `chatMonitorRefreshCliente()` e `chatMonitorRefresh()` (botão "Atualizar") também
+atualizam `chatState.lastClienteFiltro` nos seus próprios pontos de carga, pra não conflitar com essa
+checagem na próxima reentrada.
+
+> **Padrão a observar:** um guard `if (!initialized)` que protege "rodar só uma vez" (bind de
+> listeners) não deve também proteger "carregar dados que dependem de um filtro que pode mudar" —
+> são dois ciclos de vida diferentes. Empacotar os dois no mesmo guard trava os dados na primeira
+> carga da sessão inteira, não só na primeira renderização da aba.
+
+Bump de cache: `js/chat-monitor.js?v=20260813-clientswitch` no `index.html` (arquivo tem
+`Cache-Control: immutable` de 1 ano — sem bumpar o `?v=`, a correção não apareceria pra quem já tinha
+a versão antiga em cache, mesmo com o deploy em produção OK).
+

@@ -58,6 +58,21 @@ async function chatMonitorInit() {
         chatBindEvents();
         await chatLoadClientFilter();
         await chatLoadInstances();
+        chatState.lastClienteFiltro = chatClienteFiltroAtual();
+    } else {
+        // Reentrada na aba (troca de página e volta): chatBindEvents() não deve
+        // rodar de novo (duplicaria listeners), mas o cliente admin selecionado
+        // pode ter mudado enquanto a aba estava fora de tela — sem essa checagem
+        // o <select> de instâncias fica preso na lista do cliente anterior até
+        // um F5 (trocarClienteAdmin só recarrega na hora se a aba já estava
+        // visível no momento da troca; se a troca aconteceu em outra aba, essa
+        // reentrada é o único ponto que ainda pode perceber a mudança).
+        const clienteAtual = chatClienteFiltroAtual();
+        if (clienteAtual !== chatState.lastClienteFiltro) {
+            chatState.lastClienteFiltro = clienteAtual;
+            chatState.selected = null;
+            await chatLoadInstances();
+        }
     }
     await chatLoadConversations(false);
     chatStartPolling();
@@ -189,12 +204,14 @@ function chatStopPolling() {
 async function chatMonitorRefresh() {
     await chatLoadClientFilter();
     await chatLoadInstances();
+    chatState.lastClienteFiltro = chatClienteFiltroAtual();
     await chatLoadConversations(false);
 }
 
 async function chatMonitorRefreshCliente() {
     if (!chatState.initialized) return;
     chatState.selected = null;
+    chatState.lastClienteFiltro = chatClienteFiltroAtual();
     await chatLoadInstances();
     await chatLoadConversations(false);
 }
