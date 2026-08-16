@@ -2213,3 +2213,45 @@ Bump de cache: `js/chat-monitor.js?v=20260813-clientswitch` no `index.html` (arq
 `Cache-Control: immutable` de 1 ano — sem bumpar o `?v=`, a correção não apareceria pra quem já tinha
 a versão antiga em cache, mesmo com o deploy em produção OK).
 
+## 🐛 Filtros da aba Leads vazando por cima de outras abas no mobile (2026-08-14)
+
+Print do usuário: na aba **Conversas** (mobile), apareciam os filtros e o botão CSV da aba **Leads**
+("janaina", "7 dias", CSV) empilhados acima dos filtros de Conversas — como se as duas abas
+estivessem sobrepostas.
+
+### Causa raiz
+`mudarAba()` sempre controlou a visibilidade de `#leadsControls` (bloco de filtros Instância/Origem/
+Busca/Período/CSV, que fica na **topbar global**, fora de qualquer `aba-*`) via
+`style.display = aba === 'leads' ? 'flex' : 'none'`. No desktop isso sempre funcionou. No bloco
+`@media(max-width:768px)`, uma regra antiga tinha `#leadsControls { display:grid !important; }` —
+o `!important` **sempre vencia** o `style.display:none` que o JS setava para qualquer aba que não
+fosse Leads, então os filtros de Leads ficavam visíveis (em grid) em cima de QUALQUER outra aba no
+mobile, inclusive Conversas.
+
+### Por que só apareceu agora
+A regra `!important` provavelmente já existia há um tempo, mas só ficou visualmente óbvia quando
+testada especificamente na aba Conversas no mobile — nas demais abas talvez o vazamento fosse menos
+chamativo (menos filtros na aba Leads pra colidir, ou a ordem de leitura escondia o problema).
+
+### Correção
+Trocado o mecanismo de visibilidade de `style.display` direto para uma **classe** (`is-hidden`):
+- `mudarAba()`: `$('leadsControls').classList.toggle('is-hidden', aba !== 'leads')` em vez de
+  `style.display = ...`.
+- `index.html`: `#leadsControls` nasce com `class="is-hidden"` no HTML (sem `style="display:flex"`
+  inline).
+- `css/dashboard-base.css`: `#leadsControls { display:flex; ... }` (desktop) e
+  `#leadsControls { display:grid; ... }` (dentro do `@media(max-width:768px)`) definem o valor
+  "visível" por breakpoint; `#leadsControls.is-hidden { display:none; }` aparece **depois** de cada
+  um desses blocos, com especificidade maior (1 id + 1 classe vs. 1 id) — vence naturalmente **sem
+  nenhum `!important`**, porque a classe `.is-hidden` só existe quando a aba não é Leads.
+
+> **Padrão a seguir:** nunca usar `style.display` inline controlado por JS **e** `!important` no CSS
+> pro mesmo elemento — o `!important` sempre vai vencer o inline style em algum breakpoint,
+> revertendo a decisão do JS. Se um elemento precisa de um valor de `display` diferente por
+> breakpoint (`flex` no desktop, `grid` no mobile) E de show/hide controlado por JS, usar uma classe
+> de estado (`is-hidden`) para o show/hide e deixar o CSS (sem `!important`) decidir o valor de
+> `display` quando visível — a especificidade natural (classe > id sozinho) resolve sem gambiarra.
+
+Bump de cache: `dashboard.css?v=20260814-leadsctrlfix` (e o `@import` correspondente em
+`dashboard.css` pro `dashboard-base.css`) — os dois arquivos têm `Cache-Control: immutable` de 1 ano.
+

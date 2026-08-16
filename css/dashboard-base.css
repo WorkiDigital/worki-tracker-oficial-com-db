@@ -178,6 +178,12 @@ input[type="checkbox"] { position:relative; min-width:18px; min-height:18px; pad
 select.bare { background:transparent; border:none; color:var(--text); font-size:13px; outline:none; font-family:'Inter'; color-scheme:var(--scheme); cursor:pointer; }
 select.bare option { background:var(--card); }
 #filterControls { min-width:0; }
+/* #leadsControls: visível (flex no desktop, grid no mobile — ver bloco
+   @media abaixo) só quando NÃO tem .is-hidden. mudarAba() alterna essa
+   classe em vez de setar style.display direto, pra não competir em
+   especificidade com o valor de display que muda por breakpoint. */
+#leadsControls { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+#leadsControls.is-hidden { display:none; }
 #adminClienteFilter { min-width:190px; flex:0 0 auto; }
 #selectClienteAdmin { width:100%; min-width:145px; max-width:230px; overflow:hidden; text-overflow:ellipsis; }
 .btn { display:flex; align-items:center; gap:6px; padding:7px 14px; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; border:none; transition:all .2s ease; }
@@ -1063,11 +1069,20 @@ html.light .nav-item.active { box-shadow:inset 3px 0 0 var(--blue); background:r
        (Instância/Origem/Busca/Período/CSV cabem em 3 linhas em vez de até
        5). #filterControls é só o wrapper (1 filho só aqui: #leadsControls,
        já que #adminClienteFilter saiu para ficar ao lado do título) —
-       display:block evita um grid vazio de 2 colunas em volta de 1 item só. */
-    #filterControls { order:4; flex:1 1 100%; width:100%; min-width:0; display:block !important; }
+       display:block evita um grid vazio de 2 colunas em volta de 1 item só.
+
+       Visibilidade por aba: mudarAba() alterna a classe .is-hidden em
+       #leadsControls (não mais style.display direto) — .is-hidden sempre
+       vence porque é a última regra e tem a mesma especificidade (1 classe)
+       de #leadsControls.is-hidden abaixo, então nenhum !important é
+       necessário aqui. Um !important antigo nesta regra sobrepunha
+       display:none em QUALQUER aba, vazando os filtros de Leads por cima de
+       outras abas (ex: Conversas) no mobile — não repetir esse padrão. */
+    #filterControls { order:4; flex:1 1 100%; width:100%; min-width:0; }
     #leadsControls {
-        width:100%; min-width:0; display:grid !important; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:8px;
+        width:100%; min-width:0; display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:8px;
     }
+    #leadsControls.is-hidden { display:none; }
     /* min-width:0 é essencial: por padrão um grid/flex item não encolhe além do
        tamanho do próprio conteúdo (aqui, o texto da option selecionada do
        select), então mesmo com width:100% a célula estourava a coluna do grid

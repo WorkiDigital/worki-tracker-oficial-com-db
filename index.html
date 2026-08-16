@@ -12,7 +12,7 @@
     <script defer src="https://cdn.jsdelivr.net/npm/lucide@0.469.0/dist/umd/lucide.min.js"></script>
     <!-- Chart.js, html2canvas e jsPDF são carregados sob demanda via loadScript() (utils.js).
          Não incluir aqui — evita baixar ~500KB em toda sessão mesmo sem abrir Anúncios ou exportar PDF. -->
-    <link rel="stylesheet" href="css/dashboard.css?v=20260726-topbarlayout1">
+    <link rel="stylesheet" href="css/dashboard.css?v=20260814-leadsctrlfix">
     <link rel="stylesheet" href="css/splash.css?v=20260712-1">
     <link rel="stylesheet" href="css/funil.css?v=20260713-1">
     <link rel="stylesheet" href="css/onboarding.css?v=20260715-1">
@@ -958,8 +958,11 @@
             </button>
             <!-- Filtros da barra -->
             <div id="filterControls" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-                <!-- Controles exclusivos da aba Leads -->
-                <div id="leadsControls" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                <!-- Controles exclusivos da aba Leads. Sem display inline aqui de propósito:
+                     mudarAba() alterna a classe is-hidden; o valor de display quando visível
+                     (flex no desktop, grid no mobile) é decidido só pelo CSS (dashboard.css /
+                     dashboard-base.css), sem disputa de especificidade com JS. -->
+                <div id="leadsControls" class="is-hidden">
                 <!-- Instance filter -->
                 <div id="instanceFilterContainer" class="ctrl-box">
                     <i data-lucide="smartphone" style="width:14px;color:var(--muted);flex-shrink:0;"></i>
@@ -5786,7 +5789,13 @@ function mudarAba(aba) {
     const btn = $('btn-'+aba); if(btn) btn.classList.add('active');
     $('titulo-pagina').innerHTML = TITULOS[aba]||'';
     atualizarVisibilidadeFiltroCliente(aba);
-    $('leadsControls').style.display = aba === 'leads' ? 'flex' : 'none';
+    // Classe em vez de style.display direto: o CSS decide o VALOR de display
+    // quando visível (flex no desktop, grid no mobile — ver dashboard-base.css)
+    // sem competir em especificidade com o JS. Um style.display inline
+    // 'flex'/'none' fixo exigia !important no CSS pra virar grid no mobile,
+    // e esse !important sobrepunha o 'none' em QUALQUER aba — vazando os
+    // filtros de Leads por cima de outras abas (ex: Conversas).
+    $('leadsControls').classList.toggle('is-hidden', aba !== 'leads');
     lucide.createIcons({ nodes:[$('titulo-pagina')] });
     if (aba === 'conversas') {
         // Se o popup de conversa estiver aberto, devolve os paineis para a shell
