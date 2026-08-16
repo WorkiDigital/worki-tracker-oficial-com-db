@@ -2255,3 +2255,28 @@ Trocado o mecanismo de visibilidade de `style.display` direto para uma **classe*
 Bump de cache: `dashboard.css?v=20260814-leadsctrlfix` (e o `@import` correspondente em
 `dashboard.css` pro `dashboard-base.css`) — os dois arquivos têm `Cache-Control: immutable` de 1 ano.
 
+## 📱 Abas Marca e Alerta de Saldo sem responsividade mobile (2026-08-14)
+
+As duas abas usavam grid de 2 colunas com **largura fixa em pixels no `style` inline**, sem nenhum
+fallback pra telas pequenas:
+- `aba-ajustes` (Marca): `grid-template-columns:280px 1fr` (preview + formulário).
+- `aba-alertas` (Alerta de Saldo): `grid-template-columns:minmax(0,520px) minmax(260px,340px)`
+  (formulário + preview da mensagem).
+
+No mobile, isso somava bem mais que a largura da tela — conteúdo cortado/espremido, sem empilhar.
+
+### Correção
+Adicionadas classes (`wl-grid` na aba Marca, `alerta-saldo-grid` na aba Alerta de Saldo) aos
+containers de grid, e uma regra no `css/dashboard-base.css` dentro de `@media(max-width:768px)`:
+```css
+.wl-grid, .alerta-saldo-grid { grid-template-columns:1fr !important; }
+.alerta-saldo-grid > div:last-child { position:static; }
+```
+`!important` é necessário e correto aqui — diferente da armadilha da seção anterior (JS vs. CSS via
+`style.display`), aqui a regra concorrente é um **valor estático** de layout fixado via `style`
+inline no HTML, que qualquer CSS externo sem `!important` nunca sobrepõe. `position:static` no
+preview da mensagem (Alerta de Saldo) remove o `position:sticky` que só fazia sentido ao lado do
+formulário, não empilhado abaixo dele.
+
+Bump de cache: `dashboard.css?v=20260814-mktalertaresp`.
+

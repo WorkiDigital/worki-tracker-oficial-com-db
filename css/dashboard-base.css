@@ -1168,6 +1168,17 @@ html.light .nav-item.active { box-shadow:inset 3px 0 0 var(--blue); background:r
     .leads-table-wrap .sk-row { display:table-row; background:transparent; border:none; padding:0; }
 }
 
+@media(max-width:768px) {
+    /* Abas Marca (aba-ajustes) e Alerta de Saldo (aba-alertas): grid de 2
+       colunas com largura fixa (280px+1fr / 520px+340px) nunca tinha
+       fallback responsivo — no mobile a 2ª coluna ficava espremida ou
+       estourava a largura da tela. Empilha em 1 coluna só. */
+    .wl-grid, .alerta-saldo-grid {
+        grid-template-columns:1fr !important;
+    }
+    .alerta-saldo-grid > div:last-child { position:static; }
+}
+
 /* ── Mobile pequeno 480px ─────────────────── */
 @media(max-width:480px) {
     .metrics-grid { grid-template-columns:1fr 1fr; gap:8px; }
