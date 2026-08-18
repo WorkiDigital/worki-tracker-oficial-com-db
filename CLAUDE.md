@@ -2280,3 +2280,32 @@ formulário, não empilhado abaixo dele.
 
 Bump de cache: `dashboard.css?v=20260814-mktalertaresp`.
 
+## 🐛 Correção do fix anterior: filtros de Leads sumiam mesmo NA aba Leads (2026-08-14)
+
+A correção do "vazamento de filtros no mobile" (seção anterior) trocou `#leadsControls` de nascer
+**visível** (`style="display:flex"`) para nascer **`class="is-hidden"`** no HTML, dependendo de
+`mudarAba('leads')` rodar no carregamento pra remover a classe e mostrar os filtros. Usuário
+reportou print mostrando a aba Leads ativa (desktop) **sem nenhum filtro** (Instância/Origem/Busca/
+Período/CSV ausentes) — o cenário oposto ao bug anterior, e pior: sem filtro nenhum, o usuário não
+consegue nem trocar de instância/período.
+
+### Causa
+Web app com `Cache-Control: no-cache` no `index.html` deveria sempre revalidar, mas em cenários com
+JS antigo em cache (`leads.js`/scripts sem `?v=` bumpado) ou qualquer erro de execução antes de
+`mudarAba()` rodar no `init()`, o `is-hidden` inicial nunca era removido — trocou um "fail-safe"
+(vazava filtro indevido, mas sempre visível em algum lugar) por um "fail-unsafe" (podia sumir
+completamente, mesmo na aba certa).
+
+### Correção
+`#leadsControls` volta a nascer **sem** `is-hidden` no HTML (visível por padrão) — Leads é a aba
+padrão do sistema (primeira que a maioria das sessões abre), então nascer visível é o estado mais
+seguro. `mudarAba()` continua controlando a classe normalmente nas trocas de aba subsequentes (é
+sempre chamado, inclusive na primeira navegação do `init()`), então o vazamento pra outras abas
+continua corrigido — só o estado inicial (antes de qualquer JS rodar) é que voltou a ser "visível",
+não "escondido".
+
+> **Padrão a observar:** ao migrar um elemento de `style.display` direto pra controle por classe,
+> pensar em qual dos dois estados (visível/escondido) é mais seguro como PADRÃO do HTML — o estado
+> que o elemento tem antes de qualquer JS rodar. Escolher o estado que corresponde ao caso mais
+> comum/crítico (aqui, a aba Leads sendo a inicial) minimiza o dano se o JS falhar ou demorar.
+

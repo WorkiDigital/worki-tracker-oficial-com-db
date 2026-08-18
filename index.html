@@ -958,11 +958,16 @@
             </button>
             <!-- Filtros da barra -->
             <div id="filterControls" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-                <!-- Controles exclusivos da aba Leads. Sem display inline aqui de propósito:
-                     mudarAba() alterna a classe is-hidden; o valor de display quando visível
-                     (flex no desktop, grid no mobile) é decidido só pelo CSS (dashboard.css /
-                     dashboard-base.css), sem disputa de especificidade com JS. -->
-                <div id="leadsControls" class="is-hidden">
+                <!-- Controles exclusivos da aba Leads. NASCE VISÍVEL (sem is-hidden) de propósito:
+                     Leads é a aba padrão do sistema (primeira que init() abre na maioria das
+                     sessões), e nascer visível é o estado "seguro" — se por qualquer motivo
+                     mudarAba('leads') não rodar no carregamento (JS travado em outro ponto, cache
+                     antigo, etc.), o pior cenário é os filtros aparecerem numa aba que não é Leads
+                     (bug já visto e corrigido), não sumirem da aba Leads em si (bug pior: usuário
+                     sem filtro nenhum). mudarAba() alterna a classe is-hidden nas trocas de aba
+                     subsequentes; o valor de display quando visível (flex desktop, grid mobile) é
+                     decidido só pelo CSS, sem disputa de especificidade com JS. -->
+                <div id="leadsControls">
                 <!-- Instance filter -->
                 <div id="instanceFilterContainer" class="ctrl-box">
                     <i data-lucide="smartphone" style="width:14px;color:var(--muted);flex-shrink:0;"></i>
