@@ -2309,3 +2309,26 @@ não "escondido".
 > que o elemento tem antes de qualquer JS rodar. Escolher o estado que corresponde ao caso mais
 > comum/crítico (aqui, a aba Leads sendo a inicial) minimiza o dano se o JS falhar ou demorar.
 
+## 🔍 Busca em Conversas passou a procurar dentro do texto das mensagens (2026-08-19)
+
+Usuário perguntou se a busca da aba Conversas (`#chatSearchInput`) encontra mensagens por conteúdo.
+Não encontrava — o `search` só filtrava `telefone`/`push_name`/`nome do lead` na conversa
+(`api/chat-messages.js`, `action=list_conversations`).
+
+### Correção
+Adicionado `OR EXISTS (SELECT 1 FROM scoped sc WHERE sc.cliente_id=lm.cliente_id AND
+sc.instance=lm.instance AND sc.telefone=lm.telefone AND sc.body ILIKE $search)` ao filtro — a CTE
+`scoped` já contém **todas** as mensagens dos últimos 15 dias (não só a última, que é o que `last_msg`
+usa para montar a lista); o `EXISTS` varre só as mensagens da mesma conversa (`cliente_id`+
+`instance`+`telefone`) procurando alguma que bata com o texto digitado. Agora digitar um trecho de
+mensagem na busca traz a conversa certa na lista, mesmo que a última mensagem exibida não seja a que
+contém o texto buscado.
+
+**Escopo desta entrega (decisão do usuário):** só localizar a **conversa** — não destaca/rola
+automaticamente até a mensagem específica dentro da thread aberta. Abrir a conversa e rolar
+manualmente já resolve na prática (threads não costumam ser gigantes). Se precisar no futuro,
+precisaria carregar as mensagens da conversa, achar a que bate com a busca, `scrollIntoView` +
+destaque visual temporário (ex: fundo amarelo).
+
+Placeholder do campo atualizado: "Buscar contato, telefone ou mensagem...".
+

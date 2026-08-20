@@ -148,7 +148,14 @@ export default async function handler(req, res) {
           ${origemWhere.length ? `AND ${origemWhere.join(' AND ')}` : ''}
           ${searchParam ? `AND (lm.telefone ILIKE $${searchIdx}
            OR lm.push_name ILIKE $${searchIdx}
-           OR lead.nome ILIKE $${searchIdx})` : ''}
+           OR lead.nome ILIKE $${searchIdx}
+           OR EXISTS (
+             SELECT 1 FROM scoped sc
+             WHERE sc.cliente_id = lm.cliente_id
+               AND sc.instance = lm.instance
+               AND sc.telefone = lm.telefone
+               AND sc.body ILIKE $${searchIdx}
+           ))` : ''}
         ORDER BY lm.message_at DESC, lm.id DESC
         LIMIT 200
       `, params);
