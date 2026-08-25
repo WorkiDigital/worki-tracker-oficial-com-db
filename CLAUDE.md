@@ -2332,3 +2332,28 @@ destaque visual temporário (ex: fundo amarelo).
 
 Placeholder do campo atualizado: "Buscar contato, telefone ou mensagem...".
 
+## 🐛 Crash de null em Meta Ads (`index.html`) — `instagram_profile_visits` (2026-08-25)
+
+Usuário reportou `Erro: Cannot read properties of null (reading 'instagram_profile_visits')` ao abrir
+a aba **Meta Ads** com uma conta/período onde alguma campanha não tinha `insights` (`ins = null`) —
+mesma classe de bug já documentada em "Crash de null em `renderTable()`" (`js/share-dash.js`), mas
+dessa vez em `index.html` (painel admin), que nunca tinha sido auditado por esse padrão.
+
+### Causa raiz
+Dois pontos em `index.html` faziam `const ins = getIns(...)` **sem** guarda `if (!ins) continue`
+antes, e no mesmo bloco já usavam `ins?.spend` (seguro) só um pouco acima de
+`ins.instagram_profile_visits` (sem `?.`) — inconsistência dentro do próprio bloco:
+- Tabela principal de campanhas (`camps.map(c => ...)`, ~linha 5203).
+- Drill-down de conjuntos/anúncios expandidos (`expandCache[key].map(item => ...)`, ~linha 5403).
+
+### Correção
+`ins.instagram_profile_visits` → `ins?.instagram_profile_visits` nos dois pontos. Auditados todos os
+outros acessos a `ins` nesses dois blocos e nos outros 2 pontos do arquivo que também leem
+`instagram_profile_visits` (linha ~4756 e `getAdsMetricCellValue`) — já estavam seguros (guarda
+`if (!ins) return` antes, ou já usando `?.`). `js/share-dash.js` (dashboard público) já tinha sido
+corrigido antes nesse mesmo padrão — conferido de novo, sem regressão.
+
+**Padrão a seguir** (já registrado antes, reforçado aqui): ao adicionar/editar leitura de `ins` num
+`.map()`/`.forEach()` sem guarda `if (!ins) return` anterior, sempre usar `?.` em **todo** acesso
+naquele bloco — um único campo esquecido quebra a renderização inteira da tabela.
+
