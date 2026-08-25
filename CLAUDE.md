@@ -2357,3 +2357,44 @@ corrigido antes nesse mesmo padrão — conferido de novo, sem regressão.
 `.map()`/`.forEach()` sem guarda `if (!ins) return` anterior, sempre usar `?.` em **todo** acesso
 naquele bloco — um único campo esquecido quebra a renderização inteira da tabela.
 
+## 🎯 CPC e CTR: "cliques no link", não "cliques todos" (2026-08-25)
+
+Usuário observou que o CPC do painel usava o campo `cpc` bruto da Meta — que é custo por **"Clique
+(todos)"** (qualquer interação clicável no anúncio: curtida, comentário, expandir foto/vídeo, clique
+no perfil, etc.), não especificamente cliques que levam ao link/site. Métrica enganosamente otimista
+para campanhas de tráfego/conversão, onde o que importa é quem de fato clicou no link.
+
+### Decisão do usuário
+Trocar **CPC e CTR** (os dois, não só CPC) para usarem `link_click` como base, em todos os pontos do
+sistema — `spend / link_click` para CPC, `link_click / impressions × 100` para CTR ("Taxa de Cliques
+no Link"). Campo "Cliques" já usava `link_click` desde antes (rótulo "Cliques (Links)" já existia) —
+agora CPC/CTR ficam consistentes com isso, em vez de misturar bases diferentes.
+
+### Onde foi corrigido (todos os pontos que calculam Ads, conforme regra já documentada acima)
+- **`index.html`**: `calcMetricasAds` (cards agregados do topo), `getAdsMetricCellValue` (colunas da
+  tabela), `getCtrAd`/metrics de "Melhores Anúncios" (cards individuais + export).
+- **`js/share-dash.js`** (dashboard público do cliente): `campaignMetrics` (cards agregados),
+  `renderTable` (colunas), card de "Melhores Anúncios".
+- **`api/_zap-report-metrics.js`** (`summarizeZapCampaigns`, usado por `api/cron/send-reports.js` E
+  `api/zap-preview-metrics.js` — corrigir aqui já propaga para os dois): `clicks` agora soma
+  `link_click` das `actions[]`, não mais `ins.clicks` bruto. `cpc`/`ctr` já eram calculados a partir
+  dessa variável, então ficam corretos automaticamente sem mudança de fórmula nesses dois arquivos.
+
+### Simplificação: soma de razão em vez de média ponderada
+Antes, CPC/CTR eram médias ponderadas linha a linha (`Σ(cpc×clicks)/Σclicks`,
+`Σ(ctr×impressions)/Σimpressions`) porque dependiam de campos já prontos (`ins.cpc`/`ins.ctr`) por
+campanha. Como agora o cálculo é `spend/link_click` e `link_click/impressions`, isso vira uma razão
+direta de somas agregadas (`totalSpend/totalLinkClicks`, sem precisar de ponderação) — mais simples e
+elimina as variáveis `cpcSum/cpcCount`/`ctrSum/ctrCount` que existiam só para isso.
+
+### Rótulos atualizados
+"CTR Médio" → **"CTR (Link)"** nos cards agregados do painel admin e do dashboard público — evita o
+usuário achar que é o CTR padrão do Gerenciador de Anúncios (que é sobre cliques todos). Rótulos
+compactos (coluna de tabela, card pequeno de "Melhores Anúncios") mantidos como "CTR"/"CPC" sozinhos,
+sem espaço pro qualificador — o significado já é consistente em todo o sistema agora.
+
+### Validação
+`node --check` em `js/share-dash.js` e `api/_zap-report-metrics.js`; scripts inline do `index.html`
+sem erro de sintaxe. Sweep final confirmando nenhum resíduo de `ins.cpc`/`ins.ctr`/`ins?.cpc`/
+`ins?.ctr` sobrando em nenhum dos três arquivos.
+

@@ -1513,7 +1513,7 @@
                     <div class="ads-metric" data-card="cpm"><div class="ads-metric-val" id="ads-cpm-val">—</div><div class="ads-metric-lbl">CPM (custo/1000 imp.)</div></div>
                     <div class="ads-metric" data-card="clicks"><div class="ads-metric-val" id="ads-clicks">0</div><div class="ads-metric-lbl">Cliques (Links)</div></div>
                     <div class="ads-metric" data-card="cpc"><div class="ads-metric-val" id="ads-cpc-val">—</div><div class="ads-metric-lbl">CPC (custo/clique)</div></div>
-                    <div class="ads-metric" data-card="ctr"><div class="ads-metric-val" id="ads-ctr">—</div><div class="ads-metric-lbl">CTR Médio</div></div>
+                    <div class="ads-metric" data-card="ctr"><div class="ads-metric-val" id="ads-ctr">—</div><div class="ads-metric-lbl">CTR (Link)</div></div>
                     <div class="ads-metric" data-card="lpv"><div class="ads-metric-val" id="ads-lpv">—</div><div class="ads-metric-lbl">Visualizações da Página</div></div>
                     <div class="ads-metric" data-card="cplpv"><div class="ads-metric-val" id="ads-cplpv">—</div><div class="ads-metric-lbl">Custo/Visualização da Página</div></div>
                     <div class="ads-metric" data-card="profile_visits"><div class="ads-metric-val" id="ads-profile-visits">—</div><div class="ads-metric-lbl">Visitas Perfil (IG)</div></div>
@@ -2901,7 +2901,8 @@ const getSpendAd = ad => parseFloat(getInsAd(ad)?.spend||0);
 const getLeadsAd = ad => getAct(getInsAd(ad), ['lead','offsite_conversion.lead']);
 const getMsgsAd  = ad => getAct(getInsAd(ad), ['onsite_conversion.messaging_conversation_started_7d']);
 const getClksAd  = ad => getAct(getInsAd(ad), ['link_click']);
-const getCtrAd   = ad => parseFloat(getInsAd(ad)?.ctr||0);
+// Taxa de Cliques no Link (link_click/impressions), não CTR bruto ("cliques todos") da Meta.
+const getCtrAd   = ad => { const imp = parseInt(getInsAd(ad)?.impressions||0); return imp ? (getClksAd(ad)/imp*100) : 0; };
 const getCpmAd   = ad => parseFloat(getInsAd(ad)?.cpm||Infinity);
 const getCplAd   = ad => { const s=getSpendAd(ad), l=getLeadsAd(ad); return l ? s/l : Infinity; };
 const getCprAd   = ad => { const s=getSpendAd(ad), m=getMsgsAd(ad);  return m ? s/m : Infinity; };
@@ -4700,9 +4701,7 @@ function getOutboundClicks(ins) {
 
 function calcMetricasAds(camps) {
     let spend=0, imps=0, linkClicks=0, reach=0, leads=0, msgs=0;
-    let ctrSum=0, ctrCount=0;
     let cpmSum=0, cpmCount=0;   // CPM ponderado por impressões
-    let cpcSum=0, cpcCount=0;   // CPC ponderado por cliques
     let freqSum=0, freqCount=0; // Frequência ponderada por impressões
     let lpv=0;                  // landing_page_view
     let profileVisits=0;        // instagram_profile_visit
@@ -4727,18 +4726,9 @@ function calcMetricasAds(camps) {
         const cpmVal = parseFloat(ins.cpm||0);
         if (cpmVal && imp) { cpmSum += cpmVal * imp; cpmCount += imp; }
 
-        // CPC — campo direto (custo por clique geral)
-        const cpcVal = parseFloat(ins.cpc||0);
-        const clk    = parseInt(ins.clicks||0);
-        if (cpcVal && clk) { cpcSum += cpcVal * clk; cpcCount += clk; }
-
         // Frequência — campo direto
         const freqVal = parseFloat(ins.frequency||0);
         if (freqVal && imp) { freqSum += freqVal * imp; freqCount += imp; }
-
-        // CTR médio ponderado por impressões
-        const ctr = parseFloat(ins.ctr||0);
-        if (ctr && imp) { ctrSum += ctr * imp; ctrCount += imp; }
 
         // link_click = cliques em links
         linkClicks += getAct(ins, ['link_click']);
@@ -4796,8 +4786,8 @@ function calcMetricasAds(camps) {
     $('ads-freq').textContent     = freqCount ? (freqSum/freqCount).toFixed(2) : '—';
     $('ads-cpm-val').textContent  = cpmCount  ? brl(cpmSum/cpmCount)  : '—';
     $('ads-clicks').textContent   = linkClicks ? fmtN(linkClicks) : '—';
-    $('ads-cpc-val').textContent  = cpcCount   ? brl(cpcSum/cpcCount)  : '—';
-    $('ads-ctr').textContent      = ctrCount   ? (ctrSum/ctrCount).toFixed(2)+'%' : '—';
+    $('ads-cpc-val').textContent  = linkClicks ? brl(spend/linkClicks) : '—'; // custo por clique NO LINK (não "cliques todos")
+    $('ads-ctr').textContent      = imps ? ((linkClicks/imps)*100).toFixed(2)+'%' : '—'; // Taxa de Cliques no Link (não CTR "cliques todos")
     
     $('ads-lpv').textContent      = lpv        ? fmtN(lpv)   : '—';
     $('ads-cplpv').textContent    = lpv        ? brl(spend/lpv) : '—';
@@ -5143,8 +5133,8 @@ function getAdsMetricCellValue(key, ins) {
         case 'freq': { const v = parseFloat(ins?.frequency || 0); return v ? v.toFixed(2) : '—'; }
         case 'cpm': { const v = parseFloat(ins?.cpm || 0); return v ? brl(v) : '—'; }
         case 'clicks': return clicks ? fmtN(clicks) : '—';
-        case 'cpc': { const v = parseFloat(ins?.cpc || 0); return v ? brl(v) : '—'; }
-        case 'ctr': { const v = parseFloat(ins?.ctr || 0); return v ? v.toFixed(2) + '%' : '—'; }
+        case 'cpc': return cost(clicks); // custo por clique NO LINK (clicks = link_click acima, não o campo cpc bruto da Meta que mede "cliques todos")
+        case 'ctr': return pct(clicks, imps); // Taxa de Cliques no Link (clicks = link_click acima), não CTR bruto "cliques todos"
         case 'lpv': return lpv ? fmtN(lpv) : '—';
         case 'cplpv': return lpv ? brl(spend / lpv) : '—';
         case 'profile_visits': return pv ? fmtN(pv) : '—';
@@ -5627,9 +5617,9 @@ function renderAdCard(ad, rank, sortObj) {
         ['Alcance',    fmtN(parseInt(ins?.reach||0))],
         ['Frequência', ins?.frequency ? parseFloat(ins.frequency).toFixed(2) : '—'],
         ['Cliques',    fmtN(getClksAd(ad))],
-        ['CTR',        ins?.ctr ? parseFloat(ins.ctr).toFixed(2) + '%' : '—'],
+        ['CTR',        getCtrAd(ad) ? getCtrAd(ad).toFixed(2) + '%' : '—'], // Taxa de Cliques no Link, não CTR bruto ("cliques todos")
         ['CPM',        ins?.cpm ? brl(parseFloat(ins.cpm)) : '—'],
-        ['CPC',        ins?.cpc ? brl(parseFloat(ins.cpc)) : '—'],
+        ['CPC',        getClksAd(ad) ? brl(spend / getClksAd(ad)) : '—'], // custo por clique NO LINK, não o campo cpc bruto ("cliques todos")
         ['Leads',      fmtN(leads)],
         ['CPL',        leads ? brl(spend / leads) : '—'],
         ['Conversas',  fmtN(msgs)],

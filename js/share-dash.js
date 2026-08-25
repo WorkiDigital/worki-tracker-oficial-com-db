@@ -216,7 +216,7 @@ function showError(msg) {
 function campaignMetrics(campaigns) {
     let spend=0, imps=0, reach=0, leads=0, msgs=0, lpv=0, seguidores=0, profileVisits=0, clicks=0;
     let purchases=0, purchaseValue=0, initCheckout=0, roasSum=0, roasCount=0;
-    let cpmSum=0, cpmCount=0, cpcSum=0, cpcCount=0, ctrSum=0, ctrCount=0, freqSum=0, freqCount=0;
+    let cpmSum=0, cpmCount=0, freqSum=0, freqCount=0;
     campaigns.forEach(c => {
         const ins = getInsights(c); if (!ins) return;
         const sp  = parseFloat(ins.spend||0);
@@ -236,19 +236,18 @@ function campaignMetrics(campaigns) {
         const roasVal = getRoas(ins);
         if (roasVal && sp) { roasSum += roasVal * sp; roasCount += sp; }
         const cpmV = parseFloat(ins.cpm||0);      if (cpmV && imp) { cpmSum += cpmV*imp;  cpmCount += imp; }
-        const cpcV = parseFloat(ins.cpc||0); const clk = parseInt(ins.clicks||0);
-        if (cpcV && clk) { cpcSum += cpcV*clk; cpcCount += clk; }
         const freqV = parseFloat(ins.frequency||0); if (freqV && imp) { freqSum += freqV*imp; freqCount += imp; }
-        const ctrV  = parseFloat(ins.ctr||0);       if (ctrV  && imp) { ctrSum  += ctrV*imp;  ctrCount  += imp; }
     });
     return {
         spend, imps, reach, clicks, leads, msgs, lpv, profileVisits, seguidores,
         purchases, purchaseValue, initCheckout,
         roas: roasCount ? roasSum/roasCount : 0,
         cpm:  cpmCount  ? cpmSum/cpmCount   : 0,
-        cpc:  cpcCount  ? cpcSum/cpcCount   : 0,
+        // CPC/CTR: custo/taxa de cliques NO LINK (clicks = link_click acima),
+        // não o campo cpc/ctr bruto da Meta ("cliques todos"). Decisão do usuário.
+        cpc:  clicks    ? spend/clicks      : 0,
         freq: freqCount ? freqSum/freqCount : 0,
-        ctr:  ctrCount  ? ctrSum/ctrCount   : 0,
+        ctr:  imps      ? (clicks/imps*100) : 0,
     };
 }
 
@@ -287,7 +286,7 @@ function renderSummaryMetrics() {
         { key:'freq',             label:'Frequência',           value: m.freq    ? m.freq.toFixed(2)      : '—',  color:'#f59e0b' },
         { key:'cpm',              label:'CPM',                  value: m.cpm     ? fmtBRL(m.cpm)          : '—',  color:'#a78bfa' },
         { key:'cpc',              label:'CPC',                  value: m.cpc     ? fmtBRL(m.cpc)          : '—',  color:'#fb923c' },
-        { key:'ctr',              label:'CTR Médio',            value: m.ctr     ? m.ctr.toFixed(2)+'%'  : '—',  color:'#ec4899' },
+        { key:'ctr',              label:'CTR (Link)',           value: m.ctr     ? m.ctr.toFixed(2)+'%'  : '—',  color:'#ec4899' },
         { key:'lpv',              label:'Visitas (Site)',       value: m.lpv     ? fmt(m.lpv)             : '—',  color:'#34d399' },
         { key:'cplpv',            label:'CPLPV (Site)',         value: m.lpv     ? fmtBRL(m.spend/m.lpv)  : '—',  color:'#60a5fa' },
         { key:'profile_visits',   label:'Visitas Perfil (IG)',  value: m.profileVisits ? fmt(m.profileVisits) : '—', color:'#ec4899' },
@@ -396,8 +395,8 @@ function renderTable() {
                 case 'freq':       { const v=parseFloat(ins?.frequency||0); return `<td>${v?v.toFixed(2):'—'}</td>`; }
                 case 'cpm':        return `<td>${ins?.cpm  ? fmtBRL(ins.cpm)  : '—'}</td>`;
                 case 'clicks':     return `<td>${clicks ? fmt(clicks) : '—'}</td>`;
-                case 'cpc':        return `<td>${ins?.cpc  ? fmtBRL(ins.cpc)  : '—'}</td>`;
-                case 'ctr':        { const v=parseFloat(ins?.ctr||0); return `<td>${v?v.toFixed(2)+'%':'—'}</td>`; }
+                case 'cpc':        return `<td>${clicks ? fmtBRL(spend/clicks) : '—'}</td>`; // custo por clique NO LINK
+                case 'ctr':        { const imp=parseInt(ins?.impressions||0); const v=imp?(clicks/imp*100):0; return `<td>${v?v.toFixed(2)+'%':'—'}</td>`; } // Taxa de Cliques no Link
                 case 'lpv':        return `<td>${lpv ? fmt(lpv) : '—'}</td>`;
                 case 'cplpv':      return `<td>${lpv ? fmtBRL(spend/lpv): '—'}</td>`;
                 case 'profile_visits': return `<td>${pv ? fmt(pv) : '—'}</td>`;
@@ -565,8 +564,10 @@ function renderBestAds() {
         const clicks     = getAct(ins, ['link_click']);
         const freq       = parseFloat(ins?.frequency)||0;
         const cpm        = parseFloat(ins?.cpm)||0;
-        const cpc        = parseFloat(ins?.cpc)||0;
-        const ctr        = parseFloat(ins?.ctr)||0;
+        const imps       = parseInt(ins?.impressions||0);
+        // CPC/CTR: custo/taxa de cliques NO LINK, não os campos brutos da Meta ("cliques todos").
+        const cpc        = clicks ? spend/clicks : 0;
+        const ctr        = imps ? (clicks/imps*100) : 0;
 
         return `<div class="ad-card">
             <div style="position:relative">

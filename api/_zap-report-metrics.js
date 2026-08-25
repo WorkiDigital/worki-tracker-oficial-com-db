@@ -46,7 +46,6 @@ export function summarizeZapCampaigns(campaigns, filters = {}) {
     const campSpend = parseFloat(ins.spend || 0);
     spend       += campSpend;
     impressions += parseInt(ins.impressions   || 0, 10);
-    clicks      += parseInt(ins.clicks        || 0, 10);
     reach       += parseInt(ins.reach         || 0, 10);
 
     for (const action of (ins.actions || [])) {
@@ -57,6 +56,14 @@ export function summarizeZapCampaigns(campaigns, filters = {}) {
       }
       if (action.action_type === 'onsite_conversion.messaging_conversation_started_7d') {
         msgs += parseInt(action.value || 0, 10);
+      }
+      // 'clicks' aqui é CLIQUES NO LINK (link_click), não o campo ins.clicks
+      // bruto da Meta ("cliques todos" — qualquer interação clicável no
+      // anúncio). Decisão do usuário: {cliques}, CTR e CPC do relatório de
+      // WhatsApp usam todos link_click (Taxa de Cliques no Link), não mais
+      // "cliques todos" — consistente entre si dentro deste relatório.
+      if (action.action_type === 'link_click') {
+        clicks += parseInt(action.value || 0, 10);
       }
     }
 
