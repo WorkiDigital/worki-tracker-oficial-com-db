@@ -2398,3 +2398,45 @@ sem espaço pro qualificador — o significado já é consistente em todo o sist
 sem erro de sintaxe. Sweep final confirmando nenhum resíduo de `ins.cpc`/`ins.ctr`/`ins?.cpc`/
 `ins?.ctr` sobrando em nenhum dos três arquivos.
 
+## 📅 Calendário de período personalizado estilo Meta Ads (2026-08-25)
+
+Usuário pediu para trocar o par de `<input type="date">` (dois calendários nativos separados do
+navegador, um pra início e outro pra fim) por um único calendário estilo Meta Ads Manager — clica na
+data de início, depois clica na data de fim, no mesmo calendário, com o intervalo destacado.
+
+### Onde existia esse padrão (4 pontos no sistema)
+Leads (`#areaPersonalizada`), Meta Ads (`#adsCustomRange`), Relatórios (`#relatorioAreaPersonalizada`)
+e Logs do Sistema (`#log-filter-date-from/to`). Compartilhar Dash (`#shareExpiresAt`) tem uma data
+ÚNICA de expiração, não um range — ficou de fora de propósito (decisão do usuário).
+
+### Estratégia: os `<input type="date">` originais continuam existindo (escondidos)
+Todo código consumidor (`js/leads.js` `calcRange()`/`calcRangeRelatorio()`, `carregarAnuncios()`,
+`carregarLogs()`, etc.) só faz `$('dataInicio').value` esperando o formato `YYYY-MM-DD` nativo do
+`<input type="date">`. Em vez de reescrever esses consumidores, os inputs originais **continuam no
+DOM** (tamanho 1px, `opacity:0`, `pointer-events:none` — nunca `display:none`, pra não quebrar
+`.value`/eventos) como fonte de verdade; o calendário novo só os preenche. **Nenhum código consumidor
+precisou mudar.**
+
+### Arquivos novos
+- **`js/date-range-picker.js`** — `initDateRangePicker({ inputStart, inputEnd, trigger, placeholder,
+  onApply })`: constrói o popover de calendário sob demanda (1 por par de datas), navega mês a mês
+  (setas, sem dropdown de mês/ano — decisão do usuário, mais simples), 1º clique define início, 2º
+  clique define fim (clicar antes do início já marcado reinicia a seleção). Botão "Aplicar" só habilita
+  com os dois extremos definidos; ao aplicar, escreve nos inputs reais (dispara `onApply`, que cada
+  ponto usa pra chamar sua própria função de recarregar dados — mesmo padrão que os botões "OK"
+  antigos já usavam, mantidos como reforço).
+- **`css/date-range-picker.css`** — usa os tokens de cor já existentes (`var(--card)`/`--border`/
+  `--blue`/etc.), então segue o tema claro/escuro automaticamente. `rgba(37,99,235,0.18)` fixo pro
+  destaque do intervalo (não `color-mix()`, que não é usado em nenhum outro lugar do projeto — evita
+  introduzir uma feature CSS nova isolada).
+
+### Mudança no HTML dos 4 pontos
+Cada par de inputs ganhou um `<span class="drp-trigger">` clicável (com ícone `calendar-range`) logo
+antes — é nele que o popover abre. `initDateRangePicker()` (chamado 4x dentro de `init()`, no
+`index.html`) esconde os inputs originais via JS (não fica um "flash" deles visíveis antes do JS
+rodar, já que o CSS deles não tinha `display:none` no HTML por padrão — só o JS aplica isso).
+
+### Validação
+`node --check` no JS novo, chaves do CSS balanceadas, scripts inline do `index.html` sem erro de
+sintaxe, servidor local respondendo 200 nos dois arquivos novos e no `index.html`.
+
