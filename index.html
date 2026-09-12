@@ -622,99 +622,123 @@
     </div>
 </div>
 
-<div id="modalEditCliente" class="modal-overlay" role="dialog" aria-modal="true" onclick="if(event.target===this) this.classList.remove('open')">
-    <div class="modal-box" style="width:min(480px,94vw);">
-        <div class="modal-head">
-            <div class="modal-icon" style="background:var(--blue);"><i data-lucide="edit-3" style="color:#fff;width:22px;height:22px;"></i></div>
-            <div><h3>Editar Cliente</h3><p id="editCliSubtitle">Atualize dados e permissões.</p></div>
-            <button class="modal-close" aria-label="Fechar" onclick="$('modalEditCliente').classList.remove('open')"><i data-lucide="x" style="width:16px;"></i></button>
-        </div>
-        <input type="hidden" id="editCliId">
-        <!-- Abas -->
-        <div style="display:flex;gap:4px;margin-bottom:20px;background:var(--tag);border-radius:10px;padding:4px;">
-            <button id="editTab-dados"  onclick="switchEditTab('dados')"  style="flex:1;padding:8px;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;background:var(--blue);color:#fff;">Dados</button>
-            <button id="editTab-meta"   onclick="switchEditTab('meta')"   style="flex:1;padding:8px;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;background:transparent;color:var(--text-muted);">Meta Ads</button>
-            <button id="editTab-google" onclick="switchEditTab('google')" style="flex:1;padding:8px;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;background:transparent;color:var(--text-muted);">Google Ads</button>
-            <button id="editTab-engajamento" onclick="switchEditTab('engajamento')" style="flex:1;padding:8px;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;background:transparent;color:var(--text-muted);">Engajamento</button>
-        </div>
+<!-- Drawer Editar Cliente — mesmo padrão do leadProfileDrawer (desliza da
+     direita, altura total da tela). Migrado de modal centralizado de 480px
+     pra drawer de 640px na Fase 5 da auditoria UX/UI: ~32 controles em 4
+     abas era denso demais para um modal, e o padrão de drawer já existe e
+     está testado no próprio projeto (Perfil do Lead). -->
+<div id="editClienteDrawer" style="position:fixed;inset:0;z-index:9999;display:none;align-items:stretch;justify-content:flex-end;background:rgba(0,0,0,0.55);" onclick="if(event.target===this) fecharEditCliente()">
+  <div style="width:min(640px,100vw);height:100%;background:var(--bg-primary);box-shadow:-8px 0 40px rgba(0,0,0,0.3);display:flex;flex-direction:column;overflow:hidden;animation:slideInRight .25s ease;">
+    <!-- Header -->
+    <div style="padding:18px 22px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;flex-shrink:0;">
+      <div style="width:42px;height:42px;border-radius:10px;background:var(--blue);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <i data-lucide="edit-3" style="color:#fff;width:20px;height:20px;"></i>
+      </div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:16px;font-weight:700;color:var(--text-primary);">Editar Cliente</div>
+        <div id="editCliSubtitle" style="font-size:12px;color:var(--muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Atualize dados e permissões.</div>
+      </div>
+      <button onclick="fecharEditCliente()" aria-label="Fechar" style="background:none;border:none;cursor:pointer;color:var(--muted);padding:4px;border-radius:6px;display:flex;align-items:center;"><i data-lucide="x" style="width:18px;height:18px;"></i></button>
+    </div>
+    <input type="hidden" id="editCliId">
+    <!-- Tabs -->
+    <div style="display:flex;border-bottom:1px solid var(--border);flex-shrink:0;overflow-x:auto;">
+        <button id="editTab-dados"  onclick="switchEditTab('dados')"  style="flex:1;min-width:88px;padding:11px 6px;border:none;border-bottom:2px solid var(--blue);background:none;cursor:pointer;font-size:12px;font-weight:600;color:var(--blue);white-space:nowrap;">Dados</button>
+        <button id="editTab-meta"   onclick="switchEditTab('meta')"   style="flex:1;min-width:88px;padding:11px 6px;border:none;border-bottom:2px solid transparent;background:none;cursor:pointer;font-size:12px;font-weight:600;color:var(--muted);white-space:nowrap;">Meta Ads</button>
+        <button id="editTab-google" onclick="switchEditTab('google')" style="flex:1;min-width:88px;padding:11px 6px;border:none;border-bottom:2px solid transparent;background:none;cursor:pointer;font-size:12px;font-weight:600;color:var(--muted);white-space:nowrap;">Google Ads</button>
+        <button id="editTab-engajamento" onclick="switchEditTab('engajamento')" style="flex:1;min-width:88px;padding:11px 6px;border:none;border-bottom:2px solid transparent;background:none;cursor:pointer;font-size:12px;font-weight:600;color:var(--muted);white-space:nowrap;">Engajamento</button>
+    </div>
+    <!-- Conteúdo -->
+    <div style="flex:1;overflow-y:auto;padding:20px 22px;">
         <!-- Aba: Dados -->
         <div id="editPanel-dados">
-            <div class="input-group"><label>Nome da Empresa</label><input type="text" id="editCliNome"></div>
-            <div class="input-group"><label>E-mail (Login)</label><input type="email" id="editCliEmail"></div>
-            <div class="input-group"><label>Nova Senha <span style="color:var(--muted);font-weight:400;font-size:11px;">(deixe em branco para não alterar)</span></label><input type="text" id="editCliSenha" placeholder="Nova senha (opcional)"></div>
-            <hr style="border:none;border-top:1px solid var(--border);margin:16px 0 12px;">
-            <p style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:12px;">Permissões de Acesso</p>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px;">
-                <label class="pad-md" style="display:flex;align-items:center;gap:10px;background:var(--tag);border-radius:8px;cursor:pointer;">
-                    <input class="cbx-md" type="checkbox" id="permLeads"><span style="font-size:13px;">Leads</span>
-                </label>
-                <label class="pad-md" style="display:flex;align-items:center;gap:10px;background:var(--tag);border-radius:8px;cursor:pointer;">
-                    <input class="cbx-md" type="checkbox" id="permAnuncios"><span style="font-size:13px;">Meta Ads</span>
-                </label>
-                <label class="pad-md" style="display:flex;align-items:center;gap:10px;background:var(--tag);border-radius:8px;cursor:pointer;">
-                    <input class="cbx-md" type="checkbox" id="permRelatorios"><span style="font-size:13px;">Relatórios</span>
-                </label>
-                <label class="pad-md" style="display:flex;align-items:center;gap:10px;background:var(--tag);border-radius:8px;cursor:pointer;">
-                    <input class="cbx-md" type="checkbox" id="permWhatsapp"><span style="font-size:13px;">Conexão WhatsApp</span>
-                </label>
-                <label class="pad-md" style="display:flex;align-items:center;gap:10px;background:var(--tag);border-radius:8px;cursor:pointer;">
-                    <input class="cbx-md" type="checkbox" id="permConversas"><span style="font-size:13px;">Conversas</span>
-                </label>
-                <label class="pad-md" style="display:flex;align-items:center;gap:10px;background:var(--tag);border-radius:8px;cursor:pointer;">
-                    <input class="cbx-md" type="checkbox" id="permCaptacao"><span style="font-size:13px;">Link de Rastreamento</span>
-                </label>
-                <label class="pad-md" style="display:flex;align-items:center;gap:10px;background:var(--tag);border-radius:8px;cursor:pointer;">
-                    <input class="cbx-md" type="checkbox" id="permInteligente"><span style="font-size:13px;">Rastreamento Inteligente</span>
-                </label>
-                <label class="pad-md" style="display:flex;align-items:center;gap:10px;background:var(--tag);border-radius:8px;cursor:pointer;">
-                    <input class="cbx-md" type="checkbox" id="permFunil"><span style="font-size:13px;">Funil de Vendas</span>
-                </label>
-                <label class="pad-md" style="display:flex;align-items:center;gap:10px;background:var(--tag);border-radius:8px;cursor:pointer;">
-                    <input class="cbx-md" type="checkbox" id="permZaprelatorios"><span style="font-size:13px;">Relatórios Automáticos</span>
-                </label>
-                <label class="pad-md" style="display:flex;align-items:center;gap:10px;background:var(--tag);border-radius:8px;cursor:pointer;">
-                    <input class="cbx-md" type="checkbox" id="permIntegracoes"><span style="font-size:13px;">Integrações</span>
-                </label>
-                <label class="pad-md" style="display:flex;align-items:center;gap:10px;background:var(--tag);border-radius:8px;cursor:pointer;">
-                    <input class="cbx-md" type="checkbox" id="permConta"><span style="font-size:13px;">Minha Conta</span>
-                </label>
+            <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">Dados da Conta</div>
+            <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:18px;">
+                <div class="input-group"><label>Nome da Empresa</label><input type="text" id="editCliNome"></div>
+                <div class="input-group"><label>E-mail (Login)</label><input type="email" id="editCliEmail"></div>
+                <div class="input-group" style="margin-bottom:0;"><label>Nova Senha <span style="color:var(--muted);font-weight:400;font-size:11px;">(deixe em branco para não alterar)</span></label><input type="text" id="editCliSenha" placeholder="Nova senha (opcional)"></div>
+            </div>
+
+            <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">Permissões de Acesso</div>
+            <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;padding:14px;">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                    <label class="pad-md" style="display:flex;align-items:center;gap:10px;background:var(--tag);border-radius:8px;cursor:pointer;">
+                        <input class="cbx-md" type="checkbox" id="permLeads"><span style="font-size:13px;">Leads</span>
+                    </label>
+                    <label class="pad-md" style="display:flex;align-items:center;gap:10px;background:var(--tag);border-radius:8px;cursor:pointer;">
+                        <input class="cbx-md" type="checkbox" id="permAnuncios"><span style="font-size:13px;">Meta Ads</span>
+                    </label>
+                    <label class="pad-md" style="display:flex;align-items:center;gap:10px;background:var(--tag);border-radius:8px;cursor:pointer;">
+                        <input class="cbx-md" type="checkbox" id="permRelatorios"><span style="font-size:13px;">Relatórios</span>
+                    </label>
+                    <label class="pad-md" style="display:flex;align-items:center;gap:10px;background:var(--tag);border-radius:8px;cursor:pointer;">
+                        <input class="cbx-md" type="checkbox" id="permWhatsapp"><span style="font-size:13px;">Conexão WhatsApp</span>
+                    </label>
+                    <label class="pad-md" style="display:flex;align-items:center;gap:10px;background:var(--tag);border-radius:8px;cursor:pointer;">
+                        <input class="cbx-md" type="checkbox" id="permConversas"><span style="font-size:13px;">Conversas</span>
+                    </label>
+                    <label class="pad-md" style="display:flex;align-items:center;gap:10px;background:var(--tag);border-radius:8px;cursor:pointer;">
+                        <input class="cbx-md" type="checkbox" id="permCaptacao"><span style="font-size:13px;">Link de Rastreamento</span>
+                    </label>
+                    <label class="pad-md" style="display:flex;align-items:center;gap:10px;background:var(--tag);border-radius:8px;cursor:pointer;">
+                        <input class="cbx-md" type="checkbox" id="permInteligente"><span style="font-size:13px;">Rastreamento Inteligente</span>
+                    </label>
+                    <label class="pad-md" style="display:flex;align-items:center;gap:10px;background:var(--tag);border-radius:8px;cursor:pointer;">
+                        <input class="cbx-md" type="checkbox" id="permFunil"><span style="font-size:13px;">Funil de Vendas</span>
+                    </label>
+                    <label class="pad-md" style="display:flex;align-items:center;gap:10px;background:var(--tag);border-radius:8px;cursor:pointer;">
+                        <input class="cbx-md" type="checkbox" id="permZaprelatorios"><span style="font-size:13px;">Relatórios Automáticos</span>
+                    </label>
+                    <label class="pad-md" style="display:flex;align-items:center;gap:10px;background:var(--tag);border-radius:8px;cursor:pointer;">
+                        <input class="cbx-md" type="checkbox" id="permIntegracoes"><span style="font-size:13px;">Integrações</span>
+                    </label>
+                    <label class="pad-md" style="display:flex;align-items:center;gap:10px;background:var(--tag);border-radius:8px;cursor:pointer;">
+                        <input class="cbx-md" type="checkbox" id="permConta"><span style="font-size:13px;">Minha Conta</span>
+                    </label>
+                </div>
             </div>
         </div>
         <!-- Aba: Meta Ads -->
         <div id="editPanel-meta" style="display:none;">
-            <div class="input-group"><label>Pixel Meta</label><input type="text" id="editCliPixel"></div>
-            <div class="input-group"><label>Token Meta <span style="color:var(--muted);font-weight:400;font-size:11px;">(App — canal WhatsApp/CTWA)</span></label><input type="password" id="editCliToken" autocomplete="new-password"></div>
-            <div class="input-group"><label>ID da Conta de Anúncios <span style="color:var(--muted);font-weight:400;font-size:11px;">(ex: act_123456789)</span></label><input type="text" id="editCliAccountId" placeholder="act_XXXXXXXXX"></div>
-            <div class="input-group"><label>Alerta de saldo baixo <span style="color:var(--muted);font-weight:400;font-size:11px;">(R$, deixe em branco para desativar)</span></label><input type="number" id="editCliSaldoAlertaMinimo" min="0" step="0.01" placeholder="Ex: 50.00"></div>
-            <hr style="border:none;border-top:1px solid var(--border);margin:14px 0;">
-            <p style="font-size:11px;color:var(--muted);margin:0 0 10px;"><strong style="color:var(--text);">CAPI Web (links rastreáveis)</strong> — atribui leads de link à campanha do Facebook. Token gerado em <em>Eventos Manager → Conjuntos de Dados → Conversions API</em>.</p>
-            <div class="input-group"><label>Pixel CAPI Web <span style="color:var(--muted);font-weight:400;font-size:11px;">(dataset)</span></label><input type="text" id="editCliCapiPixel" placeholder="Apenas números"></div>
-            <div class="input-group"><label>Token CAPI Web <span style="color:var(--muted);font-weight:400;font-size:11px;">(deixe em branco p/ não alterar)</span></label><input type="password" id="editCliCapiToken" placeholder="Token de API do dataset" autocomplete="new-password"></div>
+            <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">Configuração básica</div>
+            <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:18px;">
+                <div class="input-group"><label>Pixel Meta</label><input type="text" id="editCliPixel"></div>
+                <div class="input-group"><label>Token Meta <span style="color:var(--muted);font-weight:400;font-size:11px;">(App — canal WhatsApp/CTWA)</span></label><input type="password" id="editCliToken" autocomplete="new-password"></div>
+                <div class="input-group"><label>ID da Conta de Anúncios <span style="color:var(--muted);font-weight:400;font-size:11px;">(ex: act_123456789)</span></label><input type="text" id="editCliAccountId" placeholder="act_XXXXXXXXX"></div>
+                <div class="input-group" style="margin-bottom:0;"><label>Alerta de saldo baixo <span style="color:var(--muted);font-weight:400;font-size:11px;">(R$, deixe em branco para desativar)</span></label><input type="number" id="editCliSaldoAlertaMinimo" min="0" step="0.01" placeholder="Ex: 50.00"></div>
+            </div>
+
+            <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">CAPI Web <span style="text-transform:none;font-weight:400;">(avançado — links rastreáveis)</span></div>
+            <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;padding:14px;">
+                <p style="font-size:11px;color:var(--muted);margin:0 0 10px;">Atribui leads de link à campanha do Facebook. Token gerado em <em>Eventos Manager → Conjuntos de Dados → Conversions API</em>.</p>
+                <div class="input-group"><label>Pixel CAPI Web <span style="color:var(--muted);font-weight:400;font-size:11px;">(dataset)</span></label><input type="text" id="editCliCapiPixel" placeholder="Apenas números"></div>
+                <div class="input-group" style="margin-bottom:0;"><label>Token CAPI Web <span style="color:var(--muted);font-weight:400;font-size:11px;">(deixe em branco p/ não alterar)</span></label><input type="password" id="editCliCapiToken" placeholder="Token de API do dataset" autocomplete="new-password"></div>
+            </div>
         </div>
         <!-- Aba: Google Ads -->
         <div id="editPanel-google" style="display:none;">
-            <p style="font-size:11px;color:var(--muted);margin:0 0 10px;">Dispara conversão quando o clique no link vier de anúncio do Google (<code>?gclid=...</code>). Encontre em <em>Ferramentas → Conversões → [ação] → Configuração da tag</em>.</p>
-            <div class="input-group"><label>ID de conversão <span style="color:var(--muted);font-weight:400;font-size:11px;">(ex: AW-123456789)</span></label><input type="text" id="editCliGoogleAdsId" placeholder="AW-XXXXXXXXX"></div>
-            <div class="input-group"><label>Label da conversão</label><input type="text" id="editCliGoogleAdsLabel" placeholder="AbCdEfGhIjKlMnOp"></div>
+            <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">Conversão do Google Ads</div>
+            <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;padding:14px;">
+                <p style="font-size:11px;color:var(--muted);margin:0 0 10px;">Dispara conversão quando o clique no link vier de anúncio do Google (<code>?gclid=...</code>). Encontre em <em>Ferramentas → Conversões → [ação] → Configuração da tag</em>.</p>
+                <div class="input-group"><label>ID de conversão <span style="color:var(--muted);font-weight:400;font-size:11px;">(ex: AW-123456789)</span></label><input type="text" id="editCliGoogleAdsId" placeholder="AW-XXXXXXXXX"></div>
+                <div class="input-group" style="margin-bottom:0;"><label>Label da conversão</label><input type="text" id="editCliGoogleAdsLabel" placeholder="AbCdEfGhIjKlMnOp"></div>
+            </div>
         </div>
         <!-- Aba: Engajamento -->
         <div id="editPanel-engajamento" style="display:none;">
+            <div id="engLoadingSpinner" style="display:none;align-items:center;gap:8px;color:var(--muted);font-size:12px;margin-bottom:12px;">
+                <i data-lucide="loader-2" style="width:14px;height:14px;animation:spin 1s linear infinite;"></i> Carregando configuração salva...
+            </div>
             <p style="font-size:11px;color:var(--muted);margin:0 0 14px;">Configura o Índice de Engajamento Comercial (drawer de perfil do lead, aba Venda). Os componentes de tempo médio e volume de mensagens só são confiáveis nos últimos 15 dias (retenção de chat_messages).</p>
 
-            <div style="background:var(--tag);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px;">
-                <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
-                    <i data-lucide="bot" style="width:15px;color:var(--blue);"></i>
-                    <span style="font-size:13px;font-weight:700;color:var(--text);">Detectar bot</span>
-                </div>
+            <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">Detectar bot</div>
+            <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:18px;">
                 <div class="input-group" style="margin:0;"><label>Limiar anti-bot <span style="color:var(--muted);font-weight:400;font-size:11px;">(segundos; respostas mais rápidas que isso são tratadas como bot/saudação automática)</span></label><input type="number" id="engBotThreshold" min="0" max="300" value="5"></div>
             </div>
 
-            <div style="background:var(--tag);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px;">
-                <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
-                    <i data-lucide="clock" style="width:15px;color:var(--blue);"></i>
-                    <span style="font-size:13px;font-weight:700;color:var(--text);">Horário comercial</span>
-                </div>
-                <label class="pad-md" style="display:flex;align-items:center;gap:10px;background:var(--bg-primary);border-radius:8px;cursor:pointer;margin-bottom:10px;">
+            <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">Horário comercial</div>
+            <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:18px;">
+                <label class="pad-md" style="display:flex;align-items:center;gap:10px;background:var(--tag);border-radius:8px;cursor:pointer;margin-bottom:10px;">
                     <input class="cbx-md" type="checkbox" id="engBusinessHoursEnabled" onchange="engToggleBusinessHours()"><span style="font-size:13px;">Considerar apenas horário comercial nos cálculos de tempo</span>
                 </label>
                 <div id="engBusinessHoursFields" style="display:none;">
@@ -737,21 +761,24 @@
                 </div>
             </div>
 
-            <div style="background:var(--tag);border:1px solid var(--border);border-radius:10px;padding:14px;">
-                <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
-                    <i data-lucide="scale" style="width:15px;color:var(--blue);"></i>
-                    <span style="font-size:13px;font-weight:700;color:var(--text);">Pesos do índice</span>
-                    <span style="font-size:11px;color:var(--muted);font-weight:400;">(soma deve ser 100)</span>
-                </div>
+            <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;display:flex;align-items:center;gap:8px;">
+                Pesos do índice
+                <span id="engPesosTotal" style="text-transform:none;font-weight:600;font-size:11px;padding:1px 8px;border-radius:20px;background:var(--tag);color:var(--muted);">100 / 100</span>
+            </div>
+            <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;padding:14px;">
                 <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
-                    <div class="input-group" style="margin:0;"><label style="font-size:11px;">Primeira resposta</label><input type="number" id="engWeightFirstResponse" min="0" max="100" value="45"></div>
-                    <div class="input-group" style="margin:0;"><label style="font-size:11px;">Tempo médio</label><input type="number" id="engWeightAvgResponse" min="0" max="100" value="35"></div>
-                    <div class="input-group" style="margin:0;"><label style="font-size:11px;">Engajamento</label><input type="number" id="engWeightEngagementRate" min="0" max="100" value="20"></div>
+                    <div class="input-group" style="margin:0;"><label style="font-size:11px;">Primeira resposta</label><input type="number" id="engWeightFirstResponse" min="0" max="100" value="45" oninput="engAtualizarSomaPesos()"></div>
+                    <div class="input-group" style="margin:0;"><label style="font-size:11px;">Tempo médio</label><input type="number" id="engWeightAvgResponse" min="0" max="100" value="35" oninput="engAtualizarSomaPesos()"></div>
+                    <div class="input-group" style="margin:0;"><label style="font-size:11px;">Engajamento</label><input type="number" id="engWeightEngagementRate" min="0" max="100" value="20" oninput="engAtualizarSomaPesos()"></div>
                 </div>
             </div>
         </div>
-        <button class="btn-confirm" id="btnSalvarEditCliente" onclick="salvarEdicaoCliente()">Salvar Alterações</button>
     </div>
+    <!-- Footer -->
+    <div style="padding:14px 22px;border-top:1px solid var(--border);flex-shrink:0;">
+        <button class="btn-confirm" id="btnSalvarEditCliente" onclick="salvarEdicaoCliente()" style="width:100%;">Salvar Alterações</button>
+    </div>
+  </div>
 </div>
 
 <!-- Sidebar -->
@@ -6860,7 +6887,7 @@ function resetLeadSearchAutofill() {
 </script>
 <script defer src="js/leads.js?v=20260912-fase2"></script>
 <script defer src="js/chat-monitor.js?v=20260813-clientswitch"></script>
-<script defer src="js/admin.js?v=20260912-fase2"></script>
+<script defer src="js/admin.js?v=20260912-editclidrawer"></script>
 <script defer src="js/captacao.js?v=20260912-fase3"></script>
 <script defer src="js/onboarding.js?v=20260715-2"></script>
 

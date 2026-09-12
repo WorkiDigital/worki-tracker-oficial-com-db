@@ -129,14 +129,48 @@ function switchEditTab(tab) {
         if (panel) panel.style.display = t === tab ? '' : 'none';
         const btn = $('editTab-' + t);
         if (!btn) return;
-        btn.style.background = t === tab ? 'var(--blue)' : 'transparent';
-        btn.style.color      = t === tab ? '#fff' : 'var(--text-muted)';
+        // Estilo de tab com sublinhado (mesmo padrão do drawer de Perfil do
+        // Lead), não mais o botão de pílula azul sólida do modal antigo.
+        btn.style.borderBottom = t === tab ? '2px solid var(--blue)' : '2px solid transparent';
+        btn.style.color        = t === tab ? 'var(--blue)' : 'var(--muted)';
     });
-    if (tab === 'engajamento') engCarregarConfig();
+    // Indicador de carregamento: engCarregarConfig() é assíncrono e, antes,
+    // rodava sem nenhum feedback visual — se a rede demorasse, os defaults do
+    // HTML ficavam visíveis por um instante antes dos valores reais chegarem
+    // (achado da auditoria UX/UI). O spinner cobre exatamente essa janela.
+    if (tab === 'engajamento') {
+        const panel = $('editPanel-engajamento');
+        const spinner = $('engLoadingSpinner');
+        if (spinner) spinner.style.display = '';
+        if (panel) panel.style.opacity = '0.4';
+        engCarregarConfig().finally(() => {
+            if (spinner) spinner.style.display = 'none';
+            if (panel) panel.style.opacity = '';
+        });
+    }
 }
 
 function engToggleBusinessHours() {
     $('engBusinessHoursFields').style.display = $('engBusinessHoursEnabled').checked ? '' : 'none';
+}
+
+// Soma dos 3 pesos calculada em tempo real (badge ao lado do título "Pesos do
+// índice") — antes só era validada no momento de salvar, sem nenhum feedback
+// visual até o toast de erro aparecer. Chamada a cada oninput dos 3 campos e
+// também ao abrir o drawer (abrirEditCliente) e ao trocar pra esta aba
+// (switchEditTab), pra nunca mostrar um valor desatualizado.
+function engAtualizarSomaPesos() {
+    const badge = $('engPesosTotal');
+    if (!badge) return;
+    const total = [
+        parseInt($('engWeightFirstResponse')?.value, 10) || 0,
+        parseInt($('engWeightAvgResponse')?.value, 10) || 0,
+        parseInt($('engWeightEngagementRate')?.value, 10) || 0,
+    ].reduce((a, b) => a + b, 0);
+    badge.textContent = `${total} / 100`;
+    const ok = total === 100;
+    badge.style.background = ok ? 'rgba(16,185,129,.15)' : 'rgba(239,68,68,.15)';
+    badge.style.color = ok ? 'var(--success)' : 'var(--danger)';
 }
 
 // Carrega a config de engajamento do cliente atualmente aberto no modal
@@ -162,6 +196,8 @@ async function engCarregarConfig() {
         $('engWeightEngagementRate').value = cfg.weight_engagement_rate ?? 20;
     } catch (_) {
         // best-effort — mantém os defaults já preenchidos no HTML
+    } finally {
+        engAtualizarSomaPesos();
     }
 }
 
@@ -173,8 +209,9 @@ async function engSalvarConfig(clienteId) {
         parseInt($('engWeightEngagementRate').value, 10),
     ];
     if (pesos.reduce((a, b) => a + b, 0) !== 100) {
-        toast('Os 3 pesos do índice de engajamento devem somar 100.', 'error');
-        throw new Error('pesos_invalidos');
+        const err = new Error('Os 3 pesos do índice de engajamento devem somar 100.');
+        err.isEngError = true;
+        throw err;
     }
     const body = {
         cliente_id: clienteId,
@@ -198,12 +235,18 @@ async function engSalvarConfig(clienteId) {
         body: JSON.stringify(body)
     });
     const data = await r.json();
-    if (!r.ok || data.error) throw new Error(data.error || `Erro ao salvar engajamento (HTTP ${r.status})`);
+    if (!r.ok || data.error) {
+        const err = new Error(data.error || `Erro ao salvar engajamento (HTTP ${r.status})`);
+        err.isEngError = true;
+        throw err;
+    }
 }
 
 function abrirEditCliente(id, abaInicial = 'dados') {
-    switchEditTab(abaInicial);
     const c = (window._clientesMap || {})[id] || { id };
+    // editCliId precisa estar preenchido ANTES de switchEditTab — se
+    // abaInicial for 'engajamento', ela dispara engCarregarConfig(), que lê
+    // esse campo pra saber de qual cliente buscar a config salva.
     $('editCliId').value        = c.id;
     $('editCliNome').value      = c.nome || '';
     $('editCliPixel').value     = c.pixel_padrao || '';
@@ -229,8 +272,16 @@ function abrirEditCliente(id, abaInicial = 'dados') {
     $('permZaprelatorios').checked = p.zaprelatorios !== false;
     $('permIntegracoes').checked   = p.integracoes   !== false;
     $('permConta').checked         = p.conta         !== false;
-    $('modalEditCliente').classList.add('open');
-    lucide.createIcons({ nodes: [$('modalEditCliente')] });
+    engAtualizarSomaPesos();
+    switchEditTab(abaInicial);
+    $('editClienteDrawer').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    lucide.createIcons({ nodes: [$('editClienteDrawer')] });
+}
+
+function fecharEditCliente() {
+    $('editClienteDrawer').style.display = 'none';
+    document.body.style.overflow = '';
 }
 
 async function salvarEdicaoCliente() {
@@ -291,10 +342,15 @@ async function salvarEdicaoCliente() {
         } else {
             toast(data.message || 'Cliente atualizado!', 'success');
         }
-        $('modalEditCliente').classList.remove('open');
+        fecharEditCliente();
         carregarClientesAdmin();
     } catch(e) {
         toast(e.message, 'error');
+        // Cliente já foi salvo em /api/clientes nesse ponto (o erro veio do
+        // 2º request, engSalvarConfig) — reabre a aba Engajamento em vez de
+        // deixar o admin sem saber onde está o problema (achado da auditoria
+        // UX/UI: o erro aparecia mas a aba certa não era destacada).
+        if (e.isEngError) switchEditTab('engajamento');
     } finally {
         btn.textContent = orig; btn.disabled = false;
     }
