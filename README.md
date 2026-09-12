@@ -462,7 +462,7 @@ Admins podem gerar links públicos para clientes visualizarem métricas sem logi
 /
 ├── server.js              # Entry point — roteador HTTP, serve estáticos e /api/*
 ├── setup-db.js            # Cria/migra todas as tabelas (idempotente)
-├── reset-db.js            # Reset de tabelas (CUIDADO: apaga dados)
+├── scripts/maintenance/reset-db.js  # Reset de tabelas (CUIDADO: apaga dados)
 ├── package.json           # Dependências e scripts (start, dev, setup)
 ├── nixpacks.toml          # Config de build para EasyPanel/Nixpacks
 ├── vercel.json            # Rewrites para deploy na Vercel (alternativo)

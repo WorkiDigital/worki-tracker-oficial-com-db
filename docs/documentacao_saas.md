@@ -55,7 +55,7 @@ Antes baseado em APIs externas que falhavam por token, hoje ele consulta um mapa
 ## 🚀 5. Startando a Vida (Setup Virgem)
 Para quem acaba de clonar o Adlytics, a engrenagem roda com perfeição neste flow de início:
 1. `npm install` no seu servidor e apontamento da variável de ambiente `DATABASE_URL` no `.env`.
-2. Execução singular e inicial do `node reset-db.js` – (Zera as instâncias e constrói o Multi-Tenant puro na pedra).
+2. Execução singular e inicial do `node scripts/maintenance/reset-db.js` – (Zera as instâncias e constrói o Multi-Tenant puro na pedra).
 3. Abertura pública da rota `login.html`.
 4. Click na aba "Registrar".
 5. Uma vez que o DB está sem vida (0 Usuários), esse primeiro login rouba a cena e salva na memória a glória do `is_admin`. E dali pra frente, o portal se fecha.

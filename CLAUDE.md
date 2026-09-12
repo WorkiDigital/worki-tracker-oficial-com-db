@@ -903,8 +903,16 @@ antigos). Único ajuste: `ag.account_id` → `ag.destino_account_id` (evita coli
 - `_carregarInstanciasZap`/`_carregarContasZap`/`zapModalOnInstanciaChange`/`zapOnTipoChange`
   continuam os mesmos (só chamam `zapVerificarCamposDestino` em vez do antigo `zapVerificarCampos`).
 
-> Existe uma tabela/feature paralela morta (`relatorios_agendados`, `setup-reports-db.js`,
-> `api/reports-config.js`) — não referenciada no `index.html` atual, não faz parte deste fluxo.
+> **REMOVIDO (2026-09):** existia uma feature paralela morta e órfã — tabela `relatorios_agendados`,
+> endpoint `api/reports-config.js`, frontend `js/reports-auto.js` e o modal `#modalNovoRelatorio`
+> em `index.html` (Fase 1 do "Novo Relatório", commit `9aaeac3` e seguintes) — nunca chegou a ter
+> nenhuma função invocada de fato (o botão do menu "Relatórios Automáticos" foi reaproveitado pelo
+> sistema `zap_destinos`/`zap_agendamentos` acima, e nenhum cron nunca leu `relatorios_agendados`).
+> Auditoria completa confirmou ÓRFÃ (zero consumidor de frontend/backend/cron) e removida:
+> os 4 arquivos foram deletados, o `CREATE TABLE relatorios_agendados` saiu de `setup-db.js`, e
+> `scripts/migration/drop-relatorios-agendados.js` foi criado para dropar a tabela em produção
+> (rodar manualmente após confirmar `SELECT COUNT(*) FROM relatorios_agendados` — script não
+> apaga dados sozinho sem essa checagem visível no output).
 
 ### Preview lado a lado + fix de NOT NULL legado (2026-07)
 - Modal do Relatório alargado (920px) com grid de 2 colunas: mensagem+chips à esquerda, preview

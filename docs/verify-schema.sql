@@ -19,8 +19,7 @@ WITH esperadas(tabela) AS (
   VALUES
     ('usuarios'), ('leads_tracking'), ('clientes'), ('share_tokens'),
     ('instancias_mapeamento'), ('zap_agendamentos'), ('zap_destinos'), ('configuracoes_sistema'),
-    ('dashboard_settings'), ('metrics_cache'), ('webhook_logs'),
-    ('relatorios_agendados')
+    ('dashboard_settings'), ('metrics_cache'), ('webhook_logs')
 )
 SELECT e.tabela AS tabela_faltando, 'TABELA FALTANDO' AS status
 FROM esperadas e
@@ -168,21 +167,7 @@ WITH esperadas(tabela, coluna, tipo_esperado) AS (
     ('webhook_logs','level','character varying'),
     ('webhook_logs','tag','character varying'),
     ('webhook_logs','message','text'),
-    ('webhook_logs','data','jsonb'),
-    -- relatorios_agendados
-    ('relatorios_agendados','id','uuid'),
-    ('relatorios_agendados','cliente_id','integer'),
-    ('relatorios_agendados','instance_name','character varying'),
-    ('relatorios_agendados','target_jid','character varying'),
-    ('relatorios_agendados','is_group','boolean'),
-    ('relatorios_agendados','nome_destino','character varying'),
-    ('relatorios_agendados','metricas','jsonb'),
-    ('relatorios_agendados','frequencia','character varying'),
-    ('relatorios_agendados','horario_envio','character varying'),
-    ('relatorios_agendados','mensagem_template','text'),
-    ('relatorios_agendados','status','boolean'),
-    ('relatorios_agendados','created_at','timestamp without time zone'),
-    ('relatorios_agendados','updated_at','timestamp without time zone')
+    ('webhook_logs','data','jsonb')
 )
 SELECT
   e.tabela,
@@ -211,8 +196,7 @@ WITH esperadas(tabela, coluna, tipo_esperado) AS (
     ('webhook_logs','instance','character varying'),
     ('webhook_logs','data','jsonb'),
     ('zap_agendamentos','ultimo_envio_em','timestamp with time zone'),
-    ('dashboard_settings','id','uuid'),
-    ('relatorios_agendados','id','uuid')
+    ('dashboard_settings','id','uuid')
 )
 SELECT
   e.tabela,

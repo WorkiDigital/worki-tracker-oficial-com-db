@@ -11,7 +11,7 @@
     "dev:api": "node server-api.js",
     "dev:static": "node server-static.js",
     "setup": "node setup-db.js",
-    "delete:old-shares": "node delete-old-share-links.js"
+    "delete:old-shares": "node scripts/maintenance/delete-old-share-links.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

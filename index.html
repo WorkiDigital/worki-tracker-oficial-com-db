@@ -776,72 +776,6 @@
     </div>
 </div>
 
-<!-- Modal Novo Relatório -->
-<div id="modalNovoRelatorio" class="modal-overlay" role="dialog" aria-modal="true" onclick="if(event.target===this) fecharModalNovoRelatorio()">
-    <div class="modal" style="max-width:500px;">
-        <div class="modal-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-            <h3 style="margin:0;font-size:16px;">Agendar Novo Relatório</h3>
-            <button class="btn-icon" onclick="fecharModalNovoRelatorio()"><i data-lucide="x" style="width:20px;"></i></button>
-        </div>
-        <div class="modal-body" style="display:flex;flex-direction:column;gap:16px;">
-            <!-- Removido seletor de instância daqui -->
-            
-            <div class="input-group">
-                <label>Destino</label>
-                <div style="display:flex;gap:16px;margin-bottom:8px;">
-                    <label style="cursor:pointer;font-size:13px;display:flex;align-items:center;gap:6px;">
-                        <input type="radio" name="relatorioTipoDestino" value="grupo" checked onchange="toggleRelatorioDestino()" style="accent-color:var(--blue);"> Grupo
-                    </label>
-                    <label style="cursor:pointer;font-size:13px;display:flex;align-items:center;gap:6px;">
-                        <input type="radio" name="relatorioTipoDestino" value="contato" onchange="toggleRelatorioDestino()" style="accent-color:var(--blue);"> Contato Direto
-                    </label>
-                </div>
-                
-                <!-- Dropdown para Grupos -->
-                <div id="relatorioContainerGrupo">
-                    <select id="relatorioTargetGroup" class="pad-md" style="width:100%;border-radius:8px;">
-                        <option value="">Selecione uma instância primeiro...</option>
-                    </select>
-                </div>
-                
-                <!-- Input para Contato -->
-                <div id="relatorioContainerContato" style="display:none;">
-                    <input type="text" id="relatorioTargetContato" class="pad-md" placeholder="Ex: 5511999999999" style="width:100%;border-radius:8px;">
-                    <span style="font-size:11px;color:var(--text-secondary);margin-top:4px;display:block;">Apenas números, com código do país (ex: 55)</span>
-                </div>
-            </div>
-
-
-            <div class="input-group">
-                <label>Modelo de Mensagem <span style="color:var(--muted);font-weight:400;font-size:11px;">(Opcional)</span></label>
-                <textarea id="relatorioTemplate" rows="4" class="pad-md" style="width:100%;border-radius:8px;font-family:'Inter';font-size:12px;background:var(--bg);border:1px solid var(--border);color:var(--text);resize:vertical;" placeholder="Ex: 📊 Resumo de Ontem:&#10;💰 Gasto: {gasto}&#10;🎯 Leads: {leads}&#10;🏷️ CPL: {cpl}"></textarea>
-                <div style="font-size:10px;color:var(--muted);margin-top:6px;line-height:1.6;">
-                    Tags: <code>{gasto}</code> <code>{leads}</code> <code>{cpl}</code> <code>{msgs}</code> <code>{cpr}</code> <code>{cliques}</code> <code>{ctr}</code> <code>{roas}</code> <code>{cpc}</code> <code>{cpm}</code> <code>{alcance}</code> <code>{impressoes}</code> <code>{seguidores}</code>
-                </div>
-            </div>
-
-            <div style="display:flex;gap:16px;">
-                <div class="input-group" style="flex:1;">
-                    <label>Frequência</label>
-                    <select id="relatorioFrequencia" class="pad-md" style="width:100%;border-radius:8px;">
-                        <option value="diario">Diário</option>
-                        <option value="semanal">Semanal</option>
-                    </select>
-                </div>
-                <div class="input-group" style="flex:1;">
-                    <label>Horário</label>
-                    <input type="time" id="relatorioHorario" class="pad-md" value="08:00" style="width:100%;border-radius:8px;">
-                </div>
-            </div>
-            
-            <button class="btn-confirm" onclick="salvarRelatorioAgendado()" style="width:100%;margin-top:8px;">
-                <i data-lucide="save" style="width:16px;margin-right:8px;vertical-align:middle;display:inline-block;"></i> Salvar Agendamento
-            </button>
-        </div>
-    </div>
-</div>
-
-
 <!-- Sidebar -->
 <div class="sidebar" id="sidebar">
     <div class="logo">
@@ -6939,7 +6873,6 @@ function resetLeadSearchAutofill() {
 <script defer src="js/leads.js?v=20260726-charttype1"></script>
 <script defer src="js/chat-monitor.js?v=20260813-clientswitch"></script>
 <script defer src="js/admin.js?v=20260811-saldoalerta1"></script>
-<script defer src="js/reports-auto.js?v=20260712-1"></script>
 <script defer src="js/captacao.js?v=20260722-1"></script>
 <script defer src="js/onboarding.js?v=20260715-2"></script>
 
