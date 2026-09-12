@@ -89,14 +89,14 @@ async function carregarClientesAdmin() {
             return;
         }
 
-        const PERM_LABELS = { leads:'Leads', anuncios:'Meta Ads', relatorios:'Relatórios', whatsapp:'WhatsApp', config:'Integrações', clientes:'Compartilhar' };
+        const PERM_LABELS = { leads:'Leads', anuncios:'Meta Ads', relatorios:'Relatórios', whatsapp:'WhatsApp', conversas:'Conversas', captacao:'Link', inteligente:'Inteligente', funil:'Funil', zaprelatorios:'Zap', integracoes:'Integrações', conta:'Conta' };
 
         // Armazena dados completos em memória — token_meta nunca entra no HTML
         window._clientesMap = {};
         clientes.forEach(c => { window._clientesMap[c.id] = c; });
 
         tbody.innerHTML = clientes.map(c => {
-            const p = c.permissoes || { leads:true, anuncios:true, relatorios:true, whatsapp:true, config:true, clientes:true };
+            const p = c.permissoes || { leads:true, anuncios:true, relatorios:true, whatsapp:true, conversas:true, captacao:true, inteligente:true, funil:true, zaprelatorios:true, integracoes:true, conta:true };
             const badges = Object.entries(PERM_LABELS).map(([k, label]) =>
                 `<span style="display:inline-block;font-size:10px;padding:2px 6px;border-radius:4px;margin:1px;background:${p[k] ? 'rgba(59,130,246,0.15)' : 'rgba(239,68,68,0.1)'};color:${p[k] ? 'var(--blue)' : 'var(--red)'};">${label}</span>`
             ).join('');
@@ -222,9 +222,12 @@ function abrirEditCliente(id, abaInicial = 'dados') {
     $('permAnuncios').checked   = p.anuncios   !== false;
     $('permRelatorios').checked = p.relatorios !== false;
     $('permWhatsapp').checked   = p.whatsapp   !== false;
+    $('permConversas').checked     = p.conversas     !== false;
     $('permCaptacao').checked      = p.captacao      !== false;
     $('permInteligente').checked   = p.inteligente   !== false;
+    $('permFunil').checked         = p.funil         !== false;
     $('permZaprelatorios').checked = p.zaprelatorios !== false;
+    $('permIntegracoes').checked   = p.integracoes   !== false;
     $('permConta').checked         = p.conta         !== false;
     $('modalEditCliente').classList.add('open');
     lucide.createIcons({ nodes: [$('modalEditCliente')] });
@@ -251,10 +254,13 @@ async function salvarEdicaoCliente() {
             anuncios:       $('permAnuncios').checked,
             relatorios:     $('permRelatorios').checked,
             whatsapp:       $('permWhatsapp').checked,
+            conversas:      $('permConversas').checked,
             zaprelatorios:  $('permZaprelatorios').checked,
             conta:          $('permConta').checked,
             captacao:       $('permCaptacao').checked,
             inteligente:    $('permInteligente').checked,
+            funil:          $('permFunil').checked,
+            integracoes:    $('permIntegracoes').checked,
         }
     };
     const senha = $('editCliSenha').value;
@@ -583,10 +589,11 @@ async function verConexao(name) {
     checkWaStatus(true);
 }
 
-// Modal generico de confirmacao para acoes destrutivas de instancia WhatsApp
+// Modal generico de confirmacao para acoes destrutivas do painel (nao mais so
+// instancia WhatsApp — reaproveitado tambem para excluir cliente e limpar logs)
 // (substitui confirm() nativo — regra ja documentada no CLAUDE.md para toda
 // acao destrutiva do painel, aplicada aqui do mesmo jeito que em leads/links).
-const WA_CONFIRM_TIPOS = {
+const CONFIRM_TIPOS = {
     excluir: {
         icone: 'trash-2', cor: '#ef4444', corFundo: 'rgba(239,68,68,.12)',
         corBorda: 'rgba(239,68,68,.25)', corAvisoFundo: 'rgba(239,68,68,.07)',
@@ -614,12 +621,30 @@ const WA_CONFIRM_TIPOS = {
         botaoTexto: 'Desvincular', botaoCorTexto: '#111827',
         verboGerundio: 'Desvinculando',
     },
+    excluir_cliente: {
+        icone: 'trash-2', cor: '#ef4444', corFundo: 'rgba(239,68,68,.12)',
+        corBorda: 'rgba(239,68,68,.25)', corAvisoFundo: 'rgba(239,68,68,.07)',
+        titulo: 'Excluir este cliente?',
+        subtitulo: 'Confirme a exclusão permanente',
+        aviso: 'Isso apaga o usuário de acesso e TODOS os leads vinculados a este cliente. Não pode ser desfeito.',
+        botaoTexto: 'Excluir permanentemente', botaoCorTexto: '#fff',
+        verboGerundio: 'Excluindo',
+    },
+    limpar_logs: {
+        icone: 'trash-2', cor: '#ef4444', corFundo: 'rgba(239,68,68,.12)',
+        corBorda: 'rgba(239,68,68,.25)', corAvisoFundo: 'rgba(239,68,68,.07)',
+        titulo: 'Remover logs antigos?',
+        subtitulo: 'Limpeza permanente do histórico técnico',
+        aviso: 'Remove todos os logs com mais de 15 dias. Isso ajuda a liberar espaço no banco de dados e não pode ser desfeito.',
+        botaoTexto: 'Remover logs antigos', botaoCorTexto: '#fff',
+        verboGerundio: 'Removendo',
+    },
 };
 
 let _waConfirmPendente = null;
 
 function abrirModalConfirmarWa({ tipo, nome, onConfirmar }) {
-    const cfg = WA_CONFIRM_TIPOS[tipo];
+    const cfg = CONFIRM_TIPOS[tipo];
     if (!cfg) return;
     _waConfirmPendente = { onConfirmar, botaoTextoOriginal: cfg.botaoTexto, verboGerundio: cfg.verboGerundio };
 
@@ -1030,15 +1055,20 @@ async function confirmarVincularInstancia() {
     }
 }
 
-async function excluirCliente(id, nome) {
-    if (!confirm(`Excluir permanentemente o cliente "${nome}"?\n\nIsso apaga o usuário de acesso e TODOS os leads vinculados.`)) return;
-    try {
-        const r = await authFetch('/api/clientes', { method: 'DELETE', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id }) });
-        const data = await r.json();
-        if (!r.ok) throw new Error(data.error || 'Erro ao excluir');
-        toast('Cliente excluído.', 'success');
-        carregarClientesAdmin();
-    } catch(e) { toast(e.message, 'error'); }
+function excluirCliente(id, nome) {
+    abrirModalConfirmarWa({
+        tipo: 'excluir_cliente',
+        nome,
+        onConfirmar: async () => {
+            try {
+                const r = await authFetch('/api/clientes', { method: 'DELETE', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id }) });
+                const data = await r.json();
+                if (!r.ok) throw new Error(data.error || 'Erro ao excluir');
+                toast('Cliente excluído.', 'success');
+                carregarClientesAdmin();
+            } catch(e) { toast(e.message, 'error'); }
+        }
+    });
 }
 
 // ── Logs do Sistema ───────────────────────────────────────────────────────────
@@ -1304,17 +1334,21 @@ function renderLogPagination(total) {
         </button>
     `;
 }
-async function pruneLogs() {
-    if (!confirm('Deseja realmente remover permanentemente todos os logs com mais de 15 dias?\nIsso ajudará a liberar espaço no banco de dados.')) return;
-    
-    try {
-        const r = await authFetch('/api/logs-prune', { method: 'POST' });
-        const data = await r.json();
-        if (!r.ok || data.error) throw new Error(data.error || 'Erro ao limpar logs');
-        
-        toast(data.message || 'Limpeza concluída!', 'success');
-        carregarLogs();
-    } catch (e) {
-        toast('Erro ao limpar: ' + e.message, 'error');
-    }
+function pruneLogs() {
+    abrirModalConfirmarWa({
+        tipo: 'limpar_logs',
+        nome: 'Logs com mais de 15 dias',
+        onConfirmar: async () => {
+            try {
+                const r = await authFetch('/api/logs-prune', { method: 'POST' });
+                const data = await r.json();
+                if (!r.ok || data.error) throw new Error(data.error || 'Erro ao limpar logs');
+
+                toast(data.message || 'Limpeza concluída!', 'success');
+                carregarLogs();
+            } catch (e) {
+                toast('Erro ao limpar: ' + e.message, 'error');
+            }
+        }
+    });
 }
