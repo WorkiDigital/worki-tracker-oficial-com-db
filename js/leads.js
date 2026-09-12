@@ -472,7 +472,7 @@ function renderTabela() {
         const status   = (lead.status||'Lead').toLowerCase();
         const purchase = status === 'venda_fechada' || status === 'vendido';
         const agendado = status === 'agendado';
-        const stColor  = purchase ? '#10b981' : agendado ? '#f59e0b' : '';
+        const stColor  = purchase ? 'var(--success)' : agendado ? 'var(--warning)' : '';
         const stBorder = purchase ? '1px solid rgba(16,185,129,.3)' : agendado ? '1px solid rgba(245,158,11,.3)' : 'transparent';
         const temCapi  = true; // O backend busca o pixel do cliente via banco de dados 
         const data     = tempoRelativo(lead.event_time||lead.created_at);

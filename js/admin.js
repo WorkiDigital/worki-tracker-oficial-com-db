@@ -483,7 +483,7 @@ function renderWaLista(data, isAdminView) {
         const up      = inst.state === 'open';
         const mid     = inst.state === 'connecting';
         const badgeBg = up ? 'rgba(16,185,129,0.15)' : mid ? 'rgba(245,158,11,0.15)' : 'rgba(239,68,68,0.12)';
-        const badgeColor = up ? '#10b981' : mid ? '#f59e0b' : '#ef4444';
+        const badgeColor = up ? 'var(--success)' : mid ? 'var(--warning)' : 'var(--danger)';
         const statusLabel = up ? '● Conectado' : mid ? '● Conectando...' : '● Desconectado';
         return `
         <div style="background:var(--card);border:1px solid ${up ? 'rgba(16,185,129,0.3)' : 'var(--border)'};border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:10px;min-width:0;">
@@ -506,7 +506,7 @@ function renderWaLista(data, isAdminView) {
             </div>
             <div style="padding-top:8px;border-top:1px solid var(--border);display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
                 <code style="font-family:monospace;font-size:10px;background:var(--tag);padding:2px 6px;border-radius:4px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;">${esc(inst.fullName)}</code>
-                ${up ? `<span style="font-size:10px;color:#10b981;white-space:nowrap;">✓ Ativo</span>` : ''}
+                ${up ? `<span style="font-size:10px;color:var(--success);white-space:nowrap;">✓ Ativo</span>` : ''}
             </div>
         </div>`;
     };

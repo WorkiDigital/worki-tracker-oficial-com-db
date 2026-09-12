@@ -12,7 +12,7 @@
     <script defer src="https://cdn.jsdelivr.net/npm/lucide@0.469.0/dist/umd/lucide.min.js"></script>
     <!-- Chart.js, html2canvas e jsPDF são carregados sob demanda via loadScript() (utils.js).
          Não incluir aqui — evita baixar ~500KB em toda sessão mesmo sem abrir Anúncios ou exportar PDF. -->
-    <link rel="stylesheet" href="css/dashboard.css?v=20260814-mktalertaresp">
+    <link rel="stylesheet" href="css/dashboard.css?v=20260912-fase2">
     <link rel="stylesheet" href="css/date-range-picker.css?v=20260825-1">
     <link rel="stylesheet" href="css/splash.css?v=20260712-1">
     <link rel="stylesheet" href="css/funil.css?v=20260713-1">
@@ -75,7 +75,7 @@
 
 <!-- Share Config Modal -->
 <div id="shareModal" class="modal-overlay" role="dialog" aria-modal="true" onclick="fecharShareModal(event)">
-    <div class="modal" style="width:480px;max-width:96vw;max-height:90vh;overflow-y:auto;" onclick="event.stopPropagation()">
+    <div class="modal-box" style="width:min(480px,96vw);max-height:90vh;overflow-y:auto;" onclick="event.stopPropagation()">
         <div class="modal-head">
             <div class="modal-icon" style="background:var(--blue)"><i data-lucide="link" style="width:20px;height:20px;" class="text1"></i></div>
             <div><h3>Configurar Link de Acesso</h3><p id="shareModalAcctName" style="font-size:12px;color:var(--muted);">—</p></div>
@@ -189,7 +189,7 @@
 
 <!-- CAPI Modal -->
 <div id="capiModal" class="modal-overlay" role="dialog" aria-modal="true">
-    <div class="modal">
+    <div class="modal-box" style="width:min(400px,94vw);">
         <div class="modal-head">
             <div class="modal-icon"><i data-lucide="shopping-bag" style="width:22px;height:22px;" class="text1"></i></div>
             <div><h3>Registrar Venda</h3><p id="modalLeadNome">—</p></div>
@@ -210,7 +210,7 @@
 
 <!-- Qualificar Modal -->
 <div id="qualificarModal" class="modal-overlay" role="dialog" aria-modal="true" onclick="if(event.target===this) this.classList.remove('open')">
-    <div class="modal" style="max-width:400px;text-align:center;">
+    <div class="modal-box" style="width:min(400px,94vw);text-align:center;">
         <div class="modal-head" style="justify-content:center;margin-bottom:15px;border-bottom:none;">
             <div class="modal-icon" style="background:rgba(59, 130, 246, 0.1);color:var(--blue);"><i data-lucide="check-circle" style="width:24px;height:24px;"></i></div>
         </div>
@@ -224,7 +224,7 @@
 </div>
 
 <div id="modalExcluirLeads" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="tituloExcluirLeads" onclick="if(event.target===this) fecharModalExcluirLeads()">
-    <div class="modal" style="max-width:430px;">
+    <div class="modal-box" style="width:min(430px,94vw);">
         <div class="modal-head">
             <div class="modal-icon" style="background:rgba(239,68,68,.12);color:#ef4444;">
                 <i data-lucide="trash-2" style="width:22px;height:22px;"></i>
@@ -249,7 +249,7 @@
 <!-- Modal generico de confirmacao para acoes de instancia WhatsApp (excluir/desconectar/desvincular).
      Cor/icone/textos setados dinamicamente por abrirModalConfirmarWa() (js/admin.js). -->
 <div id="modalConfirmarWa" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="tituloConfirmarWa" onclick="if(event.target===this) fecharModalConfirmarWa()">
-    <div class="modal" style="max-width:430px;">
+    <div class="modal-box" style="width:min(430px,94vw);">
         <div class="modal-head">
             <div class="modal-icon" id="iconeConfirmarWa">
                 <i data-lucide="wifi-off" style="width:22px;height:22px;"></i>
@@ -273,7 +273,7 @@
 
 <!-- Modal Novo Cliente -->
 <div id="modalAddCliente" class="modal-overlay" role="dialog" aria-modal="true" onclick="if(event.target===this) this.classList.remove('open')">
-    <div class="modal">
+    <div class="modal-box" style="width:min(400px,94vw);">
         <div class="modal-head">
             <div class="modal-icon"><i data-lucide="building" style="width:22px;height:22px;" class="text1"></i></div>
             <div><h3>Novo Cliente SaaS</h3><p>Crie o acesso agora e complete os dados depois</p></div>
@@ -291,7 +291,7 @@
 
 <!-- Modal Credenciais do Cliente Criado -->
 <div id="modalCredenciais" class="modal-overlay" role="dialog" aria-modal="true" onclick="if(event.target===this) this.classList.remove('open')">
-    <div class="modal">
+    <div class="modal-box" style="width:min(400px,94vw);">
         <div class="modal-head">
             <div class="modal-icon" style="background:var(--green);"><i data-lucide="check-circle" style="width:22px;height:22px;" class="text1"></i></div>
             <div><h3>Cliente Criado!</h3><p>Envie as credenciais ao cliente.</p></div>
@@ -313,7 +313,7 @@
 <!-- Modal Editar Cliente -->
 <!-- Modal Vincular Instância Existente -->
 <div id="modalVincularInstancia" class="modal-overlay" role="dialog" aria-modal="true" onclick="if(event.target===this) this.classList.remove('open')">
-    <div class="modal" style="max-width:520px;">
+    <div class="modal-box" style="width:min(520px,94vw);">
         <div class="modal-head">
             <div class="modal-icon" style="background:#25D366;"><i data-lucide="link" style="color:#fff;width:22px;height:22px;"></i></div>
             <div><h3>Conectar Instância Existente</h3><p>Vincule uma instância Evolution já criada a um cliente.</p></div>
@@ -336,7 +336,7 @@
 
 <!-- Modal: Configuração de Captura de Leads por instância -->
 <div id="modalCaptura" class="modal-overlay" role="dialog" aria-modal="true" onclick="if(event.target===this) this.classList.remove('open')">
-    <div class="modal" style="max-width:460px;">
+    <div class="modal-box" style="width:min(460px,94vw);">
         <div class="modal-head">
             <div class="modal-icon" style="background:rgba(59,130,246,0.12);"><i data-lucide="filter" style="color:var(--c6);width:22px;height:22px;"></i></div>
             <div><h3>Captura de Leads</h3><p id="capturaInstanciaNome" style="font-family:monospace;font-size:12px;">—</p></div>
@@ -385,7 +385,7 @@
 
 <!-- Modal: Link rastreável + rotador -->
 <div id="modalCampanha" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="capModalTitulo" onclick="if(event.target===this) fecharModalCampanha()">
-    <div class="modal" style="width:min(940px,96vw);max-width:940px;max-height:92vh;overflow-y:auto;">
+    <div class="modal-box" style="width:min(940px,96vw);max-height:92vh;overflow-y:auto;">
         <div class="modal-head">
             <div class="modal-icon" style="background:rgba(59,130,246,.14);">
                 <i data-lucide="route" style="color:var(--blue);width:22px;height:22px;"></i>
@@ -631,7 +631,7 @@
 </div>
 
 <div id="modalArquivarLink" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="capArquivarTitulo" onclick="if(event.target===this) capFecharModalArquivar()">
-    <div class="modal" style="max-width:440px;">
+    <div class="modal-box" style="width:min(440px,94vw);">
         <div class="modal-head">
             <div class="modal-icon" style="background:rgba(245,158,11,.12);color:#f59e0b;">
                 <i data-lucide="archive" style="width:22px;height:22px;"></i>
@@ -654,7 +654,7 @@
 </div>
 
 <div id="modalEditCliente" class="modal-overlay" role="dialog" aria-modal="true" onclick="if(event.target===this) this.classList.remove('open')">
-    <div class="modal" style="max-width:480px;">
+    <div class="modal-box" style="width:min(480px,94vw);">
         <div class="modal-head">
             <div class="modal-icon" style="background:var(--blue);"><i data-lucide="edit-3" style="color:#fff;width:22px;height:22px;"></i></div>
             <div><h3>Editar Cliente</h3><p id="editCliSubtitle">Atualize dados e permissões.</p></div>
@@ -2155,24 +2155,7 @@
                 </div>
             </div>
 
-            <!-- HEATMAP DE HORÁRIOS -->
-            <style>
-                .heatmap-container { padding: 24px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; }
-                .heatmap-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-                .heatmap-title { font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
-                .heatmap-toggle { display: flex; background: var(--tag); border-radius: 8px; padding: 4px; }
-                .heatmap-toggle button { border: none; background: transparent; color: var(--text); padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
-                .heatmap-toggle button.active { background: var(--blue); color: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-                .heatmap-wrapper { overflow-x: auto; padding-top: 30px; padding-bottom: 10px; }
-                .heatmap-grid { display: grid; grid-template-columns: 40px repeat(24, 1fr); gap: 3px; min-width: 700px; }
-                .heatmap-col-header { text-align: center; font-size: 10px; color: var(--muted); margin-bottom: 4px; }
-                .heatmap-row-label { display: flex; align-items: center; justify-content: flex-end; padding-right: 8px; font-size: 11px; color: var(--muted); font-weight: 600; }
-                .heatmap-cell { height: 24px; border-radius: 4px; background-color: var(--tag); position: relative; cursor: pointer; transition: transform 0.1s; display: flex; align-items: center; justify-content: center; }
-                .heatmap-num { font-size: 9px; font-weight: 600; line-height: 1; pointer-events: none; }
-                .heatmap-cell:hover { transform: scale(1.15); z-index: 10; box-shadow: 0 0 6px rgba(0,0,0,0.2); }
-                .heatmap-cell::after { content: attr(data-tooltip); position: absolute; bottom: calc(100% + 4px); left: 50%; transform: translateX(-50%); background: var(--text); color: var(--card); padding: 4px 8px; border-radius: 4px; font-size: 11px; white-space: nowrap; opacity: 0; visibility: hidden; transition: opacity 0.2s; pointer-events: none; z-index: 20; }
-                .heatmap-cell:hover::after { opacity: 1; visibility: visible; }
-            </style>
+            <!-- HEATMAP DE HORÁRIOS (estilos em css/dashboard-base.css) -->
 
             <div class="report-section">
                 <div class="report-section-title"><i data-lucide="calendar-clock"></i> Horários</div>
@@ -2680,12 +2663,6 @@
                 </div>
             </div>
         </div>
-
-        <style>
-            @media (max-width: 720px) {
-                .zap-msg-preview-grid { grid-template-columns: 1fr !important; }
-            }
-        </style>
 
         <!-- ABA: LOGS -->
         <div id="aba-logs" class="aba-oculta">
@@ -5121,7 +5098,7 @@ function renderTabelaCampanhas(camps) {
 
         const getVal = key => getAdsMetricCellValue(key, ins);
         const isAct = c.status==='ACTIVE';
-        const bs    = isAct ? 'background:rgba(16,185,129,.15);color:#10b981;border:1px solid rgba(16,185,129,.3)' : 'background:rgba(156,163,175,.1);color:#9ca3af;border:1px solid rgba(156,163,175,.2)';
+        const bs    = isAct ? 'background:rgba(16,185,129,.15);color:var(--success);border:1px solid rgba(16,185,129,.3)' : 'background:rgba(156,163,175,.1);color:#9ca3af;border:1px solid rgba(156,163,175,.2)';
         return `<tr data-row-id="${esc(c.id)}" data-nome="${esc(c.name)}">
             <td style="text-align:center;padding:0 4px;"><button class="expand-btn" onclick="toggleExpand('adsets','${esc(c.id)}',this,event)">▶</button></td>
             <td class="ads-campaign-name" style="color:var(--text);font-weight:600;text-align:left;" title="${esc(c.name)}"><span class="row-name-link" onclick="focarLinha('campanha','${esc(c.id)}',event)">${esc(c.name)}</span></td>
@@ -5303,7 +5280,7 @@ async function toggleExpand(level, parentId, btn, e) {
     if (!parentRow) return;
 
     const bs = (status) => status === 'ACTIVE'
-        ? 'background:rgba(16,185,129,.15);color:#10b981;border:1px solid rgba(16,185,129,.3)'
+        ? 'background:rgba(16,185,129,.15);color:var(--success);border:1px solid rgba(16,185,129,.3)'
         : 'background:rgba(156,163,175,.1);color:#9ca3af;border:1px solid rgba(156,163,175,.2)';
 
     const html = expandCache[key].map(item => {
@@ -6822,9 +6799,9 @@ function resetLeadSearchAutofill() {
     input.defaultValue = '';
 }
 </script>
-<script defer src="js/leads.js?v=20260726-charttype1"></script>
+<script defer src="js/leads.js?v=20260912-fase2"></script>
 <script defer src="js/chat-monitor.js?v=20260813-clientswitch"></script>
-<script defer src="js/admin.js?v=20260811-saldoalerta1"></script>
+<script defer src="js/admin.js?v=20260912-fase2"></script>
 <script defer src="js/captacao.js?v=20260722-1"></script>
 <script defer src="js/onboarding.js?v=20260715-2"></script>
 

@@ -700,9 +700,6 @@ html.light .ads-filters { background:rgba(0,0,0,.02); }
 /* ── Modal ───────────────────────────────── */
 .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.65); backdrop-filter:blur(4px); z-index:1000; display:flex; align-items:center; justify-content:center; opacity:0; visibility:hidden; transition:.25s; }
 .modal-overlay.open { opacity:1; visibility:visible; }
-.modal { background:#1a1e27; width:400px; border-radius:16px; padding:24px; border:1px solid #2d3748; box-shadow:0 25px 50px -12px rgba(0,0,0,.6); transform:translateY(16px); transition:.25s; }
-html.light .modal { background:#fff; border-color:var(--border); }
-.modal-overlay.open .modal { transform:none; }
 .modal-head { display:flex; align-items:center; gap:14px; margin-bottom:22px; position:relative; }
 .modal-icon { background:var(--green); width:44px; height:44px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
 .modal-head h3 { font-size:17px; font-weight:700; }
@@ -718,7 +715,7 @@ html.light .modal { background:#fff; border-color:var(--border); }
 .btn-confirm:disabled { background:var(--tag); color:var(--muted); cursor:not-allowed; filter:none; }
 
 /* ── Captação e links rastreáveis ───────── */
-#modalCampanha .modal { box-sizing:border-box; }
+#modalCampanha .modal-box { box-sizing:border-box; }
 #modalCampanha select,
 #modalCampanha input,
 #modalCampanha textarea { box-sizing:border-box; }
@@ -837,7 +834,7 @@ html.light .modal { background:#fff; border-color:var(--border); }
 .ads-budget-actions .btn,.ads-budget-actions .btn-confirm { min-height:42px; margin:0; justify-content:center; }
 @media(max-width:720px) {
     #modalCampanha { align-items:flex-end; }
-    #modalCampanha .modal { width:100vw !important; max-width:none !important; max-height:94vh !important; border-radius:16px 16px 0 0; padding:20px 16px; }
+    #modalCampanha .modal-box { width:100vw !important; max-width:none !important; max-height:94vh !important; border-radius:16px 16px 0 0; padding:20px 16px; }
     #modalCampanha .cap-grid-main,
     #modalCampanha .cap-grid-message,
     #modalCampanha .cap-grid-destination,
@@ -1125,9 +1122,6 @@ html.light .nav-item.active { box-shadow:inset 3px 0 0 var(--blue); background:r
     .acct-btn { min-width:unset; }
     .acct-wrap { flex:1; }
     .acct-dropdown { width:100%; }
-
-    /* Modal */
-    .modal { width:92vw; max-width:420px; }
 
     /* Ads */
     .ads-bar { gap:8px; }
@@ -1434,4 +1428,29 @@ html:not(.light) .chat-composer-preview, html:not(.light) .chat-recording-bar { 
   .chat-modal-overlay { padding:0; }
   .chat-modal-slot { grid-template-columns:1fr; }
   .chat-modal-slot .chat-lead-panel { display:none; }
+}
+
+/* ── Heatmap de Horários (Relatórios) ──
+   Movido de <style> inline em index.html (Fase 2 da auditoria UX/UI) para
+   ficar sob o mesmo cache versionado (?v=) dos demais arquivos CSS. */
+.heatmap-container { padding: 24px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; }
+.heatmap-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.heatmap-title { font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+.heatmap-toggle { display: flex; background: var(--tag); border-radius: 8px; padding: 4px; }
+.heatmap-toggle button { border: none; background: transparent; color: var(--text); padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+.heatmap-toggle button.active { background: var(--blue); color: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+.heatmap-wrapper { overflow-x: auto; padding-top: 30px; padding-bottom: 10px; }
+.heatmap-grid { display: grid; grid-template-columns: 40px repeat(24, 1fr); gap: 3px; min-width: 700px; }
+.heatmap-col-header { text-align: center; font-size: 10px; color: var(--muted); margin-bottom: 4px; }
+.heatmap-row-label { display: flex; align-items: center; justify-content: flex-end; padding-right: 8px; font-size: 11px; color: var(--muted); font-weight: 600; }
+.heatmap-cell { height: 24px; border-radius: 4px; background-color: var(--tag); position: relative; cursor: pointer; transition: transform 0.1s; display: flex; align-items: center; justify-content: center; }
+.heatmap-num { font-size: 9px; font-weight: 600; line-height: 1; pointer-events: none; }
+.heatmap-cell:hover { transform: scale(1.15); z-index: 10; box-shadow: 0 0 6px rgba(0,0,0,0.2); }
+.heatmap-cell::after { content: attr(data-tooltip); position: absolute; bottom: calc(100% + 4px); left: 50%; transform: translateX(-50%); background: var(--text); color: var(--card); padding: 4px 8px; border-radius: 4px; font-size: 11px; white-space: nowrap; opacity: 0; visibility: hidden; transition: opacity 0.2s; pointer-events: none; z-index: 20; }
+.heatmap-cell:hover::after { opacity: 1; visibility: visible; }
+
+/* ── Preview de mensagem do Relatório Zap (mobile) ──
+   Movido de <style> inline em index.html (Fase 2 da auditoria UX/UI). */
+@media (max-width: 720px) {
+  .zap-msg-preview-grid { grid-template-columns: 1fr !important; }
 }
