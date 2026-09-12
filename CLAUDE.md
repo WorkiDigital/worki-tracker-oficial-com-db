@@ -2536,3 +2536,38 @@ varredura por referências residuais (`grep`) confirmando zero menção aos arqu
 comentários históricos intencionais; `git diff --cached` revisado a cada etapa para garantir que só
 continha moves/deletes/correções de path, nenhuma mudança de produto.
 
+## Fase 5 da auditoria UX/UI — refinamento final (2026-09-12)
+
+A Fase 5 foi concluída no commit `997547a` (`feat: conclui Fase 5 de refinamento UX/UI`) e enviada
+para `origin/main`. O escopo ficou restrito ao frontend, sem alterações em regras de cálculo, banco
+de dados ou endpoints.
+
+### Implementação
+
+- Criados tokens canônicos de breakpoint (`480px`, `768px`, `960px`, `1180px`) e espaçamento em
+  múltiplos de 4px em `css/dashboard-base.css` e `css/share.css`, preservando os aliases `--p1` a
+  `--p5`.
+- Breakpoints redundantes de `430px` e `720px` foram alinhados para `480px` e `768px`.
+- A sidebar foi dividida em Atendimento, Campanhas, Métricas, Configurações e Administração. A seção
+  administrativa só aparece para admin, e as demais respeitam as permissões do cliente.
+- Emojis visuais foram substituídos por ícones Lucide nos cards de Leads, criativos e destinos dos
+  Relatórios Automáticos.
+- Textos divergentes foram padronizados, incluindo Link de Rastreamento, Rastreamento Inteligente,
+  Conexão WhatsApp e Marca (White-label).
+- Botões apenas com ícone receberam `aria-label`, e a navegação principal recebeu semântica ARIA.
+- O cache foi atualizado para `?v=20260912-fase5` em `dashboard.css`, no carregamento externo desse
+  CSS e em `js/leads.js`.
+
+### Validação e deploy
+
+- Criado `scripts/test-fase5-ux.js`, cobrindo tokens, breakpoints, sidebar, textos, ícones, cache e
+  botões sem rótulo; auditoria aprovada.
+- `node --check` dos JavaScripts modificados, parse dos scripts inline e balanceamento dos CSS: OK.
+- Servidor local respondeu `200` em `/`, `/health` e `/css/dashboard.css`, servindo as versões Fase 5.
+- Revisão independente encontrou duas pendências importantes de cache/separadores; ambas foram
+  corrigidas e aprovadas na segunda revisão.
+- Push de `997547a` para `origin/main` concluído. O domínio de produção permaneceu saudável
+  (`/health` = `200`, `service: frontend`), mas ainda servia os assets anteriores durante a janela de
+  monitoramento. Se persistir, clicar em **Implantar** no serviço frontend do EasyPanel; se necessário,
+  executar **rebuild sem cache**. Só considerar o deploy efetivamente adotado quando o `index.html`
+  público contiver `css/dashboard.css?v=20260912-fase5` e `js/leads.js?v=20260912-fase5`.
