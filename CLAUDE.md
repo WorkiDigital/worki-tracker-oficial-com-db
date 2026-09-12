@@ -2621,3 +2621,28 @@ em cima do `main` atual, reaproveitando o design documentado no README (código-
 `git show origin/agent/session-transfer-only:browser-extension/wapptrack-conector/`), com uma revisão
 de segurança dedicada antes de qualquer deploy — o padrão de risco (extração de sessão de terceiro
 autenticado) exige isso independente da qualidade do código em si.
+
+## 🖼️ Placeholder de mídia sem ícone no dashboard público — `lucide.createIcons()` faltando (2026-09-12)
+
+No dashboard público (`share.html` → `js/share-dash.js`), o card de "Melhores Anúncios"
+(`renderBestAds()`) tinha trocado o placeholder de miniatura (quando o anúncio não tem thumbnail
+carregável) de um emoji (`🖼️`) para o ícone padrão `lucide` (`<i data-lucide="image">`), seguindo a
+regra do projeto de usar exclusivamente essa biblioteca de ícones (ver seção "Ícones" no topo deste
+arquivo). A troca ficou **incompleta**: nada chamava `lucide.createIcons()` depois do `innerHTML`
+injetar as tags no DOM — sem isso, `<i data-lucide>` nunca vira o SVG real, e o resultado seria um
+espaço **vazio** (regressão visual) em vez do ícone, para qualquer anúncio sem imagem.
+
+**Correção:** adicionada `if (typeof lucide !== 'undefined') lucide.createIcons();` logo após o
+`.join('')` que monta os cards em `renderBestAds()` — mesmo ponto onde já rodava
+`carregarThumbsHD(visible)`. `share.html` já carregava o script do `lucide` via CDN
+(`lucide@0.469.0`), só faltava a chamada de renderização após o DOM dinâmico.
+
+**Escopo:** só o dashboard público, card de anúncios sem thumbnail. Sem mudança de dado, cálculo ou
+API. Commit: `8642006`.
+
+> ⚠️ **Deploy pendente de confirmação:** push feito para `origin/main`, `/health` respondeu `200`
+> (`service: frontend`), mas na última checagem o `js/share-dash.js` servido em produção **ainda não
+> refletia o fix** (sem `createIcons` no conteúdo servido) — o redeploy automático do EasyPanel ainda
+> não tinha processado o commit. Seguir o checklist de diagnóstico já documentado na seção "Links de
+> captação apontando pro domínio errado" acima (checar `/health`, comparar `?v=` servido, clicar em
+> Implantar manualmente se necessário) antes de assumir que o fix não funcionou.
