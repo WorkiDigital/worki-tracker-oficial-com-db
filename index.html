@@ -107,62 +107,31 @@
             </div>
         </div>
 
-        <!-- Métricas do resumo -->
+        <!-- Métricas do dashboard público (resumo + colunas da tabela) —
+             categorizado com busca, reaproveitando os mesmos dados (label/
+             categoria) de CARDS_DEF. Os checkboxes reais continuam com as
+             classes share-metric-chk/share-col-chk (lidas por
+             gerarLinkCompartilhamento/confirmarGerarLink via
+             querySelectorAll), então nenhuma mudança de JS de leitura/escrita
+             foi necessária ao redesenhar este bloco. -->
         <div style="margin-bottom:16px;">
-            <div style="font-size:12px;font-weight:600;margin-bottom:8px;">Métricas do resumo</div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
-                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="spend" class="share-metric-chk cbx" checked> Gasto Total</label>
-                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="imps" class="share-metric-chk cbx" checked> Impressões</label>
-                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="reach" class="share-metric-chk cbx" checked> Alcance</label>
-                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="freq" class="share-metric-chk cbx"> Frequência</label>
-                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="cpm" class="share-metric-chk cbx" checked> CPM</label>
-                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="cpc" class="share-metric-chk cbx"> CPC</label>
-                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="ctr" class="share-metric-chk cbx" checked> CTR Médio</label>
-                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="lpv" class="share-metric-chk cbx"> Visitas pág. destino</label>
-                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="cplpv" class="share-metric-chk cbx"> Custo/visita</label>
-                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="leads" class="share-metric-chk cbx" checked> Leads</label>
-                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="cpl" class="share-metric-chk cbx" checked> CPL</label>
-                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="msgs" class="share-metric-chk cbx" checked> Conversas</label>
-                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="cpr" class="share-metric-chk cbx" checked> CPR</label>
-                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="seguidores" class="share-metric-chk cbx"> Seguidores</label>
-                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="cps" class="share-metric-chk cbx"> Custo/seguidor</label>
-                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="active_campaigns" class="share-metric-chk cbx" checked> Campanhas Ativas</label>
-                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="purchases" class="share-metric-chk cbx"> Compras</label>
-                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="purchase_value" class="share-metric-chk cbx"> Valor em Compras</label>
-                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="roas" class="share-metric-chk cbx"> ROAS</label>
-                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="init_checkout" class="share-metric-chk cbx"> Inícios de Checkout</label>
-                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="cpp" class="share-metric-chk cbx"> Custo/compra</label>
+            <div class="metrics-modal-top" style="padding:0;border:none;margin-bottom:8px;">
+                <div class="metrics-tabs">
+                    <button type="button" id="shareMetricsTabResumo" class="metrics-tab active" onclick="shareSetMetricsTab('resumo')">Métricas do resumo</button>
+                    <button type="button" id="shareMetricsTabColunas" class="metrics-tab" onclick="shareSetMetricsTab('colunas')">Colunas da tabela</button>
+                </div>
+                <div class="metrics-search">
+                    <i data-lucide="search" style="width:13px;color:var(--muted);"></i>
+                    <input id="shareMetricsSearch" type="text" placeholder="Buscar métrica..." oninput="shareRenderMetricsPicker()">
+                </div>
             </div>
+            <div id="shareMetricsCategoryList" class="metrics-category-list" style="max-height:260px;"></div>
         </div>
 
-        <!-- Colunas da tabela -->
-        <div style="margin-bottom:16px;">
-            <div style="font-size:12px;font-weight:600;margin-bottom:8px;">Colunas da tabela</div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
-                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="status" class="share-col-chk cbx" checked> Status</label>
-                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="spend" class="share-col-chk cbx" checked> Gasto Total</label>
-                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="imps" class="share-col-chk cbx" checked> Impressões</label>
-                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="reach" class="share-col-chk cbx" checked> Alcance</label>
-                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="freq" class="share-col-chk cbx"> Frequência</label>
-                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="cpm" class="share-col-chk cbx" checked> CPM</label>
-                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="clicks" class="share-col-chk cbx" checked> Cliques (Links)</label>
-                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="cpc" class="share-col-chk cbx"> CPC</label>
-                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="ctr" class="share-col-chk cbx" checked> CTR</label>
-                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="lpv" class="share-col-chk cbx"> Visitas pág. destino</label>
-                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="cplpv" class="share-col-chk cbx"> Custo/visita</label>
-                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="leads" class="share-col-chk cbx" checked> Leads</label>
-                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="cpl" class="share-col-chk cbx" checked> CPL</label>
-                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="msgs" class="share-col-chk cbx" checked> Conversas</label>
-                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="cpr" class="share-col-chk cbx" checked> CPR</label>
-                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="seguidores" class="share-col-chk cbx"> Seguidores</label>
-                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="cps" class="share-col-chk cbx"> Custo/seguidor</label>
-                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="purchases" class="share-col-chk cbx"> Compras</label>
-                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="purchase_value" class="share-col-chk cbx"> Valor em Compras</label>
-                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="roas" class="share-col-chk cbx"> ROAS</label>
-                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="init_checkout" class="share-col-chk cbx"> Inícios de Checkout</label>
-                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" value="cpp" class="share-col-chk cbx"> Custo/compra</label>
-            </div>
-        </div>
+        <!-- Checkboxes reais (fonte de verdade lida/escrita pelo JS existente) —
+             gerados por shareRenderMetricsPicker(), ocultos por padrão; o
+             componente acima é só a interface visual sobre eles. -->
+        <div id="shareMetricsRealInputs" style="display:none;"></div>
 
         <!-- Filtro de status padrão -->
         <div class="input-group" style="margin-bottom:20px;">
@@ -537,8 +506,8 @@
 
             <div class="cap-journey-head">
                 <div>
-                    <strong>Etapas por palavra-chave</strong>
-                    <p>O atendente envia uma palavra-chave e o sistema registra a etapa e envia o evento escolhido.</p>
+                    <strong>Etapas por palavra-chave <span style="color:var(--muted);font-weight:400;">(só para leads deste link)</span></strong>
+                    <p>O atendente envia uma palavra-chave e o sistema registra a etapa e envia o evento escolhido — vale apenas para quem chegou por <em>este</em> link. Para uma regra que valha para qualquer conversa do cliente (independente de qual link trouxe o lead), use a aba <strong>Rastreamento Inteligente</strong> no menu lateral.</p>
                 </div>
                 <button type="button" class="btn btn-primary btn-sm" onclick="capJornadaNovaEtapa()">
                     <i data-lucide="plus" style="width:13px;"></i> Nova etapa
@@ -2274,7 +2243,7 @@
         <div id="aba-inteligente" class="aba-oculta">
             <div style="margin-bottom:18px;">
                 <h2 style="display:flex;align-items:center;gap:8px;font-size:16px;margin:0;"><i data-lucide="workflow" style="color:var(--blue);width:18px;"></i> Rastreamento inteligente</h2>
-                <p style="color:var(--muted);font-size:13px;margin:4px 0 0;">Configure templates, gatilhos e as etapas gerais de conversão para campanhas de mensagem no WhatsApp.</p>
+                <p style="color:var(--muted);font-size:13px;margin:4px 0 0;">Etapas por palavra-chave que valem para <strong>qualquer conversa do cliente</strong> no WhatsApp, não importa qual link ou anúncio trouxe o lead. Para uma regra que valha só para um link específico, configure a aba "Jornada" dentro do próprio link, em Link de Rastreamento.</p>
             </div>
 
             <div id="intClienteSelectorBox" style="display:none;margin-bottom:14px;align-items:center;gap:8px;">
@@ -2322,8 +2291,21 @@
                             </div>
                         </div>
                         <div class="input-group">
-                            <label>Regex de valor <span style="color:var(--muted);font-weight:400;">(opcional, grupo (?&lt;value&gt;...))</span></label>
-                            <input type="text" id="capIntRegex" placeholder="R\$\s*(?&lt;value&gt;\d{1,3}(?:\.\d{3})*,\d{2})">
+                            <label>Regex de valor <span style="color:var(--muted);font-weight:400;">(opcional, extrai o valor da venda da mensagem)</span></label>
+                            <input type="text" id="capIntRegex" placeholder="R\$\s*(?&lt;value&gt;\d{1,3}(?:\.\d{3})*,\d{2})" oninput="capIntLimparTeste()">
+                            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;">
+                                <button type="button" class="zap-tag-chip" onclick="capIntAplicarTemplateRegex('brl_milhar')" title="Ex: R$ 1.250,90">Valor BRL (com milhar)</button>
+                                <button type="button" class="zap-tag-chip" onclick="capIntAplicarTemplateRegex('brl_simples')" title="Ex: R$ 250,00">Valor BRL (simples)</button>
+                                <button type="button" class="zap-tag-chip" onclick="capIntAplicarTemplateRegex('numero')" title="Ex: 250">Apenas números</button>
+                            </div>
+                        </div>
+                        <div class="input-group" style="background:var(--tag);border-radius:8px;padding:10px 12px;margin-bottom:12px;">
+                            <label style="margin-bottom:6px;">Testar com uma mensagem de exemplo <span style="color:var(--muted);font-weight:400;">(não salva nada, só confere localmente)</span></label>
+                            <div style="display:flex;gap:8px;">
+                                <input type="text" id="capIntTesteMsg" placeholder="Ex: Fechei! #venda R$ 1.250,90" style="flex:1;">
+                                <button type="button" class="btn btn-ghost btn-sm" onclick="capIntTestarEtapa()" style="white-space:nowrap;">Testar</button>
+                            </div>
+                            <div id="capIntTesteResultado" style="margin-top:8px;font-size:12px;"></div>
                         </div>
                         <label class="cap-conversion-toggle" style="margin-bottom:12px;">
                             <input class="cbx-lg" type="checkbox" id="capIntEnabled" checked>
@@ -2335,10 +2317,6 @@
                         </div>
                     </div>
 
-                    <div class="cap-int-actions">
-                        <button type="button" class="btn btn-ghost" onclick="capIntCancelarConfig()">Cancelar</button>
-                        <button type="button" class="btn-confirm" id="capIntSalvarConfigBtn" onclick="capIntSalvarConfig()">Salvar alterações</button>
-                    </div>
                 </div>
             </div>
         </div>
@@ -3627,12 +3605,91 @@ async function renderShareLinks() {
     }
 }
 
+// ── Métricas do dashboard público (Compartilhar Dash) ──────────────────────
+// Reaproveita label/categoria de CARDS_DEF (definido mais abaixo neste mesmo
+// script; seguro porque isto só executa ao abrir o modal, bem depois do
+// parse) e adiciona as 2 chaves exclusivas do dashboard público que não
+// existem no painel de Ads (status, active_campaigns). "resumo" e "colunas"
+// indicam em qual das duas listas cada métrica pode aparecer — a maioria
+// aparece nas duas, "clicks" só em colunas e "active_campaigns" só no resumo,
+// espelhando exatamente o que já existia como 2 listas de checkbox soltas.
+//
+// Os inputs reais (.share-metric-chk / .share-col-chk) para AMBAS as listas
+// ficam sempre presentes no DOM oculto (#shareMetricsRealInputs), criados uma
+// vez por abertura do modal — só a visualização de categoria+busca acima
+// troca de aba, sem nunca recriar/perder os inputs reais já marcados. Isso é
+// o que garante que gerarLinkCompartilhamento/confirmarGerarLink (que leem
+// via querySelectorAll) continuem funcionando sem nenhuma mudança.
+let _shareMetricsTab = 'resumo';
+function shareMetricDefs() {
+    const extras = [
+        { key:'status',           label:'Status',            category:'delivery', resumo:false, colunas:true },
+        { key:'active_campaigns', label:'Campanhas Ativas',   category:'delivery', resumo:true,  colunas:false },
+    ];
+    const doCards = CARDS_DEF
+        .filter(m => ['spend','imps','reach','freq','cpm','clicks','cpc','ctr','lpv','cplpv','leads','cpl','msgs','cpr','seguidores','cps','purchases','purchase_value','roas','init_checkout','cpp'].includes(m.key))
+        .map(m => ({ key:m.key, label:m.label, category:m.category, resumo: m.key !== 'clicks', colunas:true }));
+    return [...doCards, ...extras];
+}
+
+// (Re)cria os inputs reais ocultos para as duas listas, marcados conforme os
+// valores salvos informados (ou todos marcados, no modo criação).
+function shareCriarInputsReais(visibleMetrics, visibleColumns) {
+    const defs = shareMetricDefs();
+    const resumo = defs.filter(m => m.resumo)
+        .map(m => `<input type="checkbox" value="${m.key}" class="share-metric-chk" ${visibleMetrics.includes(m.key) ? 'checked' : ''}>`).join('');
+    const colunas = defs.filter(m => m.colunas)
+        .map(m => `<input type="checkbox" value="${m.key}" class="share-col-chk" ${visibleColumns.includes(m.key) ? 'checked' : ''}>`).join('');
+    $('shareMetricsRealInputs').innerHTML = resumo + colunas;
+}
+
+function shareSetMetricsTab(tab) {
+    _shareMetricsTab = tab;
+    $('shareMetricsTabResumo').classList.toggle('active', tab === 'resumo');
+    $('shareMetricsTabColunas').classList.toggle('active', tab === 'colunas');
+    shareRenderMetricsPicker();
+}
+
+function shareToggleMetric(key, list, checked) {
+    const cls = list === 'resumo' ? 'share-metric-chk' : 'share-col-chk';
+    const input = document.querySelector(`#shareMetricsRealInputs input.${cls}[value="${key}"]`);
+    if (input) input.checked = checked;
+}
+
+function shareRenderMetricsPicker() {
+    const search = ($('shareMetricsSearch')?.value || '').trim().toLowerCase();
+    const list = _shareMetricsTab === 'colunas' ? 'colunas' : 'resumo';
+    const cls = list === 'resumo' ? 'share-metric-chk' : 'share-col-chk';
+    const defs = shareMetricDefs().filter(m => m[list]);
+
+    const categories = Object.keys(METRIC_CATEGORY_LABELS).map(cat => {
+        const items = defs.filter(m => m.category === cat && (!search || m.label.toLowerCase().includes(search)));
+        if (!items.length) return '';
+        return `<div class="metrics-category-block">
+            <div class="metrics-category-title">${METRIC_CATEGORY_LABELS[cat]}</div>
+            <div class="metrics-category-items">
+                ${items.map(m => {
+                    const realInput = document.querySelector(`#shareMetricsRealInputs input.${cls}[value="${m.key}"]`);
+                    const checked = realInput ? realInput.checked : true;
+                    return `<label class="metrics-cfg-item">
+                        <input type="checkbox" ${checked ? 'checked' : ''} onchange="shareToggleMetric('${m.key}','${list}',this.checked)">
+                        <span>${esc(m.label)}</span>
+                    </label>`;
+                }).join('')}
+            </div>
+        </div>`;
+    }).join('');
+    $('shareMetricsCategoryList').innerHTML = categories || '<div class="metrics-empty">Nenhuma métrica encontrada.</div>';
+    if (window.lucide) lucide.createIcons({ nodes: [$('shareMetricsCategoryList')] });
+}
+
 function gerarLinkCompartilhamento(accountId, accountName) {
     _shareAccountId   = accountId;
     _shareAccountName = accountName;
     _shareEditToken   = null;
 
     const existing = _shareLinks[accountId];
+    const allKeys = shareMetricDefs().map(m => m.key);
     if (existing) {
         // Modo edição — pré-popula com config salva
         _shareEditToken = existing.token;
@@ -3641,20 +3698,21 @@ function gerarLinkCompartilhamento(accountId, accountName) {
         $('secCampanhas').checked    = c.visible_sections?.campanhas !== false;
         $('secDemograficos').checked = c.visible_sections?.demograficos !== false;
         $('secMelhores').checked     = c.visible_sections?.melhores_criativos !== false;
-        document.querySelectorAll('.share-metric-chk').forEach(chk => chk.checked = (c.visible_metrics||[]).includes(chk.value));
-        document.querySelectorAll('.share-col-chk').forEach(chk => chk.checked = (c.visible_columns||[]).includes(chk.value));
+        shareCriarInputsReais(c.visible_metrics || [], c.visible_columns || []);
         $('shareStatusFilter').value = c.status_filter || 'ACTIVE';
         $('shareExpiresAt').value = c.expires_at ? c.expires_at.slice(0, 10) : '';
         $('btnConfirmarShare').innerHTML = '<i data-lucide="save" style="width:15px;display:inline-block;vertical-align:middle;margin-right:6px;"></i> Salvar Alterações';
     } else {
-        // Modo criação — reset padrão
+        // Modo criação — reset padrão (tudo marcado)
         $('shareClientName').value = '';
-        document.querySelectorAll('.share-metric-chk,.share-col-chk').forEach(c => c.checked = true);
+        shareCriarInputsReais(allKeys, allKeys);
         document.querySelectorAll('#secCampanhas,#secDemograficos,#secMelhores').forEach(c => c.checked = true);
         $('shareStatusFilter').value = 'ACTIVE';
         $('shareExpiresAt').value = '';
         $('btnConfirmarShare').innerHTML = '<i data-lucide="link" style="width:15px;display:inline-block;vertical-align:middle;margin-right:6px;"></i> Gerar e Copiar Link';
     }
+    $('shareMetricsSearch').value = '';
+    shareSetMetricsTab('resumo');
 
     $('shareModalAcctName').textContent = accountName || accountId;
     $('shareModal').classList.add('open');
@@ -4091,18 +4149,18 @@ const CARDS_DEF = [
     { key:'imps',      label:'Impressões',          on:true  },
     { key:'reach',     label:'Alcance',             on:true  },
     { key:'freq',      label:'Frequência',          on:true  },
-    { key:'cpm',       label:'CPM',                 on:true  },
+    { key:'cpm',       label:'CPM',                 on:true,  hint:'Custo por 1.000 impressões' },
     { key:'clicks',    label:'Cliques (Links)',      on:true  },
-    { key:'cpc',       label:'CPC',                 on:true  },
-    { key:'ctr',       label:'CTR Médio',           on:true  },
+    { key:'cpc',       label:'CPC',                 on:true,  hint:'Custo por clique no link' },
+    { key:'ctr',       label:'CTR (Link)',          on:true,  hint:'Taxa de cliques no link (não conta outras interações do anúncio)' },
     { key:'lpv',       label:'Visualizações da Página',       on:true  },
     { key:'cplpv',     label:'Custo/Visualização da Página',  on:true  },
     { key:'profile_visits', label:'Visitas Perfil (IG)', on:true },
     { key:'cppv',      label:'Custo/Visita Perfil',  on:true },
     { key:'leads',     label:'Leads',               on:true  },
-    { key:'cpl',       label:'CPL',                 on:true  },
+    { key:'cpl',       label:'CPL',                 on:true,  hint:'Custo por lead' },
     { key:'msgs',      label:'Conversas',           on:true  },
-    { key:'cpr',       label:'CPR',                 on:true  },
+    { key:'cpr',       label:'CPR',                 on:true,  hint:'Custo por conversa iniciada' },
     { key:'seguidores',label:'Seguidores (IG)',     on:true },
     { key:'cps',       label:'Custo/Seguidor',      on:true },
     { key:'purchases',     label:'Compras',              on:false },
@@ -4176,6 +4234,7 @@ const COLS_DEF = CARDS_DEF.map(m => ({
     on: m.on,
     category: m.category,
     search: m.search,
+    hint: m.hint,
 }));
 
 const METRIC_PRESETS = [
@@ -4465,7 +4524,7 @@ function renderMetricsModal() {
                 ${items.map(m => {
                     const checked = isMetricSelected(m);
                     const handler = metricsModalTab === 'cols' ? 'toggleCol' : 'toggleCard';
-                    return `<label class="metrics-cfg-item ${checked ? '' : 'metrics-cfg-item--off'}">
+                    return `<label class="metrics-cfg-item ${checked ? '' : 'metrics-cfg-item--off'}"${m.hint ? ` title="${esc(m.hint)}"` : ''}>
                         <input type="checkbox" ${checked ? 'checked' : ''} onchange="${handler}('${m.key}',this.checked)">
                         <span>${m.label}</span>
                     </label>`;
@@ -5076,7 +5135,7 @@ function renderTabelaCampanhas(camps) {
     const total = 3 + cols.length; // Campanha + Status + Orçamento + dinâmicas
 
     // Atualiza header — coluna extra para botão expand
-    thead.innerHTML = `<tr><th style="width:32px;"></th><th class="ads-campaign-name">Campanha</th><th>Status</th><th>Orçamento</th>${cols.map(c=>`<th>${c.label}</th>`).join('')}</tr>`;
+    thead.innerHTML = `<tr><th style="width:32px;"></th><th class="ads-campaign-name">Campanha</th><th>Status</th><th>Orçamento</th>${cols.map(c=>`<th${c.hint ? ` title="${esc(c.hint)}"` : ''}>${c.label}</th>`).join('')}</tr>`;
 
     if (!camps.length) {
         tbody.innerHTML = `<tr><td colspan="${total+1}" style="text-align:center;padding:40px;color:var(--muted);">Nenhuma campanha encontrada.</td></tr>`;
@@ -6802,7 +6861,7 @@ function resetLeadSearchAutofill() {
 <script defer src="js/leads.js?v=20260912-fase2"></script>
 <script defer src="js/chat-monitor.js?v=20260813-clientswitch"></script>
 <script defer src="js/admin.js?v=20260912-fase2"></script>
-<script defer src="js/captacao.js?v=20260722-1"></script>
+<script defer src="js/captacao.js?v=20260912-fase3"></script>
 <script defer src="js/onboarding.js?v=20260715-2"></script>
 
 <!-- Drawer Perfil do Lead (4 abas) — deve ficar no final do body para z-index funcionar -->

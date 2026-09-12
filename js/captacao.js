@@ -234,12 +234,6 @@ function capIntCancelarForm() {
   if (form) form.style.display = 'none';
 }
 
-async function capIntCancelarConfig() {
-  capIntCancelarForm();
-  await capIntCarregar();
-  toast('Alterações não salvas foram descartadas.', 'success');
-}
-
 function capIntEtapaPayload(etapa, position) {
   return capBodyCliente({
     id: etapa.id || undefined,
@@ -253,6 +247,91 @@ function capIntEtapaPayload(etapa, position) {
     position,
     enabled: etapa.enabled !== false,
   });
+}
+
+// ── Templates prontos de regex de valor (chips no formulário) ──
+const CAP_INT_REGEX_TEMPLATES = {
+  brl_milhar:  String.raw`R\$\s*(?<value>\d{1,3}(?:\.\d{3})*,\d{2})`,
+  brl_simples: String.raw`R\$\s*(?<value>\d+,\d{2})`,
+  numero:      String.raw`(?<value>\d+)`,
+};
+
+function capIntAplicarTemplateRegex(templateKey) {
+  const regex = CAP_INT_REGEX_TEMPLATES[templateKey];
+  if (!regex) return;
+  const input = $('capIntRegex');
+  if (input) { input.value = regex; capIntLimparTeste(); input.focus(); }
+}
+
+function capIntLimparTeste() {
+  const out = $('capIntTesteResultado');
+  if (out) out.innerHTML = '';
+}
+
+// Normalização e matching idênticos ao backend (api/webhook-evo.js:
+// normalizarTexto / mensagemBateKeyword) — o teste local só tem valor real
+// se reproduzir exatamente a regra que vai rodar em produção.
+function _capIntNormalizarTexto(s) {
+  return (s || '')
+    .toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function _capIntMensagemBateKeyword(mensagem, keywords, match) {
+  const msg = _capIntNormalizarTexto(mensagem);
+  if (!msg || !keywords.length) return false;
+  const exact = match === 'exact';
+  return keywords.some(k => {
+    const kw = _capIntNormalizarTexto(k);
+    if (!kw) return false;
+    return exact ? msg === kw : msg.includes(kw);
+  });
+}
+
+// Extração de valor idêntica ao backend (api/_capi.js: extrairValor) —
+// mesmo grupo nomeado `value` (com fallback pro grupo posicional 1) e mesma
+// normalização de formato BR (1.250,90 → 1250.90).
+function _capIntExtrairValor(texto, regexStr) {
+  if (!texto || !regexStr) return { erro: null, valor: null };
+  let re;
+  try { re = new RegExp(regexStr, 'i'); } catch (e) { return { erro: 'Regex inválida: ' + e.message, valor: null }; }
+  let m;
+  try { m = re.exec(String(texto).slice(0, 500)); } catch (e) { return { erro: 'Erro ao executar a regex: ' + e.message, valor: null }; }
+  const bruto = m?.groups?.value ?? m?.[1];
+  if (bruto == null) return { erro: null, valor: null, semMatch: true };
+  const limpo = String(bruto).replace(/\./g, '').replace(',', '.');
+  const n = parseFloat(limpo);
+  return { erro: null, valor: Number.isFinite(n) ? n : null };
+}
+
+function capIntTestarEtapa() {
+  const out = $('capIntTesteResultado');
+  if (!out) return;
+  const msg = $('capIntTesteMsg')?.value || '';
+  const keywords = ($('capIntKeywords')?.value || '').split(',').map(k => k.trim()).filter(Boolean);
+  const match = $('capIntMatch')?.value === 'exact' ? 'exact' : 'partial';
+  const regexStr = $('capIntRegex')?.value.trim() || null;
+
+  if (!msg.trim()) { out.innerHTML = `<span style="color:var(--warning);">Digite uma mensagem de exemplo para testar.</span>`; return; }
+  if (!keywords.length) { out.innerHTML = `<span style="color:var(--warning);">Informe ao menos uma palavra-chave antes de testar.</span>`; return; }
+
+  const bateu = _capIntMensagemBateKeyword(msg, keywords, match);
+  const linhas = [];
+  linhas.push(bateu
+    ? `<div style="color:var(--success);">✓ A mensagem bate com a palavra-chave (modo: ${match === 'exact' ? 'mensagem exata' : 'contém a palavra'}).</div>`
+    : `<div style="color:var(--danger);">✗ A mensagem NÃO bate com nenhuma palavra-chave configurada — esta etapa não dispararia.</div>`);
+
+  if (regexStr) {
+    const { erro, valor, semMatch } = _capIntExtrairValor(msg, regexStr);
+    if (erro) linhas.push(`<div style="color:var(--danger);">✗ ${esc(erro)}</div>`);
+    else if (semMatch) linhas.push(`<div style="color:var(--warning);">⚠ A regex não encontrou nenhum valor nesta mensagem — o evento seria enviado sem valor de venda.</div>`);
+    else if (valor != null) linhas.push(`<div style="color:var(--success);">✓ Valor extraído: <strong>${valor.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}</strong></div>`);
+    else linhas.push(`<div style="color:var(--warning);">⚠ A regex encontrou um trecho, mas não é um número válido.</div>`);
+  }
+
+  out.innerHTML = linhas.join('');
 }
 
 async function capIntSalvarEtapa() {
@@ -337,35 +416,6 @@ async function capIntMover(index, direction) {
     _capIntEtapas = anterior;
     capIntRender();
     toast('Erro ao ordenar: ' + e.message, 'error');
-  }
-}
-
-async function capIntSalvarConfig() {
-  const templateInput = $('capIntTemplate');
-  const qualificacaoInput = $('capIntQualificacao');
-  if (!templateInput && !qualificacaoInput) return capIntCancelarConfig();
-  if (!capClienteId()) return toast('Selecione um cliente.', 'error');
-  const button = $('capIntSalvarConfigBtn');
-  const originalText = button.textContent;
-  button.disabled = true;
-  button.textContent = 'Salvando…';
-  try {
-    const response = await authFetch('/api/journey-stages', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(capBodyCliente({
-        action: 'config',
-        template_venda: templateInput?.value || '',
-        template_qualificacao: qualificacaoInput?.value || '',
-      })),
-    });
-    const config = await readApiJson(response, 'Falha ao salvar a configuração inteligente');
-    toast('Rastreamento inteligente atualizado.', 'success');
-  } catch (e) {
-    toast('Erro: ' + e.message, 'error');
-  } finally {
-    button.disabled = false;
-    button.textContent = originalText;
   }
 }
 
