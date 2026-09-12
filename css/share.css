@@ -6,6 +6,12 @@
     /* Tokens compartilhados com o painel principal (css/dashboard-base.css) —
        mesmos valores, para o dashboard público acompanhar refinamentos visuais
        feitos no painel sem precisar de duplicação manual futura. */
+    --bp-sm: 480px;
+    --bp-md: 768px;
+    --bp-lg: 960px;
+    --bp-xl: 1180px;
+    --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
+    --space-5: 20px; --space-6: 24px; --space-8: 32px;
     --radius-sm: 6px; --radius-md: 8px; --radius-lg: 10px; --radius-xl: 14px;
     --transition-fast: all 0.15s ease;
     --transition-base: all 0.2s ease-in-out;

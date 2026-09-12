@@ -507,9 +507,9 @@ function renderTabela() {
             <td data-label="Plataforma" style="text-align:center;"><div class="platform-icon ${platCls}" title="${esc(plataformaLabel)}">${_PLATFORM_ICONS[platCls] || ''}</div></td>
             <td data-label="Data" title="${esc(lead.event_time)}" style="white-space:nowrap;">${data}</td>
             <td style="white-space:nowrap;"><div style="display:inline-flex;gap:4px;align-items:center;">
-                <button class="btn btn-sm" onclick="abrirPerfilLead(${lead.id})" title="Ver perfil completo do lead" style="background:rgba(99,102,241,0.1);color:#6366f1;border:1px solid rgba(99,102,241,0.3);padding:2px 8px;display:inline-flex;align-items:center;justify-content:center;"><i data-lucide="user" style="width:12px;"></i></button>
-                <button class="btn btn-sm" onclick="abrirConversaDoLead(${lead.id})" title="Abrir conversa no WhatsApp" style="background:rgba(37,211,102,0.1);color:#128c4a;border:1px solid rgba(37,211,102,0.35);padding:2px 8px;display:inline-flex;align-items:center;justify-content:center;"><i data-lucide="message-circle" style="width:12px;"></i></button>
-                ${temCapi ? `<button class="btn btn-sm" style="background:rgba(59, 130, 246, 0.1);color:#3b82f6;border:1px solid rgba(59,130,246,0.3);padding:2px 8px;display:inline-flex;align-items:center;justify-content:center;" onclick="qualificarLead(${idx})" title="Marcar como Qualificado e enviar para CAPI"><i data-lucide="check-circle" style="width:12px;"></i></button><button class="btn btn-green btn-sm" onclick="abrirModal(${idx})" title="Registrar Venda e CAPI" style="margin:0;"><i data-lucide="zap" style="width:11px;"></i> Venda</button>` : ''}
+                <button class="btn btn-sm" onclick="abrirPerfilLead(${lead.id})" title="Ver perfil completo do lead" aria-label="Ver perfil completo do lead" style="background:rgba(99,102,241,0.1);color:#6366f1;border:1px solid rgba(99,102,241,0.3);padding:2px 8px;display:inline-flex;align-items:center;justify-content:center;"><i data-lucide="user" style="width:12px;"></i></button>
+                <button class="btn btn-sm" onclick="abrirConversaDoLead(${lead.id})" title="Abrir conversa no WhatsApp" aria-label="Abrir conversa no WhatsApp" style="background:rgba(37,211,102,0.1);color:#128c4a;border:1px solid rgba(37,211,102,0.35);padding:2px 8px;display:inline-flex;align-items:center;justify-content:center;"><i data-lucide="message-circle" style="width:12px;"></i></button>
+                ${temCapi ? `<button class="btn btn-sm" style="background:rgba(59, 130, 246, 0.1);color:#3b82f6;border:1px solid rgba(59,130,246,0.3);padding:2px 8px;display:inline-flex;align-items:center;justify-content:center;" onclick="qualificarLead(${idx})" title="Marcar como Qualificado e enviar para CAPI" aria-label="Marcar como qualificado e enviar para CAPI"><i data-lucide="check-circle" style="width:12px;"></i></button><button class="btn btn-green btn-sm" onclick="abrirModal(${idx})" title="Registrar Venda e CAPI" style="margin:0;"><i data-lucide="zap" style="width:11px;"></i> Venda</button>` : ''}
             </div></td>
         </tr>`;
     }).join('');
@@ -633,9 +633,9 @@ function renderKanbanCard(lead) {
             <span title="${esc(anuncio)}">${esc(anuncio)}</span>
         </div>
         <div class="kanban-actions">
-            <button type="button" onclick="abrirPerfilLead(${Number(lead.id)})" title="Ver perfil"><i data-lucide="user"></i></button>
-            <button type="button" onclick="abrirConversaDoLead(${Number(lead.id)})" title="Abrir conversa"><i data-lucide="message-circle"></i></button>
-            <button type="button" onclick="qualificarLead(${idx})" title="Qualificar"><i data-lucide="check-circle"></i></button>
+            <button type="button" onclick="abrirPerfilLead(${Number(lead.id)})" title="Ver perfil" aria-label="Ver perfil do lead"><i data-lucide="user"></i></button>
+            <button type="button" onclick="abrirConversaDoLead(${Number(lead.id)})" title="Abrir conversa" aria-label="Abrir conversa com o lead"><i data-lucide="message-circle"></i></button>
+            <button type="button" onclick="qualificarLead(${idx})" title="Qualificar" aria-label="Qualificar lead"><i data-lucide="check-circle"></i></button>
             <button type="button" class="sale" onclick="abrirModal(${idx})" title="Registrar venda"><i data-lucide="zap"></i><span>Venda</span></button>
         </div>
     </article>`;
@@ -1367,8 +1367,8 @@ function montarChartTypeToggles() {
         const canvasId = el.dataset.canvas;
         const atual = tipos[canvasId] || 'bar';
         el.innerHTML = `
-            <button type="button" class="${atual==='bar'?'active':''}" title="Barras" onclick="trocarTipoGrafico('${canvasId}','bar')"><i data-lucide="chart-column"></i></button>
-            <button type="button" class="${atual==='doughnut'?'active':''}" title="Pizza" onclick="trocarTipoGrafico('${canvasId}','doughnut')"><i data-lucide="chart-pie"></i></button>`;
+            <button type="button" class="${atual==='bar'?'active':''}" title="Barras" aria-label="Exibir gráfico de barras" onclick="trocarTipoGrafico('${canvasId}','bar')"><i data-lucide="chart-column"></i></button>
+            <button type="button" class="${atual==='doughnut'?'active':''}" title="Pizza" aria-label="Exibir gráfico de pizza" onclick="trocarTipoGrafico('${canvasId}','doughnut')"><i data-lucide="chart-pie"></i></button>`;
     });
     if (typeof lucide !== 'undefined') lucide.createIcons();
 }

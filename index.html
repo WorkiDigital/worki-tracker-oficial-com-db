@@ -12,7 +12,7 @@
     <script defer src="https://cdn.jsdelivr.net/npm/lucide@0.469.0/dist/umd/lucide.min.js"></script>
     <!-- Chart.js, html2canvas e jsPDF são carregados sob demanda via loadScript() (utils.js).
          Não incluir aqui — evita baixar ~500KB em toda sessão mesmo sem abrir Anúncios ou exportar PDF. -->
-    <link rel="stylesheet" href="css/dashboard.css?v=20260912-fase4">
+    <link rel="stylesheet" href="css/dashboard.css?v=20260912-fase5">
     <link rel="stylesheet" href="css/date-range-picker.css?v=20260825-1">
     <link rel="stylesheet" href="css/splash.css?v=20260712-1">
     <link rel="stylesheet" href="css/funil.css?v=20260713-1">
@@ -61,7 +61,7 @@
 <!-- Ad Media Modal (image lightbox + video player) -->
 <div class="ad-media-overlay" id="adMediaOverlay" onclick="fecharAdMedia(event)">
     <div class="ad-media-box" id="adMediaBox">
-        <button class="ad-media-close" onclick="fecharAdMedia()">✕</button>
+        <button class="ad-media-close" onclick="fecharAdMedia()" aria-label="Fechar mídia">✕</button>
         <div id="adMediaContent"></div>
         <div class="ad-media-name" id="adMediaName"></div>
         <button class="ad-media-ext-btn" id="adMediaExtBtn" onclick="abrirAdLink(window._adMediaCurrentId)" style="display:none;">
@@ -789,9 +789,11 @@
         </div>
         <div class="logo-text" id="sidebar-name" style="font-size:15px;font-weight:800;letter-spacing:-0.3px;line-height:1;">adlytics</div>
     </div>
-    <nav>
+    <nav role="navigation" aria-label="Navegação principal">
         <style>.nav-img-icon{filter:grayscale(100%) opacity(50%);transition:.2s;}.nav-item.active .nav-img-icon,.nav-item:hover .nav-img-icon{filter:none;opacity:1;}</style>
 
+        <!-- Seção: Atendimento -->
+        <div class="nav-sep" id="sep-atendimento"><span>Atendimento</span></div>
         <a id="btn-leads" class="nav-item active" onclick="mudarAba('leads')">
             <i data-lucide="users" style="width:17px;flex-shrink:0;"></i><span>Leads</span>
         </a>
@@ -799,43 +801,49 @@
             <i data-lucide="messages-square" style="width:17px;flex-shrink:0;"></i><span>Conversas</span>
         </a>
         <a id="btn-whatsapp" class="nav-item" onclick="mudarAba('whatsapp')">
-            <i data-lucide="smartphone" style="width:17px;flex-shrink:0;"></i><span>Conex&atilde;o WhatsApp</span>
+            <i data-lucide="smartphone" style="width:17px;flex-shrink:0;"></i><span>Conexão WhatsApp</span>
         </a>
 
+        <!-- Seção: Campanhas & Rastreamento -->
+        <div class="nav-sep" id="sep-campanhas"><span>Campanhas</span></div>
         <a id="btn-anuncios" class="nav-item" onclick="mudarAba('anuncios')">
             <img src="https://cdn.simpleicons.org/meta/0082FB" class="nav-img-icon" style="width:17px;height:17px;flex-shrink:0;" alt="Meta" loading="lazy"><span>Meta Ads</span>
         </a>
         <a id="btn-captacao" class="nav-item" onclick="mudarAba('captacao')">
-            <i data-lucide="link" style="width:17px;flex-shrink:0;"></i><span>Link de rastreamento</span>
+            <i data-lucide="link" style="width:17px;flex-shrink:0;"></i><span>Link de Rastreamento</span>
         </a>
         <a id="btn-inteligente" class="nav-item" onclick="mudarAba('inteligente')">
-            <i data-lucide="workflow" style="width:17px;flex-shrink:0;"></i><span>Rastreamento inteligente</span>
+            <i data-lucide="workflow" style="width:17px;flex-shrink:0;"></i><span>Rastreamento Inteligente</span>
         </a>
 
+        <!-- Seção: Métricas & Conversão -->
+        <div class="nav-sep" id="sep-metricas"><span>Métricas & Conversão</span></div>
         <a id="btn-funil" class="nav-item" onclick="mudarAba('funil')">
             <i data-lucide="filter" style="width:17px;flex-shrink:0;"></i><span>Funil de Vendas</span>
         </a>
         <a id="btn-relatorios" class="nav-item" onclick="mudarAba('relatorios')">
-            <i data-lucide="bar-chart-2" style="width:17px;flex-shrink:0;"></i><span>Relat&oacute;rios</span>
+            <i data-lucide="bar-chart-2" style="width:17px;flex-shrink:0;"></i><span>Relatórios</span>
         </a>
         <a id="btn-clientes" class="nav-item" onclick="mudarAba('clientes')">
             <i data-lucide="share-2" style="width:17px;flex-shrink:0;"></i><span>Compartilhar Dash</span>
         </a>
-
         <a id="btn-zaprelatorios" class="nav-item" onclick="mudarAba('zaprelatorios')">
-            <i data-lucide="send" style="width:17px;flex-shrink:0;"></i><span>Relat&oacute;rios Autom&aacute;ticos</span>
+            <i data-lucide="send" style="width:17px;flex-shrink:0;"></i><span>Relatórios Automáticos</span>
         </a>
 
+        <!-- Seção: Configurações -->
+        <div class="nav-sep" id="sep-config"><span>Configurações</span></div>
         <a id="btn-integracoes" class="nav-item" onclick="mudarAba('integracoes')">
-            <i data-lucide="plug" style="width:17px;flex-shrink:0;"></i><span>Integra&ccedil;&otilde;es</span>
+            <i data-lucide="plug" style="width:17px;flex-shrink:0;"></i><span>Integrações</span>
         </a>
-
         <a id="btn-conta" class="nav-item" onclick="mudarAba('conta')">
             <i data-lucide="user-cog" style="width:17px;flex-shrink:0;"></i><span>Minha Conta</span>
         </a>
 
+        <!-- Seção: Administração (Admin Only) -->
+        <div class="nav-sep" id="sep-admin" style="display:none;"><span>Administração</span></div>
         <a id="btn-agencia" class="nav-item" onclick="mudarAba('agencia')" style="display:none;">
-            <i data-lucide="building" style="width:17px;flex-shrink:0;"></i><span>Gest&atilde;o de Clientes</span>
+            <i data-lucide="building" style="width:17px;flex-shrink:0;"></i><span>Gestão de Clientes</span>
         </a>
         <a id="btn-ajustes" class="nav-item" onclick="mudarAba('ajustes')" style="display:none;">
             <i data-lucide="palette" style="width:17px;flex-shrink:0;"></i><span>Marca</span>
@@ -854,11 +862,11 @@
             </div>
             <span id="userEmail" style="font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;"></span>
         </div>
-        <button class="btn-icon pad-md" onclick="fazerLogout()" title="Sair" style="color:var(--red);justify-content:flex-start;gap:10px;">
+        <button class="btn-icon pad-md" onclick="fazerLogout()" title="Sair" aria-label="Sair da conta" style="color:var(--red);justify-content:flex-start;gap:10px;">
             <i data-lucide="log-out" style="width:16px;height:16px;flex-shrink:0;"></i>
             <span class="sidebar-text">Sair</span>
         </button>
-        <button class="btn-icon" id="btnToggle" onclick="toggleSidebar()" title="Recolher">
+        <button class="btn-icon" id="btnToggle" onclick="toggleSidebar()" title="Recolher" aria-label="Recolher menu lateral">
             <i data-lucide="panel-left-close" style="width:18px;"></i>
         </button>
     </div>
@@ -869,7 +877,7 @@
     <!-- Topbar -->
     <div class="topbar">
         <div class="topbar-title-group" style="display:flex;align-items:center;gap:10px;">
-            <button id="btnMobileMenu" class="btn-icon" onclick="toggleMobileSidebar()" style="width:36px;height:36px;flex-shrink:0;">
+            <button id="btnMobileMenu" class="btn-icon" onclick="toggleMobileSidebar()" aria-label="Abrir menu lateral" style="width:36px;height:36px;flex-shrink:0;">
                 <i data-lucide="menu" style="width:20px;height:20px;"></i>
             </button>
             <div class="title-area">
@@ -894,7 +902,7 @@
                 <span id="refreshLabel">carregando...</span>
             </div>
             <!-- Theme -->
-            <button class="btn btn-ghost" id="btnTheme" onclick="toggleTheme()" title="Alternar tema">
+            <button class="btn btn-ghost" id="btnTheme" onclick="toggleTheme()" title="Alternar tema" aria-label="Alternar tema claro/escuro">
                 <i id="iconTheme" data-lucide="sun" style="width:15px;"></i>
             </button>
             <!-- Filtros da barra -->
@@ -973,27 +981,27 @@
             <!-- NOVAS MÉTRICAS TEMPORAIS (FASE 3) -->
             <div class="metrics-row" id="metricsTemporalRow" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:16px;margin-bottom:20px;margin-top:10px;">
                 <div class="metric-card pad-lg" style="background:var(--card);border-radius:12px;border:1px solid var(--border);text-align:center;box-shadow:var(--shadow-sm);">
-                    <h3 style="font-size:12px;color:var(--muted);text-transform:uppercase;margin-bottom:8px;font-weight:600;">⏱️ Ciclo Médio</h3>
+                    <h3 style="font-size:12px;color:var(--muted);text-transform:uppercase;margin-bottom:8px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:6px;"><i data-lucide="clock" style="width:14px;height:14px;"></i> Ciclo Médio</h3>
                     <div class="big-number" id="avgCycleDays" style="font-size:24px;font-weight:700;color:var(--text);">-</div>
                     <p id="avgCycleLabel" style="font-size:11px;color:var(--muted);">dias até venda</p>
                 </div>
                 <div class="metric-card pad-lg" style="background:var(--card);border-radius:12px;border:1px solid var(--border);text-align:center;box-shadow:var(--shadow-sm);">
-                    <h3 style="font-size:12px;color:var(--muted);text-transform:uppercase;margin-bottom:8px;font-weight:600;">⚡ Resposta Média</h3>
+                    <h3 style="font-size:12px;color:var(--muted);text-transform:uppercase;margin-bottom:8px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:6px;"><i data-lucide="zap" style="width:14px;height:14px;"></i> Resposta Média</h3>
                     <div class="big-number" id="avgResponseTime" style="font-size:24px;font-weight:700;color:var(--text);">-</div>
                     <p style="font-size:11px;color:var(--muted);">minutos</p>
                 </div>
                 <div class="metric-card pad-lg" id="cardLeadsEsquecidos" onclick="toggleFiltroEsquecidos()" style="cursor:pointer;background:var(--card);border-radius:12px;border:1px solid var(--border);text-align:center;border-left:4px solid #ef4444;box-shadow:var(--shadow-sm);" title="Clique para filtrar a lista abaixo">
-                    <h3 style="font-size:12px;color:var(--muted);text-transform:uppercase;margin-bottom:8px;font-weight:600;">⚠️ Leads Esquecidos</h3>
+                    <h3 style="font-size:12px;color:var(--muted);text-transform:uppercase;margin-bottom:8px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:6px;"><i data-lucide="alert-triangle" style="width:14px;height:14px;color:var(--danger);"></i> Leads Esquecidos</h3>
                     <div class="big-number" id="leadsAtRisk" style="font-size:24px;font-weight:700;color:#ef4444;">-</div>
                     <p style="font-size:11px;color:var(--muted);">sem contato há +48h</p>
                 </div>
                 <div class="metric-card pad-lg" style="background:var(--card);border-radius:12px;border:1px solid var(--border);text-align:center;box-shadow:var(--shadow-sm);">
-                    <h3 style="font-size:12px;color:var(--muted);text-transform:uppercase;margin-bottom:8px;font-weight:600;">🏃 Vendas Rápidas</h3>
+                    <h3 style="font-size:12px;color:var(--muted);text-transform:uppercase;margin-bottom:8px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:6px;"><i data-lucide="trending-up" style="width:14px;height:14px;color:var(--success);"></i> Vendas Rápidas</h3>
                     <div class="big-number" id="fastSales" style="font-size:24px;font-weight:700;color:#10b981;">-</div>
                     <p style="font-size:11px;color:var(--muted);" id="fastSalesPercentLabel">fechadas em 24h</p>
                 </div>
                 <div class="metric-card pad-lg" style="background:var(--card);border-radius:12px;border:1px solid var(--border);text-align:center;box-shadow:var(--shadow-sm);">
-                    <h3 style="font-size:12px;color:var(--muted);text-transform:uppercase;margin-bottom:8px;font-weight:600;">🤝 Engajamento</h3>
+                    <h3 style="font-size:12px;color:var(--muted);text-transform:uppercase;margin-bottom:8px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:6px;"><i data-lucide="activity" style="width:14px;height:14px;"></i> Engajamento</h3>
                     <div class="big-number" id="avgEngagementScore" style="font-size:24px;font-weight:700;color:var(--text);">-</div>
                     <p style="font-size:11px;color:var(--muted);" id="avgEngagementLabel">de 100 pontos</p>
                 </div>
@@ -1090,14 +1098,14 @@
 
                 <section class="chat-panel chat-thread-panel">
                     <div class="chat-panel-head">
-                        <button type="button" class="chat-mobile-back" id="chatMobileBack" onclick="chatMobileShowList()" title="Voltar">
+                        <button type="button" class="chat-mobile-back" id="chatMobileBack" onclick="chatMobileShowList()" title="Voltar" aria-label="Voltar para lista de conversas">
                             <i data-lucide="arrow-left"></i>
                         </button>
                         <div class="chat-panel-title">
                             <strong id="chatThreadTitle">Conversa</strong>
                             <span id="chatThreadMeta">Retencao de 15 dias</span>
                         </div>
-                        <button type="button" class="chat-mobile-lead-btn" id="chatMobileLeadBtn" onclick="chatMobileShowLead()" title="Ver dados do lead">
+                        <button type="button" class="chat-mobile-lead-btn" id="chatMobileLeadBtn" onclick="chatMobileShowLead()" title="Ver dados do lead" aria-label="Ver dados do lead">
                             <i data-lucide="user-round"></i>
                         </button>
                     </div>
@@ -1110,32 +1118,32 @@
                             <span class="chat-recording-dot"></span>
                             <span id="chatRecordingTimer">0:00</span>
                             <span class="chat-recording-hint">Gravando audio...</span>
-                            <button type="button" class="chat-composer-btn" onclick="chatCancelAudioRecording()" title="Cancelar">
+                            <button type="button" class="chat-composer-btn" onclick="chatCancelAudioRecording()" title="Cancelar" aria-label="Cancelar gravação de áudio">
                                 <i data-lucide="trash-2"></i>
                             </button>
-                            <button type="button" class="chat-composer-btn chat-composer-send" onclick="chatStopAudioRecording()" title="Enviar">
+                            <button type="button" class="chat-composer-btn chat-composer-send" onclick="chatStopAudioRecording()" title="Enviar" aria-label="Enviar áudio gravado">
                                 <i data-lucide="send"></i>
                             </button>
                         </div>
                         <div class="chat-composer-row">
-                            <button type="button" class="chat-composer-btn" id="chatEmojiBtn" onclick="chatToggleEmojiPicker()" title="Emoji">
+                            <button type="button" class="chat-composer-btn" id="chatEmojiBtn" onclick="chatToggleEmojiPicker()" title="Emoji" aria-label="Inserir emoji">
                                 <i data-lucide="smile"></i>
                             </button>
                             <div class="chat-emoji-picker" id="chatEmojiPicker" style="display:none;"></div>
 
-                            <button type="button" class="chat-composer-btn" onclick="$('chatFileInput').click()" title="Anexar">
+                            <button type="button" class="chat-composer-btn" onclick="$('chatFileInput').click()" title="Anexar" aria-label="Anexar arquivo">
                                 <i data-lucide="paperclip"></i>
                             </button>
                             <input type="file" id="chatFileInput" style="display:none;" onchange="chatHandleFileSelected(event)"
                                    accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.zip,.txt">
 
                             <textarea id="chatComposerInput" class="chat-composer-input"
-                                      rows="1" maxlength="4096"></textarea>
+                                      rows="1" maxlength="4096" placeholder="Digite uma mensagem..."></textarea>
 
-                            <button type="button" class="chat-composer-btn" id="chatMicBtn" onclick="chatToggleAudioRecording()" title="Gravar audio">
+                            <button type="button" class="chat-composer-btn" id="chatMicBtn" onclick="chatToggleAudioRecording()" title="Gravar audio" aria-label="Gravar mensagem de áudio">
                                 <i data-lucide="mic"></i>
                             </button>
-                            <button type="submit" class="chat-composer-btn chat-composer-send" id="chatSendBtn" disabled title="Enviar">
+                            <button type="submit" class="chat-composer-btn chat-composer-send" id="chatSendBtn" disabled title="Enviar" aria-label="Enviar mensagem">
                                 <i data-lucide="send"></i>
                             </button>
                         </div>
@@ -1144,7 +1152,7 @@
 
                 <aside class="chat-panel chat-lead-panel">
                     <div class="chat-panel-head">
-                        <button type="button" class="chat-mobile-back chat-mobile-back-lead" onclick="chatMobileShowThread()" title="Voltar">
+                        <button type="button" class="chat-mobile-back chat-mobile-back-lead" onclick="chatMobileShowThread()" title="Voltar" aria-label="Voltar para a conversa">
                             <i data-lucide="arrow-left"></i>
                         </button>
                         <div class="chat-panel-title">
@@ -1162,7 +1170,7 @@
         <!-- MODAL: Conversa do lead (popup sobre a aba Leads) -->
         <div class="chat-modal-overlay" id="chatModalOverlay" style="display:none;" onclick="if(event.target===this)fecharConversaModal()">
             <div class="chat-modal-box" id="chatModalBox">
-                <button type="button" class="chat-modal-close" onclick="fecharConversaModal()" title="Fechar">
+                <button type="button" class="chat-modal-close" onclick="fecharConversaModal()" title="Fechar" aria-label="Fechar janela de conversa">
                     <i data-lucide="x"></i>
                 </button>
                 <!-- A .chat-thread-panel do monitor é movida para cá ao abrir e devolvida ao fechar. -->
@@ -1360,7 +1368,7 @@
                     <div class="modal-box" style="width:420px;max-width:95vw;max-height:80vh;display:flex;flex-direction:column;">
                         <div class="modal-head">
                             <span><i data-lucide="building-2" style="width:15px;color:var(--blue);"></i> Contas de Anúncio</span>
-                            <button class="btn-icon" onclick="fecharModalGerenciarContas()"><i data-lucide="x" style="width:16px;"></i></button>
+                            <button class="btn-icon" onclick="fecharModalGerenciarContas()" aria-label="Fechar"><i data-lucide="x" style="width:16px;"></i></button>
                         </div>
                         <div style="padding:16px 20px 0;overflow-y:auto;flex:1;">
                             <p style="font-size:13px;color:var(--muted);margin-bottom:14px;">Selecione as contas que aparecem no seletor acima.</p>
@@ -1681,7 +1689,7 @@
                     <span class="foco-sep" id="focoSep1" style="display:none;">/</span>
                     <span class="foco-item" id="focoCampNome"></span>
                     <span class="foco-sep" id="focoSep2" style="display:none;">/</span>
-                    <button class="foco-back" id="focoAdsetBtn" style="display:none;" onclick="voltarFoco(1)"></button>
+                    <button class="foco-back" id="focoAdsetBtn" style="display:none;" onclick="voltarFoco(1)" aria-label="Voltar para conjuntos"></button>
                     <span class="foco-item" id="focoAdsetNome" style="display:none;"></span>
                 </div>
 
@@ -2222,7 +2230,7 @@
         <!-- ── Aba Captação e Links (Fase 2) ── -->
         <div id="aba-captacao" class="aba-oculta">
             <div style="margin-bottom:18px;">
-                <h2 style="display:flex;align-items:center;gap:8px;font-size:16px;margin:0;"><i data-lucide="link" style="color:var(--blue);width:18px;"></i> Link de rastreamento</h2>
+                <h2 style="display:flex;align-items:center;gap:8px;font-size:16px;margin:0;"><i data-lucide="link" style="color:var(--blue);width:18px;"></i> Link de Rastreamento</h2>
                 <p style="color:var(--muted);font-size:13px;margin:4px 0 0;">Links rastreáveis com rotação entre números de WhatsApp. Cada clique é registrado e atribuído ao lead.</p>
             </div>
 
@@ -2269,7 +2277,7 @@
         <!-- ABA: RASTREAMENTO INTELIGENTE -->
         <div id="aba-inteligente" class="aba-oculta">
             <div style="margin-bottom:18px;">
-                <h2 style="display:flex;align-items:center;gap:8px;font-size:16px;margin:0;"><i data-lucide="workflow" style="color:var(--blue);width:18px;"></i> Rastreamento inteligente</h2>
+                <h2 style="display:flex;align-items:center;gap:8px;font-size:16px;margin:0;"><i data-lucide="workflow" style="color:var(--blue);width:18px;"></i> Rastreamento Inteligente</h2>
                 <p style="color:var(--muted);font-size:13px;margin:4px 0 0;">Etapas por palavra-chave que valem para <strong>qualquer conversa do cliente</strong> no WhatsApp, não importa qual link ou anúncio trouxe o lead. Para uma regra que valha só para um link específico, configure a aba "Jornada" dentro do próprio link, em Link de Rastreamento.</p>
             </div>
 
@@ -2281,7 +2289,7 @@
             <div id="capIntCard" class="card cap-int-card" style="padding:20px;">
                 <div class="cap-int-header">
                     <div>
-                        <div class="cap-int-title"><i data-lucide="workflow"></i> Rastreamento inteligente</div>
+                        <div class="cap-int-title"><i data-lucide="workflow"></i> Rastreamento Inteligente</div>
                         <p>Eventos enviados à Meta quando o atendente usa a palavra-chave no WhatsApp (campanhas de mensagem / CTWA). Cada etapa dispara <strong>uma vez por lead</strong>.</p>
                     </div>
                     <span class="cap-int-channel">WhatsApp / CTWA</span>
@@ -2354,7 +2362,7 @@
                     <div style="display:flex;align-items:center;gap:8px;">
                         <i data-lucide="smartphone" style="color:#25D366;width:18px;height:18px;flex-shrink:0;"></i>
                         <div>
-                            <span style="font-size:14px;font-weight:700;">Conexões WhatsApp</span>
+                            <span style="font-size:14px;font-weight:700;">Conexão WhatsApp</span>
                             <span style="color:var(--muted);font-size:11px;margin-left:8px;">Gerencie números para recebimento de leads.</span>
                         </div>
                     </div>
@@ -2417,7 +2425,7 @@
                         <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:6px;">Link para o responsável (válido por poucos minutos, uso único):</label>
                         <div style="display:flex;gap:6px;">
                             <input id="waLinkCompartilhado" type="text" readonly style="flex:1;min-width:0;font-size:11px;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--tag);color:var(--text);" onclick="this.select()">
-                            <button class="btn btn-ghost btn-sm" onclick="waCopiarLinkCompartilhado()" title="Copiar link"><i data-lucide="copy" style="width:14px;"></i></button>
+                            <button class="btn btn-ghost btn-sm" onclick="waCopiarLinkCompartilhado()" title="Copiar link" aria-label="Copiar link compartilhado"><i data-lucide="copy" style="width:14px;"></i></button>
                         </div>
                     </div>
                 </div>
@@ -2470,7 +2478,7 @@
                         <i data-lucide="folder" style="color:#25D366;width:16px;height:16px;"></i>
                     </span>
                     <h3 id="zapDestinoModalTitulo" style="margin:0;font-size:15px;font-weight:700;">Novo Agendamento</h3>
-                    <button class="btn-icon" onclick="fecharModalZapDestino()" style="margin-left:auto;">
+                    <button class="btn-icon" onclick="fecharModalZapDestino()" style="margin-left:auto;" aria-label="Fechar">
                         <i data-lucide="x" style="width:14px;"></i>
                     </button>
                 </div>
@@ -2549,7 +2557,7 @@
                         <i data-lucide="send" style="color:#25D366;width:16px;height:16px;"></i>
                     </span>
                     <h3 id="zapModalTitulo" style="margin:0;font-size:15px;font-weight:700;">Novo Relatório</h3>
-                    <button class="btn-icon" onclick="fecharModalZap()" style="margin-left:auto;">
+                    <button class="btn-icon" onclick="fecharModalZap()" style="margin-left:auto;" aria-label="Fechar">
                         <i data-lucide="x" style="width:14px;"></i>
                     </button>
                 </div>
@@ -2682,10 +2690,10 @@
                             <input type="checkbox" id="log-auto-refresh" onchange="toggleLogAutoRefresh()" style="accent-color:var(--c6);">
                             Auto
                         </label>
-                        <button class="btn btn-ghost btn-sm" onclick="pruneLogs()" title="Limpar logs antigos (mais de 15 dias)">
+                        <button class="btn btn-ghost btn-sm" onclick="pruneLogs()" title="Limpar logs antigos (mais de 15 dias)" aria-label="Limpar logs antigos">
                             <i data-lucide="trash-2" style="width:13px;color:var(--red);"></i>
                         </button>
-                        <button class="btn btn-ghost btn-sm" onclick="carregarLogs()">
+                        <button class="btn btn-ghost btn-sm" onclick="carregarLogs()" title="Recarregar logs" aria-label="Recarregar logs">
                             <i data-lucide="refresh-cw" style="width:13px;"></i>
                         </button>
                     </div>
@@ -3067,6 +3075,7 @@ async function init() {
         $('userEmail').textContent = user.email;
 
         if (user.is_admin) {
+            if ($('sep-admin')) $('sep-admin').style.display = 'block';
             $('btn-agencia').style.display = 'flex';
             $('btn-ajustes').style.display = 'flex';
             $('btn-alertas').style.display = 'flex';
@@ -3088,6 +3097,7 @@ async function init() {
                 'btn-captacao':        p.captacao       !== false,
                 'btn-inteligente':     p.inteligente    !== false,
                 'btn-funil':           p.funil          !== false,
+                'btn-clientes':        true, // Compartilhar Dash é sempre disponível ao cliente autenticado
                 'btn-zaprelatorios':   p.zaprelatorios  !== false,
                 'btn-integracoes':     p.integracoes    !== false,
                 'btn-conta':           p.conta          !== false,
@@ -3096,6 +3106,15 @@ async function init() {
                 const el = $(btnId);
                 if (el) el.style.display = allowed ? 'flex' : 'none';
             });
+            // Ocultar separadores de seção cujas abas estão todas desabilitadas
+            const checkSep = (sepId, btnIds) => {
+                const sep = $(sepId);
+                if (sep) sep.style.display = btnIds.some(id => tabMap[id]) ? 'block' : 'none';
+            };
+            checkSep('sep-atendimento', ['btn-leads', 'btn-conversas', 'btn-whatsapp']);
+            checkSep('sep-campanhas', ['btn-anuncios', 'btn-captacao', 'btn-inteligente']);
+            checkSep('sep-metricas', ['btn-funil', 'btn-relatorios', 'btn-clientes', 'btn-zaprelatorios']);
+            checkSep('sep-config', ['btn-integracoes', 'btn-conta']);
             // Navegar para a primeira aba disponível
             const firstAllowed = Object.entries(tabMap).find(([,v]) => v);
             if (firstAllowed) {
@@ -3617,7 +3636,7 @@ async function renderShareLinks() {
                     ${ex ? `<span style="font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;">${esc(url)}</span>` : ''}
                 </div>
                 <div style="display:flex;gap:6px;flex-shrink:0;">
-                    ${ex ? `<button class="btn btn-ghost btn-sm" onclick="navigator.clipboard.writeText('${esc(url)}');toast('Copiado!','success')" title="Copiar link"><i data-lucide="copy" style="width:12px;"></i></button>` : ''}
+                    ${ex ? `<button class="btn btn-ghost btn-sm" onclick="navigator.clipboard.writeText('${esc(url)}');toast('Copiado!','success')" title="Copiar link" aria-label="Copiar link"><i data-lucide="copy" style="width:12px;"></i></button>` : ''}
                     <button class="btn ${ex ? 'btn-ghost' : 'btn-primary'} btn-sm" onclick="gerarLinkCompartilhamento('${esc(c.id)}','${esc(c.name).replace(/'/g,"\\'")}')">
                         <i data-lucide="${ex ? 'settings-2' : 'link'}" style="width:12px;"></i>
                         ${ex ? 'Editar' : 'Gerar Link'}
@@ -4567,13 +4586,13 @@ function renderMetricsModal() {
                 ? `<span class="col-order-badge">${i + 1}</span>`
                 : '<span class="col-order-badge col-order-badge--empty"></span>';
             const move = metricsModalTab === 'cols'
-                ? `<button class="metrics-mini-btn" onclick="moveMetricCol('${m.key}',-1)" title="Subir"><i data-lucide="chevron-up"></i></button>
-                   <button class="metrics-mini-btn" onclick="moveMetricCol('${m.key}',1)" title="Descer"><i data-lucide="chevron-down"></i></button>`
+                ? `<button class="metrics-mini-btn" onclick="moveMetricCol('${m.key}',-1)" title="Subir" aria-label="Mover métrica para cima"><i data-lucide="chevron-up"></i></button>
+                   <button class="metrics-mini-btn" onclick="moveMetricCol('${m.key}',1)" title="Descer" aria-label="Mover métrica para baixo"><i data-lucide="chevron-down"></i></button>`
                 : '';
             const remove = metricsModalTab === 'cols' ? 'toggleCol' : 'toggleCard';
             return `<div class="metrics-selected-item">
                 ${order}<span>${m.label}</span><em>${METRIC_CATEGORY_LABELS[m.category]}</em>
-                <div class="metrics-selected-actions">${move}<button class="metrics-mini-btn" onclick="${remove}('${m.key}',false)" title="Remover"><i data-lucide="x"></i></button></div>
+                <div class="metrics-selected-actions">${move}<button class="metrics-mini-btn" onclick="${remove}('${m.key}',false)" title="Remover" aria-label="Remover métrica"><i data-lucide="x"></i></button></div>
             </div>`;
         }).join('')
         : '<div class="metrics-empty">Nenhuma métrica selecionada.</div>';
@@ -4870,7 +4889,7 @@ function renderFunil() {
             <div class="funil-trap-top">
                 <span class="funil-trap-label">${m.label}</span>
                 <span class="funil-trap-num">${v ? fmtN(v) : '—'}</span>
-                <button class="funil-trap-x" onclick="removeFunilStep('${m.key}')">×</button>
+                <button class="funil-trap-x" onclick="removeFunilStep('${m.key}')" aria-label="Remover etapa do funil">×</button>
             </div>
             <div class="funil-trap-cost">${custo}</div>
         </div>`;
@@ -5608,8 +5627,8 @@ function renderAdCard(ad, rank, sortObj) {
 
     const thumbHtml = thumb
         ? `<img class="ad-card-thumb" id="bestthumb-${esc(ad.id)}" src="${esc(thumb)}" onclick="abrirAdMedia('${esc(ad.id)}')" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" loading="lazy">
-           <div class="ad-card-thumb-placeholder" style="display:none;" onclick="abrirAdMedia('${esc(ad.id)}')">🖼</div>`
-        : `<div class="ad-card-thumb-placeholder" onclick="abrirAdMedia('${esc(ad.id)}')">🖼</div>`;
+           <div class="ad-card-thumb-placeholder" style="display:none;" onclick="abrirAdMedia('${esc(ad.id)}')" aria-label="Ver mídia"><i data-lucide="image" style="width:20px;height:20px;opacity:.5;"></i></div>`
+        : `<div class="ad-card-thumb-placeholder" onclick="abrirAdMedia('${esc(ad.id)}')" aria-label="Ver mídia"><i data-lucide="image" style="width:20px;height:20px;opacity:.5;"></i></div>`;
 
     return `<div class="ad-card">
         <div style="position:relative;">
@@ -5739,12 +5758,12 @@ const TITULOS = {
     funil:          '<i data-lucide="filter" style="color:var(--blue);"></i> Funil de Vendas',
     relatorios:     '<i data-lucide="bar-chart-2" style="color:var(--blue);"></i> Relatórios',
     anuncios:       '<img src="https://cdn.simpleicons.org/meta/0082FB" style="width:16px;height:16px;display:inline;vertical-align:-2px;margin-right:6px;" alt="Meta"> Meta Ads',
-    captacao:       '<i data-lucide="link" style="color:var(--blue);"></i> Link de rastreamento',
-    inteligente:    '<i data-lucide="workflow" style="color:var(--blue);"></i> Rastreamento inteligente',
+    captacao:       '<i data-lucide="link" style="color:var(--blue);"></i> Link de Rastreamento',
+    inteligente:    '<i data-lucide="workflow" style="color:var(--blue);"></i> Rastreamento Inteligente',
     clientes:       '<i data-lucide="share-2" style="color:var(--blue);"></i> Compartilhar Dash',
-    integracoes:    '<i data-lucide="plug" style="color:var(--blue);"></i> Integra&ccedil;&otilde;es',
+    integracoes:    '<i data-lucide="plug" style="color:var(--blue);"></i> Integrações',
     conta:          '<i data-lucide="user-cog" style="color:var(--blue);"></i> Minha Conta',
-    ajustes:        '<i data-lucide="palette" style="color:var(--blue);"></i> Marca',
+    ajustes:        '<i data-lucide="palette" style="color:var(--blue);"></i> Marca (White-label)',
     alertas:        '<i data-lucide="bell-ring" style="color:var(--blue);"></i> Alerta de Saldo',
     agencia:        '<i data-lucide="building" style="color:var(--blue);"></i> Gestão de Clientes',
     whatsapp:       '<i data-lucide="smartphone" style="color:#25D366;"></i> Conexão WhatsApp',
@@ -6028,15 +6047,15 @@ async function _renderZapDestinoBloco(destino) {
             <div style="flex:1;min-width:0;">
                 <div style="font-size:14px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(destino.nome)}</div>
                 <div style="font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-                    ${destino.destino_tipo === 'grupo' ? '👥' : '👤'} ${esc(destino.destino_nome || destino.destino_jid)} · ${esc(destino.instance_name)}
+                    ${destino.destino_tipo === 'grupo' ? '<i data-lucide="users" style="width:12px;height:12px;display:inline-block;vertical-align:-1px;margin-right:2px;"></i>' : '<i data-lucide="user" style="width:12px;height:12px;display:inline-block;vertical-align:-1px;margin-right:2px;"></i>'} ${esc(destino.destino_nome || destino.destino_jid)} · ${esc(destino.instance_name)}
                 </div>
             </div>
             <span style="font-size:11px;color:var(--muted);white-space:nowrap;">${destino.total_relatorios || 0} relatório(s)</span>
             <div class="zap-actions" onclick="event.stopPropagation()">
-                <button class="zap-action-btn" title="Editar agendamento" onclick="abrirModalZapDestinoEditar(_zapDestinosCache[${destino.id}])">
+                <button class="zap-action-btn" title="Editar agendamento" aria-label="Editar agendamento" onclick="abrirModalZapDestinoEditar(_zapDestinosCache[${destino.id}])">
                     <i data-lucide="pencil" style="width:13px;height:13px;"></i>
                 </button>
-                <button class="zap-action-btn danger" title="Excluir agendamento" onclick="deletarZapDestino(${destino.id})">
+                <button class="zap-action-btn danger" title="Excluir agendamento" aria-label="Excluir agendamento" onclick="deletarZapDestino(${destino.id})">
                     <i data-lucide="trash-2" style="width:13px;height:13px;"></i>
                 </button>
             </div>
@@ -6056,20 +6075,20 @@ function _renderZapRelatoriosLista(destinoId, rows) {
                 <div style="font-size:13px;font-weight:600;">${_zapCampanhaLabel(row)}</div>
                 <div style="font-size:11px;color:var(--muted);">${FREQ[row.frequencia] || row.frequencia} · ${esc(periodoLabel)} · ${esc(row.horario)}</div>
             </div>
-            <button onclick="toggleStatusZap(${row.id})" title="${isAtivo ? 'Pausar' : 'Ativar'}" style="display:inline-flex;align-items:center;gap:6px;background:none;border:none;cursor:pointer;padding:2px 0;white-space:nowrap;">
+            <button onclick="toggleStatusZap(${row.id})" title="${isAtivo ? 'Pausar' : 'Ativar'}" aria-label="${isAtivo ? 'Pausar relatório' : 'Ativar relatório'}" style="display:inline-flex;align-items:center;gap:6px;background:none;border:none;cursor:pointer;padding:2px 0;white-space:nowrap;">
                 <span style="flex-shrink:0;display:inline-flex;align-items:center;width:28px;height:16px;border-radius:8px;padding:2px;box-sizing:border-box;background:${isAtivo ? '#10b981' : 'rgba(255,255,255,.15)'};justify-content:${isAtivo ? 'flex-end' : 'flex-start'};">
                     <span style="width:10px;height:10px;border-radius:50%;background:#fff;flex-shrink:0;"></span>
                 </span>
                 <span style="font-size:10px;font-weight:600;color:${isAtivo ? '#10b981' : 'var(--muted)'};">${isAtivo ? 'Ativo' : 'Pausado'}</span>
             </button>
             <div class="zap-actions">
-                <button class="zap-action-btn" title="Editar relatório" onclick="abrirModalRelatorioEditar(_zapRowsCache[${row.id}])">
+                <button class="zap-action-btn" title="Editar relatório" aria-label="Editar relatório" onclick="abrirModalRelatorioEditar(_zapRowsCache[${row.id}])">
                     <i data-lucide="pencil" style="width:13px;height:13px;"></i>
                 </button>
-                <button class="zap-action-btn" title="Duplicar relatório" onclick="duplicarZapRelatorio(_zapRowsCache[${row.id}])">
+                <button class="zap-action-btn" title="Duplicar relatório" aria-label="Duplicar relatório" onclick="duplicarZapRelatorio(_zapRowsCache[${row.id}])">
                     <i data-lucide="copy" style="width:13px;height:13px;"></i>
                 </button>
-                <button class="zap-action-btn danger" title="Excluir relatório" onclick="deletarZapRelatorio(${row.id})">
+                <button class="zap-action-btn danger" title="Excluir relatório" aria-label="Excluir relatório" onclick="deletarZapRelatorio(${row.id})">
                     <i data-lucide="trash-2" style="width:13px;height:13px;"></i>
                 </button>
             </div>
@@ -6885,7 +6904,7 @@ function resetLeadSearchAutofill() {
     input.defaultValue = '';
 }
 </script>
-<script defer src="js/leads.js?v=20260912-fase2"></script>
+<script defer src="js/leads.js?v=20260912-fase5"></script>
 <script defer src="js/chat-monitor.js?v=20260813-clientswitch"></script>
 <script defer src="js/admin.js?v=20260912-editclidrawer"></script>
 <script defer src="js/captacao.js?v=20260912-fase3"></script>
@@ -6902,7 +6921,7 @@ function resetLeadSearchAutofill() {
         <div id="lpTelefone" style="font-size:12px;color:var(--muted);margin-top:1px;">—</div>
       </div>
       <div id="lpStatusBadge" style="padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;background:var(--bg-secondary);color:var(--muted);border:1px solid var(--border);flex-shrink:0;white-space:nowrap;">—</div>
-      <button onclick="fecharPerfilLead()" style="background:none;border:none;cursor:pointer;color:var(--muted);padding:4px;border-radius:6px;display:flex;align-items:center;margin-left:4px;"><i data-lucide="x" style="width:18px;height:18px;"></i></button>
+      <button onclick="fecharPerfilLead()" aria-label="Fechar perfil do lead" style="background:none;border:none;cursor:pointer;color:var(--muted);padding:4px;border-radius:6px;display:flex;align-items:center;margin-left:4px;"><i data-lucide="x" style="width:18px;height:18px;"></i></button>
     </div>
     <!-- Tabs -->
     <div style="display:flex;border-bottom:1px solid var(--border);flex-shrink:0;overflow-x:auto;">

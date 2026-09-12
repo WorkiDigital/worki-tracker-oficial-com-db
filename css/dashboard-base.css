@@ -5,8 +5,17 @@
   --color-facebook: #1877f2; --color-instagram: #e1306c;
   --color-whatsapp: #25d366;
 
-  /* Espaçamento em múltiplos de 4px */
-  --p1: 4px; --p2: 8px; --p3: 12px; --p4: 16px; --p5: 24px;
+  /* ── Tokens de Breakpoints (referência de design system) ── */
+  --bp-sm: 480px;   /* Mobile compacto */
+  --bp-md: 768px;   /* Tablet / Mobile padrão (sidebar overlay e card-view) */
+  --bp-lg: 960px;   /* Laptop / Grid compacto */
+  --bp-xl: 1180px;  /* Desktop / Split views */
+
+  /* Espaçamento em escala canônica (múltiplos de 4px) */
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
+  --space-5: 20px; --space-6: 24px; --space-8: 32px;
+  /* Aliases legados preservados */
+  --p1: var(--space-1); --p2: var(--space-2); --p3: var(--space-3); --p4: var(--space-4); --p5: var(--space-6);
   --pad-sm: 6px 10px; --pad-md: 10px 12px; --pad-lg: 20px;
 
   /* Transições padrão */
@@ -832,7 +841,8 @@ html.light .ads-filters { background:rgba(0,0,0,.02); }
 .ads-budget-warning svg { width:14px; height:14px; flex:0 0 auto; }
 .ads-budget-actions { display:grid; grid-template-columns:.75fr 1.25fr; gap:9px; }
 .ads-budget-actions .btn,.ads-budget-actions .btn-confirm { min-height:42px; margin:0; justify-content:center; }
-@media(max-width:720px) {
+/* ── Mobile principal / tablet portrait (--bp-md = 768px) ── */
+@media(max-width:768px) {
     #modalCampanha { align-items:flex-end; }
     #modalCampanha .modal-box { width:100vw !important; max-width:none !important; max-height:94vh !important; border-radius:16px 16px 0 0; padding:20px 16px; }
     #modalCampanha .cap-grid-main,
@@ -1542,6 +1552,7 @@ html:not(.light) .chat-composer-preview, html:not(.light) .chat-recording-bar { 
 
 /* ── Preview de mensagem do Relatório Zap (mobile) ──
    Movido de <style> inline em index.html (Fase 2 da auditoria UX/UI). */
-@media (max-width: 720px) {
+/* ── Mobile principal / tablet portrait (--bp-md = 768px) ── */
+@media (max-width: 768px) {
   .zap-msg-preview-grid { grid-template-columns: 1fr !important; }
 }
