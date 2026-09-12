@@ -165,7 +165,10 @@ Commits enviados para `main`:
 Deploy:
 - Push para `origin/main` concluido; este e o fluxo esperado para o EasyPanel segundo o README.
 - Tentativa de deploy direto pela Vercel CLI falhou porque o projeto possui mais de 12 Serverless Functions, limite do plano Hobby. Este repo e mais adequado ao fluxo EasyPanel/Nixpacks rodando `node server.js`.
-- Foi criado `.vercelignore` para evitar enviar `.env`, `.claude`, `.git`, `node_modules` e `.vercel` caso alguem tente deploy direto pela Vercel novamente.
+- **(2026-09) `vercel.json` e `.vercelignore` foram removidos do repositório** — nunca foi o fluxo
+  real de deploy (sempre EasyPanel/Nixpacks) e ambos precisam ficar na raiz pra funcionar, então não
+  há como "organizar em pasta" sem inutilizá-los. Se um deploy Vercel for realmente necessário no
+  futuro, recriar os dois arquivos na raiz do zero.
 
 ## Atualizacao recente - Menu, CAPI, ciclo e busca de leads
 

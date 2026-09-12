@@ -465,7 +465,6 @@ Admins podem gerar links públicos para clientes visualizarem métricas sem logi
 ├── scripts/maintenance/reset-db.js  # Reset de tabelas (CUIDADO: apaga dados)
 ├── package.json           # Dependências e scripts (start, dev, setup)
 ├── nixpacks.toml          # Config de build para EasyPanel/Nixpacks
-├── vercel.json            # Rewrites para deploy na Vercel (alternativo)
 ├── .env.example           # Template de variáveis de ambiente
 │
 ├── index.html             # Dashboard principal (admin + cliente)
