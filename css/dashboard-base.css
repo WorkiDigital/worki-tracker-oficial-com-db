@@ -1160,6 +1160,68 @@ html.light .nav-item.active { box-shadow:inset 3px 0 0 var(--blue); background:r
     }
     /* Skeleton continua funcionando normalmente */
     .leads-table-wrap .sk-row { display:table-row; background:transparent; border:none; padding:0; }
+
+    /* Kanban de Leads: carrossel de 1 coluna por vez com scroll snap, em vez
+       de 5 colunas fixas de 230px em scroll horizontal livre (Fase 4 da
+       auditoria UX/UI). O toggle Lista/Kanban continua disponível — o usuário
+       pode escolher Kanban mesmo no celular, e "espiar" ~8% da próxima coluna
+       dá a dica visual de que há mais conteúdo pro lado. */
+    .leads-kanban-wrap {
+        grid-template-columns:none;
+        grid-auto-flow:column;
+        grid-auto-columns:88vw;
+        gap:10px;
+        padding:12px;
+        scroll-snap-type:x mandatory;
+        -webkit-overflow-scrolling:touch;
+    }
+    .kanban-column {
+        scroll-snap-align:start;
+        min-height:0;
+        max-height:calc(100vh - 260px);
+    }
+    .kanban-column-body { max-height:none; flex:1; min-height:0; }
+
+    /* Tabela de campanhas de Meta Ads: mesma técnica de card-view já usada em
+       .leads-table-wrap (Fase 4 da auditoria UX/UI) — em vez de rolar uma
+       tabela com até 13 colunas dinâmicas na horizontal. A coluna de
+       expandir (drill-down) some do card por linha e vira um botão de texto
+       antes do nome, já que "▶" sozinho não tem afordance clara fora da
+       grade de tabela. Preserva o recuo visual dos níveis de conjunto/
+       anúncio (row-depth-1/2) como uma borda lateral colorida, em vez do
+       padding-left que só fazia sentido alinhado a uma coluna de tabela. */
+    .ads-table-wrap thead { display:none; }
+    .ads-table-wrap table { display:block; }
+    .ads-table-wrap tbody { display:flex; flex-direction:column; gap:10px; }
+    .ads-table-wrap tr {
+        display:grid;
+        grid-template-columns:1fr 1fr;
+        gap:4px 12px;
+        background:var(--card);
+        border:1px solid var(--border);
+        border-radius:var(--radius-lg);
+        padding:12px 14px;
+        position:relative;
+    }
+    .ads-table-wrap tr.row-depth-1 { border-left:3px solid var(--blue); margin-left:10px; }
+    .ads-table-wrap tr.row-depth-2 { border-left:3px solid var(--purple); margin-left:20px; }
+    .ads-table-wrap td.ads-td-expand {
+        grid-column:1/-1; display:flex; padding:0 0 4px; order:-2;
+    }
+    .ads-table-wrap td.ads-td-expand:empty { display:none; }
+    .ads-table-wrap td.ads-td-expand .expand-btn { padding:2px 8px; font-size:11px; background:var(--tag); border-radius:6px; }
+    .ads-table-wrap td.ads-campaign-name {
+        grid-column:1/-1; padding-left:0 !important; font-size:14px; order:-1;
+    }
+    .ads-table-wrap td.ads-budget-cell { grid-column:1/-1; }
+    .ads-table-wrap td { font-size:13px; padding:2px 0; border:none; }
+    .ads-table-wrap td[data-label]::before {
+        content:attr(data-label) ": ";
+        font-size:11px;
+        color:var(--muted);
+        display:block;
+        margin-bottom:1px;
+    }
 }
 
 @media(max-width:768px) {
@@ -1448,6 +1510,35 @@ html:not(.light) .chat-composer-preview, html:not(.light) .chat-recording-bar { 
 .heatmap-cell:hover { transform: scale(1.15); z-index: 10; box-shadow: 0 0 6px rgba(0,0,0,0.2); }
 .heatmap-cell::after { content: attr(data-tooltip); position: absolute; bottom: calc(100% + 4px); left: 50%; transform: translateX(-50%); background: var(--text); color: var(--card); padding: 4px 8px; border-radius: 4px; font-size: 11px; white-space: nowrap; opacity: 0; visibility: hidden; transition: opacity 0.2s; pointer-events: none; z-index: 20; }
 .heatmap-cell:hover::after { opacity: 1; visibility: visible; }
+
+@media (max-width: 768px) {
+    /* Reduz a densidade do heatmap em vez de só depender do scroll horizontal
+       (Fase 4 da auditoria UX/UI). Os dados continuam por hora individual —
+       agrupar em blocos de 3h mudaria o cálculo/tooltip e o número exibido,
+       risco maior do que o necessário para o que era, na prática, um
+       problema de tamanho de célula. min-width cai de 700px pra ~450px
+       (18px por coluna, ainda tocável) e a fonte/altura encolhem junto;
+       ainda sobra scroll horizontal residual, mas bem menor que os ~2x
+       de largura da tela que o valor original causava num celular comum. */
+    .heatmap-container { padding: 14px; }
+    .heatmap-wrapper { padding-top: 22px; }
+    .heatmap-grid { grid-template-columns: 28px repeat(24, 1fr); gap: 2px; min-width: 450px; }
+    .heatmap-cell { height: 18px; border-radius: 3px; }
+    .heatmap-col-header { font-size: 8px; }
+    .heatmap-row-label { font-size: 10px; padding-right: 5px; }
+    .heatmap-num { font-size: 8px; }
+
+    /* Conexão WhatsApp: primeira cobertura CSS dedicada da aba (Fase 4 da
+       auditoria UX/UI) — antes dependia só de max-width nos containers
+       (que já encolhem sozinhos, sem overflow real) e de min-width:220px no
+       card do QR, nunca testado deliberadamente contra telas pequenas.
+       Aqui os containers ganham width:100% explícito (em vez de depender do
+       comportamento padrão de bloco) e o card do QR reduz para caber com
+       folga confortável mesmo em ~320px de largura de tela. */
+    .wa-panel-box { max-width: 100% !important; }
+    .wa-qr-box { min-width: 0 !important; min-height: 190px !important; padding: 12px !important; }
+    .wa-qr-img { width: 170px !important; height: 170px !important; }
+}
 
 /* ── Preview de mensagem do Relatório Zap (mobile) ──
    Movido de <style> inline em index.html (Fase 2 da auditoria UX/UI). */

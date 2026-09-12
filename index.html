@@ -12,7 +12,7 @@
     <script defer src="https://cdn.jsdelivr.net/npm/lucide@0.469.0/dist/umd/lucide.min.js"></script>
     <!-- Chart.js, html2canvas e jsPDF são carregados sob demanda via loadScript() (utils.js).
          Não incluir aqui — evita baixar ~500KB em toda sessão mesmo sem abrir Anúncios ou exportar PDF. -->
-    <link rel="stylesheet" href="css/dashboard.css?v=20260912-fase2">
+    <link rel="stylesheet" href="css/dashboard.css?v=20260912-fase4">
     <link rel="stylesheet" href="css/date-range-picker.css?v=20260825-1">
     <link rel="stylesheet" href="css/splash.css?v=20260712-1">
     <link rel="stylesheet" href="css/funil.css?v=20260713-1">
@@ -1659,7 +1659,7 @@
                 </div>
 
                 <div class="card">
-                    <div style="overflow-x:auto;">
+                    <div class="ads-table-wrap" style="overflow-x:auto;">
                         <table>
                             <thead id="tabela-campanhas-head"><tr>
                                 <th>Campanha</th><th>Status</th><th>Investimento</th>
@@ -2349,7 +2349,7 @@
 
                 <!-- CREATE VIEW -->
                 <div id="waCreate" style="display:none;padding:10px 0;">
-                    <div style="background:var(--tag);border-radius:10px;padding:16px;text-align:left;max-width:420px;">
+                    <div class="wa-panel-box" style="background:var(--tag);border-radius:10px;padding:16px;text-align:left;max-width:420px;">
                         <label style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;">Nome da Instância</label>
                         <input type="text" id="waInstanceName" class="form-control" placeholder="Ex: Loja Principal" style="width:100%;margin-bottom:12px;">
                         <div style="display:flex;gap:8px;">
@@ -2362,13 +2362,13 @@
                 <!-- QR CODE VIEW -->
                 <div id="waQrView" style="display:none;text-align:center;padding:10px 0;">
                     <h4 id="waQrTitle" style="margin-bottom:10px;font-size:14px;">Conectar: </h4>
-                    <div style="background:var(--tag);border-radius:10px;padding:16px;margin:0 auto 10px;display:inline-flex;align-items:center;justify-content:center;min-height:220px;min-width:220px;">
-                        <img id="waQrImage" src="" alt="QR Code WhatsApp" style="width:200px;height:200px;display:none;border-radius:8px;background:#fff;padding:8px;" loading="lazy">
+                    <div class="wa-qr-box" style="background:var(--tag);border-radius:10px;padding:16px;margin:0 auto 10px;display:inline-flex;align-items:center;justify-content:center;min-height:220px;min-width:220px;">
+                        <img id="waQrImage" class="wa-qr-img" src="" alt="QR Code WhatsApp" style="width:200px;height:200px;display:none;border-radius:8px;background:#fff;padding:8px;" loading="lazy">
                         <div id="waWaitQr" style="color:var(--muted);font-size:13px;">Carregando QR Code...</div>
                     </div>
                     <p id="waQrCountdown" style="color:var(--muted);font-size:12px;margin-bottom:14px;"></p>
 
-                    <div style="max-width:340px;margin:0 auto 14px;text-align:left;background:var(--tag);border-radius:10px;padding:14px 16px;">
+                    <div class="wa-panel-box" style="max-width:340px;margin:0 auto 14px;text-align:left;background:var(--tag);border-radius:10px;padding:14px 16px;">
                         <p style="font-size:12px;font-weight:700;margin-bottom:8px;">Como escanear:</p>
                         <ol style="font-size:12px;color:var(--muted);line-height:1.7;padding-left:18px;margin:0;">
                             <li>Abra o WhatsApp no celular do número que vai atender.</li>
@@ -2386,7 +2386,7 @@
                         </button>
                     </div>
 
-                    <div id="waLinkCompartilhadoBox" style="display:none;max-width:340px;margin:14px auto 0;text-align:left;">
+                    <div id="waLinkCompartilhadoBox" class="wa-panel-box" style="display:none;max-width:340px;margin:14px auto 0;text-align:left;">
                         <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:6px;">Link para o responsável (válido por poucos minutos, uso único):</label>
                         <div style="display:flex;gap:6px;">
                             <input id="waLinkCompartilhado" type="text" readonly style="flex:1;min-width:0;font-size:11px;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--tag);color:var(--text);" onclick="this.select()">
@@ -3973,9 +3973,9 @@ function parseAdsBudgetInput(value, currency = getAdsCurrency()) {
 function adsBudgetCell(item, entityType) {
     const budget = getAdsBudgetInfo(item);
     if (!budget) {
-        return `<td class="ads-budget-cell"><span class="ads-budget-inherited">${entityType === 'campaign' ? 'Nos conjuntos' : 'Na campanha'}</span></td>`;
+        return `<td class="ads-budget-cell" data-label="Orçamento"><span class="ads-budget-inherited">${entityType === 'campaign' ? 'Nos conjuntos' : 'Na campanha'}</span></td>`;
     }
-    return `<td class="ads-budget-cell">
+    return `<td class="ads-budget-cell" data-label="Orçamento">
                 <div class="ads-budget-inline">
                     <div class="ads-budget-inline-text">
                         <span class="ads-budget-value">${esc(formatAdsMinor(budget.value))}</span>
@@ -5159,11 +5159,11 @@ function renderTabelaCampanhas(camps) {
         const isAct = c.status==='ACTIVE';
         const bs    = isAct ? 'background:rgba(16,185,129,.15);color:var(--success);border:1px solid rgba(16,185,129,.3)' : 'background:rgba(156,163,175,.1);color:#9ca3af;border:1px solid rgba(156,163,175,.2)';
         return `<tr data-row-id="${esc(c.id)}" data-nome="${esc(c.name)}">
-            <td style="text-align:center;padding:0 4px;"><button class="expand-btn" onclick="toggleExpand('adsets','${esc(c.id)}',this,event)">▶</button></td>
-            <td class="ads-campaign-name" style="color:var(--text);font-weight:600;text-align:left;" title="${esc(c.name)}"><span class="row-name-link" onclick="focarLinha('campanha','${esc(c.id)}',event)">${esc(c.name)}</span></td>
-            <td><span class="status-badge" style="${bs}">${isAct ? '● Ativa' : '○ Pausada'}</span></td>
+            <td class="ads-td-expand" style="text-align:center;padding:0 4px;"><button class="expand-btn" onclick="toggleExpand('adsets','${esc(c.id)}',this,event)">▶</button></td>
+            <td class="ads-campaign-name" data-label="Campanha" style="color:var(--text);font-weight:600;text-align:left;" title="${esc(c.name)}"><span class="row-name-link" onclick="focarLinha('campanha','${esc(c.id)}',event)">${esc(c.name)}</span></td>
+            <td data-label="Status"><span class="status-badge" style="${bs}">${isAct ? '● Ativa' : '○ Pausada'}</span></td>
             ${adsBudgetCell(c, 'campaign')}
-            ${cols.map(col=>`<td>${getVal(col.key)}</td>`).join('')}
+            ${cols.map(col=>`<td data-label="${esc(col.label)}">${getVal(col.key)}</td>`).join('')}
         </tr>`;
     }).join('');
     lucide.createIcons({ nodes:[tbody] });
@@ -5360,11 +5360,11 @@ async function toggleExpand(level, parentId, btn, e) {
             ? `<button class="expand-btn" onclick="toggleExpand('ads','${esc(item.id)}',this,event)">▶</button>`
             : '';
         return `<tr data-parent="${key}" data-row-id="${esc(item.id)}" data-nome="${esc(item.name)}" class="row-child row-depth-${indent}">
-            <td style="text-align:center;padding:0 4px;">${expandBtn}</td>
-            <td class="ads-campaign-name" style="padding-left:${indent*28}px;text-align:left;font-weight:500;color:var(--text);" title="${esc(item.name)}">${hasChild ? `<span class="row-name-link" onclick="focarLinha('adset','${esc(item.id)}',event)">${esc(item.name)}</span>` : esc(item.name)}</td>
-            <td><span class="status-badge" style="${bs(item.status)}">${esc(item.status||'')}</span></td>
-            ${hasChild ? adsBudgetCell(item, 'adset') : '<td class="ads-budget-cell"><span class="ads-budget-inherited">—</span></td>'}
-            ${cols.map(col=>`<td>${getVal(col.key)}</td>`).join('')}
+            <td class="ads-td-expand" style="text-align:center;padding:0 4px;">${expandBtn}</td>
+            <td class="ads-campaign-name" data-label="${indent===1?'Conjunto':'Anúncio'}" style="padding-left:${indent*28}px;text-align:left;font-weight:500;color:var(--text);" title="${esc(item.name)}">${hasChild ? `<span class="row-name-link" onclick="focarLinha('adset','${esc(item.id)}',event)">${esc(item.name)}</span>` : esc(item.name)}</td>
+            <td data-label="Status"><span class="status-badge" style="${bs(item.status)}">${esc(item.status||'')}</span></td>
+            ${hasChild ? adsBudgetCell(item, 'adset') : '<td class="ads-budget-cell" data-label="Orçamento"><span class="ads-budget-inherited">—</span></td>'}
+            ${cols.map(col=>`<td data-label="${esc(col.label)}">${getVal(col.key)}</td>`).join('')}
         </tr>`;
     }).join('');
 
