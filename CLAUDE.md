@@ -2451,3 +2451,88 @@ rodar, já que o CSS deles não tinha `display:none` no HTML por padrão — só
 `node --check` no JS novo, chaves do CSS balanceadas, scripts inline do `index.html` sem erro de
 sintaxe, servidor local respondendo 200 nos dois arquivos novos e no `index.html`.
 
+## 🧹 Auditoria e limpeza estrutural do repositório (2026-09)
+
+Sessão dedicada a organizar a raiz do projeto — nenhuma mudança de comportamento/produto, só
+estrutura, remoção de código morto e documentação. Três frentes, nesta ordem.
+
+### 1. Reorganização de pastas + remoção de arquivos obsoletos sem referência
+Mapeamento completo da raiz (via `git log`, busca de referências em `package.json`/imports/docs)
+antes de mover ou apagar qualquer coisa — nada foi removido só por suposição de nome.
+
+**Movidos** (git mv, preserva histórico):
+- `Adlytcs.md`, `Adlytcs-otimização.md` (→ `Adlytcs-otimizacao.md`), `cloud.md` → `docs/technical/`
+- `PLANO-perf-estaticos.md` → `docs/plans/`
+- `reset-db.js`, `delete-old-share-links.js` → `scripts/maintenance/`
+- `setup-reports-db.js`, `fix-column.js` → `scripts/migration/` (depois deletados na frente 2)
+- Referências atualizadas: `package.json` (`delete:old-shares`), `README.md`, `docs/documentacao_saas.md`
+
+**Deletados** (zero referência em imports/require/scripts/docs operacionais, confirmado antes):
+`index.html.backup`, `_assemble.cjs`, `_refactor.cjs`, `_split.cjs`, `refactor_ui.js`, `audit.cjs`,
+`audit.py`, `generate_full_audit.cjs`, `bulk_optimize.cjs`, `pattern-inventory.json`, `diff.txt`,
+`test_metrics.js` — todos artefatos de um refactor de CSS/JS já concluído e mergeado (commit
+`a005709`) ou scripts de teste pontuais sem uso.
+
+**Também apagados** (fora do controle de versão, achados dentro de `scratch/`/`scratchpad/`, sem
+relação nenhuma com este projeto): `scratch/fix_index.py` (hardcoded pra outro repo,
+`Tracking-aTT\whatsapp-traking-oficial`), `scratch/manage-group-index.ts.staging` (edge function
+Supabase de outro projeto), `scratch/wapptrack-crm-auth-deploy/` (um repositório React+Supabase
+inteiro, acidentalmente clonado dentro do `scratch/` deste projeto), `scratchpad/site2/` (landing
+page "RISE Financial Agency", sem relação com WhatsApp tracking).
+
+**Preservado, apesar de suspeito à primeira vista:** `server-api.js`/`server-static.js` — uma nota
+antiga deste arquivo dizia que a separação Front/API tinha sido revertida e esses arquivos "não
+existem mais no repositório" (ver seção "Tentativa de separar Front e API — REVERTIDA" acima). Isso
+está **desatualizado**: `git log` mostra um commit posterior (`4f12a2b feat: resurreicao da
+separacao front/API com zero downtime`) que trouxe os dois de volta como serviços ativos —
+`package.json` (`start:api`/`start:static`) e `nixpacks.toml` confirmam que estão em uso. **Não
+tratar essa nota antiga como verdade sem checar `git log` primeiro.**
+
+Commit: `0db58a8` (junto com a frente 2, mesmo commit).
+
+### 2. Remoção da feature órfã "Novo Relatório" (`relatorios_agendados`)
+Auditoria dedicada (ver processo completo pedido pelo usuário: nasce onde, quem depende, endpoints,
+tabelas, frontend, cron, dados reais) confirmou **ÓRFÃ** — zero consumidor de frontend, backend ou
+cron, superada pelo sistema atual `zap_destinos`/`zap_agendamentos` (ver seção acima) que reaproveitou
+o mesmo botão de menu "Relatórios Automáticos" sem que o código antigo fosse removido junto.
+
+- Deletados: `js/reports-auto.js`, `api/reports-config.js`, `scripts/migration/setup-reports-db.js`,
+  `scripts/migration/fix-column.js`.
+- `index.html`: removido o modal `#modalNovoRelatorio` (nunca era aberto por nada) e a tag
+  `<script src="js/reports-auto.js">`.
+- `setup-db.js`: removido o `CREATE TABLE relatorios_agendados`.
+- `docs/verify-schema.sql`: removidas as 3 listas que citavam `relatorios_agendados`.
+- Criado `scripts/migration/drop-relatorios-agendados.js` — script manual (dry-run por padrão via
+  `DROP_DRY_RUN=true`) que conta registros antes de dropar a tabela em produção.
+- **Executado em produção** (terminal do serviço API): dry-run encontrou 1 registro de teste órfão
+  (`cliente_id: null`, `instance_name: "admin_worki-relatorios"`, `created_at: 2026-05-14` — resíduo
+  do desenvolvimento inicial da Fase 1, sem vínculo com nenhum cliente real). Confirmado seguro,
+  tabela `relatorios_agendados` **dropada com sucesso** do banco de produção.
+
+Commit: `0db58a8` (backend/frontend) — a limpeza do banco foi manual via terminal, sem commit próprio.
+
+### 3. Remoção dos resíduos de tentativa de deploy via Vercel
+`vercel.json` e `.vercelignore` eram vestígios de uma tentativa de deploy alternativo pela Vercel CLI
+que falhou (limite de Serverless Functions do plano Hobby) — nunca foi o fluxo real (sempre
+EasyPanel/Nixpacks rodando `server.js`, ver seção de deploy acima). Ambos **exigem estar na raiz do
+projeto** para a Vercel os reconhecer — não há como "organizar em subpasta" sem inutilizá-los, então
+a decisão (do usuário) foi deletar os dois. `README.md`/este arquivo atualizados para não referenciar
+arquivos inexistentes.
+
+Commit: `b2be258`.
+
+### Armadilha real encontrada durante a frente 2 (útil para o futuro)
+Ao rodar o script de drop no terminal do serviço API, o deploy inicial **não pegou o commit mais
+recente automaticamente** — o "Histórico de Implantação" do EasyPanel mostrou um deploy de um commit
+anterior mesmo após o `git push`. Clicar em "Implantar" manualmente de novo resolveu (não precisou de
+rebuild sem cache desta vez) — mas **sempre confirmar `ls /app/<caminho>` no terminal do serviço**
+antes de assumir que um arquivo novo já está disponível ali, mesmo com o push confirmado no GitHub.
+
+### Validação
+`node --check` em todos os arquivos backend tocados (`setup-db.js`, `server.js`,
+`scripts/migration/drop-relatorios-agendados.js`); parse de todos os `<script>` inline de
+`index.html` via `node/vm`: OK; servidor local respondeu 200 em `/` e `/health` após cada etapa;
+varredura por referências residuais (`grep`) confirmando zero menção aos arquivos deletados fora de
+comentários históricos intencionais; `git diff --cached` revisado a cada etapa para garantir que só
+continha moves/deletes/correções de path, nenhuma mudança de produto.
+
