@@ -677,7 +677,13 @@ A Meta REJEITA eventos só-web no `business_messaging`. Válidos por canal:
 > ⚠️ Doc da Meta NÃO confirma 100% `QualifiedLead/AppointmentBooked/InitiateCheckout` no WhatsApp —
 > **validar 1 a 1 no Test Events** antes de produção; se rejeitar, tirar de `wpp` no `_capi.js`.
 
-### As duas formas de disparar (UI no modal Editar Cliente)
+### As duas formas de disparar
+> **(2026-09) Nota de atualização:** as duas configurações abaixo descreviam originalmente abas
+> "Inteligente" e "Link de rastreamento" *dentro do modal Editar Cliente*. Elas migraram desde então
+> para abas próprias no **menu lateral principal** — `aba-inteligente` ("Rastreamento Inteligente")
+> e `aba-captacao` ("Link de Rastreamento", aba "Jornada" dentro do modal de cada link). O drawer
+> Editar Cliente hoje só tem 4 abas: Dados, Meta Ads, Google Ads, Engajamento. O texto abaixo mantém
+> a referência histórica a "modal Editar Cliente" — ler como "onde a UI hoje mora", não literal.
 - **Aba "Inteligente"** (canal mensagem/CTWA): jornada por **palavra-chave do atendente** (`fromMe`).
   Tabela `journey_stages` (por cliente): nome, `event_concept`, `keywords`, `value_regex`. O select
   só mostra os 5 eventos `wpp`. Absorveu o Template de Venda + Gatilho de Qualificação (a aba "Venda"
@@ -698,8 +704,10 @@ A Meta REJEITA eventos só-web no `business_messaging`. Válidos por canal:
 - **`leads_tracking`**: `current_stage_id`, `stage_changed_at`, `scheduled_at`.
 
 ### Onde aparece no painel
-- Config: modal Editar Cliente → abas **Inteligente** e **Link** (dentro de Gestão de Clientes, por
-  cliente — NÃO no menu lateral). Endpoint CRUD: `api/journey-stages.js` (+ `action='resend'`).
+- Config: aba **Rastreamento Inteligente** (menu lateral) para a jornada por palavra-chave, e aba
+  **Jornada** dentro do modal de cada link em Link de Rastreamento (menu lateral) para a jornada por
+  campanha — ambas migraram para fora do modal Editar Cliente (ver nota acima). Endpoint CRUD:
+  `api/journey-stages.js` (+ `action='resend'`).
 - Histórico do lead: drawer de perfil → aba Jornada → "Eventos de Conversão (Meta)" com badge de
   status + botão **Reenviar** (`lpCarregarEventos`/`lpReenviarEvento` em `js/leads.js`).
 
@@ -860,11 +868,20 @@ compressão — toda visita/F5 baixava tudo de novo. Corrigido no bloco de está
 
 ## 📋 Relatórios Automáticos (Zap) em 2 níveis: Agendamento → Relatórios (2026-07)
 
+> **(2026-09) Nomenclatura de UI atualizada:** o nível 1 era rotulado "Agendamento" nos botões/toasts
+> do painel ("Novo Agendamento", "Salvar Agendamento"), mas "agendamento" (frequência/horário) é na
+> verdade uma propriedade do nível 2 (Relatório) — confundia o rótulo do botão com o que ele de fato
+> cria (um canal). Textos visíveis ao usuário (`index.html`) renomeados para "Canal"/"Novo Canal"/
+> "Editar Canal". Nomes internos (`zap_destinos`, `_zapEditingDestinoId`, `zapDestinoModalTitulo`,
+> comentários de código) **não foram renomeados** — só a camada de texto exibido mudou. O restante
+> desta seção usa o nome técnico original ("Agendamento" = nível 1, `zap_destinos`) por já estar
+> documentado assim; ao ler, mentalmente traduza para "Canal" no que for rótulo de UI.
+
 Reestruturado de 1 nível (cada linha = tudo junto: conta+destino+filtro+mensagem) para 2 níveis,
 porque um cliente com 3 campanhas de objetivos diferentes precisava de 3 linhas soltas e
 visualmente idênticas na tabela — sem escalar bem com muitos clientes/campanhas.
 
-### Nível 1 — Agendamento (`zap_destinos`, novo)
+### Nível 1 — Agendamento / "Canal" na UI (`zap_destinos`, novo)
 Representa o canal/destino de um cliente: **nome livre** (novo, ex: "Rodrigo Mendanha 2"), conta
 de anúncios e destino WhatsApp — todos **fixos**. Criado uma vez por cliente/canal. CRUD em
 `api/zap-destinos.js`. `DELETE` usa `ON DELETE CASCADE` — apagar o agendamento apaga os relatórios

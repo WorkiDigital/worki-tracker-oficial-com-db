@@ -1011,7 +1011,7 @@
                 <div class="card-header">
                     <div class="card-title">
                         <i data-lucide="users" style="width:15px;color:var(--blue);"></i>
-                        Leads Reais
+                        Leads
                         <span class="count-badge" id="leadsCount">—</span>
                     </div>
                     <div style="display:flex;gap:8px;align-items:center;">
@@ -1788,7 +1788,7 @@
             </div>
         </div><!-- /aba-agencia -->
 
-        <!-- ABA: CLIENTES (Compartilhamento Antigo) -->
+        <!-- ABA: CLIENTES (Compartilhar Dash) -->
         <div id="aba-clientes" class="aba-oculta">
             <div class="content">
                 <div>
@@ -2456,10 +2456,10 @@
                             <i data-lucide="send" style="width:16px;color:#25D366;flex-shrink:0;"></i>
                             Relatórios Automáticos
                         </h3>
-                        <p style="color:var(--muted);font-size:12px;margin:0;">Cada agendamento representa um canal (conta + destino WhatsApp). Dentro dele, crie um relatório por campanha/objetivo.</p>
+                        <p style="color:var(--muted);font-size:12px;margin:0;">Cada canal representa uma conta + destino WhatsApp. Dentro dele, crie um relatório por campanha/objetivo.</p>
                     </div>
                     <button class="btn btn-primary" onclick="abrirModalZapDestinoNovo()" style="display:flex;align-items:center;gap:6px;white-space:nowrap;">
-                        <i data-lucide="plus" style="width:14px;"></i> Novo Agendamento
+                        <i data-lucide="plus" style="width:14px;"></i> Novo Canal
                     </button>
                 </div>
 
@@ -2477,7 +2477,7 @@
                     <span style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;background:rgba(37,211,102,.12);border-radius:8px;flex-shrink:0;">
                         <i data-lucide="folder" style="color:#25D366;width:16px;height:16px;"></i>
                     </span>
-                    <h3 id="zapDestinoModalTitulo" style="margin:0;font-size:15px;font-weight:700;">Novo Agendamento</h3>
+                    <h3 id="zapDestinoModalTitulo" style="margin:0;font-size:15px;font-weight:700;">Novo Canal</h3>
                     <button class="btn-icon" onclick="fecharModalZapDestino()" style="margin-left:auto;" aria-label="Fechar">
                         <i data-lucide="x" style="width:14px;"></i>
                     </button>
@@ -2543,7 +2543,7 @@
                     </div>
 
                     <button id="zapDestinoBtnSalvar" class="btn-confirm" onclick="salvarZapDestino()" style="margin-bottom:4px;" disabled>
-                        <i data-lucide="check" style="width:14px;display:inline;vertical-align:-2px;margin-right:6px;"></i> Salvar Agendamento
+                        <i data-lucide="check" style="width:14px;display:inline;vertical-align:-2px;margin-right:6px;"></i> Salvar Canal
                     </button>
                 </div>
             </div>
@@ -2714,19 +2714,27 @@
                     </select>
                     <select id="log-filter-tag" onchange="carregarLogs()" style="background:var(--card);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px;">
                         <option value="">Todas as etapas</option>
-                        <option value="recv">Recebimento</option>
-                        <option value="auth">Autenticação</option>
-                        <option value="filter">Filtro</option>
-                        <option value="lead">Lead</option>
-                        <option value="tracking_token">Token de rastreamento</option>
-                        <option value="tracking_fallback">Fallback de rastreamento</option>
-                        <option value="tracking_ignored">Rastreamento ignorado</option>
-                        <option value="meta-api">Meta API</option>
-                        <option value="db">Banco de Dados</option>
-                        <option value="capi-lead">CAPI Lead</option>
-                        <option value="capi-qualified">CAPI Qualified</option>
-                        <option value="sale">Venda Detectada</option>
-                        <option value="capi-purchase">CAPI Purchase</option>
+                        <optgroup label="Recebimento e Sistema">
+                            <option value="recv">Recebimento</option>
+                            <option value="auth">Autenticação</option>
+                            <option value="filter">Filtro</option>
+                            <option value="db">Banco de Dados</option>
+                        </optgroup>
+                        <optgroup label="Rastreamento de Links">
+                            <option value="tracking_token">Token de rastreamento</option>
+                            <option value="tracking_fallback">Fallback de rastreamento</option>
+                            <option value="tracking_ignored">Rastreamento ignorado</option>
+                        </optgroup>
+                        <optgroup label="Leads e Vendas">
+                            <option value="lead">Lead</option>
+                            <option value="sale">Venda Detectada</option>
+                        </optgroup>
+                        <optgroup label="CAPI / Meta API">
+                            <option value="meta-api">Meta API</option>
+                            <option value="capi-lead">CAPI Lead</option>
+                            <option value="capi-qualified">CAPI Qualified</option>
+                            <option value="capi-purchase">CAPI Purchase</option>
+                        </optgroup>
                     </select>
                     <button class="btn btn-ghost btn-sm" onclick="limparFiltrosLog()" style="padding:5px 10px;font-size:11px;color:var(--muted);">
                         <i data-lucide="x" style="width:11px;"></i> Limpar
@@ -6216,7 +6224,7 @@ function zapOnTipoChange() {
     if (isGrupo) zapModalOnInstanciaChange(); else zapVerificarCamposDestino();
 }
 
-// ── Modal Agendamento (nível 1: nome + conta + destino, fixos) ──────────────────
+// ── Modal Canal (nível 1: nome + conta + destino, fixos) ──────────────────
 
 function abrirModalZapDestinoNovo() {
     _zapEditingDestinoId = null;
@@ -6229,8 +6237,8 @@ function abrirModalZapDestinoNovo() {
     const nm  = $('zapDestinoNome');   if (nm)   nm.value = '';
     const gs  = $('zapGrupoSelect');   if (gs)   { gs.innerHTML = '<option value="">— Selecione a instância primeiro —</option>'; gs.disabled = true; gs.style.opacity = '.5'; }
     const ci  = $('zapContatoInput');  if (ci)   ci.value = '';
-    const btn = $('zapDestinoBtnSalvar'); if (btn) { btn.disabled = true; btn.innerHTML = '<i data-lucide="check" style="width:14px;display:inline;vertical-align:-2px;margin-right:6px;"></i> Salvar Agendamento'; }
-    const tit = $('zapDestinoModalTitulo'); if (tit) tit.textContent = 'Novo Agendamento';
+    const btn = $('zapDestinoBtnSalvar'); if (btn) { btn.disabled = true; btn.innerHTML = '<i data-lucide="check" style="width:14px;display:inline;vertical-align:-2px;margin-right:6px;"></i> Salvar Canal'; }
+    const tit = $('zapDestinoModalTitulo'); if (tit) tit.textContent = 'Novo Canal';
     const cta = $('zapModalConta');    if (cta)  cta.innerHTML = '<option value="">Carregando contas...</option>';
 
     $('modalZapDestino').classList.add('open');
@@ -6302,11 +6310,11 @@ async function salvarZapDestino() {
         const d = await r.json();
         if (!r.ok || d.error) throw new Error(d.error || 'Falha ao salvar');
         fecharModalZapDestino();
-        toast(_zapEditingDestinoId ? 'Agendamento atualizado!' : 'Agendamento criado!', 'success');
+        toast(_zapEditingDestinoId ? 'Canal atualizado!' : 'Canal criado!', 'success');
         _renderZapDestinos();
     } catch(e) {
         toast(e.message, 'error');
-        if (btn) { btn.disabled = false; btn.innerHTML = '<i data-lucide="check" style="width:14px;display:inline;vertical-align:-2px;margin-right:6px;"></i> Salvar Agendamento'; lucide.createIcons({ nodes:[btn] }); }
+        if (btn) { btn.disabled = false; btn.innerHTML = '<i data-lucide="check" style="width:14px;display:inline;vertical-align:-2px;margin-right:6px;"></i> Salvar Canal'; lucide.createIcons({ nodes:[btn] }); }
     }
 }
 
@@ -6326,7 +6334,7 @@ async function abrirModalZapDestinoEditar(destino) {
     const ci = $('zapContatoInput');
     if (!isGrupo && ci) ci.value = (destino.destino_jid || '').replace(/@s\.whatsapp\.net$/, '');
 
-    const tit = $('zapDestinoModalTitulo'); if (tit) tit.textContent = 'Editar Agendamento';
+    const tit = $('zapDestinoModalTitulo'); if (tit) tit.textContent = 'Editar Canal';
     const btn = $('zapDestinoBtnSalvar');
     if (btn) { btn.disabled = false; btn.innerHTML = '<i data-lucide="save" style="width:14px;display:inline;vertical-align:-2px;margin-right:6px;"></i> Salvar Alterações'; }
 
@@ -6382,7 +6390,7 @@ async function deletarZapDestino(id) {
         const r = await authFetch(`/api/zap-destinos?id=${id}`, { method: 'DELETE' });
         const d = await r.json();
         if (!r.ok || d.error) throw new Error(d.error || 'Falha');
-        toast('Agendamento excluído.', 'success');
+        toast('Canal excluído.', 'success');
         _zapExpandido.delete(id);
         _renderZapDestinos();
     } catch(e) { toast(e.message, 'error'); }
@@ -6530,7 +6538,7 @@ function zapAtualizarPreview() {
 }
 
 async function salvarZapRelatorio() {
-    if (!_zapRelatorioDestinoId) { toast('Agendamento pai não identificado.', 'error'); return; }
+    if (!_zapRelatorioDestinoId) { toast('Canal pai não identificado.', 'error'); return; }
 
     const body = {
         destino_id:    _zapRelatorioDestinoId,
