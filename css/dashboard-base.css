@@ -1139,6 +1139,18 @@ html.light .nav-item.active { box-shadow:inset 3px 0 0 var(--blue); background:r
 
     /* Leads controls: wrap full width */
     .ctrl-box input[type=text] { width:140px; }
+
+    /* Filtros de Logs do Sistema: mesmo grid 2 colunas de #leadsControls
+       (Fase B da auditoria de arquitetura UX) — antes usava só flex-wrap
+       cru, empilhando 6+ filtros 1 por linha no mobile. */
+    #logFilterControls {
+        display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:8px; width:100%;
+    }
+    #logFilterControls > * { min-width:0; width:100%; box-sizing:border-box; }
+    /* Cliente (só admin) e o trigger de período ocupam a linha inteira */
+    #logFilterControls #log-filter-cliente,
+    #logFilterControls #logDateRangeTrigger,
+    #logFilterControls .btn { grid-column:1 / -1; }
 }
 
 /* ── Tabela de leads: card view em mobile ──── */
@@ -1170,6 +1182,76 @@ html.light .nav-item.active { box-shadow:inset 3px 0 0 var(--blue); background:r
     }
     /* Skeleton continua funcionando normalmente */
     .leads-table-wrap .sk-row { display:table-row; background:transparent; border:none; padding:0; }
+
+    /* Tabela de Gestão de Clientes (aba Agência): mesma técnica de card-view
+       de .leads-table-wrap (Fase B da auditoria de arquitetura UX) — antes
+       não tinha nenhum tratamento mobile, forçando rolagem horizontal numa
+       tabela de 7 colunas administrativas. */
+    .clientes-table-wrap thead { display:none; }
+    .clientes-table-wrap table { display:block; }
+    .clientes-table-wrap tbody { display:flex; flex-direction:column; gap:10px; }
+    .clientes-table-wrap tr {
+        display:grid;
+        grid-template-columns:1fr 1fr;
+        gap:4px 12px;
+        background:var(--card);
+        border:1px solid var(--border);
+        border-radius:var(--radius-lg);
+        padding:12px 14px;
+    }
+    .clientes-table-wrap tr:hover { background:var(--hover); }
+    /* Nome da empresa ocupa linha inteira (identificador principal do card) */
+    .clientes-table-wrap td:nth-child(2) { grid-column:1/-1; }
+    /* Permissões (badges, podem quebrar em várias linhas) e Ações ocupam linha inteira */
+    .clientes-table-wrap td:nth-child(5),
+    .clientes-table-wrap td:last-child { grid-column:1/-1; display:flex; gap:6px; flex-wrap:wrap; }
+    .clientes-table-wrap td { font-size:13px; padding:2px 0; border:none; }
+    .clientes-table-wrap td[data-label]::before {
+        content:attr(data-label) ": ";
+        font-size:11px;
+        color:var(--muted);
+        display:block;
+        margin-bottom:1px;
+    }
+    .clientes-table-wrap .sk-row { display:table-row; background:transparent; border:none; padding:0; }
+
+    /* Tabela de Logs do Sistema: mesma técnica de card-view (Fase B da
+       auditoria de arquitetura UX) — tabela de diagnóstico usada pelo admin
+       em qualquer dispositivo, antes sem nenhum tratamento mobile. A coluna
+       "Mensagem" ganha quebra de linha normal aqui (no desktop ela trunca
+       com ellipsis) porque no card não há uma linha de tabela vizinha
+       disputando espaço horizontal. */
+    .logs-table-wrap thead { display:none; }
+    .logs-table-wrap table { display:block; }
+    .logs-table-wrap tbody { display:flex; flex-direction:column; gap:10px; }
+    .logs-table-wrap tr {
+        display:grid;
+        grid-template-columns:1fr 1fr;
+        gap:4px 12px;
+        background:var(--card);
+        border:1px solid var(--border);
+        border-radius:var(--radius-lg);
+        padding:12px 14px;
+    }
+    /* Mensagem e "ver detalhes" ocupam linha inteira */
+    .logs-table-wrap td:nth-child(5) {
+        grid-column:1/-1;
+        white-space:normal !important;
+        overflow:visible !important;
+        text-overflow:clip !important;
+        max-width:none !important;
+    }
+    .logs-table-wrap td:last-child { grid-column:1/-1; }
+    .logs-table-wrap td { font-size:13px; padding:2px 0; border:none; }
+    .logs-table-wrap td[data-label]::before {
+        content:attr(data-label) ": ";
+        font-size:11px;
+        color:var(--muted);
+        display:block;
+        margin-bottom:1px;
+    }
+    .logs-table-wrap .sk-row,
+    .logs-table-wrap .skeleton-row { display:table-row; background:transparent; border:none; padding:0; }
 
     /* Kanban de Leads: carrossel de 1 coluna por vez com scroll snap, em vez
        de 5 colunas fixas de 230px em scroll horizontal livre (Fase 4 da

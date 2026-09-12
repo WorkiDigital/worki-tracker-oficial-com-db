@@ -102,12 +102,12 @@ async function carregarClientesAdmin() {
             ).join('');
             return `
             <tr>
-                <td style="color:var(--muted);font-size:13px;">#${c.id}</td>
-                <td style="font-weight:600;color:var(--text);">${esc(c.nome)}</td>
-                <td style="font-size:13px;color:var(--muted);">${c.email_contato ? esc(c.email_contato) : '—'}</td>
-                <td style="font-family:monospace;font-size:12px;color:var(--muted);">${c.pixel_padrao ? esc(c.pixel_padrao) : '—'}</td>
-                <td style="max-width:200px;">${badges}</td>
-                <td style="font-size:12px;color:var(--muted);">${new Date(c.criado_em).toLocaleDateString('pt-BR')}</td>
+                <td data-label="ID" style="color:var(--muted);font-size:13px;">#${c.id}</td>
+                <td data-label="Nome da Empresa" style="font-weight:600;color:var(--text);">${esc(c.nome)}</td>
+                <td data-label="E-mail / Login" style="font-size:13px;color:var(--muted);">${c.email_contato ? esc(c.email_contato) : '—'}</td>
+                <td data-label="Pixel" style="font-family:monospace;font-size:12px;color:var(--muted);">${c.pixel_padrao ? esc(c.pixel_padrao) : '—'}</td>
+                <td data-label="Permissões" style="max-width:200px;">${badges}</td>
+                <td data-label="Criado em" style="font-size:12px;color:var(--muted);">${new Date(c.criado_em).toLocaleDateString('pt-BR')}</td>
                 <td style="display:flex;gap:6px;align-items:center;">
                     <button class="btn btn-ghost btn-sm" onclick="abrirEditCliente(${c.id})"><i data-lucide="edit-3" style="width:14px;"></i> Editar</button>
                     <button class="btn btn-ghost btn-sm" onclick="excluirCliente(${c.id}, '${esc(c.nome)}')" style="color:var(--red);border-color:rgba(239,68,68,0.2);"><i data-lucide="trash-2" style="width:14px;"></i></button>
@@ -1363,11 +1363,11 @@ async function renderLogs(logs) {
         if (l.level === 'error') tr.style.background = 'rgba(239,68,68,.05)';
         
         tr.innerHTML = `
-            <td style="padding:8px;font-size:12px;color:var(--muted);white-space:nowrap;">${l.dt}</td>
-            <td style="padding:8px;"><span style="background:rgba(31,41,55,.5);padding:2px 6px;border-radius:4px;font-size:11px;color:var(--text);">${esc(l.instance||'-')}</span></td>
-            <td style="padding:8px;"><span style="color:${l.color};font-weight:600;font-size:11px;">${l.level.toUpperCase()}</span></td>
-            <td style="padding:8px;"><span style="font-size:12px;color:var(--muted)">${esc(l.tag||'')}</span></td>
-            <td style="padding:8px;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:var(--text);" title="${esc(l.message)}">${esc(l.message)}</td>
+            <td data-label="Horário" style="padding:8px;font-size:12px;color:var(--muted);white-space:nowrap;">${l.dt}</td>
+            <td data-label="Instância" style="padding:8px;"><span style="background:rgba(31,41,55,.5);padding:2px 6px;border-radius:4px;font-size:11px;color:var(--text);">${esc(l.instance||'-')}</span></td>
+            <td data-label="Nível" style="padding:8px;"><span style="color:${l.color};font-weight:600;font-size:11px;">${l.level.toUpperCase()}</span></td>
+            <td data-label="Etapa" style="padding:8px;"><span style="font-size:12px;color:var(--muted)">${esc(l.tag||'')}</span></td>
+            <td data-label="Mensagem" style="padding:8px;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:var(--text);" title="${esc(l.message)}">${esc(l.message)}</td>
             <td style="padding:8px;"><button onclick="showLogDetail(${l.id})" style="font-size:11px;color:#60a5fa;background:none;border:none;cursor:pointer;text-decoration:underline;">ver</button></td>
         `;
         fragment.appendChild(tr);
