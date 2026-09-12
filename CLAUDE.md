@@ -2571,3 +2571,53 @@ de dados ou endpoints.
   monitoramento. Se persistir, clicar em **Implantar** no serviço frontend do EasyPanel; se necessário,
   executar **rebuild sem cache**. Só considerar o deploy efetivamente adotado quando o `index.html`
   público contiver `css/dashboard.css?v=20260912-fase5` e `js/leads.js?v=20260912-fase5`.
+
+## 🗄️ Branches remotos órfãos — trabalho de agente automatizado NÃO integrado (2026-09-12)
+
+Auditoria dos branches remotos encontrou 3 branches em `origin/agent/*` com estilo de commit típico
+de agente automatizado (inglês, Conventional Commits granular tipo `feat(extension): add popup.js`),
+divergentes do `main` desde **15/07** (`merge-base` = `6972607`) e **nunca mesclados**. Decisão do
+usuário: **arquivar apenas por documentação** — não deletar os branches, não integrar nada ao `main`.
+
+### `agent/session-transfer-only` (o mais relevante — envolve extração de sessão autenticada)
+Implementa uma extensão de navegador (`browser-extension/wapptrack-conector/`, Manifest V3) + rotas
+backend (`api/browser-extension/session-transfer/*`, `api/_session-transfer-*`) para **transferir uma
+sessão já logada do WhatsApp Web** para uma instância Evolution vazia, sem precisar escanear QR code.
+Fluxo documentado no README do próprio branch: usuário loga no `web.whatsapp.com`, abre a extensão,
+informa um código temporário gerado no painel + consentimento explícito; a extensão extrai a sessão
+**só em memória** (não persiste em disco) e envia ao backend por HTTPS; o backend valida, criptografa
+e importa na Evolution; a aba original só fecha após confirmação de `CONNECTED`; em erro/timeout, o
+backend restaura a sessão anterior. Créditos: rotina de extração derivada do projeto MIT
+`marcoscarraro/whatsapp-session-extractor` (`THIRD_PARTY_NOTICES.md` no próprio branch).
+
+- **Sem segredos hardcoded** — usa `EXTENSION_JWT_SECRET`/`PAIRING_CODE_PEPPER` via `process.env`,
+  com validação de tamanho mínimo (32 chars) antes de usar. JWT próprio da extensão, separado do
+  `JWT_SECRET` de login normal, com `audience`/`issuer`/TTL curtos dedicados.
+- **Por que NÃO foi avaliado para merge:** (1) está tecnicamente **defasado ~2 meses** — diverge de
+  antes de toda a limpeza estrutural, das 5 Fases de auditoria UX/UI, e de correções de CAPI/Ads
+  recentes; mesclar hoje geraria uma quantidade grande de conflitos. (2) **Reintroduz** `vercel.json`,
+  `server-api.js`, `server-static.js` e a separação Front/API — que o usuário **já reverteu
+  deliberadamente** (ver seção "Tentativa de separar Front e API — REVERTIDA" acima; nota: aquela
+  seção está desatualizada, pois a separação foi trazida de volta depois via `4f12a2b` — mas o ponto
+  aqui é que o branch órfão não reflete NENHUMA decisão arquitetural tomada depois de 15/07).
+  (3) Envolve extração de credenciais de sessão de autenticação — dado o risco inerente da operação
+  (mesmo com consentimento explícito e boas práticas de segurança no código), decidiu-se não avaliar
+  para produção sem uma revisão de segurança dedicada e decisão consciente do usuário sobre se essa
+  feature deve mesmo existir no produto.
+- Branch irmão `agent/session-transfer-schema-hotfix`: 2 commits em cima do anterior, removendo
+  dependência de UUID do banco (`fix(session-transfer): remove database UUID dependency`) — mesmo
+  destino (arquivado, não avaliado).
+
+### `agent/api-handler-error-log`
+1 commit isolado (`b616a87`), **não relacionado a sessão/credenciais** — só adiciona 7 linhas em
+`server.js` para logar com segurança falhas não tratadas em rotas da API. Tecnicamente poderia ser
+trazido ao `main` isoladamente sem o risco do branch de session-transfer, mas por ora fica arquivado
+junto — se precisar de log de erro de rota no futuro, revisar esse commit específico primeiro antes
+de reimplementar do zero.
+
+### Se essa feature for retomada no futuro
+Não fazer merge direto do branch — está defasado demais. Em vez disso, reimplementar a ideia do zero
+em cima do `main` atual, reaproveitando o design documentado no README (código-fonte disponível via
+`git show origin/agent/session-transfer-only:browser-extension/wapptrack-conector/`), com uma revisão
+de segurança dedicada antes de qualquer deploy — o padrão de risco (extração de sessão de terceiro
+autenticado) exige isso independente da qualidade do código em si.

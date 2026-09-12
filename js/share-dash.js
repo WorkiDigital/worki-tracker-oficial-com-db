@@ -553,8 +553,8 @@ function renderBestAds() {
                   id="adthumb-${idx}"
                   onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"
                   onclick="abrirMedia(${idx})">
-               <div class="ad-card-thumb-placeholder" style="display:none" onclick="abrirMedia(${idx})">🖼</div>`
-            : `<div class="ad-card-thumb-placeholder" onclick="abrirMedia(${idx})">🖼</div>`;
+               <div class="ad-card-thumb-placeholder" style="display:none" onclick="abrirMedia(${idx})" aria-label="Ver mídia"><i data-lucide="image" style="width:20px;height:20px;opacity:.5;"></i></div>`
+            : `<div class="ad-card-thumb-placeholder" onclick="abrirMedia(${idx})" aria-label="Ver mídia"><i data-lucide="image" style="width:20px;height:20px;opacity:.5;"></i></div>`;
 
         const campName = ad.campaign?.name || '';
         const adsetName = ad.adset?.name || '';
@@ -596,6 +596,8 @@ function renderBestAds() {
             </div>
         </div>`;
     }).join('');
+
+    if (typeof lucide !== 'undefined') lucide.createIcons();
 
     // Lazy-load thumbnails HD para vídeos em background
     carregarThumbsHD(visible);
