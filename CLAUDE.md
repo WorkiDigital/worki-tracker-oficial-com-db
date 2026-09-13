@@ -2702,3 +2702,41 @@ um é por-cliente, o outro é global de agência. A fragmentação real é só d
 configurar a feature "Alerta de Saldo" por completo, o admin precisa visitar 2 telas sem nenhum link
 entre elas. Corrigido com link cruzado nas 2 telas (ver `index.html`, aba `alertas` e aba `meta` do
 drawer Editar Cliente) — sem mudança de schema/endpoint, só orientação de navegação.
+
+## 📌 Roadmap da auditoria de arquitetura UX (Fases A-E) — resumo e escopo (2026-09-12)
+
+Encerrado o roadmap completo de reorganização proposto pela "Feature Architecture & UX Organization
+Audit" (ver seções anteriores no arquivo para o detalhe de cada fase). Resumo de commits e escopo,
+útil pra achar rápido o que mudou sem reler as 5 seções inteiras:
+
+| Fase | Resumo | Arquivos tocados | Commit |
+|---|---|---|---|
+| A | Quick wins de nomenclatura (Leads/Leads Reais, comentário desatualizado, Agendamento→Canal no Zap, `<optgroup>` em Logs) | `index.html`, `CLAUDE.md` | `f3e5b97` |
+| B | Paridade mobile: Gestão de Clientes e Logs viram cards; corrige bug real de colunas trocadas no header de Logs | `index.html`, `js/admin.js`, `css/dashboard.css`, `css/dashboard-base.css` | `b4ebbc9` |
+| C | Bottom-sheet formalizado como classe CSS global reutilizável; divisor visual essencial/avançado no modal de Link | `index.html`, `css/dashboard.css`, `css/dashboard-base.css` | `27337f8` |
+| D | Verificação no banco: 2 das 3 "duplicações conceituais" eram falsos alarmes (mesma tabela/coluna); link cruzado no Alerta de Saldo | `index.html`, `CLAUDE.md` | `a918525` |
+| E | Meta Ads organizada em seções tematizadas (`.report-section`); funil interno renomeado para não colidir com Funil de Vendas | `index.html` | `13d73da` |
+
+**Escopo: 100% frontend + documentação.** Nenhum commit desta auditoria tocou `/api`, schema de
+banco, webhook ou qualquer lógica de backend — só `index.html`, `css/*.css`, `js/admin.js`,
+`js/share-dash.js` (este último foi um fix à parte, anterior à auditoria — commit `8642006`) e
+`CLAUDE.md`. Faz sentido dado que o pedido era estritamente sobre arquitetura de informação/UX da
+interface, não sobre dado ou processamento.
+
+### Achados da auditoria original descartados após verificação (não repetir a investigação)
+Ao implementar, alguns achados do relatório inicial (gerado por um agente que só leu HTML/CSS
+estaticamente) foram checados contra o JS/banco reais e **não eram problemas de verdade**:
+- "Desconectar WhatsApp" e "Limpar logs antigos" pareciam sem confirmação (HTML puro não mostra o
+  `onclick`) — **ambos já usam `abrirModalConfirmarWa`**, modal próprio, nunca `confirm()` nativo.
+- Kanban de Leads no mobile parecia não adaptado — **já tinha sido corrigido** (carrossel de 1
+  coluna com scroll-snap, comentado como "Fase 4 da auditoria UX/UI" em `css/dashboard-base.css`).
+- Config Meta/Google Ads (Integrações vs. Editar Cliente) e Jornada de eventos (Rastreamento
+  Inteligente vs. aba Jornada do link) pareciam duplicações de dado — **ambas já escrevem/leem a
+  mesma tabela/coluna** via 2 telas diferentes, sem risco de divergência.
+- "2 botões duplicados" para configurar métricas de Ads (Personalizar métricas / Colunas tabela) —
+  **já é o mesmo modal por design** (`openMetricsModal('cols')` abre a mesma UI já na aba certa),
+  não uma duplicação a corrigir.
+
+**Lição:** uma auditoria de UX baseada só em leitura de HTML/CSS pode apontar "problemas" que já
+estão resolvidos no JS/banco por trás — sempre verificar contra o código funcional antes de gastar
+esforço corrigindo algo que já está certo.
