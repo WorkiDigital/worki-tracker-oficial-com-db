@@ -12,7 +12,7 @@
     <script defer src="https://cdn.jsdelivr.net/npm/lucide@0.469.0/dist/umd/lucide.min.js"></script>
     <!-- Chart.js, html2canvas e jsPDF são carregados sob demanda via loadScript() (utils.js).
          Não incluir aqui — evita baixar ~500KB em toda sessão mesmo sem abrir Anúncios ou exportar PDF. -->
-    <link rel="stylesheet" href="css/dashboard.css?v=20260912-fasec">
+    <link rel="stylesheet" href="css/dashboard.css?v=20260913-topbar">
     <link rel="stylesheet" href="css/date-range-picker.css?v=20260825-1">
     <link rel="stylesheet" href="css/splash.css?v=20260712-1">
     <link rel="stylesheet" href="css/funil.css?v=20260713-1">
@@ -784,6 +784,81 @@
         <button class="btn-confirm" id="btnSalvarEditCliente" onclick="salvarEdicaoCliente()" style="width:100%;">Salvar Alterações</button>
     </div>
   </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════
+     Topbar horizontal (desktop grande, >=1180px) — alternativa à sidebar
+     lateral, testada antes como protótipo isolado. Reaproveita mudarAba()
+     e ABAS/TITULOS já existentes; NÃO duplica os ids "btn-*" da sidebar
+     (HTML inválido com ids repetidos) — usa "topbtn-*" e mudarAba() marca
+     .active nos dois lugares. Abaixo de 1180px fica oculta (CSS) e a
+     sidebar/drawer mobile já existente continua sendo o único menu. ══ -->
+<div class="app-topbar" id="appTopbar">
+    <div class="app-topbar-row1">
+        <div class="app-topbar-logo">
+            <img src="img/logo_menu.png" alt="Logo do painel" style="height:26px;width:auto;object-fit:contain;flex-shrink:0;">
+            <span id="appTopbarName" style="font-size:14px;font-weight:800;letter-spacing:-.3px;"></span>
+        </div>
+        <nav class="app-topbar-nav" aria-label="Navegação principal (topbar)">
+            <div class="tb-group" data-group="atendimento">
+                <button type="button" class="tb-group-btn" onclick="tbToggleGroup(this)">
+                    <i data-lucide="users" style="width:14px;height:14px;"></i><span>Atendimento</span><i data-lucide="chevron-down" class="tb-chev"></i>
+                </button>
+                <div class="tb-dropdown">
+                    <a id="topbtn-leads" class="tb-dd-item" onclick="mudarAba('leads')"><i data-lucide="users"></i><span>Leads</span></a>
+                    <a id="topbtn-conversas" class="tb-dd-item" onclick="mudarAba('conversas')"><i data-lucide="messages-square"></i><span>Conversas</span></a>
+                    <a id="topbtn-whatsapp" class="tb-dd-item" onclick="mudarAba('whatsapp')"><i data-lucide="smartphone"></i><span>Conexão WhatsApp</span></a>
+                </div>
+            </div>
+            <div class="tb-group" data-group="campanhas">
+                <button type="button" class="tb-group-btn" onclick="tbToggleGroup(this)">
+                    <i data-lucide="megaphone" style="width:14px;height:14px;"></i><span>Campanhas</span><i data-lucide="chevron-down" class="tb-chev"></i>
+                </button>
+                <div class="tb-dropdown">
+                    <a id="topbtn-anuncios" class="tb-dd-item" onclick="mudarAba('anuncios')"><img src="https://cdn.simpleicons.org/meta/0082FB" style="width:15px;height:15px;" alt="Meta" loading="lazy"><span>Meta Ads</span></a>
+                    <a id="topbtn-captacao" class="tb-dd-item" onclick="mudarAba('captacao')"><i data-lucide="link"></i><span>Link de Rastreamento</span></a>
+                    <a id="topbtn-inteligente" class="tb-dd-item" onclick="mudarAba('inteligente')"><i data-lucide="workflow"></i><span>Rastreamento Inteligente</span></a>
+                </div>
+            </div>
+            <div class="tb-group" data-group="metricas">
+                <button type="button" class="tb-group-btn" onclick="tbToggleGroup(this)">
+                    <i data-lucide="bar-chart-2" style="width:14px;height:14px;"></i><span>Métricas</span><i data-lucide="chevron-down" class="tb-chev"></i>
+                </button>
+                <div class="tb-dropdown">
+                    <a id="topbtn-funil" class="tb-dd-item" onclick="mudarAba('funil')"><i data-lucide="filter"></i><span>Funil de Vendas</span></a>
+                    <a id="topbtn-relatorios" class="tb-dd-item" onclick="mudarAba('relatorios')"><i data-lucide="bar-chart-2"></i><span>Relatórios</span></a>
+                    <a id="topbtn-clientes" class="tb-dd-item" onclick="mudarAba('clientes')"><i data-lucide="share-2"></i><span>Compartilhar Dash</span></a>
+                    <a id="topbtn-zaprelatorios" class="tb-dd-item" onclick="mudarAba('zaprelatorios')"><i data-lucide="send"></i><span>Relatórios Automáticos</span></a>
+                </div>
+            </div>
+            <div class="tb-group" data-group="config">
+                <button type="button" class="tb-group-btn" onclick="tbToggleGroup(this)">
+                    <i data-lucide="settings" style="width:14px;height:14px;"></i><span>Config</span><i data-lucide="chevron-down" class="tb-chev"></i>
+                </button>
+                <div class="tb-dropdown">
+                    <a id="topbtn-integracoes" class="tb-dd-item" onclick="mudarAba('integracoes')"><i data-lucide="plug"></i><span>Integrações</span></a>
+                    <a id="topbtn-conta" class="tb-dd-item" onclick="mudarAba('conta')"><i data-lucide="user-cog"></i><span>Minha Conta</span></a>
+                </div>
+            </div>
+            <div class="tb-group" id="tbGroupAdmin" data-group="admin" style="display:none;">
+                <button type="button" class="tb-group-btn" onclick="tbToggleGroup(this)">
+                    <i data-lucide="shield" style="width:14px;height:14px;"></i><span>Admin</span><i data-lucide="chevron-down" class="tb-chev"></i>
+                </button>
+                <div class="tb-dropdown">
+                    <a id="topbtn-agencia" class="tb-dd-item" onclick="mudarAba('agencia')"><i data-lucide="building"></i><span>Gestão de Clientes</span></a>
+                    <a id="topbtn-ajustes" class="tb-dd-item" onclick="mudarAba('ajustes')"><i data-lucide="palette"></i><span>Marca</span></a>
+                    <a id="topbtn-alertas" class="tb-dd-item" onclick="mudarAba('alertas')"><i data-lucide="bell-ring"></i><span>Alerta de Saldo</span></a>
+                    <a id="topbtn-logs" class="tb-dd-item" onclick="mudarAba('logs')"><i data-lucide="terminal"></i><span>Logs do Sistema</span></a>
+                </div>
+            </div>
+        </nav>
+        <div class="app-topbar-user">
+            <span id="appTopbarEmail" style="font-size:11.5px;color:var(--muted);max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
+            <button class="btn-icon" onclick="fazerLogout()" title="Sair" aria-label="Sair da conta" style="color:var(--red);">
+                <i data-lucide="log-out" style="width:16px;height:16px;"></i>
+            </button>
+        </div>
+    </div>
 </div>
 
 <!-- Sidebar -->
@@ -3047,6 +3122,7 @@ async function init() {
         const brandName = cfg.projectName || 'Adlytics';
         $('nome-projeto').textContent = brandName;
         if ($('sidebar-name')) $('sidebar-name').textContent = brandName;
+        if ($('appTopbarName')) $('appTopbarName').textContent = brandName;
         
         if (cfg.projectLogo && $('sidebar-logo')) {
             const logoArea = $('sidebar-logo');
@@ -3102,6 +3178,7 @@ async function init() {
 
         document.body.classList.remove('app-loading');
         $('userEmail').textContent = user.email;
+        if ($('appTopbarEmail')) $('appTopbarEmail').textContent = user.email;
 
         if (user.is_admin) {
             if ($('sep-admin')) $('sep-admin').style.display = 'block';
@@ -3109,6 +3186,7 @@ async function init() {
             $('btn-ajustes').style.display = 'flex';
             $('btn-alertas').style.display = 'flex';
             $('btn-logs').style.display = 'flex';
+            if ($('tbGroupAdmin')) $('tbGroupAdmin').style.display = '';
             if ($('whiteLabelCard')) {
                 $('whiteLabelCard').style.display = 'block';
                 $('cfgProjetoNome').value = brandName;
@@ -3134,6 +3212,10 @@ async function init() {
             Object.entries(tabMap).forEach(([btnId, allowed]) => {
                 const el = $(btnId);
                 if (el) el.style.display = allowed ? 'flex' : 'none';
+                // Espelha a mesma permissão no item correspondente da topbar horizontal
+                // (topbtn-<aba> em vez de btn-<aba> — ver comentário na criação de #appTopbar).
+                const topEl = $(btnId.replace('btn-', 'topbtn-'));
+                if (topEl) topEl.style.display = allowed ? '' : 'none';
             });
             // Ocultar separadores de seção cujas abas estão todas desabilitadas
             const checkSep = (sepId, btnIds) => {
@@ -3144,6 +3226,16 @@ async function init() {
             checkSep('sep-campanhas', ['btn-anuncios', 'btn-captacao', 'btn-inteligente']);
             checkSep('sep-metricas', ['btn-funil', 'btn-relatorios', 'btn-clientes', 'btn-zaprelatorios']);
             checkSep('sep-config', ['btn-integracoes', 'btn-conta']);
+            // Mesma checagem para os grupos (dropdowns) da topbar horizontal — esconde
+            // o grupo inteiro se nenhum item dele estiver disponível pro cliente.
+            const checkTbGroup = (groupSelector, btnIds) => {
+                const group = document.querySelector(groupSelector);
+                if (group) group.style.display = btnIds.some(id => tabMap[id]) ? '' : 'none';
+            };
+            checkTbGroup('.tb-group[data-group="atendimento"]', ['btn-leads', 'btn-conversas', 'btn-whatsapp']);
+            checkTbGroup('.tb-group[data-group="campanhas"]', ['btn-anuncios', 'btn-captacao', 'btn-inteligente']);
+            checkTbGroup('.tb-group[data-group="metricas"]', ['btn-funil', 'btn-relatorios', 'btn-clientes', 'btn-zaprelatorios']);
+            checkTbGroup('.tb-group[data-group="config"]', ['btn-integracoes', 'btn-conta']);
             // Navegar para a primeira aba disponível
             const firstAllowed = Object.entries(tabMap).find(([,v]) => v);
             if (firstAllowed) {
@@ -5806,9 +5898,19 @@ function mudarAba(aba) {
     ABAS.forEach(a => {
         const el = $('aba-'+a); if(el) el.classList.add('aba-oculta');
         const btn = $('btn-'+a); if(btn) btn.classList.remove('active');
+        // Espelha o estado ativo na topbar horizontal (item + botão do grupo pai)
+        const topBtn = $('topbtn-'+a); if(topBtn) topBtn.classList.remove('active');
+        const topGroupBtn = topBtn?.closest('.tb-group')?.querySelector('.tb-group-btn');
+        if (topGroupBtn) topGroupBtn.classList.remove('has-active');
     });
     const el = $('aba-'+aba); if(el) el.classList.remove('aba-oculta');
     const btn = $('btn-'+aba); if(btn) btn.classList.add('active');
+    const topBtnAtivo = $('topbtn-'+aba);
+    if (topBtnAtivo) {
+        topBtnAtivo.classList.add('active');
+        const groupBtnAtivo = topBtnAtivo.closest('.tb-group')?.querySelector('.tb-group-btn');
+        if (groupBtnAtivo) groupBtnAtivo.classList.add('has-active');
+    }
     $('titulo-pagina').innerHTML = TITULOS[aba]||'';
     atualizarVisibilidadeFiltroCliente(aba);
     // Classe em vez de style.display direto: o CSS decide o VALOR de display
@@ -5841,6 +5943,8 @@ function mudarAba(aba) {
     // Fecha sidebar mobile ao trocar de aba
     $('sidebar').classList.remove('mobile-open');
     $('sidebarOverlay').classList.remove('open');
+    // Fecha qualquer dropdown aberto da topbar horizontal ao trocar de aba
+    document.querySelectorAll('.tb-group.open').forEach(g => g.classList.remove('open'));
 }
 
 // ── Minha Conta ────────────────────────────────────────────────
@@ -5921,6 +6025,7 @@ async function salvarEmailConta() {
         user.email = data.email || email;
         localStorage.setItem('adlytics_user', JSON.stringify(user));
         if ($('userEmail')) $('userEmail').textContent = user.email;
+        if ($('appTopbarEmail')) $('appTopbarEmail').textContent = user.email;
         toast('E-mail atualizado!', 'success');
     } catch(e) { toast('Erro: ' + e.message, 'error'); }
 }
@@ -6909,6 +7014,22 @@ function toggleSidebar() {
     btn.innerHTML = `<i data-lucide="${col?'panel-left-open':'panel-left-close'}" style="width:18px;height:18px;"></i>`;
     lucide.createIcons({ nodes:[btn] });
 }
+
+// ── Topbar horizontal (>=1180px) — dropdowns por grupo ─────────
+function tbToggleGroup(btn) {
+    const group = btn.closest('.tb-group');
+    const wasOpen = group.classList.contains('open');
+    document.querySelectorAll('.tb-group.open').forEach(g => g.classList.remove('open'));
+    if (!wasOpen) group.classList.add('open');
+}
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('.tb-group')) {
+        document.querySelectorAll('.tb-group.open').forEach(g => g.classList.remove('open'));
+    }
+});
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') document.querySelectorAll('.tb-group.open').forEach(g => g.classList.remove('open'));
+});
 
 // ── Theme ──────────────────────────────────────────────────────
 function toggleTheme() {
