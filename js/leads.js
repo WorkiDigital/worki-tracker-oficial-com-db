@@ -480,7 +480,16 @@ function renderTabela() {
         // Campanha / Conjunto / Anúncio
         const campanha = lead.utm_campaign || '—';
         const conjunto = lead.utm_medium   || '';
-        const anuncio  = lead.utm_content  || '';
+        // Sem utm_content: só rotula como "Orgânico" quando a origem do lead
+        // já confirma que não veio de tráfego pago (organic/bio, ou nenhuma
+        // origem registrada — mesmo critério de obterOrigemLead()). Leads de
+        // ctwa/campaign_link/rotator/intelligent SEM utm_content continuam
+        // mostrando "—": eles vieram de anúncio, só não tiveram o nome do
+        // anúncio capturado (token expirado, anúncio antigo sem
+        // enriquecimento — cenário já documentado como sem solução no
+        // CLAUDE.md) — dizer "Orgânico" aí seria uma origem errada, não
+        // só um dado ausente.
+        const origemSemTrafegoPago = ['organic', 'bio', ''].includes(String(lead.lead_origin || '').toLowerCase());
         const tooltipOrig = [
           campanha !== '—' ? `📣 ${campanha}` : '',
           conjunto ? `🗂 ${conjunto}` : '',
@@ -500,7 +509,11 @@ function renderTabela() {
             <td data-label="Telefone">${esc(lead.telefone)||'N/A'}</td>
             <td data-label="Status"><span class="tag" style="color:${stColor};border:${stBorder};">${esc(status)}</span></td>
             <td data-label="Anúncio" style="max-width:160px;" title="${esc(tooltipOrig)}">
-                ${anuncio ? `<div style="font-size:11px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(anuncio)}</div>` : `<div style="font-size:11px;color:var(--muted);">—</div>`}
+                ${lead.utm_content
+                    ? `<div style="font-size:11px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(lead.utm_content)}</div>`
+                    : origemSemTrafegoPago
+                        ? `<div style="font-size:11px;color:var(--muted);font-style:italic;">Orgânico</div>`
+                        : `<div style="font-size:11px;color:var(--muted);">—</div>`}
             </td>
             <td data-label="Origem">${origemBadge}</td>
             <td data-label="Instância" style="font-size:12px;color:var(--muted);">${esc(lead.instancia||'—')}</td>
