@@ -12,7 +12,7 @@
     <script defer src="https://cdn.jsdelivr.net/npm/lucide@0.469.0/dist/umd/lucide.min.js"></script>
     <!-- Chart.js, html2canvas e jsPDF são carregados sob demanda via loadScript() (utils.js).
          Não incluir aqui — evita baixar ~500KB em toda sessão mesmo sem abrir Anúncios ou exportar PDF. -->
-    <link rel="stylesheet" href="css/dashboard.css?v=20260913-topbarfix">
+    <link rel="stylesheet" href="css/dashboard.css?v=20260913-topbariconfix">
     <link rel="stylesheet" href="css/date-range-picker.css?v=20260825-1">
     <link rel="stylesheet" href="css/splash.css?v=20260712-1">
     <link rel="stylesheet" href="css/funil.css?v=20260713-1">
@@ -802,7 +802,7 @@
         <nav class="app-topbar-nav" aria-label="Navegação principal (topbar)">
             <div class="tb-group" data-group="atendimento">
                 <button type="button" class="tb-group-btn" onclick="tbToggleGroup(this)">
-                    <i data-lucide="users" style="width:14px;height:14px;"></i><span>Atendimento</span><i data-lucide="chevron-down" class="tb-chev"></i>
+                    <i data-lucide="users"></i><span>Atendimento</span><i data-lucide="chevron-down" class="tb-chev"></i>
                 </button>
                 <div class="tb-dropdown">
                     <a id="topbtn-leads" class="tb-dd-item" onclick="mudarAba('leads')"><i data-lucide="users"></i><span>Leads</span></a>
@@ -812,17 +812,17 @@
             </div>
             <div class="tb-group" data-group="campanhas">
                 <button type="button" class="tb-group-btn" onclick="tbToggleGroup(this)">
-                    <i data-lucide="megaphone" style="width:14px;height:14px;"></i><span>Campanhas</span><i data-lucide="chevron-down" class="tb-chev"></i>
+                    <i data-lucide="megaphone"></i><span>Campanhas</span><i data-lucide="chevron-down" class="tb-chev"></i>
                 </button>
                 <div class="tb-dropdown">
-                    <a id="topbtn-anuncios" class="tb-dd-item" onclick="mudarAba('anuncios')"><img src="https://cdn.simpleicons.org/meta/0082FB" style="width:15px;height:15px;" alt="Meta" loading="lazy"><span>Meta Ads</span></a>
+                    <a id="topbtn-anuncios" class="tb-dd-item" onclick="mudarAba('anuncios')"><img src="https://cdn.simpleicons.org/meta/0082FB" alt="Meta" loading="lazy"><span>Meta Ads</span></a>
                     <a id="topbtn-captacao" class="tb-dd-item" onclick="mudarAba('captacao')"><i data-lucide="link"></i><span>Link de Rastreamento</span></a>
                     <a id="topbtn-inteligente" class="tb-dd-item" onclick="mudarAba('inteligente')"><i data-lucide="workflow"></i><span>Rastreamento Inteligente</span></a>
                 </div>
             </div>
             <div class="tb-group" data-group="metricas">
                 <button type="button" class="tb-group-btn" onclick="tbToggleGroup(this)">
-                    <i data-lucide="bar-chart-2" style="width:14px;height:14px;"></i><span>Métricas</span><i data-lucide="chevron-down" class="tb-chev"></i>
+                    <i data-lucide="bar-chart-2"></i><span>Métricas &amp; Conversão</span><i data-lucide="chevron-down" class="tb-chev"></i>
                 </button>
                 <div class="tb-dropdown">
                     <a id="topbtn-funil" class="tb-dd-item" onclick="mudarAba('funil')"><i data-lucide="filter"></i><span>Funil de Vendas</span></a>
@@ -833,7 +833,7 @@
             </div>
             <div class="tb-group" data-group="config">
                 <button type="button" class="tb-group-btn" onclick="tbToggleGroup(this)">
-                    <i data-lucide="settings" style="width:14px;height:14px;"></i><span>Config</span><i data-lucide="chevron-down" class="tb-chev"></i>
+                    <i data-lucide="settings"></i><span>Configurações</span><i data-lucide="chevron-down" class="tb-chev"></i>
                 </button>
                 <div class="tb-dropdown">
                     <a id="topbtn-integracoes" class="tb-dd-item" onclick="mudarAba('integracoes')"><i data-lucide="plug"></i><span>Integrações</span></a>
@@ -842,7 +842,7 @@
             </div>
             <div class="tb-group" id="tbGroupAdmin" data-group="admin" style="display:none;">
                 <button type="button" class="tb-group-btn" onclick="tbToggleGroup(this)">
-                    <i data-lucide="shield" style="width:14px;height:14px;"></i><span>Admin</span><i data-lucide="chevron-down" class="tb-chev"></i>
+                    <i data-lucide="shield"></i><span>Administração</span><i data-lucide="chevron-down" class="tb-chev"></i>
                 </button>
                 <div class="tb-dropdown">
                     <a id="topbtn-agencia" class="tb-dd-item" onclick="mudarAba('agencia')"><i data-lucide="building"></i><span>Gestão de Clientes</span></a>
