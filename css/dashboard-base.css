@@ -1699,8 +1699,16 @@ html:not(.light) .chat-composer-preview, html:not(.light) .chat-recording-bar { 
   }
   .tb-group-btn:hover { background: var(--hover); color: var(--text); }
   .tb-group-btn.has-active { color: var(--blue); background: rgba(37,99,235,.08); }
-  .tb-group-btn > i:first-child, .tb-group-btn > img:first-child { width: 14px; height: 14px; flex-shrink: 0; display: block; }
-  .tb-chev { width: 11px; height: 11px; opacity: .6; transition: transform .15s; flex-shrink: 0; display: block; }
+  /* Mira o <svg> que o lucide injeta dentro do <i data-lucide>, não o <i>
+     em si — o lucide troca o <i> por um <svg> com width/height PRÓPRIOS
+     no atributo (24 por padrão), então um width:Npx no <i> não tem mais
+     efeito nenhum depois da substituição. !important é necessário pra
+     vencer esses atributos inline, mesmo padrão já usado pela sidebar
+     antiga (".nav-item > svg{width:16px!important}") — sem isso, cada
+     ícone do lucide manteve seu próprio desenho/proporção nativa e
+     apareceu em tamanhos visivelmente diferentes entre si. */
+  .tb-group-btn > svg:first-child, .tb-group-btn > img:first-child { width: 14px !important; height: 14px !important; flex-shrink: 0; display: block; }
+  .tb-chev { width: 11px !important; height: 11px !important; opacity: .6; transition: transform .15s; flex-shrink: 0; display: block; }
   .tb-group.open .tb-chev { transform: rotate(180deg); }
 
   .tb-dropdown {
@@ -1716,8 +1724,14 @@ html:not(.light) .chat-composer-preview, html:not(.light) .chat-recording-bar { 
   }
   .tb-dd-item:hover { background: var(--hover); }
   .tb-dd-item.active { background: rgba(37,99,235,.1); color: var(--blue); font-weight: 400; }
-  .tb-dd-item i, .tb-dd-item img { width: 14px; height: 14px; flex-shrink: 0; display: block; color: var(--muted); }
-  .tb-dd-item.active i { color: var(--blue); }
+  /* Mesmo motivo do comentário em .tb-group-btn acima: mira o <svg> real
+     (não o <i> que o lucide substitui), com !important pra vencer os
+     atributos width/height que o lucide grava no próprio svg — sem isso
+     cada ícone (funil, gráfico, compartilhar, enviar) aparecia num
+     tamanho nativo diferente, mesmo com width:14px no <i> (elemento que
+     já não existe mais no DOM depois do lucide.createIcons() rodar). */
+  .tb-dd-item svg, .tb-dd-item img { width: 14px !important; height: 14px !important; flex-shrink: 0; display: block; color: var(--muted); }
+  .tb-dd-item.active svg { color: var(--blue); }
 
   .app-topbar-user {
     display: flex; align-items: center; gap: 8px; flex-shrink: 0;
