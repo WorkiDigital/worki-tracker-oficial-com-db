@@ -1675,8 +1675,13 @@ html:not(.light) .chat-composer-preview, html:not(.light) .chat-recording-bar { 
     height: 56px; display: flex; align-items: center; gap: 18px; padding: 0 20px;
   }
   .app-topbar-logo { display: flex; align-items: center; gap: 9px; flex-shrink: 0; }
-  .app-topbar-nav { display: flex; align-items: center; gap: 2px; flex: 1; overflow-x: auto; scrollbar-width: none; }
-  .app-topbar-nav::-webkit-scrollbar { display: none; }
+  /* overflow-x:auto (herdado do protótipo) cortava verticalmente o
+     .tb-dropdown — quando só overflow-x é definido, overflow-y vira "auto"
+     implícito (nunca "visible"), então qualquer position:absolute que
+     "vaza" pra fora da caixa some sem erro nenhum. Os 5 grupos cabem sem
+     rolagem no breakpoint mínimo (1180px), então overflow não é necessário
+     aqui — removido em vez de tentar compensar com z-index/clip-path. */
+  .app-topbar-nav { display: flex; align-items: center; gap: 2px; flex: 1; }
 
   .tb-group { position: relative; flex-shrink: 0; }
   .tb-group-btn {
