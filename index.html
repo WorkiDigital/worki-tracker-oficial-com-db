@@ -1451,6 +1451,8 @@
                 </div>
 
                 <div id="ads-data" style="display:none;">
+                <div class="report-section">
+                <div class="report-section-title"><i data-lucide="gauge" style="width:14px;height:14px;"></i> Métricas</div>
                 <div class="metrics-toolbar">
                     <div class="metrics-view-control">
                         <span>Visão</span>
@@ -1514,6 +1516,7 @@
                     <div class="ads-metric" data-card="comment_reach"><div class="ads-metric-val" id="ads-comment-reach">—</div><div class="ads-metric-lbl">Comentário/Alcance</div></div>
                     <div class="ads-metric" data-card="cpcomment"><div class="ads-metric-val" id="ads-cpcomment">—</div><div class="ads-metric-lbl">Custo/Comentário</div></div>
                 </div>
+                </div><!-- /report-section Métricas -->
 
                 <div id="metricsCfgModal" class="modal-overlay" role="dialog" aria-modal="true" onclick="if(event.target===this)closeMetricsModal()">
                     <div class="modal-box metrics-modal">
@@ -1568,17 +1571,23 @@
                     </div>
                 </div>
 
-                <!-- Funil de Conversão -->
+                <!-- Funil de Conversão do Anúncio (renomeado de "Funil de Conversão" para não
+                     colidir com a aba "Funil de Vendas" do menu lateral — conceitos diferentes:
+                     este é sobre etapas configuráveis de um anúncio, aquele é sobre a jornada de
+                     leads/vendas do cliente. Fase E da auditoria de arquitetura UX.) -->
+                <div class="report-section">
+                <div class="report-section-title"><i data-lucide="filter" style="width:14px;height:14px;"></i> Funil de Conversão do Anúncio</div>
                 <div class="funil-card" id="funil-section">
-                    <div class="funil-title" style="margin-bottom:14px;"><i data-lucide="filter" style="width:14px;height:14px;"></i> Funil de Conversão</div>
                     <div id="funil-view" style="display:flex;flex-direction:column;align-items:center;"></div>
                     <div style="display:flex;flex-direction:column;align-items:center;position:relative;">
                         <button class="funil-add-btn" onclick="toggleFunilDropdown()">+ Adicionar etapa</button>
                         <div class="funil-dropdown" id="funil-dropdown"></div>
                     </div>
                 </div>
+                </div><!-- /report-section Funil de Conversão do Anúncio -->
 
                 <!-- Demográficos -->
+                <div class="report-section">
                 <div id="demo-section" style="margin-bottom:20px;">
                     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:10px;">
                         <div style="display:flex;align-items:center;gap:10px;">
@@ -1656,8 +1665,11 @@
                         </div>
                     </div>
                 </div>
+                </div><!-- /report-section Análise Demográfica -->
 
-                <!-- Filtros + Config de métricas -->
+                <!-- Campanhas: filtros + breadcrumb + tabela -->
+                <div class="report-section">
+                <div class="report-section-title"><i data-lucide="megaphone" style="width:14px;height:14px;"></i> Campanhas</div>
                 <div class="ads-filters" id="ads-filters">
                     <div class="filter-group">
                         <label>Status</label>
@@ -1710,7 +1722,10 @@
                         </table>
                     </div>
                 </div>
+                </div><!-- /report-section Campanhas -->
+
                 <!-- ── Melhores Criativos ────────────────────── -->
+                <div class="report-section">
                 <div class="best-ads-section" id="bestAdsSection">
                     <div class="best-ads-header">
                         <span class="best-ads-title">
@@ -1749,6 +1764,7 @@
                         </div>
                     </div>
                 </div>
+                </div><!-- /report-section Melhores Criativos -->
 
                 </div><!-- /ads-data -->
             </div><!-- /ads-conteudo -->
@@ -4863,7 +4879,7 @@ function calcMetricasAds(camps) {
     renderFunil();
 }
 
-// ── Funil de Conversão ──────────────────────────────────────────
+// ── Funil de Conversão do Anúncio (aba Meta Ads) ────────────────
 const FUNIL_DEF = [
     { key:'imps',   label:'Impressões',     cost:'por impressão', color:'#3b82f6', on:true  },
     { key:'reach',  label:'Alcance',         cost:'por pessoa',    color:'#0ea5e9', on:false },
