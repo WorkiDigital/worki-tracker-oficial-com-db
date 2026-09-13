@@ -12,7 +12,7 @@
     <script defer src="https://cdn.jsdelivr.net/npm/lucide@0.469.0/dist/umd/lucide.min.js"></script>
     <!-- Chart.js, html2canvas e jsPDF são carregados sob demanda via loadScript() (utils.js).
          Não incluir aqui — evita baixar ~500KB em toda sessão mesmo sem abrir Anúncios ou exportar PDF. -->
-    <link rel="stylesheet" href="css/dashboard.css?v=20260912-faseb">
+    <link rel="stylesheet" href="css/dashboard.css?v=20260912-fasec">
     <link rel="stylesheet" href="css/date-range-picker.css?v=20260825-1">
     <link rel="stylesheet" href="css/splash.css?v=20260712-1">
     <link rel="stylesheet" href="css/funil.css?v=20260713-1">
@@ -353,8 +353,8 @@
 </div>
 
 <!-- Modal: Link rastreável + rotador -->
-<div id="modalCampanha" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="capModalTitulo" onclick="if(event.target===this) fecharModalCampanha()">
-    <div class="modal-box" style="width:min(940px,96vw);max-height:92vh;overflow-y:auto;">
+<div id="modalCampanha" class="modal-overlay modal-sheet-overlay" role="dialog" aria-modal="true" aria-labelledby="capModalTitulo" onclick="if(event.target===this) fecharModalCampanha()">
+    <div class="modal-box modal-box-sheet" style="width:min(940px,96vw);max-height:92vh;overflow-y:auto;">
         <div class="modal-head">
             <div class="modal-icon" style="background:rgba(59,130,246,.14);">
                 <i data-lucide="route" style="color:var(--blue);width:22px;height:22px;"></i>
@@ -370,6 +370,7 @@
             <button type="button" id="capTab-config" class="cap-modal-tab active" onclick="capSwitchModalTab('config')">
                 <i data-lucide="settings-2"></i> Configuração
             </button>
+            <div class="cap-modal-tabs-divider" role="separator" aria-label="Opções avançadas" title="Opções avançadas"></div>
             <button type="button" id="capTab-jornada" class="cap-modal-tab" onclick="capSwitchModalTab('jornada')">
                 <i data-lucide="git-branch"></i> Jornada
             </button>

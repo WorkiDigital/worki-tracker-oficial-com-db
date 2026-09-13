@@ -770,10 +770,15 @@ html.light .ads-filters { background:rgba(0,0,0,.02); }
 .cap-icon-danger:hover { color:var(--red); border-color:rgba(239,68,68,.4); background:rgba(239,68,68,.08); }
 .cap-message-variable { padding:3px 7px; border:1px solid var(--border); border-radius:6px; background:var(--tag); color:var(--blue); font-size:10px; font-weight:600; cursor:pointer; transition:background .15s,border-color .15s; }
 .cap-message-variable:hover { background:rgba(59,130,246,.12); border-color:rgba(59,130,246,.35); }
-.cap-modal-tabs { display:flex; gap:5px; padding:4px; margin:0 0 16px; background:var(--tag); border-radius:10px; }
+.cap-modal-tabs { display:flex; align-items:center; gap:5px; padding:4px; margin:0 0 16px; background:var(--tag); border-radius:10px; }
 .cap-modal-tab { flex:1; display:flex; align-items:center; justify-content:center; gap:7px; padding:9px 12px; border:0; border-radius:7px; background:transparent; color:var(--muted); font-size:12px; font-weight:700; cursor:pointer; transition:.15s; }
 .cap-modal-tab svg { width:14px; height:14px; }
 .cap-modal-tab.active { background:var(--blue); color:#fff; box-shadow:0 5px 14px rgba(59,130,246,.22); }
+/* Separa visualmente "Configuração" (essencial) de "Jornada"/"Script"
+   (avançado/menos usado) dentro do mesmo pill switcher — Fase C da
+   auditoria de arquitetura UX. Uma borda vertical sutil, não uma quebra de
+   linha, para não descaracterizar o componente de abas existente. */
+.cap-modal-tabs-divider { flex:0 0 auto; width:1px; align-self:stretch; margin:2px 1px; background:var(--border); }
 .cap-journey-intro { display:flex; justify-content:space-between; gap:16px; align-items:center; padding:14px 16px; margin-bottom:12px; border:1px solid rgba(59,130,246,.25); border-radius:10px; background:rgba(59,130,246,.07); }
 .cap-journey-intro strong,.cap-journey-head strong { display:block; color:var(--text); font-size:13px; }
 .cap-journey-intro p,.cap-journey-head p { margin:4px 0 0; color:var(--muted); font-size:11px; line-height:1.45; }
@@ -843,8 +848,15 @@ html.light .ads-filters { background:rgba(0,0,0,.02); }
 .ads-budget-actions .btn,.ads-budget-actions .btn-confirm { min-height:42px; margin:0; justify-content:center; }
 /* ── Mobile principal / tablet portrait (--bp-md = 768px) ── */
 @media(max-width:768px) {
-    #modalCampanha { align-items:flex-end; }
-    #modalCampanha .modal-box { width:100vw !important; max-width:none !important; max-height:94vh !important; border-radius:16px 16px 0 0; padding:20px 16px; }
+    /* Bottom-sheet reutilizável: qualquer modal denso pode adotar
+       class="modal-box-sheet" no .modal-box (junto do class="modal-overlay"
+       no wrapper) para virar bottom-sheet no mobile em vez de modal
+       centralizado — antes essa regra existia só amarrada a #modalCampanha
+       (Fase C da auditoria de arquitetura UX: formaliza o padrão já
+       validado como global, não caso a caso). */
+    .modal-overlay.modal-sheet-overlay { align-items:flex-end; }
+    .modal-box.modal-box-sheet { width:100vw !important; max-width:none !important; max-height:94vh !important; border-radius:16px 16px 0 0; padding:20px 16px; }
+
     #modalCampanha .cap-grid-main,
     #modalCampanha .cap-grid-message,
     #modalCampanha .cap-grid-destination,
