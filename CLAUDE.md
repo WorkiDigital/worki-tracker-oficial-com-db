@@ -2753,3 +2753,77 @@ Commit final de documentação (`44e4c38`) fecha a sessão: tabela-resumo das 5 
 tocados e link do commit de cada uma, e a confirmação de que todo o escopo foi **frontend +
 documentação** (`index.html`, `css/dashboard*.css`, `js/admin.js`, `js/share-dash.js`, `CLAUDE.md`)
 — nenhum commit desta auditoria tocou `/api`, schema de banco ou lógica de backend.
+
+## 🧭 Topbar horizontal como alternativa à sidebar (>=1180px) (2026-09-13)
+
+Testada antes como protótipo isolado (artifact) e aprovada pelo usuário com escopo reduzido:
+**dropdowns por grupo** (não mega-menu) e **só desktop grande** (>=1180px, `--bp-xl`) — abaixo disso
+a sidebar/drawer mobile já existente continua sendo o único menu, comportamento intocado.
+
+### Estrutura
+- `#appTopbar` (novo bloco em `index.html`, antes da `.sidebar`): 5 grupos em dropdown —
+  Atendimento, Campanhas, **Métricas & Conversão**, **Configurações**, **Administração** (nomes
+  completos, iguais aos da sidebar — não abreviar, ver armadilha abaixo).
+- Itens dentro de cada dropdown usam id `topbtn-<aba>` (NÃO `btn-<aba>` — ids duplicados seriam
+  HTML inválido) chamando o mesmo `mudarAba()` já existente. `mudarAba()` foi estendido pra
+  espelhar `.active` também no item/grupo da topbar nova, e fecha qualquer dropdown aberto ao
+  trocar de aba.
+- Lógica de permissões do cliente comum (`tabMap` em `init()`) estendida pra espelhar
+  `display:none/flex` também nos `topbtn-*` e nos grupos (`.tb-group`) inteiros quando nenhum item
+  deles está disponível. `#tbGroupAdmin` some/aparece junto com os demais itens admin-only.
+- Nome do projeto (white-label) e e-mail do usuário sincronizados nos 2 lugares (sidebar + topbar).
+
+### CSS (`css/dashboard-base.css`, dentro de `@media(min-width:1180px)`)
+`#appTopbar` fica `position:fixed` no topo, esconde `.sidebar` (`display:none`, sem remover do DOM)
+e dá `padding-top` ao `body` pra não ficar atrás da faixa fixa.
+
+### ⚠️ Armadilhas reais encontradas e corrigidas (não repetir)
+1. **`overflow-x:auto` sem `overflow-y` corta `position:absolute` do filho.** `.app-topbar-nav`
+   tinha só `overflow-x:auto` — pela spec CSS, declarar overflow num eixo só força o outro a virar
+   `auto` implícito (nunca fica `visible`), então o `.tb-dropdown` (position:absolute, ancorado no
+   `.tb-group`) ficava cortado silenciosamente. Sintoma: clicar no grupo não abria nada, sem erro
+   nenhum. Corrigido removendo o `overflow-x:auto` (os 5 grupos cabem sem rolagem no breakpoint
+   mínimo). **Regra geral:** nunca declarar `overflow-x` sem `overflow-y` explícito num container
+   que tenha filhos `position:absolute` que precisem "vazar" visualmente.
+2. **CSS mirando `<i data-lucide>` depois que o lucide já trocou por `<svg>`.** `lucide.createIcons()`
+   **substitui** o `<i data-lucide="...">` por um `<svg>` com `width`/`height` **próprios** gravados
+   no atributo (24 por padrão) — um `width:14px` no CSS mirando `.tb-group-btn > i` não tem mais
+   nenhum efeito depois dessa substituição, porque o `<i>` não existe mais no DOM. Sintoma: ícones
+   do menu apareciam em tamanhos visivelmente diferentes entre si (cada um no tamanho nativo do
+   próprio desenho do ícone). Corrigido mirando o `<svg>` real com `!important`
+   (`.tb-group-btn > svg:first-child { width:14px!important }`) — mesmo padrão que a sidebar antiga
+   já usava (`.nav-item > svg{width:16px!important}`), que nunca teve esse problema por seguir esse
+   padrão desde o início. **Regra geral:** todo CSS de tamanho de ícone lucide deve mirar `svg`, não
+   `i`, com `!important`.
+3. **Nomes de grupo abreviados sem necessidade divergem do padrão já estabelecido.** Numa primeira
+   versão, "Métricas & Conversão"→"Métricas", "Configurações"→"Config", "Administração"→"Admin"
+   foram abreviados achando que precisava de espaço — não precisava (cabiam completos). Restaurados
+   os nomes exatos da sidebar. **Regra geral:** ao criar uma superfície de navegação nova que
+   espelha uma existente, usar os nomes EXATOS já estabelecidos, nunca reinventar/abreviar por
+   suposição de espaço sem checar se o espaço realmente falta.
+4. **Tamanho/peso de fonte do menu deve seguir os filtros da mesma faixa da tela, não negrito.**
+   Após 3 iterações de ajuste fino (pedidos do usuário), o padrão final: fonte **13px, sem negrito
+   (font-weight:400)**, mesmo tamanho/peso já usado pelos filtros da topbar (`.ctrl-box`,
+   `select.bare`) e pelos filtros de Leads — ícones em **14px**, mesmo tamanho dos ícones de filtro
+   (search, calendar-range). Aplicado nos 2 níveis (botão de grupo E itens do dropdown) para
+   consistência visual — negrito nem no item ativo (só a cor azul marca o estado ativo).
+
+## 🏷️ Coluna "Anúncio" (Leads) mostra "Orgânico" quando não há tráfego pago (2026-09-13)
+
+Reportado com print: lead com origem "Link da bio" aparecia com "—" na coluna Anúncio, sem contexto
+— parecia dado ausente, mas é esperado (lead sem anúncio não tem `utm_content` mesmo).
+
+**Correção em `renderTabela()` (`js/leads.js`):** quando `lead.utm_content` está vazio, checa
+`lead.lead_origin`. Se for `organic`/`bio` (ou nenhuma origem registrada) — mesmo critério já usado
+por `obterOrigemLead()` pra pintar o badge de Origem — mostra **"Orgânico"** (negrito, cor
+`--muted`, mesmo peso do nome de anúncio real mas cor discreta pra diferenciar "é classificação" de
+"é nome de anúncio") em vez do "—" sem contexto.
+
+**Escopo deliberadamente restrito (decisão confirmada com o usuário antes de implementar):** leads
+de `ctwa`/`campaign_link`/`rotator`/`intelligent` SEM `utm_content` continuam mostrando "—", NÃO
+"Orgânico" — esses vieram de anúncio de verdade, só não tiveram o nome do anúncio capturado (token
+expirado, anúncio antigo sem enriquecimento — cenário já documentado acima como "sem solução").
+Dizer "Orgânico" nesse caso seria uma **origem errada**, não só um dado ausente — mesma armadilha de
+"não confundir mecanismo de captura com plataforma de anúncio" já registrada na seção do Funil.
+
+Bump de cache: `leads.js?v=20260913-organicobold` (`Cache-Control: immutable` de 1 ano).
