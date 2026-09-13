@@ -2663,3 +2663,42 @@ API. Commit: `8642006`.
 > não tinha processado o commit. Seguir o checklist de diagnóstico já documentado na seção "Links de
 > captação apontando pro domínio errado" acima (checar `/health`, comparar `?v=` servido, clicar em
 > Implantar manualmente se necessário) antes de assumir que o fix não funcionou.
+
+## 🔍 Fase D da auditoria de arquitetura UX — "duplicações" verificadas contra o código real (2026-09-12)
+
+A auditoria original (ver seção anterior no arquivo) apontou 3 supostas duplicações conceituais como
+achado de maior esforço (Fase D do roadmap). Antes de mexer em qualquer UI, cada uma foi verificada
+contra o banco/endpoints reais — 2 das 3 eram falsos alarmes de dado (nunca duplicaram nada, só têm
+2 telas de UI para o mesmo dado). Decisão do usuário: documentar as 2 primeiras, e só a terceira
+recebeu uma mudança de UI (ver seção seguinte).
+
+### 1. Config Meta/Google Ads (Integrações vs. drawer Editar Cliente) — MESMO DADO, não duplicado
+`js/` (`salvarIntegracoesConta` → `PATCH /api/me-integracoes`, self-service do cliente) e
+`js/admin.js` (`salvarEdicaoCliente` → `PATCH /api/clientes`, admin em nome do cliente) escrevem
+**nas mesmas colunas exatas** da tabela `clientes`: `pixel_padrao`, `token_meta`→`token_meta_enc`,
+`capi_pixel_id`, `capi_token`→`capi_token_enc`, `google_ads_conversion_id`/`google_ads_conversion_label`.
+Não há risco de dado divergente — são 2 telas/endpoints diferentes apontando pro mesmo registro,
+por design (uma serve o cliente se autoconfigurando, a outra serve o admin configurando em nome
+dele). Únicos campos exclusivos do drawer Editar Cliente: `account_id` e `saldo_alerta_minimo`
+(não existem em Integrações). **Nenhuma mudança de código necessária** — mantido como está.
+
+### 2. Jornada de eventos Meta (Rastreamento Inteligente vs. aba "Jornada" do link) — MESMA TABELA
+Ambos usam a **mesma tabela** `journey_stages` e o **mesmo endpoint** `api/journey-stages.js`,
+diferenciados por `tracking_campaign_id`: `NULL` = jornada global (Rastreamento Inteligente, dispara
+por qualquer conversa do cliente); preenchido = jornada específica de 1 link (aba Jornada do modal
+de Link de Rastreamento). O dado já é uma fonte única desde a implementação original — a duplicação
+real é só de **UI**: 2 implementações JS paralelas e quase idênticas (uma em `index.html`/`js/admin.js`
+para o modo global, outra em `js/captacao.js`/`capJornada*` para o modo por-link) renderizando o
+mesmo conceito de "lista de etapas + formulário". **Nenhuma mudança de código necessária** — unificar
+os 2 componentes JS num só, parametrizado, é um refactor válido mas só compensa se essa área for
+mexida por outro motivo (risco de regressão em 2 fluxos que já funcionam, para ganho só de manutenção
+futura, não de comportamento visível).
+
+### 3. Alerta de Saldo (destino global vs. limite por cliente) — dado genuinamente em 2 tabelas
+Este caso é diferente dos 2 acima: `clientes.saldo_alerta_minimo` (limite, por cliente) e a tabela
+genérica `configuracoes_sistema` (destino do alerta — instância/grupo, singleton global, mesma
+tabela chave/valor do white-label) são **tabelas distintas por natureza do dado**, não duplicação —
+um é por-cliente, o outro é global de agência. A fragmentação real é só de **navegação**: para
+configurar a feature "Alerta de Saldo" por completo, o admin precisa visitar 2 telas sem nenhum link
+entre elas. Corrigido com link cruzado nas 2 telas (ver `index.html`, aba `alertas` e aba `meta` do
+drawer Editar Cliente) — sem mudança de schema/endpoint, só orientação de navegação.

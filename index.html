@@ -706,7 +706,11 @@
                 <div class="input-group"><label>Pixel Meta</label><input type="text" id="editCliPixel"></div>
                 <div class="input-group"><label>Token Meta <span style="color:var(--muted);font-weight:400;font-size:11px;">(App — canal WhatsApp/CTWA)</span></label><input type="password" id="editCliToken" autocomplete="new-password"></div>
                 <div class="input-group"><label>ID da Conta de Anúncios <span style="color:var(--muted);font-weight:400;font-size:11px;">(ex: act_123456789)</span></label><input type="text" id="editCliAccountId" placeholder="act_XXXXXXXXX"></div>
-                <div class="input-group" style="margin-bottom:0;"><label>Alerta de saldo baixo <span style="color:var(--muted);font-weight:400;font-size:11px;">(R$, deixe em branco para desativar)</span></label><input type="number" id="editCliSaldoAlertaMinimo" min="0" step="0.01" placeholder="Ex: 50.00"></div>
+                <div class="input-group" style="margin-bottom:0;">
+                    <label>Alerta de saldo baixo <span style="color:var(--muted);font-weight:400;font-size:11px;">(R$, deixe em branco para desativar)</span></label>
+                    <input type="number" id="editCliSaldoAlertaMinimo" min="0" step="0.01" placeholder="Ex: 50.00">
+                    <p style="font-size:11px;color:var(--muted);margin-top:6px;">Este é o limite deste cliente. O destino do aviso (instância/grupo do WhatsApp) é configurado uma vez para todos os clientes na aba <strong>Alerta de Saldo</strong> do menu lateral.</p>
+                </div>
             </div>
 
             <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">CAPI Web <span style="text-transform:none;font-weight:400;">(avançado — links rastreáveis)</span></div>
@@ -2022,7 +2026,7 @@
                             <i data-lucide="bell-ring" style="width:16px;color:var(--blue);"></i>
                             Alerta de Saldo de Anúncios
                         </div>
-                        <p style="font-size:13px;color:var(--muted);">Escolha para onde vai o aviso de WhatsApp quando o saldo de uma conta de anúncios Meta ficar baixo. O limite de cada cliente é configurado no modal Editar Cliente (aba Meta Ads).</p>
+                        <p style="font-size:13px;color:var(--muted);">Escolha para onde vai o aviso de WhatsApp quando o saldo de uma conta de anúncios Meta ficar baixo. Este destino vale para todos os clientes. <strong>O limite de saldo de cada cliente é configurado individualmente</strong> em Gestão de Clientes → Editar → aba Meta Ads.</p>
                     </div>
 
                     <div class="alerta-saldo-grid" style="display:grid;grid-template-columns:minmax(0,520px) minmax(260px,340px);gap:20px;align-items:start;">
