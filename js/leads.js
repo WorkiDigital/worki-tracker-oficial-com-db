@@ -512,7 +512,7 @@ function renderTabela() {
                 ${lead.utm_content
                     ? `<div style="font-size:11px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(lead.utm_content)}</div>`
                     : origemSemTrafegoPago
-                        ? `<div style="font-size:11px;color:var(--muted);font-style:italic;">Orgânico</div>`
+                        ? `<div style="font-size:11px;font-weight:600;color:var(--muted);">Orgânico</div>`
                         : `<div style="font-size:11px;color:var(--muted);">—</div>`}
             </td>
             <td data-label="Origem">${origemBadge}</td>
