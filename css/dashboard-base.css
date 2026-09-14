@@ -828,9 +828,12 @@ html.light .ads-filters { background:rgba(0,0,0,.02); }
 .ads-budget-value { display:block; color:var(--text); font-size:12px; font-weight:700; }
 .ads-budget-kind { display:block; margin-top:2px; color:var(--muted); font-size:9px; text-transform:uppercase; letter-spacing:.04em; }
 .ads-budget-inherited { color:var(--muted); font-size:10px; white-space:nowrap; }
-.ads-budget-btn { display:inline-flex; align-items:center; justify-content:center; gap:5px; min-height:29px; padding:5px 9px; border:1px solid rgba(16,185,129,.28); border-radius:7px; background:rgba(16,185,129,.09); color:#10b981; font-size:10px; font-weight:700; cursor:pointer; white-space:nowrap; transition:.15s; }
-.ads-budget-btn:hover { background:rgba(16,185,129,.16); border-color:rgba(16,185,129,.5); transform:translateY(-1px); }
-.ads-budget-btn svg { width:12px; height:12px; }
+/* Ícone de editar orçamento discreto (estilo Gerenciador de Anúncios da Meta) —
+   substitui o antigo botão verde "Aumentar" (.ads-budget-btn), que competia
+   visualmente com o valor do orçamento em vez de complementá-lo. */
+.ads-budget-edit-btn { display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; flex-shrink:0; border:none; border-radius:6px; background:transparent; color:var(--muted); cursor:pointer; transition:.15s; }
+.ads-budget-edit-btn:hover { background:var(--hover); color:var(--blue); }
+.ads-budget-edit-btn svg { width:14px; height:14px; }
 .ads-budget-modal { width:min(480px,94vw); padding:20px 22px 22px; }
 .ads-budget-summary { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:2px 0 16px; }
 .ads-budget-summary > div { padding:10px; border:1px solid var(--border); border-radius:8px; background:var(--bg-secondary); }

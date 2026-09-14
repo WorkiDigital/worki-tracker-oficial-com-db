@@ -12,7 +12,7 @@
     <script defer src="https://cdn.jsdelivr.net/npm/lucide@0.469.0/dist/umd/lucide.min.js"></script>
     <!-- Chart.js, html2canvas e jsPDF são carregados sob demanda via loadScript() (utils.js).
          Não incluir aqui — evita baixar ~500KB em toda sessão mesmo sem abrir Anúncios ou exportar PDF. -->
-    <link rel="stylesheet" href="css/dashboard.css?v=20260913-svgsize">
+    <link rel="stylesheet" href="css/dashboard.css?v=20260913-budgeticon">
     <link rel="stylesheet" href="css/date-range-picker.css?v=20260825-1">
     <link rel="stylesheet" href="css/splash.css?v=20260712-1">
     <link rel="stylesheet" href="css/funil.css?v=20260713-1">
@@ -4148,8 +4148,8 @@ function adsBudgetCell(item, entityType) {
                         <span class="ads-budget-value">${esc(formatAdsMinor(budget.value))}</span>
                         <span class="ads-budget-kind">${budget.label}</span>
                     </div>
-                    <button type="button" class="ads-budget-btn" onclick="abrirModalAdsBudget('${entityType}','${esc(item.id)}',event)">
-                        <i data-lucide="trending-up"></i> Aumentar
+                    <button type="button" class="ads-budget-edit-btn" onclick="abrirModalAdsBudget('${entityType}','${esc(item.id)}',event)" title="Editar orçamento" aria-label="Editar orçamento">
+                        <i data-lucide="pencil"></i>
                     </button>
                 </div>
             </td>`;
