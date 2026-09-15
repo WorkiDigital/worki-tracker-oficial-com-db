@@ -823,7 +823,11 @@ html.light .ads-filters { background:rgba(0,0,0,.02); }
 .ads-campaign-name { min-width:320px; max-width:460px; width:34%; white-space:normal; line-height:1.24; }
 .ads-campaign-name .row-name-link { display:block; max-width:100%; }
 .ads-budget-cell { min-width:172px; white-space:nowrap; }
-.ads-budget-inline { display:flex; align-items:center; gap:10px; justify-content:flex-start; }
+/* min-height alinha esta célula com o "Nos conjuntos"/"Na campanha" (herdado,
+   sem ícone de editar) — antes as duas variantes tinham alturas diferentes
+   e as linhas da tabela ficavam com o valor do orçamento desalinhado
+   verticalmente entre uma linha e outra. */
+.ads-budget-inline { display:flex; align-items:center; gap:10px; justify-content:flex-start; min-height:26px; }
 .ads-budget-inline-text { min-width:74px; }
 .ads-budget-value { display:block; color:var(--text); font-size:12px; font-weight:700; }
 .ads-budget-kind { display:block; margin-top:2px; color:var(--muted); font-size:9px; text-transform:uppercase; letter-spacing:.04em; }

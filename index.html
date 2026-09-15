@@ -12,7 +12,7 @@
     <script defer src="https://cdn.jsdelivr.net/npm/lucide@0.469.0/dist/umd/lucide.min.js"></script>
     <!-- Chart.js, html2canvas e jsPDF são carregados sob demanda via loadScript() (utils.js).
          Não incluir aqui — evita baixar ~500KB em toda sessão mesmo sem abrir Anúncios ou exportar PDF. -->
-    <link rel="stylesheet" href="css/dashboard.css?v=20260913-budgeticon">
+    <link rel="stylesheet" href="css/dashboard.css?v=20260913-budgetalign">
     <link rel="stylesheet" href="css/date-range-picker.css?v=20260825-1">
     <link rel="stylesheet" href="css/splash.css?v=20260712-1">
     <link rel="stylesheet" href="css/funil.css?v=20260713-1">
@@ -4140,7 +4140,11 @@ function parseAdsBudgetInput(value, currency = getAdsCurrency()) {
 function adsBudgetCell(item, entityType) {
     const budget = getAdsBudgetInfo(item);
     if (!budget) {
-        return `<td class="ads-budget-cell" data-label="Orçamento"><span class="ads-budget-inherited">${entityType === 'campaign' ? 'Nos conjuntos' : 'Na campanha'}</span></td>`;
+        return `<td class="ads-budget-cell" data-label="Orçamento">
+                    <div class="ads-budget-inline">
+                        <span class="ads-budget-inherited">${entityType === 'campaign' ? 'Nos conjuntos' : 'Na campanha'}</span>
+                    </div>
+                </td>`;
     }
     return `<td class="ads-budget-cell" data-label="Orçamento">
                 <div class="ads-budget-inline">
@@ -5328,7 +5332,7 @@ function renderTabelaCampanhas(camps) {
         return `<tr data-row-id="${esc(c.id)}" data-nome="${esc(c.name)}">
             <td class="ads-td-expand" style="text-align:center;padding:0 4px;"><button class="expand-btn" onclick="toggleExpand('adsets','${esc(c.id)}',this,event)">▶</button></td>
             <td class="ads-campaign-name" data-label="Campanha" style="color:var(--text);font-weight:600;text-align:left;" title="${esc(c.name)}"><span class="row-name-link" onclick="focarLinha('campanha','${esc(c.id)}',event)">${esc(c.name)}</span></td>
-            <td data-label="Status"><span class="status-badge" style="${bs}">${isAct ? '● Ativa' : '○ Pausada'}</span></td>
+            <td data-label="Status"><span class="status-badge" style="${bs}">${isAct ? 'Ativa' : 'Pausada'}</span></td>
             ${adsBudgetCell(c, 'campaign')}
             ${cols.map(col=>`<td data-label="${esc(col.label)}">${getVal(col.key)}</td>`).join('')}
         </tr>`;
