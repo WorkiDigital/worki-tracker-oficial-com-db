@@ -2827,3 +2827,38 @@ Dizer "Orgânico" nesse caso seria uma **origem errada**, não só um dado ausen
 "não confundir mecanismo de captura com plataforma de anúncio" já registrada na seção do Funil.
 
 Bump de cache: `leads.js?v=20260913-organicobold` (`Cache-Control: immutable` de 1 ano).
+
+## 💰 Coluna Orçamento (Meta Ads) — estilo Gerenciador da Meta + alinhamento (2026-09-13)
+
+3 ajustes visuais sucessivos na tabela de campanhas de Meta Ads (`index.html`, `adsBudgetCell()`),
+todos pedidos com print comparando ao Gerenciador de Anúncios da Meta.
+
+### 1. Ícone de editar em vez de botão verde "Aumentar"
+O gatilho para editar orçamento era um botão verde grande (`.ads-budget-btn`, ícone `trending-up` +
+texto "Aumentar") que competia visualmente com o próprio valor do orçamento. Trocado por um ícone
+de lápis discreto (`.ads-budget-edit-btn`, 26×26px, transparente, hover sutil) — mesmo padrão de
+"ícone-botão" já usado em outros pontos do painel (`.btn-icon`). `title`/`aria-label="Editar
+orçamento"` preservam a acessibilidade mesmo sem texto visível. O clique continua chamando a mesma
+`abrirModalAdsBudget()` — só mudou a affordance visual, não o comportamento. Commit: `dbe4be5`.
+
+### 2. Círculo do badge de Status removido + alinhamento entre variantes da célula
+- Removidos os marcadores `● `/`○ ` antes de "Ativa"/"Pausada" no badge de Status — a cor de fundo
+  (verde/cinza) já comunica o estado, o círculo era redundante.
+- As 2 variantes da célula de Orçamento (com valor real vs. herdado "Nos conjuntos"/"Na campanha")
+  tinham estruturas HTML diferentes — a variante herdada não usava o wrapper `.ads-budget-inline`,
+  ficando com altura/alinhamento vertical diferente da variante com valor+ícone. Unificadas as 2
+  pra usar o mesmo wrapper, com `min-height:26px` (bate com a altura do ícone de editar). Commit:
+  `0f698c3`.
+
+### 3. Cabeçalho "ORÇAMENTO" alinhado com o conteúdo abaixo
+`thead th` é `text-align:center` por regra global da tabela, mas o conteúdo desta coluna
+(`.ads-budget-inline`) é `justify-content:flex-start` (esquerda) — cabeçalho centralizado e
+conteúdo à esquerda ficavam visivelmente desalinhados. Adicionada classe `.ads-th-budget` só no
+`<th>` desta coluna com `text-align:left`, sem alterar o centering padrão dos demais cabeçalhos
+(Status, métricas, etc.). Commit: `ce18cd5`.
+
+### Onde mexer se precisar ajustar de novo
+`adsBudgetCell(item, entityType)` (`index.html`, gera o HTML das 2 variantes de `<td>`) +
+`.ads-budget-*` (`css/dashboard-base.css`, ~linha 825) + o `<th class="ads-th-budget">` no
+`thead.innerHTML` de `carregarAnuncios()`/renderização da tabela. Todo o resto da tabela de Meta Ads
+(cols dinâmicas via `COLS_DEF`/`getAdsMetricCellValue`) não foi tocado nestes 3 commits.
