@@ -822,6 +822,11 @@ html.light .ads-filters { background:rgba(0,0,0,.02); }
 .cap-int-actions .btn-confirm { min-height:44px; margin:0; text-transform:none; }
 .ads-campaign-name { min-width:320px; max-width:460px; width:34%; white-space:normal; line-height:1.24; }
 .ads-campaign-name .row-name-link { display:block; max-width:100%; }
+/* thead th é text-align:center por padrão (regra global), mas o conteúdo
+   desta coluna (.ads-budget-inline) é alinhado à esquerda — sem isso o
+   cabeçalho "Orçamento" ficava centralizado enquanto "R$ 60,00"/"Nos
+   conjuntos" abaixo ficavam à esquerda, visivelmente desalinhados. */
+.ads-th-budget { text-align:left; }
 .ads-budget-cell { min-width:172px; white-space:nowrap; }
 /* min-height alinha esta célula com o "Nos conjuntos"/"Na campanha" (herdado,
    sem ícone de editar) — antes as duas variantes tinham alturas diferentes

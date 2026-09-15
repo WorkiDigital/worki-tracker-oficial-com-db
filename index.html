@@ -12,7 +12,7 @@
     <script defer src="https://cdn.jsdelivr.net/npm/lucide@0.469.0/dist/umd/lucide.min.js"></script>
     <!-- Chart.js, html2canvas e jsPDF são carregados sob demanda via loadScript() (utils.js).
          Não incluir aqui — evita baixar ~500KB em toda sessão mesmo sem abrir Anúncios ou exportar PDF. -->
-    <link rel="stylesheet" href="css/dashboard.css?v=20260913-budgetalign">
+    <link rel="stylesheet" href="css/dashboard.css?v=20260913-budgetheader">
     <link rel="stylesheet" href="css/date-range-picker.css?v=20260825-1">
     <link rel="stylesheet" href="css/splash.css?v=20260712-1">
     <link rel="stylesheet" href="css/funil.css?v=20260713-1">
@@ -5306,7 +5306,7 @@ function renderTabelaCampanhas(camps) {
     const total = 3 + cols.length; // Campanha + Status + Orçamento + dinâmicas
 
     // Atualiza header — coluna extra para botão expand
-    thead.innerHTML = `<tr><th style="width:32px;"></th><th class="ads-campaign-name">Campanha</th><th>Status</th><th>Orçamento</th>${cols.map(c=>`<th${c.hint ? ` title="${esc(c.hint)}"` : ''}>${c.label}</th>`).join('')}</tr>`;
+    thead.innerHTML = `<tr><th style="width:32px;"></th><th class="ads-campaign-name">Campanha</th><th>Status</th><th class="ads-th-budget">Orçamento</th>${cols.map(c=>`<th${c.hint ? ` title="${esc(c.hint)}"` : ''}>${c.label}</th>`).join('')}</tr>`;
 
     if (!camps.length) {
         tbody.innerHTML = `<tr><td colspan="${total+1}" style="text-align:center;padding:40px;color:var(--muted);">Nenhuma campanha encontrada.</td></tr>`;
