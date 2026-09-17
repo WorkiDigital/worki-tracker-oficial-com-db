@@ -2862,3 +2862,61 @@ conteúdo à esquerda ficavam visivelmente desalinhados. Adicionada classe `.ads
 `.ads-budget-*` (`css/dashboard-base.css`, ~linha 825) + o `<th class="ads-th-budget">` no
 `thead.innerHTML` de `carregarAnuncios()`/renderização da tabela. Todo o resto da tabela de Meta Ads
 (cols dinâmicas via `COLS_DEF`/`getAdsMetricCellValue`) não foi tocado nestes 3 commits.
+
+## 🔀 Funil de Vendas → Relatórios: "Visão Geral"/"Origem das Conversas" movidas (2026-09-17)
+
+Um plano proposto (por outra ferramenta) sugeria "mover" 3 métricas da aba Funil de Vendas pra
+Relatórios só copiando o HTML. Análise antes de implementar encontrou o problema real: essas 3
+métricas E a Jornada da Compra (que ficaria no Funil) vêm do **mesmo endpoint**
+(`/api/metrics-funnel`, mesmo objeto `data.overview`) — mover só o HTML não move o dado. Resolvido
+duplicando a **chamada** (não a lógica de cálculo, que fica só no backend, já corrigida de bugs reais
+documentados nas seções acima — Origem/Comprou): commit `483e305`.
+
+### O que mudou
+- **Aba Funil de Vendas**: ficou só com "Funil da Jornada de Compra" + "Faturamento Total" (2 cards;
+  `.funil-grid` virou 1×2 automaticamente, já que nunca teve `grid-template-rows` fixo).
+- **Aba Relatórios**: nova `.report-section` "Rastreamento de Conversas" logo após o hero de Receita
+  (antes de "Evolução"), com "Visão Geral das Conversas" (rastreadas/não rastreadas + tempo médio 1ª
+  resposta) e "Origem das Conversas" (Meta/Google/Outras/Não rastr.) — reaproveitando
+  `.funil-card`/`.funil-legend`/`.funil-gauge-wrap` de `css/funil.css` (carregado globalmente, não só
+  na aba Funil). IDs prefixados com `rel` (`relTotal`, `relChartOrigens`, etc.) pra não colidir com
+  nada.
+- **`js/funil.js`**: `_funilRenderVisaoGeral()`/`_funilRenderOrigens()` viraram parametrizáveis por
+  prefixo de id (default `'rel'`) — uma implementação só, não duplicada. Nova
+  `relRelatoriosCarregarFunilData(params)`: busca `/api/metrics-funnel` e chama as 2 funções com
+  prefixo `'rel'`; best-effort (catch silencioso, mesmo padrão de `carregarEngajamentoMedio()`).
+  `funilCarregar()` (aba Funil) parou de chamar essas 2 funções — só roda Jornada+Faturamento.
+- **`js/leads.js`**: nova `relatorioPeriodoParaFunil()` traduz o vocabulário do select de Relatórios
+  (`7dias`/`esteMes`/`personalizado`/`todos`) pro vocabulário que `/api/metrics-funnel` aceita
+  (`hoje`/`ontem`/`hojeOntem` ou nº de dias — **não aceita range `start`/`end` customizado**, ao
+  contrário de `/api/leads`). Casos sem equivalente direto (`esteMes`/`mesPassado`/`personalizado`)
+  convertidos via a duração real do range já calculado por `calcRangeRelatorio()`, evitando uma
+  segunda tabela de datas desalinhada. `renderRelatorios()` chama
+  `relRelatoriosCarregarFunilData()` logo após `ensureChart()`.
+
+Bump de cache: `funil.js?v=20260917-relmove`, `leads.js?v=20260917-relmove`.
+
+### Lição: "mover métrica de UI" nem sempre é só mover HTML
+Antes de aceitar um plano que move um bloco visual entre abas, sempre checar se os elementos que
+"ficam" na aba de origem dependem do **mesmo payload/chamada** que os elementos que "saem" — se sim,
+mover o HTML sem duplicar (ou centralizar) a chamada quebra silenciosamente a aba de origem.
+
+## 🚫 Aba "Funil de Vendas" removida do menu (código intacto) (2026-09-17)
+
+Pedido do usuário: tirar a opção "Funil de Vendas" do menu (sidebar + topbar horizontal), pra todos
+os usuários. Escondida via `display:none` fixo nos 2 botões (`btn-funil` na sidebar, `topbtn-funil`
+na topbar) — mesmo padrão já usado pras abas admin-only. **HTML/JS/endpoint continuam intactos no
+repositório** (`aba-funil`, `funilInit`/`funilCarregar`, `/api/metrics-funnel`) — fácil de reativar
+só trocando o `display` de volta. Commit `b5de2b8`.
+
+### ⚠️ Armadilha real evitada: `tabMap` de permissões reescreve `style.display`
+`btn-funil`/`topbtn-funil` estavam no `tabMap` de permissões do cliente comum (`init()`,
+`index.html`). O loop que aplica esse `tabMap` **reescreve `style.display` pra `'flex'`** sempre que
+`p.funil !== false` — o padrão pra quase todo cliente, que nunca desativou essa permissão
+explicitamente. Se só tivesse posto `display:none` no HTML sem tirar as 2 entradas do `tabMap`
+(e das listas `checkSep`/`checkTbGroup` do grupo "Métricas & Conversão"), o próprio JS teria
+**revertido isso na próxima carga de página** pra qualquer cliente comum — só ficaria escondido pra
+admin (que nunca teve `btn-funil` tocado por nenhum bloco de JS, incluído no `if (user.is_admin)`).
+**Regra geral:** ao esconder permanentemente um item de menu que já está numa lista de permissões
+dinâmicas, sempre remover a entrada correspondente dessa lista também — não basta só o `display:none`
+estático no HTML se algum JS de permissão roda depois e pode reescrever esse valor.
