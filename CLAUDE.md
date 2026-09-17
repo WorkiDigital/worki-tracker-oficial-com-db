@@ -3004,3 +3004,45 @@ interno do repositório) em vez do nome comercial do produto. Reescrito com:
 - Todo o conteúdo continua **estático/escrito à mão** (mesma limitação já documentada acima) — ao
   mudar o comportamento de uma funcionalidade no produto, esta página precisa ser atualizada
   manualmente para não ficar desalinhada.
+
+### Versão exaustiva: todo campo/botão documentado + ilustrações (2026-09-17)
+Pedido do usuário: "documentação nos mínimos detalhes, com imagem visual em cada opção, todas as
+opções documentadas". Duas decisões tomadas via AskUserQuestion antes de escrever:
+1. **Ilustrações = mockups em HTML/CSS inline**, não screenshots. Não há como gerar prints reais
+   (sem login de produção; e o Chrome headless deste ambiente tem o bug de viewport já documentado
+   na seção "Topbar em 3 linhas"). Mockups CSS herdam o tema dark/light automaticamente, ficam
+   nítidos em qualquer zoom, não pesam no carregamento e não quebram quando a UI real muda de cor.
+2. **Profundidade = todo campo/botão de cada tela**, incluindo listas longas (41 métricas de Ads,
+   9 presets, 15 variáveis de template, 11 permissões, 5+11 eventos CAPI).
+
+**Levantamento da UI foi delegado a 2 agentes Explore** (um para Leads/Conversas/Meta Ads/Relatórios,
+outro para as 7 telas de configuração) com instrução explícita de trazer **textos literais** da
+interface e dizer "label não encontrado" em vez de inventar. Os dois sinalizaram corretamente o que
+não conseguiram confirmar, e esses pontos foram verificados à mão:
+- `js/leads.js` ~1892: o label real é **"Estado / região"** (o agente supôs "Estado do clique").
+- `index.html` ~2073: os radios são **"Grupo"** / **"Contato Direto"**, e o botão é **"Salvar Destino
+  do Alerta"**.
+
+**Correção importante que o levantamento revelou:** a doc dizia "8 permissões" (herdado da seção
+"Permissões de Abas por Cliente" deste arquivo, que está desatualizada) — **são 11** hoje:
+Leads, Meta Ads, Relatórios, Conexão WhatsApp, **Conversas**, Link de Rastreamento, Rastreamento
+Inteligente, **Funil de Vendas**, Relatórios Automáticos, **Integrações**, Minha Conta.
+
+**Diferença de listas de eventos CAPI por contexto** (documentada na página, fácil de confundir):
+o select de "Evento Meta" do **Rastreamento Inteligente** mostra só os **5** válidos no canal de
+mensagens (Lead, Qualificação, Agendamento, Checkout, Compra), enquanto o da aba **Jornada** dentro
+do modal de link mostra os **11** do canal web (inclui Contato, Cadastro completo, Adicionar ao
+carrinho, Inscrição, Conteúdo visto, Formulário enviado).
+
+**Componentes CSS novos** (no `<style>` da própria página, prefixo `mk-`/`mock-`/`doc-table`):
+`.mock` (moldura de tela), `.mock-bar`/`.mk-tabs`/`.mk-table`/`.mk-cards`/`.mk-chat` (regiões),
+`.mk-field`/`.mk-input`/`.mk-btn`/`.mk-pill`/`.mk-label` (elementos de formulário simulados),
+`.doc-table` (tabela de referência de campos) e `.ftype` (badge de tipo de campo). Todos usam só os
+tokens de cor já copiados do design system — nenhuma cor nova, nenhuma imagem externa.
+
+**Seção nova:** "Logs do Sistema" (16ª seção), com as 4 categorias de etapa e seus filtros — antes
+não existia na doc. Página foi de ~40KB para ~116KB.
+
+> Ao adicionar uma seção nova: criar o `<a class="doc-nav-item" data-section="X">` no menu E a
+> `<section class="doc-section" id="sec-X">` correspondente — a validação é `data-section` ↔ `sec-`,
+> e um sem o outro quebra a navegação silenciosamente (o clique não mostra nada).

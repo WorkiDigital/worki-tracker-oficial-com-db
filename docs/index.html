@@ -165,6 +165,130 @@ pre code { background:none; border:none; padding:0; }
 .doc-faq-a { display:none; padding:0 4px 16px; font-size:13.5px; line-height:1.7; color: var(--muted); }
 .doc-faq-item.open .doc-faq-a { display:block; }
 
+/* ══════════ Mockups de tela (ilustrações da interface) ══════════
+   Construídos com HTML/CSS em vez de imagem: herdam o tema dark/light
+   automaticamente, ficam nítidos em qualquer zoom e não pesam no load. */
+.mock {
+  border:1px solid var(--border); border-radius: var(--radius-lg);
+  background: var(--card-solid); overflow:hidden; margin:18px 0;
+  box-shadow: var(--shadow-card); font-size:12px;
+}
+.mock-cap {
+  font-size:12px; color:var(--muted); margin:-10px 0 20px; padding-left:2px;
+  display:flex; align-items:center; gap:6px;
+}
+.mock-cap svg { width:13px; height:13px; flex-shrink:0; }
+.mock-bar {
+  display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+  padding:10px 12px; border-bottom:1px solid var(--border); background:var(--card);
+}
+.mock-bar:last-child { border-bottom:none; }
+.mock-body { padding:12px; }
+.mock-title { font-weight:700; font-size:13px; display:flex; align-items:center; gap:7px; }
+.mock-title svg { width:15px; height:15px; color:var(--blue); }
+
+/* Elementos de formulário simulados */
+.mk-field {
+  display:inline-flex; align-items:center; gap:7px;
+  border:1px solid var(--border); border-radius: var(--radius-sm);
+  padding:6px 10px; background: var(--bg); color: var(--muted); font-size:12px;
+  white-space:nowrap;
+}
+.mk-field svg { width:13px; height:13px; flex-shrink:0; opacity:.8; }
+.mk-field.grow { flex:1; min-width:120px; }
+.mk-field.sel::after {
+  content:'▾'; margin-left:auto; padding-left:8px; opacity:.6; font-size:11px;
+}
+.mk-btn {
+  display:inline-flex; align-items:center; gap:6px;
+  padding:6px 11px; border-radius: var(--radius-sm); font-size:12px; font-weight:600;
+  background: var(--blue); color:#fff; white-space:nowrap;
+}
+.mk-btn svg { width:13px; height:13px; }
+.mk-btn.ghost { background:transparent; border:1px solid var(--border); color:var(--text); font-weight:500; }
+.mk-btn.green { background: var(--success); }
+.mk-btn.danger { background: var(--danger); }
+.mk-label {
+  font-size:11px; color:var(--muted); font-weight:600; display:block; margin-bottom:5px;
+}
+.mk-input {
+  border:1px solid var(--border); border-radius: var(--radius-sm);
+  padding:7px 10px; background: var(--bg); color: var(--muted);
+  font-size:12px; margin-bottom:12px; display:flex; align-items:center; gap:6px;
+}
+.mk-input.sel::after { content:'▾'; margin-left:auto; opacity:.6; }
+.mk-row2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.mk-row3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
+
+/* Abas internas simuladas (de modais) */
+.mk-tabs { display:flex; gap:2px; border-bottom:1px solid var(--border); padding:0 12px; background:var(--card); }
+.mk-tab {
+  padding:9px 12px; font-size:12px; color:var(--muted);
+  border-bottom:2px solid transparent; white-space:nowrap;
+}
+.mk-tab.on { color: var(--blue); border-bottom-color: var(--blue); font-weight:600; }
+
+/* Tabela simulada */
+.mk-table { width:100%; border-collapse:collapse; font-size:11.5px; }
+.mk-table th {
+  text-align:left; padding:8px 10px; color:var(--muted); font-size:10.5px;
+  text-transform:uppercase; letter-spacing:.04em; font-weight:700;
+  border-bottom:1px solid var(--border); background:var(--card); white-space:nowrap;
+}
+.mk-table td { padding:9px 10px; border-bottom:1px solid var(--border); color:var(--text); white-space:nowrap; }
+.mk-table tr:last-child td { border-bottom:none; }
+.mk-table .dim { color:var(--muted); }
+
+/* Cards de métrica simulados */
+.mk-cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(118px,1fr)); gap:10px; }
+.mk-card {
+  border:1px solid var(--border); border-radius: var(--radius-md);
+  padding:10px 12px; background: var(--bg);
+}
+.mk-card-lbl { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; font-weight:700; }
+.mk-card-val { font-size:17px; font-weight:800; margin-top:4px; color:var(--text); }
+
+/* Badges / pills */
+.mk-pill {
+  display:inline-block; padding:2px 8px; border-radius:20px; font-size:10.5px; font-weight:700;
+}
+.mk-pill.blue  { background:rgba(37,99,235,.15);  color:var(--blue); }
+.mk-pill.green { background:rgba(16,185,129,.15); color:var(--success); }
+.mk-pill.gray  { background:var(--tag);           color:var(--muted); }
+.mk-pill.amber { background:rgba(245,158,11,.15); color:var(--warning); }
+
+/* Simulação de bolhas de chat */
+.mk-chat { padding:14px 12px; display:flex; flex-direction:column; gap:8px; background:var(--bg); }
+.mk-bub {
+  max-width:74%; padding:7px 11px; border-radius:10px; font-size:12px; line-height:1.45;
+  border:1px solid var(--border);
+}
+.mk-bub.in  { align-self:flex-start; background:var(--card-solid); border-bottom-left-radius:3px; }
+.mk-bub.out { align-self:flex-end; background:rgba(37,211,102,.14); border-color:rgba(37,211,102,.3); border-bottom-right-radius:3px; }
+
+/* Tabela de referência de campos (a "ficha técnica" de cada tela) */
+.doc-table-wrap { overflow-x:auto; margin:14px 0 20px; }
+.doc-table { width:100%; border-collapse:collapse; font-size:13px; min-width:520px; }
+.doc-table th {
+  text-align:left; padding:9px 12px; background: var(--card);
+  border:1px solid var(--border); font-size:11.5px; text-transform:uppercase;
+  letter-spacing:.04em; color:var(--muted); font-weight:700;
+}
+.doc-table td { padding:9px 12px; border:1px solid var(--border); vertical-align:top; line-height:1.55; }
+.doc-table td:first-child { font-weight:600; white-space:nowrap; }
+.doc-table code { font-size:11.5px; }
+
+/* Badge de tipo de campo */
+.ftype {
+  display:inline-block; padding:1px 7px; border-radius:4px; font-size:10.5px;
+  font-weight:700; background: var(--tag); color: var(--muted);
+  text-transform:uppercase; letter-spacing:.03em; white-space:nowrap;
+}
+
+@media (max-width: 620px) {
+  .mk-row2, .mk-row3 { grid-template-columns:1fr; }
+}
+
 .doc-mobile-toggle { display:none; }
 
 @media (max-width: 900px) {
@@ -231,6 +355,7 @@ pre code { background:none; border:none; padding:0; }
       <a class="doc-nav-item" data-section="compartilhar" onclick="docShow('compartilhar')"><i data-lucide="share-2"></i>Compartilhar Dashboard</a>
       <a class="doc-nav-item" data-section="alerta-saldo" onclick="docShow('alerta-saldo')"><i data-lucide="bell-ring"></i>Alerta de Saldo</a>
       <a class="doc-nav-item" data-section="marca" onclick="docShow('marca')"><i data-lucide="palette"></i>Marca (White-label)</a>
+      <a class="doc-nav-item" data-section="logs" onclick="docShow('logs')"><i data-lucide="terminal"></i>Logs do Sistema</a>
     </div>
 
     <div class="doc-nav-group">
@@ -306,66 +431,278 @@ pre code { background:none; border:none; padding:0; }
     <section class="doc-section" id="sec-permissoes">
       <h1><i data-lucide="shield-check"></i>Permissões por cliente</h1>
       <p class="doc-kicker">Controlando exatamente o que cada cliente enxerga no próprio login do painel.</p>
-      <p>Quando um cliente final (não-admin) acessa o Adlytics Pro com o próprio login, ele só vê as abas que você liberou para ele. Isso é útil para não expor, por exemplo, a área de configurações internas da agência, ou para simplificar o painel de um cliente que só precisa acompanhar leads.</p>
+      <p>Quando um cliente final (não-admin) acessa o Adlytics Pro com o próprio login, ele só vê as abas que você liberou para ele. Isso é útil para não expor a área de configurações internas da agência, ou para simplificar o painel de um cliente que só precisa acompanhar leads.</p>
       <h2>Como configurar</h2>
       <ol class="doc-steps">
         <li>Vá em <em>Gestão de Clientes</em> no menu (só admin enxerga essa aba).</li>
-        <li>Clique no ícone de editar na linha do cliente que deseja ajustar.</li>
-        <li>Na aba <strong>Dados</strong> do modal, role até a seção de permissões — são 8 checkboxes, um por aba do menu.</li>
+        <li>Clique em <strong>Editar</strong> na linha do cliente que deseja ajustar — abre um painel lateral.</li>
+        <li>Na aba <strong>Dados</strong>, role até a seção <em>Permissões de Acesso</em> — são 11 caixas de seleção, uma por aba do menu.</li>
         <li>Marque o que esse cliente deve ver, desmarque o resto, e clique em <strong>Salvar Alterações</strong>.</li>
       </ol>
-      <p>As 8 permissões disponíveis:</p>
-      <ul>
-        <li><strong>Leads</strong> — tabela de leads e o drawer de perfil de cada um.</li>
-        <li><strong>Meta Ads</strong> — métricas e campanhas de anúncios da conta vinculada.</li>
-        <li><strong>Relatórios</strong> — visão consolidada de vendas/conversão e exportação em PDF.</li>
-        <li><strong>Conexão WhatsApp</strong> — QR code de conexão e configuração do modo de captura.</li>
-        <li><strong>Link de Rastreamento</strong> — criação e gestão dos links públicos próprios.</li>
-        <li><strong>Rastreamento Inteligente</strong> — configuração da jornada por palavra-chave.</li>
-        <li><strong>Relatórios Automáticos</strong> — configuração do envio agendado de métricas por WhatsApp.</li>
-        <li><strong>Minha Conta</strong> — tela de dados de acesso (e-mail/senha) do próprio cliente.</li>
-      </ul>
+      <h2>As 11 permissões</h2>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <tr><th>Permissão</th><th>O que libera</th></tr>
+          <tr><td>Leads</td><td>Tabela de leads, modo Kanban e o painel de perfil de cada lead.</td></tr>
+          <tr><td>Meta Ads</td><td>Métricas e campanhas de anúncios da conta vinculada.</td></tr>
+          <tr><td>Relatórios</td><td>Visão consolidada de vendas/conversão e exportação em PDF.</td></tr>
+          <tr><td>Conexão WhatsApp</td><td>QR code de conexão e configuração do modo de captura.</td></tr>
+          <tr><td>Conversas</td><td>Monitor de conversas do WhatsApp dentro do painel.</td></tr>
+          <tr><td>Link de Rastreamento</td><td>Criação e gestão dos links rastreáveis próprios.</td></tr>
+          <tr><td>Rastreamento Inteligente</td><td>Configuração das etapas por palavra-chave.</td></tr>
+          <tr><td>Funil de Vendas</td><td>A aba de funil (atualmente oculta do menu para todos).</td></tr>
+          <tr><td>Relatórios Automáticos</td><td>Configuração do envio agendado de métricas por WhatsApp.</td></tr>
+          <tr><td>Integrações</td><td>Tela onde o próprio cliente configura seus tokens de Meta e Google Ads.</td></tr>
+          <tr><td>Minha Conta</td><td>Tela de e-mail e senha do próprio cliente.</td></tr>
+        </table>
+      </div>
       <div class="doc-callout tip">
         <i data-lucide="lightbulb"></i>
-        <span>As mudanças de permissão aparecem para o cliente <strong>sem precisar deslogar</strong> — basta ele atualizar a página (F5) que o painel já reflete o que foi liberado/removido.</span>
+        <span>As mudanças de permissão aparecem para o cliente <strong>sem precisar deslogar</strong> — basta ele atualizar a página (F5) que o painel já reflete o que foi liberado ou removido.</span>
       </div>
-      <p class="muted">Abas como <em>Gestão de Clientes</em>, <em>Marca</em>, <em>Alerta de Saldo</em> e <em>Logs do Sistema</em> são exclusivas de administradores da agência e nunca aparecem para um cliente comum, independente das permissões marcadas.</p>
+      <p class="muted">Abas como <em>Gestão de Clientes</em>, <em>Marca</em>, <em>Alerta de Saldo</em> e <em>Logs do Sistema</em> são exclusivas de administradores e nunca aparecem para um cliente comum, independentemente das permissões marcadas.</p>
+
+      <h2>Criando um cliente novo</h2>
+      <p>Em <em>Gestão de Clientes</em>, o botão <strong>Novo Cliente</strong> abre um formulário curto — a ideia é criar o acesso rápido e completar o resto depois:</p>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <tr><th>Campo</th><th>Obrigatório</th><th>Observação</th></tr>
+          <tr><td>Nome da Empresa/Loja</td><td>Não</td><td>Pode preencher depois.</td></tr>
+          <tr><td>Pixel Meta do Cliente</td><td>Não</td><td>Pode preencher depois, na aba Meta Ads da edição.</td></tr>
+          <tr><td>E-mail (Login)</td><td><strong>Sim</strong></td><td>Será o usuário de acesso do cliente.</td></tr>
+          <tr><td>Senha de Acesso</td><td><strong>Sim</strong></td><td>Mínimo de 6 caracteres.</td></tr>
+        </table>
+      </div>
+      <p>Após criar, aparece a tela <em>Cliente Criado!</em> com as credenciais e um botão <strong>Copiar Credenciais</strong> para você enviar ao cliente.</p>
+
+      <h2>As 4 abas da edição de cliente</h2>
+      <p>O botão <strong>Editar</strong> abre um painel lateral com 4 abas. A aba <em>Dados</em> já foi descrita acima (dados de acesso + as 11 permissões). As outras três:</p>
+
+      <h3>Aba Meta Ads</h3>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <tr><th>Campo</th><th>Formato / exemplo</th><th>Para que serve</th></tr>
+          <tr><td>Pixel Meta</td><td>Só números</td><td>Pixel usado nos eventos de conversão do WhatsApp.</td></tr>
+          <tr><td>Token Meta</td><td>Token do app</td><td>Dá acesso às campanhas e métricas da conta. Use um token de <em>System User</em> — ele não expira quando alguém troca a senha do Facebook.</td></tr>
+          <tr><td>ID da Conta de Anúncios</td><td><code>act_XXXXXXXXX</code></td><td>Define qual conta de anúncios esse cliente enxerga.</td></tr>
+          <tr><td>Alerta de saldo baixo (R$)</td><td>Ex: <code>50.00</code></td><td>Valor mínimo de saldo que dispara o aviso. Deixe em branco para desativar.</td></tr>
+          <tr><td>Pixel CAPI Web (dataset)</td><td>Só números</td><td>Usado nos eventos dos links rastreáveis (diferente do Pixel acima).</td></tr>
+          <tr><td>Token CAPI Web</td><td>Token do dataset</td><td>Deixe em branco para não alterar o token já salvo.</td></tr>
+        </table>
+      </div>
+
+      <h3>Aba Google Ads</h3>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <tr><th>Campo</th><th>Formato</th><th>Onde encontrar</th></tr>
+          <tr><td>ID de conversão</td><td><code>AW-XXXXXXXXX</code></td><td>Google Ads → Ferramentas → Conversões → sua ação → Configuração da tag.</td></tr>
+          <tr><td>Label da conversão</td><td>Ex: <code>AbCdEfGhIjKlMnOp</code></td><td>Mesma tela acima, logo abaixo do ID.</td></tr>
+        </table>
+      </div>
+
+      <h3>Aba Engajamento</h3>
+      <p>Ajusta como o <strong>Índice de Engajamento Comercial</strong> (a nota de 0 a 100 de cada lead) é calculado para esse cliente.</p>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <tr><th>Campo</th><th>Padrão</th><th>O que faz</th></tr>
+          <tr><td>Limiar anti-bot (segundos)</td><td>5</td><td>Respostas mais rápidas que isso são tratadas como saudação automática (bot), não como atendimento humano — e por isso não contam como "primeira resposta".</td></tr>
+          <tr><td>Considerar apenas horário comercial</td><td>Desmarcado</td><td>Quando marcado, o tempo de resposta desconta as horas fora do expediente — um lead que chega 22h e é respondido 9h do dia seguinte não é penalizado.</td></tr>
+          <tr><td>Início / Fim</td><td>09:00 / 18:00</td><td>A janela de expediente. Só aparece com a opção acima marcada.</td></tr>
+          <tr><td>Dias úteis</td><td>Seg a Sex</td><td>Sete caixas (Seg, Ter, Qua, Qui, Sex, Sáb, Dom). Sábado e domingo vêm desmarcados.</td></tr>
+          <tr><td>Peso: Primeira resposta</td><td>45</td><td rowspan="3">Quanto cada componente vale na nota final. <strong>Os três precisam somar 100</strong> — um indicador ao lado mostra a soma atual.</td></tr>
+          <tr><td>Peso: Tempo médio</td><td>35</td></tr>
+          <tr><td>Peso: Engajamento</td><td>20</td></tr>
+        </table>
+      </div>
+      <div class="doc-callout warn">
+        <i data-lucide="triangle-alert"></i>
+        <span>Ao alterar o <strong>limiar anti-bot</strong>, as conversas já registradas não são reclassificadas automaticamente — a mudança vale só para mensagens novas. Peça ao suporte técnico se precisar reprocessar o histórico.</span>
+      </div>
     </section>
 
     <!-- LEADS -->
     <section class="doc-section" id="sec-leads">
       <h1><i data-lucide="users"></i>Leads</h1>
       <p class="doc-kicker">A tabela central do sistema: quem entrou em contato, de onde veio e em que estágio está.</p>
-      <h2>Filtros disponíveis</h2>
-      <p>No topo da aba você tem, da esquerda para a direita:</p>
-      <ul>
-        <li><strong>Instância</strong> — filtra por qual número de WhatsApp recebeu o contato (útil se o cliente tem mais de uma linha conectada).</li>
-        <li><strong>Origem</strong> — filtra por como o lead chegou: Anúncio (CTWA), Orgânico, Link da bio, Link de campanha.</li>
-        <li><strong>Busca</strong> — procura por nome, telefone, ou nome da campanha/conjunto/anúncio que trouxe o lead.</li>
-        <li><strong>Período</strong> — um calendário estilo Meta Ads Manager: clique na data de início e depois na data de fim para marcar o intervalo. Tem atalhos prontos como "Hoje e Ontem" (o padrão ao abrir a aba).</li>
-        <li><strong>CSV</strong> — exporta a lista filtrada atual para uma planilha.</li>
-      </ul>
-      <p class="muted">Alternar entre "Hoje"/"Ontem"/"Hoje e Ontem" é instantâneo (os dados já estão carregados na memória do navegador); escolher um período maior ou personalizado busca dados novos do servidor.</p>
-      <h2>Abrindo o perfil de um lead</h2>
-      <p>Clique no ícone de perfil (pessoa, cor roxa) em qualquer linha da tabela para abrir o drawer lateral, com 4 abas:</p>
-      <ul>
-        <li><strong>Perfil</strong> — nome, telefone, primeira mensagem enviada e dados de atendimento.</li>
-        <li><strong>Anúncio</strong> — qual campanha, conjunto e anúncio específico trouxe esse lead (quando identificável).</li>
-        <li><strong>Jornada</strong> — todos os contatos já feitos por esse mesmo telefone com esse cliente, em ordem cronológica — útil para ver se essa pessoa já tinha entrado em contato antes, por outro anúncio.</li>
-        <li><strong>Venda</strong> — tempo até a primeira resposta, ciclo total até fechar (ou não) a venda, valor registrado e produto.</li>
-      </ul>
-      <h2>Marcando venda, qualificação ou agendamento</h2>
-      <p>Use os botões de ação na própria linha da tabela (ou dentro do drawer, aba Venda) para:</p>
-      <ul>
-        <li><strong>Qualificar</strong> — marca esse lead como qualificado (pessoa com potencial real de compra).</li>
-        <li><strong>Registrar Venda</strong> — abre um formulário para informar valor e produto; o status do lead vira "Vendido".</li>
-        <li><strong>Mover no Kanban</strong> (aba Pipeline, se disponível) — arrastar o card para a coluna "Agendado" também conta como uma etapa da jornada.</li>
-      </ul>
-      <p>Toda essa marcação é <strong>sempre salva no banco primeiro</strong>; o envio do evento correspondente para a Meta (CAPI) é uma etapa separada e best-effort — se a CAPI falhar por algum motivo, o lead continua salvo normalmente, só o aviso à Meta que não chega.</p>
+
+      <h2>Visão da tela</h2>
+      <div class="mock">
+        <div class="mock-bar">
+          <span class="mk-field sel"><i data-lucide="smartphone"></i>Todas instâncias</span>
+          <span class="mk-field sel"><i data-lucide="git-branch"></i>Todas origens</span>
+          <span class="mk-field grow"><i data-lucide="search"></i>Buscar nome, telefone ou anúncio...</span>
+          <span class="mk-field sel"><i data-lucide="calendar-range"></i>Hoje e Ontem</span>
+          <span class="mk-btn ghost"><i data-lucide="download"></i>CSV</span>
+        </div>
+        <div class="mock-body">
+          <div class="mk-cards" style="margin-bottom:12px;">
+            <div class="mk-card"><div class="mk-card-lbl">Ciclo Médio</div><div class="mk-card-val">2,4 d</div></div>
+            <div class="mk-card"><div class="mk-card-lbl">Resposta Média</div><div class="mk-card-val">8 min</div></div>
+            <div class="mk-card"><div class="mk-card-lbl">Leads Esquecidos</div><div class="mk-card-val">3</div></div>
+            <div class="mk-card"><div class="mk-card-lbl">Vendas Rápidas</div><div class="mk-card-val">5</div></div>
+            <div class="mk-card"><div class="mk-card-lbl">Engajamento</div><div class="mk-card-val">72</div></div>
+          </div>
+          <table class="mk-table">
+            <tr><th></th><th>Nome</th><th>Telefone</th><th>Status</th><th>Anúncio</th><th>Origem</th><th>Ações</th></tr>
+            <tr>
+              <td><input type="checkbox" disabled></td>
+              <td>Maria Souza</td><td class="dim">5585 9xxxx</td>
+              <td><span class="mk-pill green">vendido</span></td>
+              <td class="dim">Criativo 03</td>
+              <td><span class="mk-pill blue">Anúncio CTWA</span></td>
+              <td class="dim">👤 💬 ✓ ⚡</td>
+            </tr>
+            <tr>
+              <td><input type="checkbox" disabled></td>
+              <td>João Lima</td><td class="dim">5511 9xxxx</td>
+              <td><span class="mk-pill gray">lead</span></td>
+              <td class="dim">Orgânico</td>
+              <td><span class="mk-pill gray">Orgânico</span></td>
+              <td class="dim">👤 💬 ✓ ⚡</td>
+            </tr>
+          </table>
+        </div>
+      </div>
+      <p class="mock-cap"><i data-lucide="image"></i>Ilustração da aba Leads: barra de filtros, cards de métricas e a tabela.</p>
+
+      <h2>Os 5 cards de métricas do topo</h2>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <tr><th>Card</th><th>O que mostra</th></tr>
+          <tr><td>Ciclo Médio</td><td>Tempo médio entre a entrada do lead e o fechamento da venda. A legenda abaixo do número indica a unidade usada (minutos, horas ou dias) — ela se adapta: vendas fechadas no mesmo dia aparecem como "42 min", não como "0,0 dias".</td></tr>
+          <tr><td>Resposta Média</td><td>Tempo médio até a empresa responder o lead pela primeira vez, em minutos.</td></tr>
+          <tr><td>Leads Esquecidos</td><td>Quantos leads estão há mais de 48h sem nenhum contato e ainda não foram fechados nem perdidos. <strong>Este card é clicável</strong> — clique para filtrar a tabela abaixo só com eles; clique de novo para remover o filtro.</td></tr>
+          <tr><td>Vendas Rápidas</td><td>Quantas vendas foram fechadas em menos de 24h desde a entrada do lead.</td></tr>
+          <tr><td>Engajamento</td><td>Índice médio de engajamento comercial (0 a 100 pontos), combinando velocidade da primeira resposta, tempo médio de resposta e volume de mensagens trocadas.</td></tr>
+        </table>
+      </div>
+
+      <h2>Barra de filtros — cada controle</h2>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <tr><th>Controle</th><th>Tipo</th><th>Opções / comportamento</th></tr>
+          <tr><td>Instância</td><td><span class="ftype">Select</span></td><td>Começa em <em>Todas instâncias</em>. As demais opções são os números de WhatsApp conectados nessa conta — útil quando o cliente atende por mais de uma linha.</td></tr>
+          <tr><td>Origem</td><td><span class="ftype">Select</span></td><td><em>Todas origens</em> · <em>Anúncio (CTWA)</em> · <em>Orgânico</em> · <em>Link da bio</em> · <em>Link de campanha</em>.</td></tr>
+          <tr><td>Busca</td><td><span class="ftype">Texto</span></td><td>Placeholder <em>"Buscar nome, telefone ou anúncio..."</em>. Procura simultaneamente em nome, telefone, campanha, conjunto e nome do anúncio.</td></tr>
+          <tr><td>Período</td><td><span class="ftype">Select</span></td><td><em>Hoje e Ontem</em> (padrão) · <em>Hoje</em> · <em>Ontem</em> · <em>7 dias</em> · <em>14 dias</em> · <em>Este mês</em> · <em>Mês passado</em> · <em>Todo período</em> · <em>Personalizado</em>.</td></tr>
+          <tr><td>Período personalizado</td><td><span class="ftype">Calendário</span></td><td>Só aparece ao escolher <em>Personalizado</em>. Clique em <em>Selecionar período</em>, escolha a data inicial e depois a final no mesmo calendário, e confirme no botão <em>OK</em>.</td></tr>
+          <tr><td>CSV</td><td><span class="ftype">Botão</span></td><td>Exporta a lista filtrada atual para planilha. Só aparece depois que os leads terminam de carregar.</td></tr>
+          <tr><td>Cliente</td><td><span class="ftype">Select</span></td><td><strong>Só para administradores.</strong> Fica no topo, ao lado do título da página, e troca qual cliente está sendo visualizado em todo o painel.</td></tr>
+        </table>
+      </div>
+      <div class="doc-callout tip">
+        <i data-lucide="lightbulb"></i>
+        <span>Alternar entre <em>Hoje</em>, <em>Ontem</em> e <em>Hoje e Ontem</em> é instantâneo — esses dados já estão carregados no navegador. Períodos maiores buscam dados novos do servidor e levam alguns segundos.</span>
+      </div>
+
+      <h2>Colunas da tabela</h2>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <tr><th>Coluna</th><th>Conteúdo</th></tr>
+          <tr><td>(caixa de seleção)</td><td>Seleciona leads para exclusão em massa. A caixa do cabeçalho marca todos os leads filtrados de uma vez.</td></tr>
+          <tr><td>Nome</td><td>Nome do contato no WhatsApp, já limpo de emojis decorativos. Clique no cabeçalho para ordenar.</td></tr>
+          <tr><td>Telefone</td><td>Número do contato.</td></tr>
+          <tr><td>Status</td><td>Etapa atual: <em>lead</em>, <em>qualificado</em>, <em>agendado</em>, <em>vendido</em> ou <em>perdido</em>. Clique no cabeçalho para ordenar.</td></tr>
+          <tr><td>Anúncio</td><td>Nome do anúncio que trouxe o lead. Quando o lead não veio de tráfego pago, mostra <strong>Orgânico</strong>; quando veio de anúncio mas o nome não pôde ser identificado, mostra <strong>—</strong>.</td></tr>
+          <tr><td>Origem</td><td>Etiqueta colorida de como o lead chegou: <em>Anúncio CTWA</em>, <em>Orgânico</em>, <em>Link da bio</em>, <em>Link rastreável</em>, <em>Rotador</em> ou <em>Rastr. inteligente</em>.</td></tr>
+          <tr><td>Instância</td><td>Qual número de WhatsApp recebeu esse contato.</td></tr>
+          <tr><td>Plataforma</td><td>Ícone da rede de origem (Facebook, Instagram, Google ou WhatsApp).</td></tr>
+          <tr><td>Data</td><td>Quando o lead entrou, em tempo relativo ("há 2 h"). Passe o mouse para ver a data e hora exatas. Clique no cabeçalho para ordenar.</td></tr>
+          <tr><td>Ações</td><td>Os 4 botões descritos abaixo.</td></tr>
+        </table>
+      </div>
+
+      <h3>Os 4 botões de ação de cada linha</h3>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <tr><th>Botão</th><th>O que faz</th></tr>
+          <tr><td>Ver perfil</td><td>Abre o painel lateral com o histórico completo daquele lead (4 abas, detalhadas abaixo).</td></tr>
+          <tr><td>Abrir conversa</td><td>Abre a conversa de WhatsApp desse lead num popup, sem sair da aba Leads.</td></tr>
+          <tr><td>Qualificar</td><td>Marca como Qualificado e envia o evento correspondente para a Meta.</td></tr>
+          <tr><td>Venda</td><td>Abre o formulário de registro de venda (campos detalhados abaixo).</td></tr>
+        </table>
+      </div>
+
+      <h2>Modo Lista e modo Kanban</h2>
+      <p>No canto do card "Leads" existem dois botões que alternam a forma de visualizar: <strong>Lista</strong> (a tabela padrão) e <strong>Kanban</strong> (cards organizados em colunas por status, onde você arrasta o lead de uma etapa para outra). Arrastar um card para a coluna <em>Agendado</em> registra o agendamento e dispara o evento correspondente à Meta, igual ao que aconteceria pelo Rastreamento Inteligente.</p>
+
+      <h2>Registrar uma venda</h2>
+      <p>Clicando em <strong>Venda</strong> na linha do lead, abre o formulário <em>Registrar Venda</em>:</p>
+      <div class="mock">
+        <div class="mock-bar"><span class="mock-title"><i data-lucide="zap"></i>Registrar Venda</span></div>
+        <div class="mock-body">
+          <div class="mk-row2">
+            <div><span class="mk-label">Produto</span><div class="mk-input">Ex: Cama Queen</div></div>
+            <div><span class="mk-label">Valor da Venda (R$) *</span><div class="mk-input">0,00</div></div>
+            <div><span class="mk-label">Nome completo</span><div class="mk-input">Ex: João Silva</div></div>
+            <div><span class="mk-label">E-mail</span><div class="mk-input">email@exemplo.com</div></div>
+            <div><span class="mk-label">CPF</span><div class="mk-input">000.000.000-00</div></div>
+            <div><span class="mk-label">Cidade (Ex: Fortaleza - CE)</span><div class="mk-input">Cidade - UF</div></div>
+          </div>
+          <span class="mk-label">Endereço</span><div class="mk-input">Rua, número, bairro</div>
+          <span class="mk-btn"><i data-lucide="send"></i>Confirmar Venda e Enviar CAPI</span>
+        </div>
+      </div>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <tr><th>Campo</th><th>Obrigatório</th><th>Para que serve</th></tr>
+          <tr><td>Produto</td><td>Não</td><td>Identifica o que foi vendido, para análise posterior.</td></tr>
+          <tr><td>Valor da Venda (R$)</td><td><strong>Sim</strong></td><td>Alimenta a receita dos relatórios e é enviado à Meta como valor da conversão.</td></tr>
+          <tr><td>Nome completo</td><td>Não</td><td>Melhora a identificação do comprador junto à Meta.</td></tr>
+          <tr><td>E-mail</td><td>Não</td><td>Idem — quanto mais dados, melhor a Meta consegue atribuir a conversão.</td></tr>
+          <tr><td>CPF</td><td>Não</td><td>Idem.</td></tr>
+          <tr><td>Cidade</td><td>Não</td><td>Formato sugerido: <em>Cidade - UF</em>.</td></tr>
+          <tr><td>Endereço</td><td>Não</td><td>Rua, número e bairro.</td></tr>
+        </table>
+      </div>
       <div class="doc-callout info">
         <i data-lucide="info"></i>
-        <span>O card <strong>"Leads Esquecidos"</strong>, no topo da aba, é clicável: ele filtra a lista para mostrar só quem está há mais de 48h sem qualquer contato e ainda não teve a venda fechada nem foi marcado como perdido.</span>
+        <span>Todos os dados pessoais enviados à Meta são <strong>criptografados antes do envio</strong> — a Meta recebe um código irreversível, nunca o dado em texto puro. Preencher mais campos aumenta a precisão da atribuição, mas nenhum deles além do valor é obrigatório.</span>
       </div>
+
+      <h2>Qualificar um lead</h2>
+      <p>O botão <strong>Qualificar</strong> abre uma confirmação simples: <em>"Marcar o lead [nome] como Qualificado? O evento será enviado para a Meta imediatamente."</em> — com os botões <em>Cancelar</em> e <em>Confirmar</em>. Use quando a conversa indica que a pessoa tem intenção real de compra, mesmo sem ter fechado ainda.</p>
+
+      <h2>Excluir leads</h2>
+      <p>Marque a caixa de seleção das linhas desejadas (ou a do cabeçalho, para todos os filtrados) e clique em <strong>Excluir selecionados</strong>. Uma janela de confirmação mostra quantos leads serão removidos e avisa que <em>"Esta ação não pode ser desfeita."</em>. Confirme em <strong>Excluir permanentemente</strong>.</p>
+
+      <h2>O painel de perfil do lead — as 4 abas</h2>
+      <p>Clicando em <strong>Ver perfil</strong> abre um painel lateral com todo o histórico daquele contato. O topo mostra nome, telefone e a etiqueta de status atual.</p>
+
+      <h3>Aba Perfil</h3>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <tr><th>Bloco</th><th>Campos exibidos</th></tr>
+          <tr><td>Dados Pessoais</td><td>Nome completo · Telefone · E-mail · CPF · Endereço</td></tr>
+          <tr><td>Atendimento</td><td>Status · Instância · Plataforma · Dispositivo · Data de entrada · Tempo da 1ª resposta</td></tr>
+          <tr><td>Primeira Mensagem</td><td>O texto exato da primeira mensagem que o lead enviou.</td></tr>
+        </table>
+      </div>
+      <p class="muted">Campos sem informação simplesmente não aparecem — o painel só mostra o que existe.</p>
+
+      <h3>Aba Anúncio</h3>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <tr><th>Bloco</th><th>Campos exibidos</th></tr>
+          <tr><td>Origem</td><td>Origem do lead · Link rastreável · Campanha · Conjunto · Anúncio · Plataforma</td></tr>
+          <tr><td>Rastreamento</td><td>Método de atribuição · CTWA Click ID · Source ID (Anúncio) · Page ID · IP do clique · Cidade do clique · Estado / região · País do clique · Posicionamento · Ad ID (Meta) · Conjunto ID (Meta) · Campanha ID (Meta) · Google Click ID · Palavra-chave (Google Ads)</td></tr>
+        </table>
+      </div>
+      <p>O campo <strong>Método de atribuição</strong> explica <em>como</em> o sistema teve certeza de qual anúncio trouxe esse lead — por exemplo, "Token invisível validado". Os IDs da Meta (Ad ID, Conjunto ID, Campanha ID) servem para você cruzar esse lead diretamente com o Gerenciador de Anúncios.</p>
+
+      <h3>Aba Jornada</h3>
+      <p>Mostra a linha do tempo de <strong>todos os contatos já feitos por esse mesmo telefone</strong> — útil para descobrir que a pessoa já tinha entrado em contato meses antes, por outro anúncio. Abaixo, a lista de <em>Eventos de Conversão (Meta)</em> mostra cada evento enviado, com o status de entrega e um botão <strong>Reenviar</strong> caso algum tenha falhado.</p>
+
+      <h3>Aba Venda</h3>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <tr><th>Bloco</th><th>Conteúdo</th></tr>
+          <tr><td>Cards do topo</td><td><em>Tempo até 1ª Resposta</em> e <em>Ciclo de Venda</em>.</td></tr>
+          <tr><td>Resultado</td><td>Status · Valor da venda · Produto · Data da venda · Qualificado em</td></tr>
+          <tr><td>Índice de Engajamento</td><td>A nota de 0 a 100 desse lead, com a indicação de quantos dos 3 componentes puderam ser calculados.</td></tr>
+        </table>
+      </div>
+      <p class="muted">Se ainda não houver venda registrada, o bloco Resultado é substituído por "Nenhuma venda registrada ainda".</p>
     </section>
 
     <!-- CONVERSAS -->
@@ -373,43 +710,201 @@ pre code { background:none; border:none; padding:0; }
       <h1><i data-lucide="message-circle"></i>Monitor de Conversas</h1>
       <p class="doc-kicker">O WhatsApp inteiro, espelhado dentro do painel — sem precisar abrir o celular.</p>
       <p>A aba <em>Conversas</em> mostra a lista de conversas dos últimos 15 dias, com as mensagens em bolhas no mesmo estilo do WhatsApp (verde/branco), incluindo áudio, imagem, vídeo e documento recebidos. Você também pode <strong>responder direto por ali</strong> — sem precisar do celular físico.</p>
-      <h2>Como usar</h2>
-      <ol class="doc-steps">
-        <li>Clique em uma conversa na lista à esquerda para abrir a thread de mensagens.</li>
-        <li>Para responder, use a caixa de texto na parte de baixo — ela aceita texto, emoji (pelo próprio teclado do sistema ou pelo atalho de emojis do composer), anexos (imagem/vídeo/documento) e gravação de áudio na hora (basta segurar o ícone de microfone).</li>
-        <li>Áudio, imagem e vídeo recebidos carregam automaticamente ao abrir a conversa; documentos exigem um clique manual em "Ver documento" (para não baixar arquivos grandes à toa).</li>
-      </ol>
-      <h2>Filtros e busca</h2>
-      <ul>
-        <li>Filtro por <strong>Cliente</strong> (admin), <strong>Instância</strong> e <strong>Origem</strong> do lead vinculado.</li>
-        <li>A busca encontra conversas tanto pelo nome/telefone do contato quanto pelo <strong>conteúdo das mensagens trocadas</strong> — digite um trecho do que foi dito e a conversa aparece, mesmo que a última mensagem exibida não seja a que contém o texto buscado.</li>
-      </ul>
+      <div class="mock">
+        <div class="mock-bar">
+          <span class="mk-field sel"><i data-lucide="smartphone"></i>Todas as instancias</span>
+          <span class="mk-field sel"><i data-lucide="git-branch"></i>Todas as origens</span>
+          <span class="mk-field grow"><i data-lucide="search"></i>Buscar contato, telefone ou mensagem...</span>
+          <span class="mk-field"><i data-lucide="clock"></i>Retenção: 15 dias</span>
+          <span class="mk-btn ghost"><i data-lucide="refresh-cw"></i>Atualizar</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1.4fr;">
+          <div style="border-right:1px solid var(--border);">
+            <div style="padding:9px 12px;border-bottom:1px solid var(--border);font-weight:700;font-size:12px;">Conversas</div>
+            <div style="padding:10px 12px;border-bottom:1px solid var(--border);background:var(--hover);">
+              <div style="display:flex;justify-content:space-between;"><strong style="font-size:12px;">Maria Souza</strong><span style="font-size:10px;color:var(--muted);">10:42</span></div>
+              <div style="font-size:11px;color:var(--muted);margin:3px 0;">Você: Claro, vou te enviar…</div>
+              <span class="mk-pill blue">Anúncio CTWA</span>
+            </div>
+            <div style="padding:10px 12px;">
+              <div style="display:flex;justify-content:space-between;"><strong style="font-size:12px;">João Lima</strong><span style="font-size:10px;color:var(--muted);">09:15</span></div>
+              <div style="font-size:11px;color:var(--muted);margin:3px 0;">Bom dia, queria saber o preço</div>
+              <span class="mk-pill gray">Orgânico</span>
+            </div>
+          </div>
+          <div>
+            <div style="padding:9px 12px;border-bottom:1px solid var(--border);font-weight:700;font-size:12px;">Maria Souza</div>
+            <div class="mk-chat">
+              <div class="mk-bub in">Oi! Vi o anúncio de vocês</div>
+              <div class="mk-bub out">Claro, vou te enviar o catálogo 😊</div>
+              <div class="mk-bub in">Perfeito, obrigada!</div>
+            </div>
+            <div class="mock-bar" style="border-top:1px solid var(--border);border-bottom:none;">
+              <i data-lucide="smile" style="width:15px;color:var(--muted);"></i>
+              <i data-lucide="paperclip" style="width:15px;color:var(--muted);"></i>
+              <span class="mk-field grow">Digite uma mensagem...</span>
+              <i data-lucide="mic" style="width:15px;color:var(--muted);"></i>
+              <span class="mk-btn"><i data-lucide="send"></i></span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="mock-cap"><i data-lucide="image"></i>Ilustração da aba Conversas: filtros, lista à esquerda, conversa e caixa de resposta.</p>
+
+      <h2>Filtros da barra superior</h2>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <tr><th>Filtro</th><th>Opções</th></tr>
+          <tr><td>Cliente</td><td><strong>Só para administradores.</strong> Escolhe de qual cliente ver as conversas.</td></tr>
+          <tr><td>Instância</td><td><em>Todas as instancias</em> + cada número de WhatsApp conectado.</td></tr>
+          <tr><td>Origem</td><td><em>Todas as origens</em> · <em>Anúncio CTWA</em> · <em>Orgânico</em> · <em>Link da bio</em> · <em>Link rastreável</em>.</td></tr>
+          <tr><td>Busca</td><td>Procura em nome, telefone e <strong>no conteúdo das mensagens</strong>.</td></tr>
+          <tr><td>Atualizar</td><td>Força uma recarga imediata (a lista já se atualiza sozinha a cada 10 segundos).</td></tr>
+        </table>
+      </div>
+
+      <h2>Respondendo — os botões da caixa de mensagem</h2>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <tr><th>Botão</th><th>O que faz</th></tr>
+          <tr><td>Emoji</td><td>Abre uma grade de emojis comuns. Você também pode usar o emoji do teclado do seu próprio sistema normalmente.</td></tr>
+          <tr><td>Anexar</td><td>Envia imagem, vídeo, áudio, PDF, Word, Excel, ZIP ou TXT.</td></tr>
+          <tr><td>Campo de texto</td><td>Até 4.096 caracteres. Cresce conforme você digita, até cerca de 5 linhas, e depois rola internamente.</td></tr>
+          <tr><td>Microfone</td><td>Grava um áudio na hora. Durante a gravação aparece um cronômetro com as opções de cancelar ou enviar.</td></tr>
+          <tr><td>Enviar</td><td>Envia a mensagem. A bolha aparece na hora com um relógio (enviando) e depois vira check duplo (enviado).</td></tr>
+        </table>
+      </div>
+      <div class="doc-callout info">
+        <i data-lucide="info"></i>
+        <span>Se o envio falhar, a bolha mostra um ícone vermelho — <strong>clique nele para tentar enviar de novo</strong>.</span>
+      </div>
+
+      <h2>O painel do lead, à direita</h2>
+      <p>Quando a conversa tem um lead vinculado, o painel da direita mostra: <em>Status</em>, <em>Valor</em> (se houver venda), <em>Origem</em>, <em>Campanha</em>, <em>Conjunto</em>, <em>Anuncio</em>, <em>Instancia</em> e <em>Entrada</em>, além de um botão <strong>Abrir perfil</strong> que leva ao painel completo do lead. Campos sem informação não aparecem.</p>
+
+      <h2>Carregamento de mídia</h2>
+      <p>Áudio, imagem e vídeo <strong>recebidos</strong> carregam automaticamente ao abrir a conversa. Documentos exigem um clique em "Ver documento" — para não baixar arquivos grandes sem necessidade. Já a mídia que <strong>você enviou</strong> pelo painel mostra um botão manual ("Ver imagem", "Ouvir audio"), porque o WhatsApp não devolve esses arquivos de volta para o sistema.</p>
+
       <div class="doc-callout tip">
         <i data-lucide="lightbulb"></i>
-        <span>Na tabela de <em>Leads</em>, todo lead tem um botão verde de WhatsApp na própria linha — ele abre a conversa daquele lead específico num popup, sem sair da aba Leads. Ótimo para responder rápido sem perder o filtro que você estava usando.</span>
+        <span>Na tabela de <em>Leads</em>, todo lead tem um botão verde de WhatsApp na própria linha — abre a conversa daquele lead num popup, sem sair da aba Leads e sem perder o filtro que você estava usando.</span>
       </div>
-      <p class="muted">As conversas ficam disponíveis por 15 dias; depois disso, as mensagens são removidas automaticamente (o lead em si continua existindo normalmente na aba Leads — só o histórico de mensagens some).</p>
+      <p class="muted">As conversas ficam disponíveis por 15 dias. Depois disso as mensagens são removidas automaticamente — o lead continua existindo normalmente na aba Leads, só o histórico de mensagens some.</p>
     </section>
 
     <!-- META ADS -->
     <section class="doc-section" id="sec-meta-ads">
       <h1><i data-lucide="bar-chart-3"></i>Meta Ads</h1>
       <p class="doc-kicker">Campanhas, métricas e orçamento da conta de anúncios, tudo dentro do painel.</p>
-      <p>Assim que a conta é vinculada (veja <em>Configuração inicial</em>), essa aba traz automaticamente todas as campanhas, conjuntos e anúncios ativos e pausados, com métricas de investimento, entrega, tráfego, leads/WhatsApp, vendas, vídeo e engajamento.</p>
-      <h2>Escolhendo o que aparece na tela</h2>
-      <ol class="doc-steps">
-        <li>Clique no botão <strong>Personalizar métricas</strong>, no topo da aba.</li>
-        <li>Escolha um <strong>preset pronto</strong> (Visão Geral, WhatsApp, Tráfego, Instagram, Vendas, Vídeo, Engajamento, Social, Eficiência) — cada um já vem com um conjunto de cards/colunas relevantes para aquele objetivo, ou</li>
-        <li>Monte sua própria seleção: busque a métrica pelo nome, marque as que quiser exibir como card e/ou como coluna da tabela, e arraste para reordenar as colunas.</li>
-        <li>A escolha fica salva no navegador — não precisa refazer a cada visita.</li>
-      </ol>
+      <p>Assim que a conta é vinculada (veja <em>Configuração inicial</em>), essa aba traz automaticamente todas as campanhas, conjuntos e anúncios, com métricas de investimento, entrega, tráfego, leads, Instagram, vendas, vídeo, engajamento e social.</p>
+
+      <div class="mock">
+        <div class="mock-bar">
+          <span class="mk-field sel"><i data-lucide="building"></i>Escolha uma conta de anúncios</span>
+          <span class="mk-field sel"><i data-lucide="calendar"></i>Hoje</span>
+          <span class="mk-btn ghost"><i data-lucide="refresh-cw"></i>Atualizar</span>
+          <span class="mk-btn ghost"><i data-lucide="settings-2"></i>Gerenciar contas</span>
+        </div>
+        <div class="mock-body">
+          <div class="mk-cards" style="margin-bottom:12px;">
+            <div class="mk-card"><div class="mk-card-lbl">Gasto Total</div><div class="mk-card-val">R$ 1.240</div></div>
+            <div class="mk-card"><div class="mk-card-lbl">Impressões</div><div class="mk-card-val">84.512</div></div>
+            <div class="mk-card"><div class="mk-card-lbl">Cliques (Links)</div><div class="mk-card-val">932</div></div>
+            <div class="mk-card"><div class="mk-card-lbl">CPR</div><div class="mk-card-val">R$ 8,60</div></div>
+          </div>
+          <table class="mk-table">
+            <tr><th></th><th>Campanha</th><th>Status</th><th>Orçamento</th><th>Investimento</th><th>Conversas</th></tr>
+            <tr><td class="dim">▶</td><td>Vendas — Sofá</td><td><span class="mk-pill green">Ativa</span></td><td>R$ 80,00/dia ✏️</td><td>R$ 740</td><td>61</td></tr>
+            <tr><td class="dim">▶</td><td>Remarketing</td><td><span class="mk-pill gray">Pausada</span></td><td class="dim">Nos conjuntos</td><td>R$ 500</td><td>23</td></tr>
+          </table>
+        </div>
+      </div>
+      <p class="mock-cap"><i data-lucide="image"></i>Ilustração da aba Meta Ads: seletor de conta, cards de métricas e tabela de campanhas.</p>
+
+      <h2>Barra de controles</h2>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <tr><th>Controle</th><th>Função</th></tr>
+          <tr><td>Seletor de conta</td><td>Escolhe qual conta de anúncios exibir. Tem busca interna e marca com o selo <em>salva</em> a conta que você usa normalmente.</td></tr>
+          <tr><td>Período</td><td><em>Hoje</em> (padrão) · <em>Ontem</em> · <em>7 dias</em> · <em>30 dias</em> · <em>Este mês</em> · <em>Mês passado</em> · <em>Personalizado</em>.</td></tr>
+          <tr><td>Atualizar</td><td>Rebusca os dados da Meta para o período selecionado.</td></tr>
+          <tr><td>Gerenciar contas</td><td>Abre a tela para escolher quais contas aparecem no seletor (com busca, <em>Selecionar todas</em> e <em>Desmarcar todas</em>).</td></tr>
+        </table>
+      </div>
+
+      <h2>Escolhendo quais métricas aparecem</h2>
+      <p>O botão <strong>Personalizar métricas</strong> abre uma janela com duas abas: <strong>Cards</strong> (os quadrados de resumo do topo) e <strong>Tabela</strong> (as colunas da lista de campanhas). Você pode partir de um preset pronto ou montar sua própria seleção.</p>
+      <h3>Os 9 presets prontos</h3>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <tr><th>Preset</th><th>Indicado para</th></tr>
+          <tr><td>Visão Geral</td><td>O conjunto equilibrado padrão — investimento, entrega e resultados principais.</td></tr>
+          <tr><td>WhatsApp / Leads</td><td>Campanhas cujo objetivo é gerar conversas e leads.</td></tr>
+          <tr><td>Tráfego</td><td>Campanhas de cliques e visitas à página.</td></tr>
+          <tr><td>Instagram</td><td>Visitas ao perfil, seguidores e custos relacionados.</td></tr>
+          <tr><td>Vendas</td><td>Compras, valor em compras, ROAS e checkout.</td></tr>
+          <tr><td>Vídeo</td><td>Visualizações em 25%, 50%, 75% e 100% e seus custos.</td></tr>
+          <tr><td>Engajamento</td><td>Interações por impressão e por alcance.</td></tr>
+          <tr><td>Social</td><td>Salvamentos, compartilhamentos e comentários.</td></tr>
+          <tr><td>Eficiência</td><td>Métricas de custo por resultado.</td></tr>
+        </table>
+      </div>
+      <p>Na janela você também tem: um campo de <em>busca</em> por nome de métrica, as métricas agrupadas em 9 categorias (Investimento, Entrega, Tráfego, Leads / WhatsApp, Instagram, Vendas, Vídeo, Engajamento, Social), uma lista lateral com as <em>Selecionadas</em>, e os botões <strong>Restaurar padrão</strong>, <strong>Limpar</strong> e <strong>Aplicar</strong>. Na aba <em>Tabela</em>, é possível arrastar para reordenar as colunas. A escolha fica salva no seu navegador.</p>
+
+      <h3>Todas as métricas disponíveis</h3>
+      <p>São 41 métricas, utilizáveis tanto como card quanto como coluna da tabela:</p>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <tr><th>Categoria</th><th>Métricas</th></tr>
+          <tr><td>Investimento</td><td>Gasto Total</td></tr>
+          <tr><td>Entrega</td><td>Impressões · Alcance · Frequência · CPM (custo por 1.000 impressões)</td></tr>
+          <tr><td>Tráfego</td><td>Cliques (Links) · CPC (custo/clique) · CTR (Link) · Visualizações da Página · Custo/Visualização da Página · Connect Rate</td></tr>
+          <tr><td>Leads / WhatsApp</td><td>Leads (formulário) · CPL (custo/lead) · Conversas Iniciadas · CPR (custo/conversa)</td></tr>
+          <tr><td>Instagram</td><td>Visitas Perfil (IG) · Custo/Visita Perfil · Seguidores (IG) · Custo/Seguidor</td></tr>
+          <tr><td>Vendas</td><td>Compras · Valor em Compras · ROAS · Inícios de Checkout · Custo/compra</td></tr>
+          <tr><td>Vídeo</td><td>Visualização 25% · Visualização 50% · Visualização 75% · Visualização 100% · e o custo de cada uma delas</td></tr>
+          <tr><td>Engajamento</td><td>Engajamento/Impressão · Engajamento/Alcance · Custo/Engajamento</td></tr>
+          <tr><td>Social</td><td>Taxa de Salvamento · Salvamento/Alcance · Custo/Salvamento · Taxa de Compartilhamento · Compartilhamento/Alcance · Custo/Compartilhamento · Taxa de Comentário · Comentário/Alcance · Custo/Comentário</td></tr>
+        </table>
+      </div>
+      <p class="muted">Por padrão vêm ativas as de investimento, entrega, tráfego, Instagram e leads. As de vendas, vídeo, engajamento e social ficam disponíveis mas desligadas — ative pelo botão <em>Personalizar métricas</em> quando precisar.</p>
+
       <h2>Editando o orçamento de uma campanha</h2>
-      <p>Na tabela, localize a coluna <strong>Orçamento</strong> e clique no ícone de lápis ao lado do valor — abre um modal para ajustar o orçamento diário ou vitalício direto pelo painel, sem precisar abrir o Gerenciador de Anúncios da Meta em outra aba.</p>
-      <h2>Analisando uma campanha específica (drill-down)</h2>
-      <p>Clique em qualquer linha da tabela para "focar" nela — os cards de métricas do topo recalculam para mostrar só os números daquela campanha. Clique em <strong>Todas</strong> para voltar à visão consolidada da conta inteira.</p>
+      <ol class="doc-steps">
+        <li>Na coluna <strong>Orçamento</strong> da tabela, clique no ícone de lápis ao lado do valor.</li>
+        <li>Digite o novo valor no campo, ou use os atalhos <strong>+10%</strong>, <strong>+20%</strong>, <strong>+30%</strong> e <strong>+50%</strong> para aumentar proporcionalmente.</li>
+        <li>Clique em <strong>Salvar</strong>. A alteração vai direto para a Meta — não precisa abrir o Gerenciador de Anúncios.</li>
+      </ol>
+      <p class="muted">Quando o orçamento está definido nos conjuntos em vez da campanha, a coluna mostra "Nos conjuntos" (ou "Na campanha", no caso inverso) e não há o que editar naquele nível.</p>
+
+      <h2>Navegando na hierarquia</h2>
+      <p>A tabela segue a estrutura da Meta: <strong>Campanha → Conjunto → Anúncio</strong>. Clique na setinha (▶) à esquerda de uma linha para expandir e ver o nível seguinte. Clicando no <em>nome</em> da campanha, o painel entra em modo foco — todos os cards do topo recalculam apenas para ela. Use o botão <strong>← Todas as campanhas</strong> para voltar à visão geral.</p>
+
+      <h2>Filtros da tabela</h2>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <tr><th>Filtro</th><th>Opções</th></tr>
+          <tr><td>Status</td><td><em>Todos</em> · <em>Ativas</em> (padrão) · <em>Pausadas</em>.</td></tr>
+          <tr><td>Objetivo</td><td><em>Todos</em> + os objetivos de campanha existentes na conta.</td></tr>
+          <tr><td>Buscar</td><td>Filtra por nome da campanha.</td></tr>
+          <tr><td>Colunas tabela</td><td>Atalho que abre a mesma janela de personalização, já na aba <em>Tabela</em>.</td></tr>
+        </table>
+      </div>
+
+      <h2>Análise Demográfica</h2>
+      <p>Mostra como cada métrica se distribui pelo público. Escolha a métrica base nos botões <strong>Investimento</strong>, <strong>Impressões</strong>, <strong>Cliques</strong>, <strong>Leads</strong> ou <strong>Conversas</strong>, e veja a quebra em 5 gráficos: <em>Faixa Etária</em>, <em>Gênero</em>, <em>Plataforma</em>, <em>Dispositivo</em> e <em>Posicionamento</em>.</p>
+      <p>O botão <strong>Configurar</strong> permite escolher quais desses 5 gráficos aparecem e alternar o estilo entre <em>Rosca (Donut)</em> e <em>Barras</em>.</p>
+
+      <h2>Melhores Criativos</h2>
+      <p>Clique em <strong>Carregar Criativos</strong> para ver o ranking dos anúncios com melhor desempenho, com a miniatura de cada um. É possível ordenar por diferentes métricas, filtrar por campanha e alternar entre <em>Apenas Ativos</em> (padrão) e <em>Todos</em>. O botão <strong>Carregar mais 15</strong> traz o próximo lote.</p>
+
       <div class="doc-callout tip">
         <i data-lucide="lightbulb"></i>
-        <span><strong>CPC e CTR</strong> aqui são calculados sobre <strong>cliques no link</strong> (quem de fato clicou para ir ao WhatsApp/site), não sobre qualquer interação com o anúncio (curtida, comentário, etc.) — por isso podem ser diferentes do que aparece "por padrão" no Gerenciador de Anúncios da Meta. É uma visão mais rigorosa do que realmente gerou tráfego.</span>
+        <span><strong>CPC e CTR</strong> aqui são calculados sobre <strong>cliques no link</strong> — quem de fato clicou para ir ao WhatsApp ou ao site — e não sobre qualquer interação com o anúncio (curtida, comentário, expandir foto). Por isso podem divergir do que o Gerenciador da Meta mostra por padrão. É uma visão mais rigorosa do que realmente gerou tráfego.</span>
+      </div>
+      <div class="doc-callout info">
+        <i data-lucide="info"></i>
+        <span>Os valores respeitam a <strong>moeda real da conta</strong> de anúncios. Contas em dólar ou euro aparecem na moeda correta, não convertidas para real.</span>
       </div>
     </section>
 
@@ -417,61 +912,296 @@ pre code { background:none; border:none; padding:0; }
     <section class="doc-section" id="sec-relatorios">
       <h1><i data-lucide="file-chart-column"></i>Relatórios</h1>
       <p class="doc-kicker">A visão consolidada: quanto entrou, quanto vendeu, e de onde veio.</p>
-      <p>Ao abrir a aba, escolha o período desejado no seletor do topo. A tela é organizada em blocos:</p>
+      <div class="mock">
+        <div class="mock-bar">
+          <span class="mk-field sel"><i data-lucide="calendar-range"></i>Hoje e Ontem</span>
+          <span class="mk-btn ghost"><i data-lucide="file-down"></i>Exportar PDF</span>
+        </div>
+        <div class="mock-body">
+          <div style="display:grid;grid-template-columns:1.3fr 1fr;gap:10px;margin-bottom:12px;">
+            <div class="mk-card" style="background:rgba(37,99,235,.07);">
+              <div class="mk-card-lbl">Receita no período</div>
+              <div class="mk-card-val" style="font-size:24px;">R$ 18.430</div>
+              <span class="mk-pill green" style="margin-top:5px;">▲ 18% vs. anterior</span>
+            </div>
+            <div style="display:grid;gap:8px;">
+              <div class="mk-card"><div class="mk-card-lbl">Conversão</div><div class="mk-card-val">12,4%</div></div>
+              <div class="mk-card"><div class="mk-card-lbl">Ticket médio</div><div class="mk-card-val">R$ 890</div></div>
+            </div>
+          </div>
+          <div class="mk-cards">
+            <div class="mk-card"><div class="mk-card-lbl">Total de Leads</div><div class="mk-card-val">167</div></div>
+            <div class="mk-card"><div class="mk-card-lbl">Qualificados</div><div class="mk-card-val">48</div></div>
+            <div class="mk-card"><div class="mk-card-lbl">Vendas</div><div class="mk-card-val">21</div></div>
+            <div class="mk-card"><div class="mk-card-lbl">Leads Esquecidos</div><div class="mk-card-val">6</div></div>
+          </div>
+        </div>
+      </div>
+      <p class="mock-cap"><i data-lucide="image"></i>Ilustração da aba Relatórios: destaque de receita e a faixa de cards de apoio.</p>
+
+      <h2>Período e exportação</h2>
+      <p>O seletor do topo oferece as mesmas opções da aba Leads: <em>Hoje e Ontem</em> (padrão), <em>Hoje</em>, <em>Ontem</em>, <em>7 dias</em>, <em>14 dias</em>, <em>Este mês</em>, <em>Mês passado</em>, <em>Todo período</em> e <em>Personalizado</em>. O botão <strong>Exportar PDF</strong> gera um arquivo do relatório na tela — o sistema força o tema claro durante a geração (mesmo que você esteja no modo escuro) para o texto ficar legível, e volta ao seu tema normal ao terminar.</p>
+
+      <h2>Bloco 1 — Resumo</h2>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <tr><th>Card</th><th>O que mostra</th></tr>
+          <tr><td>Receita no período</td><td>Faturamento total, em destaque, com a variação percentual contra o período anterior de mesma duração.</td></tr>
+          <tr><td>Conversão</td><td>Percentual de leads que viraram venda.</td></tr>
+          <tr><td>Ticket médio</td><td>Receita dividida pelo número de vendas.</td></tr>
+          <tr><td>Total de Leads</td><td>Quantos leads entraram no período.</td></tr>
+          <tr><td>Qualificados</td><td>Quantos foram marcados como qualificados.</td></tr>
+          <tr><td>Vendas</td><td>Quantas vendas foram fechadas.</td></tr>
+          <tr><td>Leads Esquecidos</td><td>Quantos estão há mais de 48h sem contato e ainda em aberto.</td></tr>
+        </table>
+      </div>
+      <p class="muted">Os quatro primeiros cards mostram uma seta de variação (▲/▼) comparando com o período anterior equivalente.</p>
+
+      <h2>Bloco 2 — Rastreamento de Conversas</h2>
+      <p>Dois cards lado a lado:</p>
       <ul>
-        <li><strong>Receita e Conversão</strong> (bloco em destaque) — faturamento total do período, com a variação percentual em relação ao período anterior de mesma duração, além de Conversão e Ticket Médio.</li>
-        <li><strong>Resumo</strong> — Total de leads, Qualificados, Vendas e Leads Esquecidos.</li>
-        <li><strong>Rastreamento de Conversas</strong> — quantas conversas foram rastreadas até um anúncio/link (vs. quantas ficaram sem origem identificada), tempo médio até a primeira resposta, e a origem por plataforma (Meta, Google ou outras).</li>
-        <li><strong>Evolução</strong> — gráfico de linha do tempo diário de leads/vendas.</li>
-        <li><strong>Horários</strong> — um heatmap mostrando em quais dias/horários mais chegam leads.</li>
-        <li><strong>Origem dos leads</strong> — gráficos de Campanhas, Conjuntos, Anúncios e Plataformas por volume de leads.</li>
-        <li><strong>Funil de vendas</strong> — os mesmos agrupamentos acima, mas por vendas fechadas (não só leads que entraram).</li>
+        <li><strong>Visão Geral das Conversas</strong> — total de conversas, quantas foram <em>Rastreadas</em> (origem identificada) vs. <em>Não rastreadas</em>, e o <em>Tempo médio 1ª resposta</em>.</li>
+        <li><strong>Origem das Conversas</strong> — a divisão entre <em>Meta Ads</em>, <em>Google Ads</em>, <em>Outras</em> e <em>Não rastr.</em>.</li>
       </ul>
-      <h2>Trocando o tipo de gráfico</h2>
-      <p>Os gráficos de distribuição (Campanhas, Conjuntos, Anúncios, Plataformas) têm um pequeno alternador no canto do título para trocar entre <strong>barras</strong> e <strong>pizza</strong> — a escolha fica salva no navegador para as próximas vezes.</p>
-      <h2>Exportando em PDF</h2>
-      <p>Clique no botão de exportação para gerar um PDF do relatório da tela atual. O sistema força o tema claro durante a geração (mesmo que você esteja no modo escuro), para garantir que o texto fique legível no arquivo final, e volta ao seu tema normal automaticamente ao terminar.</p>
+
+      <h2>Bloco 3 — Evolução</h2>
+      <p>Gráfico <strong>Evolução Diária (Leads vs Vendas)</strong>: uma linha do tempo comparando quantos leads entraram e quantas vendas fecharam a cada dia do período.</p>
+
+      <h2>Bloco 4 — Horários</h2>
+      <p>O <strong>Heatmap de Horários</strong> mostra em quais dias da semana e faixas de hora há mais movimento — quanto mais escura a célula, maior o volume, e o número aparece no centro de cada uma. Use os botões <strong>Leads</strong> e <strong>Vendas</strong> para alternar o que está sendo medido. É a forma mais direta de descobrir em que horários vale ter mais gente atendendo.</p>
+
+      <h2>Bloco 5 — Origem dos leads</h2>
+      <p>Quatro gráficos de distribuição: <strong>Campanhas / Leads</strong>, <strong>Conjuntos / Leads</strong>, <strong>Anúncios / Leads</strong> e <strong>Plataformas / Leads</strong>.</p>
+
+      <h2>Bloco 6 — Funil de vendas</h2>
+      <p>Os mesmos agrupamentos, mas contando <strong>vendas fechadas</strong> em vez de leads que entraram: <strong>Anúncios / Vendas</strong> e <strong>Plataformas / Vendas</strong>. É aqui que você descobre que o anúncio que mais traz leads nem sempre é o que mais vende.</p>
+
+      <div class="doc-callout tip">
+        <i data-lucide="lightbulb"></i>
+        <span>Todos os seis gráficos de distribuição têm um alternador no canto do título para trocar entre <strong>barras</strong> e <strong>pizza</strong> — a escolha fica salva no navegador.</span>
+      </div>
     </section>
 
     <!-- CAPTAÇÃO -->
     <section class="doc-section" id="sec-captacao">
       <h1><i data-lucide="link"></i>Link de Rastreamento</h1>
       <p class="doc-kicker">Links próprios para site, bio do Instagram ou campanhas — com rastreamento completo de clique até venda.</p>
-      <h2>Criando um link novo</h2>
-      <ol class="doc-steps">
-        <li>Vá em <em>Link de Rastreamento</em> no menu e clique em <strong>Novo Link</strong>.</li>
-        <li>Dê um nome interno para identificar o link (ex: "Bio Instagram", "Anúncio Google - Julho").</li>
-        <li>O número de destino já vem automaticamente da instância de WhatsApp conectada — não precisa digitar.</li>
-        <li>(Opcional) Configure uma mensagem pré-preenchida que já abre escrita no WhatsApp da pessoa, e personalize a telinha de carregamento (título, subtítulo, cor de fundo) na aba Configuração do link.</li>
-        <li>Salve — o sistema gera uma URL curta no formato <code>/r/&lt;slug&gt;</code>.</li>
-      </ol>
-      <p>Use esse link em anúncios (Meta ou Google Ads), na bio do Instagram, ou em botões de WhatsApp do seu site. Acompanhe cliques, conversões e taxa de conversão direto na tabela de links, a qualquer momento.</p>
-      <h2>Link direto, sem tela intermediária</h2>
-      <p>Por padrão, o link passa por uma telinha rápida (menos de 2 segundos) antes de abrir o WhatsApp — é o tempo necessário para o Pixel da Meta/conversão do Google Ads dispararem corretamente. Se você vai usar o link num <strong>botão de site</strong> (onde não há necessidade dessa telinha), abra o link, vá na aba <strong>Script para site</strong> e copie o campo <em>Link de Rastreamento Direto</em> — ele tem <code>?direct=1</code> no final e abre o WhatsApp na hora, sem tela nenhuma. O link "normal" (sem esse parâmetro) continua sendo o que você usa em anúncios.</p>
-      <h2>Rotador de números</h2>
-      <p>Se mais de um atendente/número recebe leads do mesmo anúncio, um único link pode distribuir os cliques entre vários destinos — por rodízio (round-robin), peso ou prioridade. Configure os destinos extras na própria tela de edição do link.</p>
-      <h2>Script para site externo</h2>
-      <p>Se você quer rastreamento completo (Pixel, PageView, clique) em botões de WhatsApp do seu próprio site (fora do domínio do Adlytics Pro), use o script <code>wapptrack.js</code> — a aba "Script para site" do link te dá o trecho de código pronto para colar antes do <code>&lt;/body&gt;</code> do site, e as instruções de quais atributos marcar nos botões.</p>
+      <div class="mock">
+        <div class="mock-bar"><span class="mock-title"><i data-lucide="link"></i>Seus links</span><span style="margin-left:auto;" class="mk-btn"><i data-lucide="plus"></i>Novo link</span></div>
+        <div class="mock-body" style="padding:0;">
+          <table class="mk-table">
+            <tr><th>Nome / Link</th><th>Modo</th><th>Cliques</th><th>Conv.</th><th>Status</th><th>Ações</th></tr>
+            <tr>
+              <td>Bio do Instagram<br><span class="dim" style="font-size:10.5px;">/redirect/bio-insta</span></td>
+              <td><span class="mk-pill gray">Único</span></td><td>412</td><td>38</td>
+              <td><span class="mk-pill green">Ativo</span></td><td class="dim">⏸ ✏️ ⧉ 🗄</td>
+            </tr>
+            <tr>
+              <td>Comercial (rodízio)<br><span class="dim" style="font-size:10.5px;">/redirect/comercial</span></td>
+              <td><span class="mk-pill blue">Rotação</span></td><td>1.204</td><td>96</td>
+              <td><span class="mk-pill green">Ativo</span></td><td class="dim">⏸ ✏️ ⧉ 🗄</td>
+            </tr>
+          </table>
+        </div>
+      </div>
+      <p class="mock-cap"><i data-lucide="image"></i>Ilustração da tabela de links: nome, modo de distribuição, cliques, conversões e status.</p>
+
+      <h2>A tabela de links</h2>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <tr><th>Coluna</th><th>Conteúdo</th></tr>
+          <tr><td>Nome / Link</td><td>O nome que você deu, o endereço gerado e um botão para copiar.</td></tr>
+          <tr><td>Modo</td><td>Como os cliques são distribuídos: <em>Único</em>, <em>Rotação</em>, <em>Ponderado</em> ou <em>Prioridade</em>.</td></tr>
+          <tr><td>Cliques</td><td>Total de cliques humanos (robôs de rede social são descartados).</td></tr>
+          <tr><td>Conv.</td><td>Quantos cliques viraram conversa de verdade no WhatsApp.</td></tr>
+          <tr><td>Status</td><td><em>Ativo</em> ou <em>Pausado</em>.</td></tr>
+          <tr><td>Ações</td><td>Pausar/ativar · Editar · Duplicar · Arquivar.</td></tr>
+        </table>
+      </div>
+      <p class="muted">Acima da tabela há um resumo com <em>Cliques</em>, <em>Conversões</em>, <em>Leads</em> e <em>Taxa conv.</em> do conjunto de links.</p>
+
+      <h2>Criando um link — aba Configuração</h2>
+      <p>O botão <strong>Novo link</strong> abre uma janela com três abas. A primeira, <em>Configuração</em>, tem tudo que é essencial:</p>
+      <div class="mock">
+        <div class="mk-tabs">
+          <span class="mk-tab on">Configuração</span><span class="mk-tab">Jornada</span><span class="mk-tab">Script para site</span>
+        </div>
+        <div class="mock-body">
+          <span class="mk-label">Nome do link *</span><div class="mk-input">Ex: Bio do Instagram</div>
+          <div class="mk-row2">
+            <div><span class="mk-label">Tipo de origem</span><div class="mk-input sel">Link da bio</div></div>
+            <div><span class="mk-label">Distribuição dos números</span><div class="mk-input sel">Destino único</div></div>
+          </div>
+          <span class="mk-label">Mensagem pré-preenchida</span><div class="mk-input">Olá! Gostaria de mais informações.</div>
+          <span class="mk-label">Números de destino</span>
+          <div class="mk-row3">
+            <div class="mk-input sel">Instância *</div><div class="mk-input">Número</div><div class="mk-input">Ex: Comercial 1</div>
+          </div>
+          <span class="mk-btn ghost"><i data-lucide="plus"></i>Adicionar</span>
+        </div>
+      </div>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <tr><th>Campo</th><th>Obrigatório</th><th>Opções / observação</th></tr>
+          <tr><td>Nome do link</td><td><strong>Sim</strong></td><td>Só para você identificar. Ex: "Bio do Instagram".</td></tr>
+          <tr><td>Tipo de origem</td><td>Sim</td><td><em>Link da bio</em> · <em>Campanha rastreável</em> · <em>Rotador comercial</em>. Define como o lead aparecerá classificado na aba Leads.</td></tr>
+          <tr><td>Distribuição dos números</td><td>Sim</td><td>Ver a tabela de modos abaixo.</td></tr>
+          <tr><td>Mensagem pré-preenchida</td><td>Não</td><td>Já aparece escrita no WhatsApp da pessoa. Aceita variáveis (ver abaixo).</td></tr>
+          <tr><td>Título</td><td>Não</td><td>Título da telinha de espera. Padrão: "Por favor, aguarde alguns segundos."</td></tr>
+          <tr><td>Subtítulo</td><td>Não</td><td>Padrão: "Estamos localizando um atendente disponível…"</td></tr>
+          <tr><td>Cor de fundo</td><td>Não</td><td>Cor da telinha de espera. Padrão: bege claro do WhatsApp.</td></tr>
+          <tr><td>Instância</td><td><strong>Sim</strong></td><td>Qual número recebe. O telefone é preenchido sozinho — você não digita.</td></tr>
+          <tr><td>Nome (do destino)</td><td>Não</td><td>Rótulo interno, ex: "Comercial 1".</td></tr>
+          <tr><td>UTM Source / Medium / Campaign / Content</td><td>Não</td><td>Dentro de "Parâmetros de campanha". Valores padrão, sobrescritos pelo que vier na URL do anúncio.</td></tr>
+        </table>
+      </div>
+
+      <h3>Os 4 modos de distribuição</h3>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <tr><th>Modo</th><th>Como funciona</th></tr>
+          <tr><td>Destino único</td><td>Todos os cliques vão para o mesmo número.</td></tr>
+          <tr><td>Rotação equilibrada</td><td>Distribui igualmente entre os números, em rodízio.</td></tr>
+          <tr><td>Rotação por peso</td><td>Um número com peso 2 recebe o dobro de um com peso 1. Ao escolher este modo, aparece um campo de peso em cada destino.</td></tr>
+          <tr><td>Prioridade fixa</td><td>Sempre envia para o primeiro número ativo da lista; os demais ficam como reserva.</td></tr>
+        </table>
+      </div>
+
+      <h3>Variáveis na mensagem pré-preenchida</h3>
+      <p>Os botões abaixo do campo inserem variáveis que são substituídas no momento do clique — assim cada anúncio pode gerar uma mensagem diferente:</p>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <tr><th>Botão</th><th>Insere</th><th>Vira</th></tr>
+          <tr><td>Anúncio</td><td><code>{{utm_content}}</code></td><td>O nome do anúncio que originou o clique.</td></tr>
+          <tr><td>Campanha</td><td><code>{{utm_campaign}}</code></td><td>O nome da campanha.</td></tr>
+          <tr><td>Conjunto</td><td><code>{{utm_medium}}</code></td><td>O nome do conjunto de anúncios.</td></tr>
+          <tr><td>Origem</td><td><code>{{utm_source}}</code></td><td>A rede de origem (Instagram, Facebook…).</td></tr>
+        </table>
+      </div>
+
+      <h2>Aba Jornada — eventos automáticos deste link</h2>
+      <p>Define o que é enviado à Meta quando alguém que clicou <em>neste link específico</em> avança na negociação.</p>
+      <ul>
+        <li><strong>Enviar evento automático quando o clique virar lead</strong> — ao marcar, aparece o campo <em>Evento inicial da conversão</em> para escolher qual evento disparar assim que o clique vira conversa.</li>
+        <li><strong>Etapas por palavra-chave</strong> — as mesmas etapas do Rastreamento Inteligente, mas valendo só para os leads deste link. Os campos são idênticos aos descritos na seção <em>Rastreamento Inteligente</em>.</li>
+      </ul>
+
+      <h2>Aba Script para site</h2>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <tr><th>Campo</th><th>Para que serve</th></tr>
+          <tr><td>Snippet do script</td><td>Código pronto para colar antes do <code>&lt;/body&gt;</code> do seu site. Use o botão <strong>Copiar script</strong>.</td></tr>
+          <tr><td>Texto do botão</td><td>Opcional: troca o texto dos botões de WhatsApp do site automaticamente.</td></tr>
+          <tr><td>Link de Rastreamento Direto (URL)</td><td>A versão sem telinha de espera — ver abaixo.</td></tr>
+          <tr><td>Domínios autorizados</td><td>Opcional: restringe em quais sites o script pode funcionar.</td></tr>
+        </table>
+      </div>
+
+      <h2>Qual link usar em cada lugar</h2>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <tr><th>Onde você vai usar</th><th>Qual link copiar</th><th>Por quê</th></tr>
+          <tr><td>Anúncio da Meta ou Google</td><td>O link normal, da tabela</td><td>A telinha de espera de ~1,4s é o tempo que o Pixel precisa para registrar a visita.</td></tr>
+          <tr><td>Botão de site</td><td><em>Link de Rastreamento Direto</em> (aba Script para site)</td><td>Abre o WhatsApp na hora, sem telinha. O clique continua sendo rastreado normalmente.</td></tr>
+          <tr><td>Bio do Instagram</td><td>Qualquer um dos dois</td><td>Use o direto se preferir abertura instantânea.</td></tr>
+          <tr><td>Site com rastreamento completo</td><td>O snippet do script</td><td>Dispara Pixel e PageView no próprio site, antes do redirecionamento.</td></tr>
+        </table>
+      </div>
+
+      <h2>Modelo de URL para anúncios</h2>
+      <p>Ao colar o link no campo <em>URL do site</em> do seu anúncio na Meta, acrescente os parâmetros abaixo — eles fazem o sistema saber exatamente qual campanha, conjunto e anúncio gerou cada clique:</p>
+      <pre><code>?utm_source={{site_source_name}}&amp;utm_medium={{adset.name}}
+&amp;utm_campaign={{campaign.name}}&amp;utm_content={{ad.name}}
+&amp;placement={{placement}}&amp;ad_id={{ad.id}}
+&amp;adset_id={{adset.id}}&amp;meta_campaign_id={{campaign.id}}</code></pre>
+      <p class="muted">Essas chaves duplas são preenchidas automaticamente pela própria Meta a cada clique. Cole tudo em uma linha só, logo após o endereço do seu link. No Google Ads não é necessário — o <em>gclid</em> é adicionado automaticamente.</p>
+
+      <div class="doc-callout warn">
+        <i data-lucide="triangle-alert"></i>
+        <span>Arquivar um link não apaga nada — o histórico continua disponível nos leads e relatórios. Mas o link para de funcionar para quem clicar, então confirme que ele não está em nenhum anúncio ativo antes.</span>
+      </div>
     </section>
 
     <!-- INTELIGENTE -->
     <section class="doc-section" id="sec-inteligente">
       <h1><i data-lucide="brain-circuit"></i>Rastreamento Inteligente</h1>
       <p class="doc-kicker">Detecta automaticamente em que etapa da negociação um lead está, pela palavra que o atendente digita.</p>
-      <p>Em vez de você (ou o atendente) precisar marcar manualmente cada avanço de etapa no painel, o Rastreamento Inteligente lê as mensagens que <strong>a empresa</strong> envia no WhatsApp e, ao reconhecer uma palavra-chave configurada, marca a etapa sozinho e (se quiser) já avisa a Meta.</p>
-      <h2>Criando uma etapa</h2>
-      <ol class="doc-steps">
-        <li>Vá em <em>Rastreamento Inteligente</em> no menu e clique em <strong>Nova Etapa</strong>.</li>
-        <li><strong>Nome da etapa</strong> — um rótulo livre, só para você identificar no painel (ex: "Orçamento Enviado", "Fechou Negócio").</li>
-        <li><strong>Evento</strong> — escolha qual evento de conversão será enviado à Meta quando essa etapa for detectada. As opções válidas no canal WhatsApp são: <em>LeadSubmitted</em>, <em>QualifiedLead</em>, <em>AppointmentBooked</em>, <em>InitiateCheckout</em> e <em>Purchase</em>.</li>
-        <li><strong>Palavras-chave</strong> — o(s) termo(s) que, ao aparecerem numa mensagem enviada pelo atendente, disparam essa etapa (ex: <code>#qualificado</code>, <code>fechado</code>, <code>combinado</code>). Pode cadastrar mais de uma variação separada por vírgula.</li>
-        <li><strong>Expressão de valor (opcional)</strong> — se a etapa for uma venda, você pode configurar um padrão que extrai o valor direto do texto da mensagem (ex: reconhecer "R$ 350,00" e já preencher o valor da venda automaticamente, sem digitar de novo).</li>
-        <li>Salve — a partir de agora, toda vez que o atendente escrever essa palavra-chave numa conversa desse cliente, o sistema registra a etapa sozinho.</li>
-      </ol>
-      <p>As etapas seguem uma ordem sequencial "permitindo pular": se o atendente pular direto para uma etapa mais avançada (ex: for direto para "Fechado" sem passar por "Orçamento Enviado"), as etapas anteriores são marcadas como puladas — sem reenviar evento à toa para a Meta.</p>
+      <p>Em vez de alguém precisar marcar manualmente cada avanço no painel, o Rastreamento Inteligente lê as mensagens que <strong>a empresa</strong> envia no WhatsApp e, ao reconhecer uma palavra-chave que você configurou, registra a etapa sozinho e avisa a Meta.</p>
+      <p>Na prática: o atendente digita <code>#venda R$ 1.250,90</code> no fim da conversa, e o sistema entende que aquele lead comprou, registra o valor e envia o evento de compra para a Meta — sem ninguém abrir o painel.</p>
+
+      <div class="mock">
+        <div class="mock-bar"><span class="mock-title"><i data-lucide="brain-circuit"></i>Nova etapa</span></div>
+        <div class="mock-body">
+          <div class="mk-row2">
+            <div><span class="mk-label">Nome da etapa</span><div class="mk-input">Ex: Compra confirmada</div></div>
+            <div><span class="mk-label">Evento Meta</span><div class="mk-input sel">Compra</div></div>
+          </div>
+          <span class="mk-label">Palavras-chave (separe por vírgula)</span>
+          <div class="mk-input">Ex: #venda, compra confirmada</div>
+          <div class="mk-row2">
+            <div><span class="mk-label">Correspondência</span><div class="mk-input sel">Contém a palavra</div></div>
+            <div><span class="mk-label">Regex de valor (opcional)</span><div class="mk-input">R\$\s*(?&lt;value&gt;…)</div></div>
+          </div>
+          <span class="mk-label">Testar com uma mensagem de exemplo</span>
+          <div class="mk-input">Ex: Fechei! #venda R$ 1.250,90</div>
+          <span class="mk-btn ghost">Testar</span>
+        </div>
+      </div>
+      <p class="mock-cap"><i data-lucide="image"></i>Ilustração do formulário de etapa, com o campo de teste ao final.</p>
+
+      <h2>Criando uma etapa, campo a campo</h2>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <tr><th>Campo</th><th>Obrigatório</th><th>O que preencher</th></tr>
+          <tr><td>Nome da etapa</td><td><strong>Sim</strong></td><td>Rótulo livre só para você identificar. Ex: "Orçamento Enviado", "Compra confirmada".</td></tr>
+          <tr><td>Evento Meta</td><td><strong>Sim</strong></td><td>Qual evento de conversão enviar à Meta quando a etapa for detectada. Ver a lista abaixo.</td></tr>
+          <tr><td>Palavras-chave</td><td><strong>Sim</strong></td><td>Os termos que disparam a etapa, separados por vírgula. Ex: <code>#venda, compra confirmada, fechado</code>.</td></tr>
+          <tr><td>Correspondência</td><td>Sim</td><td><em>Contém a palavra</em> (padrão, mais flexível) ou <em>Mensagem exata</em> (a mensagem inteira precisa ser idêntica).</td></tr>
+          <tr><td>Regex de valor</td><td>Não</td><td>Extrai o valor da venda da própria mensagem. Há três botões de atalho que preenchem o padrão pronto — ver abaixo.</td></tr>
+          <tr><td>Etapa ativa</td><td>—</td><td>Vem marcado. Desmarcar mantém a etapa salva, mas ela deixa de disparar eventos.</td></tr>
+        </table>
+      </div>
+
+      <h3>Os 5 eventos disponíveis no WhatsApp</h3>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <tr><th>Evento</th><th>Quando usar</th></tr>
+          <tr><td>Lead</td><td>A pessoa demonstrou interesse inicial.</td></tr>
+          <tr><td>Qualificação</td><td>A conversa confirmou que é um potencial comprador real.</td></tr>
+          <tr><td>Agendamento</td><td>Ficou marcada uma visita, reunião ou consulta.</td></tr>
+          <tr><td>Checkout</td><td>A pessoa iniciou o processo de compra.</td></tr>
+          <tr><td>Compra</td><td>A venda foi concluída.</td></tr>
+        </table>
+      </div>
       <div class="doc-callout info">
         <i data-lucide="info"></i>
-        <span>Essa configuração vale para <strong>qualquer conversa desse cliente</strong>, de qualquer origem. Se você precisa de uma regra que só valha para os leads que vieram de <strong>um link específico</strong>, configure em vez disso na aba <strong>Jornada</strong>, dentro da própria tela de edição daquele link, em Link de Rastreamento.</span>
+        <span>A lista de eventos na aba <strong>Jornada</strong> de um link é maior (11 opções, incluindo <em>Contato</em>, <em>Cadastro completo</em>, <em>Adicionar ao carrinho</em>, <em>Inscrição</em>, <em>Conteúdo visto</em> e <em>Formulário enviado</em>) porque links rastreáveis usam o canal de site da Meta, que aceita mais tipos de evento. Aqui no Rastreamento Inteligente aparecem só os 5 que a Meta aceita no canal de mensagens.</span>
+      </div>
+
+      <h3>Extraindo o valor da venda automaticamente</h3>
+      <p>O campo <em>Regex de valor</em> parece técnico, mas você não precisa escrever nada: há três botões de atalho que preenchem o padrão pronto.</p>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <tr><th>Atalho</th><th>Reconhece</th><th>Exemplo de mensagem</th></tr>
+          <tr><td>Valor BRL (com milhar)</td><td>Valores com ponto de milhar e centavos</td><td>"Fechei! #venda R$ 1.250,90"</td></tr>
+          <tr><td>Valor BRL (simples)</td><td>Valores sem separador de milhar</td><td>"#venda R$ 350,00"</td></tr>
+          <tr><td>Apenas números</td><td>Só o número, sem cifrão</td><td>"#venda 350"</td></tr>
+        </table>
+      </div>
+
+      <h3>Testando antes de salvar</h3>
+      <p>Antes de confirmar, use o campo <strong>Testar com uma mensagem de exemplo</strong>: escreva uma frase como a que o atendente realmente digitaria e clique em <strong>Testar</strong>. O sistema mostra na hora se a palavra-chave foi reconhecida e qual valor seria extraído — sem salvar nem disparar nada. Vale sempre testar aqui antes de colocar em uso.</p>
+
+      <h2>Ordem das etapas</h2>
+      <p>As etapas seguem a ordem em que aparecem na lista (você pode reordenar com as setas). Se o atendente pular direto para uma etapa avançada — por exemplo, marcar "Compra" sem ter passado por "Orçamento Enviado" — as anteriores são registradas como puladas, sem disparar eventos desnecessários à Meta.</p>
+
+      <div class="doc-callout info">
+        <i data-lucide="info"></i>
+        <span>Esta configuração vale para <strong>qualquer conversa desse cliente</strong>, de qualquer origem. Se precisar de uma regra que valha só para os leads de <strong>um link específico</strong>, configure na aba <strong>Jornada</strong> dentro da tela de edição daquele link, em Link de Rastreamento.</span>
+      </div>
+      <div class="doc-callout tip">
+        <i data-lucide="lightbulb"></i>
+        <span>Combine com o atendimento: crie um padrão simples de marcação para a equipe (por exemplo, sempre terminar a conversa vendida com <code>#venda</code> e o valor) e o preenchimento do funil acontece sozinho, sem ninguém precisar abrir o painel.</span>
       </div>
     </section>
 
@@ -479,39 +1209,154 @@ pre code { background:none; border:none; padding:0; }
     <section class="doc-section" id="sec-whatsapp">
       <h1><i data-lucide="qr-code"></i>Conexão WhatsApp</h1>
       <p class="doc-kicker">Conectando e gerenciando o número que vai receber e responder os leads.</p>
-      <h2>Conectando pela primeira vez</h2>
+      <h2>Conectando um número pela primeira vez</h2>
       <ol class="doc-steps">
-        <li>Abra a aba <em>Conexão WhatsApp</em> e clique em <strong>Gerar QR Code</strong>.</li>
-        <li>No celular com o número que vai atender, abra o WhatsApp → Configurações (ou os 3 pontinhos) → <strong>Aparelhos conectados</strong> → <strong>Conectar um aparelho</strong>.</li>
-        <li>Aponte a câmera do celular para o QR Code exibido na tela do painel.</li>
-        <li>Em poucos segundos, o status muda para <strong>Conectado</strong> — a partir daí, toda mensagem recebida nesse número já aparece no painel.</li>
+        <li>Abra a aba <em>Conexão WhatsApp</em> e clique em <strong>+ Nova</strong>.</li>
+        <li>Preencha o campo <strong>Nome da Instância</strong> — um rótulo para você identificar depois. Ex: "Loja Principal", "Comercial 2".</li>
+        <li>Clique em <strong>Gerar QR Code</strong>.</li>
+        <li>No celular do número que vai atender, abra o WhatsApp → Configurações (ou os três pontinhos) → <strong>Aparelhos conectados</strong> → <strong>Conectar um aparelho</strong>.</li>
+        <li>Aponte a câmera para o QR Code na tela do painel.</li>
+        <li>O status muda para <strong>Conectado</strong> em poucos segundos — a partir daí, toda mensagem recebida nesse número aparece no painel.</li>
       </ol>
-      <h2>Escolhendo o modo de captura</h2>
-      <p>Clique no botão <strong>Captura</strong> para escolher como o sistema decide o que vira um lead novo:</p>
-      <ul>
-        <li><strong>Apenas anúncios (CTWA)</strong> — recomendado na maioria dos casos: só cria lead para quem clicou num anúncio "Clique para o WhatsApp" da Meta.</li>
-        <li><strong>Todos os contatos</strong> — cria lead para qualquer pessoa nova que mandar mensagem, com ou sem anúncio (bom para captar tudo, inclusive contato orgânico/boca a boca).</li>
-        <li><strong>Por palavra-chave</strong> — só cria lead se a mensagem recebida contiver um termo específico configurado por você.</li>
-      </ul>
-      <h2>Compartilhando a conexão com quem não acessa o painel</h2>
-      <p>Se a pessoa que vai escanear o QR Code (por exemplo, o dono do celular físico) não tem login no Adlytics Pro, clique em <strong>Compartilhar</strong> — isso gera um link público temporário (válido por 15 minutos) só com a tela de escaneamento, sem dar acesso a mais nada do painel. O QR Code dentro desse link se renova sozinho automaticamente enquanto ele estiver ativo.</p>
+      <p class="muted">Você só precisa escanear uma vez. A conexão permanece salva; só é necessário repetir se alguém desconectar manualmente ou o celular ficar muito tempo sem internet.</p>
+
+      <h2>Os estados de uma conexão</h2>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <tr><th>Status</th><th>Significado</th><th>Ação disponível</th></tr>
+          <tr><td>Conectado</td><td>Funcionando normalmente, recebendo mensagens.</td><td><strong>Desvincular</strong> para encerrar a conexão.</td></tr>
+          <tr><td>Conectando...</td><td>Aguardando o escaneamento do QR Code.</td><td>Escaneie o código exibido.</td></tr>
+          <tr><td>Desconectado</td><td>A sessão caiu ou nunca foi conectada.</td><td><strong>Conectar QR</strong> para gerar um código novo.</td></tr>
+        </table>
+      </div>
+      <p>Cada conexão na lista também tem o botão <strong>Captura</strong> (configuração descrita abaixo) e um ícone de lixeira para excluir a instância.</p>
+
+      <h2>Compartilhando o QR com quem tem o celular</h2>
+      <p>Muitas vezes quem opera o painel não é quem tem o celular em mãos. Nesse caso, na tela do QR Code, clique em <strong>Compartilhar com o responsável</strong>: o sistema gera um link temporário, de uso único, com apenas a tela de escaneamento — sem dar acesso a nada mais do painel.</p>
+      <div class="doc-callout tip">
+        <i data-lucide="lightbulb"></i>
+        <span>O link vale por <strong>15 minutos</strong>, e o QR Code dentro dele se renova sozinho durante esse tempo — a pessoa não precisa ter pressa nem pedir um link novo se o código expirar enquanto ela procura o celular.</span>
+      </div>
+
+      <h2>Modo de captura — o que vira lead</h2>
+      <p>O botão <strong>Captura</strong> abre a configuração de como o sistema decide o que é um lead novo:</p>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <tr><th>Modo</th><th>Cria lead para</th><th>Quando usar</th></tr>
+          <tr><td>Somente Anúncios (CTWA)</td><td>Apenas quem clicou num anúncio "Clique para WhatsApp" da Meta.</td><td><strong>Padrão recomendado.</strong> Mantém a base limpa, só com quem veio de tráfego pago.</td></tr>
+          <tr><td>Todos os contatos</td><td>Qualquer pessoa nova que mandar mensagem.</td><td>Quando você quer registrar também o boca a boca e o contato orgânico.</td></tr>
+          <tr><td>Por palavra-chave</td><td>Só quem enviar uma mensagem contendo um termo específico.</td><td>Quando o número também recebe assuntos que não são vendas (suporte, pessoal).</td></tr>
+        </table>
+      </div>
+
+      <h3>Campos do modo "Por palavra-chave"</h3>
+      <p>Ao escolher esse modo, aparecem dois campos extras:</p>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <tr><th>Campo</th><th>O que preencher</th></tr>
+          <tr><td>Palavras-chave</td><td>Os termos que criam o lead, separados por vírgula. Ex: <code>orçamento, preço, quero comprar</code>.</td></tr>
+          <tr><td>Tipo de correspondência</td><td><em>Parcial</em> (a mensagem contém a palavra — mais flexível) ou <em>Exata</em> (a mensagem precisa ser idêntica ao termo).</td></tr>
+        </table>
+      </div>
+
+      <h3>Janela de deduplicação</h3>
+      <p>O campo <strong>Janela de deduplicação (horas)</strong> — padrão <strong>24</strong> — define por quanto tempo o mesmo telefone não gera um lead duplicado. Se a mesma pessoa mandar três mensagens em horários diferentes do mesmo dia, continua sendo um lead só. Aceita de 1 a 720 horas (30 dias).</p>
+
+      <div class="doc-callout warn">
+        <i data-lucide="triangle-alert"></i>
+        <span>Leads capturados de forma orgânica (sem anúncio) <strong>não geram evento de conversão para a Meta</strong> — são registrados normalmente no painel, mas não alimentam a otimização dos anúncios, porque não vieram de um clique rastreável.</span>
+      </div>
     </section>
 
     <!-- ZAP RELATÓRIOS -->
     <section class="doc-section" id="sec-zap-relatorios">
       <h1><i data-lucide="send"></i>Relatórios Automáticos</h1>
       <p class="doc-kicker">Receba as métricas de anúncios direto no WhatsApp, no horário que você definir — sem precisar abrir o painel.</p>
-      <p>Funciona em 2 níveis, um dentro do outro:</p>
-      <ol class="doc-steps">
-        <li>
-          <strong>Canal</strong> — o destino fixo por onde os relatórios daquele cliente vão sair: qual conta de anúncios olhar, qual instância de WhatsApp usar para enviar, e para qual número/grupo mandar. Criado uma vez só, clicando em <strong>Novo Canal</strong>.
-        </li>
-        <li>
-          <strong>Relatório</strong> — dentro de um Canal já criado, você pode ter vários relatórios diferentes: cada um com seu próprio filtro de campanha/objetivo, mensagem/template de texto, frequência de envio (diário, semanal), horário e período coberto. Clique em <strong>Criar Relatório</strong> dentro do card do canal.
-        </li>
-      </ol>
-      <h2>Montando a mensagem</h2>
-      <p>No modal de criação do relatório, escreva o template da mensagem usando variáveis como <code>{gasto}</code>, <code>{leads}</code>, entre outras disponíveis na lista de chips ao lado do campo. Um preview lado a lado mostra, com <strong>dados reais da conta</strong>, exatamente como a mensagem vai chegar no WhatsApp antes de você salvar.</p>
+      <p>Funciona em dois níveis, um dentro do outro — essa separação existe para um mesmo cliente poder receber relatórios diferentes (um por campanha, por exemplo) no mesmo número, sem repetir a configuração toda vez.</p>
+
+      <h2>Nível 1 — o Canal</h2>
+      <p>O canal define <strong>de onde vêm os dados e para onde vai a mensagem</strong>. Criado uma vez por cliente, no botão <strong>+ Novo Canal</strong>:</p>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <tr><th>Campo</th><th>Obrigatório</th><th>O que preencher</th></tr>
+          <tr><td>Nome do agendamento</td><td><strong>Sim</strong></td><td>Rótulo interno. Ex: "Relatórios — Loja Centro".</td></tr>
+          <tr><td>Conta de Anúncios</td><td><strong>Sim</strong></td><td>De qual conta as métricas serão puxadas.</td></tr>
+          <tr><td>Instância WhatsApp</td><td><strong>Sim</strong></td><td>Qual número vai <em>enviar</em> a mensagem.</td></tr>
+          <tr><td>Destino: Grupo / Contato Direto</td><td><strong>Sim</strong></td><td>Escolha entre enviar para um <em>Grupo</em> do WhatsApp (selecionável numa lista) ou para um <em>Contato Direto</em> (digitando o número com DDI, ex: <code>5511999999999</code>).</td></tr>
+        </table>
+      </div>
+      <p>Confirme em <strong>Salvar Canal</strong>.</p>
+
+      <h2>Nível 2 — os Relatórios</h2>
+      <p>Dentro de um canal já criado, clique em <strong>Criar Relatório</strong>. Cada canal pode ter vários.</p>
+
+      <h3>Filtro de campanhas</h3>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <tr><th>Campo</th><th>O que faz</th></tr>
+          <tr><td>Nome contem</td><td>Inclui só campanhas cujo nome contenha esse texto. Ex: <code>sofa</code> traz só as campanhas de sofá. Deixe vazio para incluir todas.</td></tr>
+          <tr><td>Objetivo</td><td><em>Todos</em> · <em>Vendas</em> · <em>Leads</em> · <em>Trafego</em> · <em>Engajamento</em> · <em>Reconhecimento</em> · <em>App</em>.</td></tr>
+        </table>
+      </div>
+
+      <h3>Agendamento</h3>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <tr><th>Campo</th><th>Opções</th></tr>
+          <tr><td>Frequência</td><td><em>Diário</em> · <em>Semanal</em> · <em>Mensal</em>.</td></tr>
+          <tr><td>Horário</td><td>Hora do envio. Padrão: <strong>08:00</strong>.</td></tr>
+          <tr><td>Período</td><td>Quais dados a mensagem cobre: <em>Ontem</em> · <em>Últimos 7 dias</em> · <em>Últimos 14 dias</em> · <em>Últimos 30 dias</em> · <em>Este mês</em> · <em>Mês anterior</em>.</td></tr>
+        </table>
+      </div>
+      <p class="muted">Note que <em>Frequência</em> e <em>Período</em> são independentes: você pode receber diariamente (frequência) um resumo dos últimos 7 dias (período).</p>
+
+      <h3>Montando a mensagem</h3>
+      <p>Escreva o texto livremente e insira as variáveis pelos botões — elas são trocadas pelos números reais no momento do envio. Um <strong>preview ao lado</strong> mostra, com dados reais da conta, exatamente como a mensagem vai chegar.</p>
+      <div class="mock">
+        <div class="mock-bar"><span class="mock-title"><i data-lucide="send"></i>Mensagem</span></div>
+        <div class="mock-body">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div>
+              <div class="mk-input" style="height:96px;align-items:flex-start;line-height:1.7;">📊 Resumo — {periodo}<br>💰 Gasto: {gasto}<br>🎯 Leads: {leads}<br>📈 ROAS: {roas}</div>
+              <div style="display:flex;gap:4px;flex-wrap:wrap;">
+                <span class="mk-pill gray">{gasto}</span><span class="mk-pill gray">{leads}</span><span class="mk-pill gray">{cpl}</span><span class="mk-pill gray">{roas}</span>
+              </div>
+            </div>
+            <div style="background:rgba(37,211,102,.06);border:1px solid var(--border);border-radius:8px;padding:10px;">
+              <div style="font-size:10px;color:var(--muted);margin-bottom:6px;">PREVIEW</div>
+              <div style="font-size:11.5px;line-height:1.7;">📊 Resumo — Últimos 7 dias<br>💰 Gasto: R$ 1.240,00<br>🎯 Leads: 84<br>📈 ROAS: 2,73</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="mock-cap"><i data-lucide="image"></i>Ilustração do editor de mensagem com o preview em dados reais ao lado.</p>
+
+      <h3>As 15 variáveis disponíveis</h3>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <tr><th>Variável</th><th>Vira</th></tr>
+          <tr><td><code>{periodo}</code></td><td>O período selecionado, por extenso. Ex: "Últimos 7 dias".</td></tr>
+          <tr><td><code>{data_inicio}</code></td><td>Data inicial do período.</td></tr>
+          <tr><td><code>{data_fim}</code></td><td>Data final do período.</td></tr>
+          <tr><td><code>{gasto}</code></td><td>Investimento total.</td></tr>
+          <tr><td><code>{leads}</code></td><td>Quantidade de leads.</td></tr>
+          <tr><td><code>{cpl}</code></td><td>Custo por lead.</td></tr>
+          <tr><td><code>{msgs}</code></td><td>Mensagens/conversas recebidas.</td></tr>
+          <tr><td><code>{cpr}</code></td><td>Custo por resultado.</td></tr>
+          <tr><td><code>{cliques}</code></td><td>Cliques no anúncio.</td></tr>
+          <tr><td><code>{ctr}</code></td><td>Taxa de cliques (%).</td></tr>
+          <tr><td><code>{roas}</code></td><td>Retorno sobre o investimento.</td></tr>
+          <tr><td><code>{cpc}</code></td><td>Custo por clique.</td></tr>
+          <tr><td><code>{cpm}</code></td><td>Custo por 1.000 impressões.</td></tr>
+          <tr><td><code>{alcance}</code></td><td>Pessoas únicas alcançadas.</td></tr>
+          <tr><td><code>{impressoes}</code></td><td>Total de impressões.</td></tr>
+        </table>
+      </div>
+      <p>Confirme em <strong>Salvar Relatório</strong>.</p>
+      <div class="doc-callout warn">
+        <i data-lucide="triangle-alert"></i>
+        <span>Excluir um canal apaga <strong>todos os relatórios dentro dele</strong>. Se quiser parar só um relatório específico, exclua apenas ele, não o canal inteiro.</span>
+      </div>
     </section>
 
     <!-- COMPARTILHAR -->
@@ -520,13 +1365,35 @@ pre code { background:none; border:none; padding:0; }
       <p class="doc-kicker">Um link público, somente leitura, para o próprio cliente acompanhar os anúncios sem precisar de login.</p>
       <ol class="doc-steps">
         <li>Vá na aba <em>Meta Ads</em> e selecione a conta de anúncios que deseja compartilhar (se houver mais de uma).</li>
-        <li>Abra a aba <em>Compartilhar Dashboard</em> — se uma conta já está selecionada no Meta Ads, a lista aqui já vem filtrada automaticamente por ela, com um aviso "Filtrando por: [nome da conta]".</li>
-        <li>Clique em <strong>Gerar Link</strong> para essa conta.</li>
-        <li>Copie a URL gerada e envie para o cliente — ele acessa direto pelo navegador, sem precisar de login, e vê um recorte do dashboard de anúncios daquela conta específica (sem acesso a nenhuma outra parte do painel).</li>
+        <li>Abra a aba <em>Compartilhar Dash</em> — se uma conta já está selecionada no Meta Ads, a lista já vem filtrada por ela, com um aviso no topo. Use <strong>Ver todas</strong> se quiser as demais.</li>
+        <li>Clique em <strong>Gerar Link</strong> na linha da conta desejada — abre a janela de configuração descrita abaixo.</li>
+        <li>Ajuste o que o cliente vai ver e confirme em <strong>Gerar e Copiar Link</strong>.</li>
+        <li>Envie a URL ao cliente. Ele abre direto no navegador, sem login, e vê apenas o dashboard daquela conta.</li>
       </ol>
+
+      <h2>Configurando o que o cliente enxerga</h2>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <tr><th>Campo</th><th>Padrão</th><th>O que faz</th></tr>
+          <tr><td>Nome do cliente</td><td>vazio</td><td>Aparece no topo do dashboard compartilhado. Ex: "João Silva", "Empresa X".</td></tr>
+          <tr><td>Tabela de Campanhas</td><td>Marcado</td><td>Mostra ou esconde a lista de campanhas com suas métricas.</td></tr>
+          <tr><td>Demográficos</td><td>Marcado</td><td>Mostra ou esconde os gráficos de faixa etária, gênero, plataforma etc.</td></tr>
+          <tr><td>Melhores Criativos</td><td>Marcado</td><td>Mostra ou esconde o ranking de anúncios com as miniaturas.</td></tr>
+          <tr><td>Métricas do resumo</td><td>—</td><td>Aba onde você escolhe quais cards aparecem no topo do dashboard público.</td></tr>
+          <tr><td>Colunas da tabela</td><td>—</td><td>Aba onde você escolhe quais colunas a tabela de campanhas exibe.</td></tr>
+          <tr><td>Status padrão ao abrir</td><td>Somente Ativas</td><td><em>Somente Ativas</em> · <em>Todas (ativas + pausadas)</em> · <em>Somente Pausadas</em>.</td></tr>
+          <tr><td>Prazo de validade</td><td>vazio</td><td>Data em que o link para de funcionar. Vazio = permanente.</td></tr>
+        </table>
+      </div>
+      <p>Para um link já existente, o botão vira <strong>Editar</strong> e o de confirmação vira <strong>Salvar Alterações</strong> — as mudanças valem imediatamente, sem precisar reenviar a URL ao cliente.</p>
+
+      <div class="doc-callout tip">
+        <i data-lucide="lightbulb"></i>
+        <span>Use o <strong>prazo de validade</strong> para compartilhamentos pontuais (uma proposta, uma reunião) e deixe permanente só os links de clientes ativos. Assim você não acumula acessos abertos indefinidamente.</span>
+      </div>
       <div class="doc-callout warn">
         <i data-lucide="triangle-alert"></i>
-        <span>Links criados antes de a conta ter a moeda identificada continuam mostrando valores em Real (R$) por padrão, mesmo que a conta seja em Dólar/Euro. Se perceber isso, gere um link novo para essa conta.</span>
+        <span>Links criados antes de a moeda da conta ter sido identificada continuam exibindo valores em Real, mesmo que a conta seja em dólar ou euro. Se notar isso, gere um link novo para aquela conta.</span>
       </div>
     </section>
 
@@ -534,21 +1401,43 @@ pre code { background:none; border:none; padding:0; }
     <section class="doc-section" id="sec-alerta-saldo">
       <h1><i data-lucide="bell-ring"></i>Alerta de Saldo</h1>
       <p class="doc-kicker">Um aviso automático no WhatsApp quando o saldo de uma conta de anúncios está acabando — antes que o anúncio pare de rodar.</p>
-      <p>A configuração é dividida em duas telas diferentes, porque um dado é "por cliente" e o outro é "único para toda a agência":</p>
-      <h2>1. Definir o limite de saldo por cliente</h2>
+      <p>A configuração é dividida em duas telas, porque um dado é <strong>por cliente</strong> e o outro é <strong>único para toda a agência</strong>. Você precisa fazer as duas partes para o alerta funcionar.</p>
+
+      <h2>Parte 1 — o limite de cada cliente</h2>
       <ol class="doc-steps">
-        <li>Vá em <em>Gestão de Clientes → Editar Cliente → aba Meta Ads</em>.</li>
-        <li>Preencha o campo <strong>Alerta de saldo baixo (R$)</strong> com o valor mínimo que, ao ser atingido, deve disparar o aviso (ex: <code>50</code> para avisar quando o saldo cair abaixo de R$ 50).</li>
-        <li>Salve. Cada cliente pode ter um limite diferente — contas grandes e pequenas costumam ter escalas de saldo bem distintas.</li>
+        <li>Vá em <em>Gestão de Clientes</em>, clique em <strong>Editar</strong> no cliente desejado e abra a aba <strong>Meta Ads</strong>.</li>
+        <li>No campo <strong>Alerta de saldo baixo (R$)</strong>, informe o valor mínimo que dispara o aviso. Ex: <code>50.00</code> avisa quando o saldo cair abaixo de R$ 50.</li>
+        <li>Clique em <strong>Salvar Alterações</strong>.</li>
       </ol>
-      <h2>2. Definir para onde os avisos são enviados (uma vez só, para toda a agência)</h2>
+      <p class="muted">Cada cliente tem seu próprio limite — contas que gastam R$ 200/dia e contas que gastam R$ 20/dia precisam de margens bem diferentes. Deixe o campo em branco para desativar o alerta daquele cliente.</p>
+
+      <h2>Parte 2 — para onde os avisos vão (uma vez só)</h2>
       <ol class="doc-steps">
-        <li>Vá em <em>Alerta de Saldo</em> no menu (visível só para admin).</li>
-        <li>Escolha a <strong>instância</strong> de WhatsApp que vai enviar os avisos.</li>
-        <li>Escolha o <strong>grupo ou contato</strong> que vai receber — todos os alertas de saldo de todos os clientes chegam nesse mesmo destino único.</li>
-        <li>Salve.</li>
+        <li>Vá em <em>Alerta de Saldo</em> no menu lateral (visível só para administradores).</li>
+        <li>Escolha a <strong>Instância WhatsApp</strong> que vai enviar os avisos.</li>
+        <li>Escolha o destino: <strong>Grupo</strong> (selecione na lista de grupos daquela instância) ou <strong>Contato Direto</strong> (digite o número com DDI, ex: <code>5511999999999</code>).</li>
+        <li>Clique em <strong>Salvar Destino do Alerta</strong>.</li>
       </ol>
-      <p>A checagem roda automaticamente a cada 6 horas. Uma vez avisado, o mesmo cliente só recebe um alerta novo a cada 24 horas enquanto o saldo continuar abaixo do limite — para não virar spam.</p>
+      <div class="doc-callout info">
+        <i data-lucide="info"></i>
+        <span>Este destino é <strong>único e global</strong>: todos os alertas, de todos os clientes, chegam nesse mesmo grupo ou número. A ideia é que a equipe da agência acompanhe num lugar só, em vez de cada cliente receber o próprio aviso.</span>
+      </div>
+
+      <h2>Como o aviso chega</h2>
+      <div class="mock">
+        <div class="mk-chat">
+          <div class="mk-bub in" style="max-width:88%;">⚠️ <strong>Saldo baixo na conta de anúncios</strong><br><br>Cliente: Exemplo Ltda<br>Saldo atual: R$ 42,50<br>Limite configurado: R$ 50,00</div>
+        </div>
+      </div>
+      <p class="mock-cap"><i data-lucide="image"></i>Exemplo da mensagem recebida no WhatsApp quando o saldo fica abaixo do limite.</p>
+
+      <h2>Frequência e anti-spam</h2>
+      <ul>
+        <li>A verificação roda automaticamente <strong>a cada 6 horas</strong>.</li>
+        <li>Depois de avisar sobre um cliente, o sistema só repete o aviso daquele mesmo cliente <strong>24 horas depois</strong>, enquanto o saldo continuar baixo.</li>
+        <li>Quando o saldo é recarregado e volta acima do limite, o contador zera — se cair de novo no futuro, você é avisado normalmente.</li>
+      </ul>
+      <p class="muted">Este alerta cobre apenas contas da Meta. O Google Ads não expõe o saldo de forma equivalente, então não há alerta automático para essa plataforma.</p>
     </section>
 
     <!-- MARCA -->
@@ -556,11 +1445,68 @@ pre code { background:none; border:none; padding:0; }
       <h1><i data-lucide="palette"></i>Marca (White-label)</h1>
       <p class="doc-kicker">Personalize o nome e o logotipo do painel com a identidade da sua própria agência.</p>
       <ol class="doc-steps">
-        <li>Vá em <em>Marca</em> no menu (visível só para admin).</li>
-        <li>No campo <strong>Nome do Projeto</strong>, digite o nome que deve aparecer no lugar de "Adlytics Pro" — tanto no topo do painel quanto no título da aba do navegador.</li>
-        <li>Envie o <strong>Logotipo</strong> — a imagem escolhida substitui o logo padrão em todas as telas, inclusive nas que os clientes acessam (login, dashboard compartilhado, etc.).</li>
-        <li>Salve — a mudança vale imediatamente para toda a conta.</li>
+        <li>Vá em <em>Marca</em> no menu lateral (visível só para administradores).</li>
+        <li>No campo <strong>Nome do Sistema</strong>, digite o nome que deve aparecer no lugar de "Adlytics Pro".</li>
+        <li>No campo <strong>Logotipo</strong>, cole a URL de uma imagem ou o código SVG completo do seu logo.</li>
+        <li>Acompanhe o resultado no <strong>Preview ao Vivo</strong>, ao lado — ele atualiza enquanto você digita.</li>
+        <li>Clique em <strong>Salvar Marca</strong>. A confirmação "✓ Marca Atualizada!" aparece e a mudança vale imediatamente.</li>
       </ol>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <tr><th>Campo</th><th>Formato aceito</th><th>Onde aparece</th></tr>
+          <tr><td>Nome do Sistema</td><td>Texto livre</td><td>No topo do menu lateral e no título da aba do navegador.</td></tr>
+          <tr><td>Logotipo</td><td>URL de imagem <em>ou</em> código SVG completo</td><td>No topo do painel. Tamanho recomendado: 32×32 pixels.</td></tr>
+        </table>
+      </div>
+      <p>O botão <strong>Resetar</strong> devolve a identidade visual padrão, caso queira desfazer a personalização.</p>
+      <div class="doc-callout info">
+        <i data-lucide="info"></i>
+        <span>A personalização vale para <strong>toda a conta</strong>, incluindo as telas que seus clientes acessam — tela de login, painel do cliente e dashboard compartilhado. É o que permite entregar o sistema como se fosse uma ferramenta própria da sua agência.</span>
+      </div>
+    </section>
+
+    <!-- LOGS -->
+    <section class="doc-section" id="sec-logs">
+      <h1><i data-lucide="terminal"></i>Logs do Sistema</h1>
+      <p class="doc-kicker">O histórico técnico de tudo que acontece nos bastidores — para diagnosticar quando algo não sai como esperado.</p>
+      <p>Esta aba é <strong>exclusiva de administradores</strong>. Ela registra cada etapa da jornada de rastreamento: a chegada de uma mensagem, a identificação do anúncio, o envio de eventos à Meta e eventuais falhas. É onde você olha quando um lead não apareceu, ou quando uma conversão não chegou ao Gerenciador de Eventos.</p>
+
+      <h2>Filtros disponíveis</h2>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <tr><th>Filtro</th><th>Opções / uso</th></tr>
+          <tr><td>Cliente</td><td>Restringe a um cliente específico. Começa em <em>Todos os clientes</em>.</td></tr>
+          <tr><td>Buscar mensagem</td><td>Procura um texto dentro da descrição do log.</td></tr>
+          <tr><td>Instância</td><td>Filtra por um número de WhatsApp específico.</td></tr>
+          <tr><td>Período</td><td>Calendário de intervalo, igual ao das demais abas.</td></tr>
+          <tr><td>Nível</td><td><em>Todos os níveis</em> · <em>Info</em> (funcionamento normal) · <em>Aviso</em> (algo que merece atenção).</td></tr>
+          <tr><td>Etapa</td><td>Filtra por momento do processo — ver a lista completa abaixo.</td></tr>
+          <tr><td>Limpar</td><td>Remove todos os filtros de uma vez.</td></tr>
+          <tr><td>Auto</td><td>Caixa que, marcada, recarrega os logs a cada 15 segundos.</td></tr>
+        </table>
+      </div>
+
+      <h2>As etapas do processo</h2>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <tr><th>Grupo</th><th>Etapas</th><th>O que registram</th></tr>
+          <tr><td>Recebimento e Sistema</td><td>Recebimento · Autenticação · Filtro · Banco de Dados</td><td>A chegada da mensagem e seu processamento inicial.</td></tr>
+          <tr><td>Rastreamento de Links</td><td>Token de rastreamento · Fallback de rastreamento · Rastreamento ignorado</td><td>Como (ou se) o sistema conseguiu ligar a conversa a um clique de link.</td></tr>
+          <tr><td>Leads e Vendas</td><td>Lead · Venda Detectada</td><td>Criação do lead e detecção de venda pelo Rastreamento Inteligente.</td></tr>
+          <tr><td>CAPI / Meta API</td><td>Meta API · CAPI Lead · CAPI Qualified · CAPI Purchase</td><td>O envio de cada evento de conversão à Meta e a resposta recebida.</td></tr>
+        </table>
+      </div>
+
+      <h2>Colunas da tabela</h2>
+      <p><strong>Horário</strong> · <strong>Instância</strong> · <strong>Nível</strong> · <strong>Etapa</strong> · <strong>Mensagem</strong> · <strong>Dados</strong> — a última contém o detalhe técnico completo do evento.</p>
+
+      <h2>Limpeza</h2>
+      <p>O ícone de lixeira no topo remove logs com mais de 15 dias. É seguro: não afeta leads, conversas nem métricas — apenas o histórico de diagnóstico.</p>
+
+      <div class="doc-callout tip">
+        <i data-lucide="lightbulb"></i>
+        <span>Ao investigar um lead específico que "não apareceu", filtre por <em>Instância</em> e pelo <em>Período</em> em que a mensagem foi enviada, e observe as etapas de <em>Rastreamento</em>: elas dizem exatamente se a mensagem chegou, se foi reconhecida e por que foi ou não transformada em lead.</span>
+      </div>
     </section>
 
     <!-- FAQ -->
