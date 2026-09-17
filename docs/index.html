@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Documentação — Worki Tracker</title>
+<title>Documentação — Adlytics Pro</title>
 <link rel="icon" href="data:,">
 <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.js"></script>
 <style>
@@ -194,7 +194,7 @@ pre code { background:none; border:none; padding:0; }
 <div class="doc-topbar">
   <div style="display:flex;align-items:center;gap:10px;">
     <button class="doc-mobile-toggle" id="docMobileToggle" aria-label="Abrir menu"><i data-lucide="menu"></i></button>
-    <div class="doc-topbar-brand"><i data-lucide="book-open-text"></i><span>Documentação</span></div>
+    <div class="doc-topbar-brand"><i data-lucide="book-open-text"></i><span>Adlytics Pro — Documentação</span></div>
   </div>
   <div class="doc-topbar-actions">
     <a class="btn-back" href="/index.html"><i data-lucide="arrow-left"></i>Voltar ao painel</a>
@@ -244,200 +244,323 @@ pre code { background:none; border:none; padding:0; }
     <!-- INTRO -->
     <section class="doc-section" id="sec-intro">
       <h1><i data-lucide="rocket"></i>Visão geral</h1>
-      <p class="doc-kicker">O que é o Worki Tracker e como as peças se encaixam.</p>
-      <p>O Worki Tracker é um painel de rastreamento de leads via WhatsApp: ele conecta sua instância do WhatsApp, recebe as conversas, identifica de qual anúncio (Meta ou Google) ou link cada contato veio, e organiza tudo em um funil de vendas — do primeiro contato até a venda fechada.</p>
-      <h2>As 3 peças principais</h2>
+      <p class="doc-kicker">O que é o Adlytics Pro e como as peças se encaixam.</p>
+      <p>O <strong>Adlytics Pro</strong> é um painel de rastreamento de leads via WhatsApp com integração a Meta Ads e Google Ads. Ele conecta sua instância do WhatsApp, recebe as conversas em tempo real, identifica automaticamente de qual anúncio (Meta ou Google) ou link cada contato veio, e organiza tudo em um funil de vendas — do primeiro contato até a venda fechada — com métricas de resposta, conversão e faturamento.</p>
+      <p>Na prática, ele resolve uma pergunta que a maioria das empresas que anunciam e atendem pelo WhatsApp não consegue responder: <strong>"qual anúncio realmente gerou essa venda?"</strong>. O sistema junta o clique no anúncio, a conversa no WhatsApp e o resultado (venda, qualificação, etc.) numa única linha do tempo por lead.</p>
+      <h2>As 4 peças principais</h2>
       <ul>
-        <li><strong>Conexão WhatsApp</strong> — sua instância conectada, que recebe as mensagens.</li>
-        <li><strong>Rastreamento</strong> — identifica de onde veio cada lead: anúncio (CTWA), link próprio ou contato orgânico.</li>
-        <li><strong>Leads e Relatórios</strong> — tudo organizado, com métricas de resposta, conversão e faturamento.</li>
+        <li><strong>Conexão WhatsApp</strong> — sua instância conectada (via QR Code), que recebe e envia mensagens dentro do próprio painel.</li>
+        <li><strong>Rastreamento</strong> — identifica de onde veio cada lead: anúncio nativo do WhatsApp (CTWA), link próprio criado no sistema, ou contato orgânico (sem anúncio).</li>
+        <li><strong>Meta Ads / Google Ads</strong> — métricas de campanhas, conjuntos e anúncios trazidas direto da conta de anúncios, cruzadas com os leads reais.</li>
+        <li><strong>Leads, Conversas e Relatórios</strong> — tudo organizado num só lugar: quem entrou em contato, o histórico da conversa, e os números consolidados de vendas/conversão.</li>
       </ul>
+      <h2>Um fluxo típico, do início ao fim</h2>
+      <ol class="doc-steps">
+        <li>Alguém clica em um anúncio (ou em um link seu) e é redirecionado para o WhatsApp.</li>
+        <li>A mensagem chega na sua instância conectada — o Adlytics Pro identifica automaticamente que aquele contato veio de um anúncio/link específico e cria um <strong>lead</strong>.</li>
+        <li>Você (ou seu atendente) conversa normalmente pelo WhatsApp — e pode inclusive responder direto de dentro do painel, na aba <em>Conversas</em>.</li>
+        <li>Conforme a conversa avança, você marca o lead como <strong>Qualificado</strong> ou registra a <strong>Venda</strong> — e, se configurado, o sistema já avisa a Meta desse resultado (CAPI), melhorando a otimização dos próprios anúncios.</li>
+        <li>Nos <em>Relatórios</em> e no <em>Meta Ads</em>, você vê o resultado consolidado: quantos leads cada campanha trouxe, quantos viraram venda, e qual o retorno real do investimento.</li>
+      </ol>
       <div class="doc-callout tip">
         <i data-lucide="lightbulb"></i>
-        <span>Se você é novo por aqui, siga a ordem do menu <strong>Começando</strong> ao lado: Configuração inicial → Permissões, e depois explore as funcionalidades conforme for usando.</span>
+        <span>Se você é novo por aqui, siga a ordem do menu <strong>Começando</strong> ao lado: <em>Configuração inicial</em> → <em>Permissões por cliente</em>, e depois explore as funcionalidades conforme for precisando delas no dia a dia.</span>
       </div>
     </section>
 
     <!-- CONFIG INICIAL -->
     <section class="doc-section" id="sec-config-inicial">
       <h1><i data-lucide="settings-2"></i>Configuração inicial</h1>
-      <p class="doc-kicker">O passo a passo para deixar uma conta pronta para uso.</p>
+      <p class="doc-kicker">O passo a passo completo para deixar uma conta de cliente pronta para uso, do zero.</p>
+      <p>Esta seção assume que você (agência/admin) já tem um cliente cadastrado em <em>Gestão de Clientes</em>. Se ainda não tem, crie primeiro por lá (botão <strong>Novo Cliente</strong>, preenchendo nome e e-mail de acesso) e depois volte para os passos abaixo.</p>
       <ol class="doc-steps">
-        <li><strong>Conecte o WhatsApp.</strong> Vá em <em>Conexão WhatsApp</em> no menu, clique em gerar QR Code e escaneie com o celular do número que vai atender os leads.</li>
-        <li><strong>Configure a captura de leads.</strong> Ainda em Conexão WhatsApp, no botão <em>Captura</em>, escolha o modo: apenas anúncios (CTWA), todos os contatos, ou por palavra-chave.</li>
-        <li><strong>Vincule a conta de anúncios (Meta Ads).</strong> Em <em>Meta Ads → Gerenciar contas</em>, cole o token de acesso e o ID da conta do cliente. É esse token que traz as campanhas, o gasto e as métricas.</li>
-        <li><strong>(Opcional) Configure a CAPI.</strong> Ainda na aba do cliente, cadastre o Pixel ID e o token de CAPI para enviar eventos de conversão (Lead, Venda, Qualificado) direto para a Meta.</li>
-        <li><strong>Crie seu primeiro link de rastreamento</strong> (se for usar em site ou bio), na aba <em>Link de Rastreamento</em>.</li>
+        <li>
+          <strong>Conecte o WhatsApp.</strong> Abra a aba <em>Conexão WhatsApp</em> no menu lateral. Clique em <strong>Gerar QR Code</strong> e escaneie com o celular do número que vai atender os leads (Configurações → Aparelhos conectados → Conectar um aparelho, no próprio WhatsApp do celular). Em poucos segundos o status muda para <strong>Conectado</strong> e a instância já está recebendo mensagens.
+        </li>
+        <li>
+          <strong>Escolha o modo de captura de leads.</strong> Ainda em Conexão WhatsApp, clique no botão <strong>Captura</strong> e escolha uma das 3 opções: <em>Apenas anúncios (CTWA)</em> — o padrão mais seguro, só cria lead quem clicou num anúncio "Clique para WhatsApp"; <em>Todos os contatos</em> — cria lead para qualquer pessoa que mandar mensagem, mesmo sem anúncio; <em>Por palavra-chave</em> — só cria lead se a primeira mensagem contiver um termo específico que você configura.
+        </li>
+        <li>
+          <strong>Vincule a conta de anúncios da Meta.</strong> Abra o modal de edição desse cliente em <em>Gestão de Clientes</em> (ícone de editar na linha do cliente) e vá na aba <strong>Meta Ads</strong>. Cole ali o <em>Token de acesso</em> (gerado no Business Manager da Meta, de preferência um token de <em>System User</em> — não expira quando alguém troca de senha) e o <em>ID da Conta de Anúncios</em> (formato <code>act_1234567890</code>, sem o prefixo <code>act_</code> mesmo). É esse token que traz campanhas, gasto e todas as métricas de Ads para o painel desse cliente.
+        </li>
+        <li>
+          <strong>(Opcional, mas recomendado) Configure a CAPI da Meta.</strong> Na mesma aba Meta Ads, mais abaixo, cadastre o <em>Pixel ID</em> e o <em>Token de CAPI</em> (pode ser gerado no mesmo lugar que o token de anúncios, no Gerenciador de Eventos da Meta). Isso permite que o Adlytics Pro avise a Meta automaticamente quando um lead vira venda/qualificado — o que ajuda o próprio algoritmo de anúncios a encontrar mais gente parecida com quem realmente compra.
+        </li>
+        <li>
+          <strong>(Se anunciar no Google também) Configure o Google Ads.</strong> Ainda no modal do cliente, na aba <strong>Google Ads</strong>, preencha o <em>ID de conversão</em> (formato <code>AW-XXXXXXXXX</code>) e o <em>Rótulo de conversão</em> — ambos você encontra no Google Ads, em Ferramentas → Conversões → sua ação de conversão → Configuração da tag.
+        </li>
+        <li>
+          <strong>Crie seu primeiro link de rastreamento</strong> — necessário se você for divulgar o WhatsApp em algum site, na bio do Instagram, ou quiser um link "sem anúncio" com rastreamento próprio. Vá em <em>Link de Rastreamento</em> no menu e clique em <strong>Novo Link</strong> (veja o passo a passo detalhado na seção própria, ao lado).
+        </li>
+        <li>
+          <strong>Defina as permissões desse cliente.</strong> Se essa conta vai ser acessada pelo próprio cliente final (não só por você/agência), revise em <em>Gestão de Clientes → Editar Cliente → aba Dados</em> quais abas ele deve enxergar — veja a seção <em>Permissões por cliente</em> ao lado.
+        </li>
       </ol>
       <div class="doc-callout warn">
         <i data-lucide="triangle-alert"></i>
-        <span>O token da Meta deve ser o do <strong>Business Manager do próprio cliente</strong>. Um token de outra conta/agência não enxerga os anúncios desse cliente, mesmo sendo um token válido.</span>
+        <span>O token da Meta deve ser o do <strong>Business Manager do próprio cliente</strong>. Um token de outra conta/agência não enxerga os anúncios desse cliente específico, mesmo sendo um token tecnicamente válido — cada token só lista as contas de anúncio que foram compartilhadas com ele.</span>
       </div>
     </section>
 
     <!-- PERMISSÕES -->
     <section class="doc-section" id="sec-permissoes">
       <h1><i data-lucide="shield-check"></i>Permissões por cliente</h1>
-      <p class="doc-kicker">Controlando o que cada cliente enxerga no próprio painel.</p>
-      <p>Em <em>Gestão de Clientes → Editar Cliente</em>, a aba <strong>Dados</strong> tem 8 checkboxes, cada um liberando (ou escondendo) uma aba inteira do menu para aquele cliente:</p>
+      <p class="doc-kicker">Controlando exatamente o que cada cliente enxerga no próprio login do painel.</p>
+      <p>Quando um cliente final (não-admin) acessa o Adlytics Pro com o próprio login, ele só vê as abas que você liberou para ele. Isso é útil para não expor, por exemplo, a área de configurações internas da agência, ou para simplificar o painel de um cliente que só precisa acompanhar leads.</p>
+      <h2>Como configurar</h2>
+      <ol class="doc-steps">
+        <li>Vá em <em>Gestão de Clientes</em> no menu (só admin enxerga essa aba).</li>
+        <li>Clique no ícone de editar na linha do cliente que deseja ajustar.</li>
+        <li>Na aba <strong>Dados</strong> do modal, role até a seção de permissões — são 8 checkboxes, um por aba do menu.</li>
+        <li>Marque o que esse cliente deve ver, desmarque o resto, e clique em <strong>Salvar Alterações</strong>.</li>
+      </ol>
+      <p>As 8 permissões disponíveis:</p>
       <ul>
-        <li><strong>Leads</strong> — tabela e drawer de perfil dos leads.</li>
-        <li><strong>Meta Ads</strong> — métricas e campanhas de anúncios.</li>
-        <li><strong>Relatórios</strong> — visão consolidada e exportação em PDF.</li>
-        <li><strong>Conexão WhatsApp</strong> — QR code e configuração de captura.</li>
-        <li><strong>Link de Rastreamento</strong> — criação de links públicos.</li>
-        <li><strong>Rastreamento Inteligente</strong> — jornada por palavra-chave.</li>
-        <li><strong>Relatórios Automáticos</strong> — envio agendado por WhatsApp.</li>
-        <li><strong>Minha Conta</strong> — dados de acesso do próprio cliente.</li>
+        <li><strong>Leads</strong> — tabela de leads e o drawer de perfil de cada um.</li>
+        <li><strong>Meta Ads</strong> — métricas e campanhas de anúncios da conta vinculada.</li>
+        <li><strong>Relatórios</strong> — visão consolidada de vendas/conversão e exportação em PDF.</li>
+        <li><strong>Conexão WhatsApp</strong> — QR code de conexão e configuração do modo de captura.</li>
+        <li><strong>Link de Rastreamento</strong> — criação e gestão dos links públicos próprios.</li>
+        <li><strong>Rastreamento Inteligente</strong> — configuração da jornada por palavra-chave.</li>
+        <li><strong>Relatórios Automáticos</strong> — configuração do envio agendado de métricas por WhatsApp.</li>
+        <li><strong>Minha Conta</strong> — tela de dados de acesso (e-mail/senha) do próprio cliente.</li>
       </ul>
-      <p>As mudanças de permissão aparecem para o cliente mesmo sem ele precisar deslogar — basta um F5 na página dele.</p>
+      <div class="doc-callout tip">
+        <i data-lucide="lightbulb"></i>
+        <span>As mudanças de permissão aparecem para o cliente <strong>sem precisar deslogar</strong> — basta ele atualizar a página (F5) que o painel já reflete o que foi liberado/removido.</span>
+      </div>
+      <p class="muted">Abas como <em>Gestão de Clientes</em>, <em>Marca</em>, <em>Alerta de Saldo</em> e <em>Logs do Sistema</em> são exclusivas de administradores da agência e nunca aparecem para um cliente comum, independente das permissões marcadas.</p>
     </section>
 
     <!-- LEADS -->
     <section class="doc-section" id="sec-leads">
       <h1><i data-lucide="users"></i>Leads</h1>
-      <p class="doc-kicker">A tabela central: quem entrou em contato e em que estágio está.</p>
-      <h2>Filtros e período</h2>
-      <p>No topo você escolhe período (hoje, ontem, personalizado), instância, origem e busca por nome/telefone/anúncio. Trocar entre "hoje"/"ontem"/"hoje e ontem" é instantâneo (não busca de novo no servidor); períodos maiores buscam dados novos.</p>
-      <h2>Perfil do lead</h2>
-      <p>Clique no ícone de perfil de qualquer linha para abrir o drawer lateral com 4 abas:</p>
+      <p class="doc-kicker">A tabela central do sistema: quem entrou em contato, de onde veio e em que estágio está.</p>
+      <h2>Filtros disponíveis</h2>
+      <p>No topo da aba você tem, da esquerda para a direita:</p>
       <ul>
-        <li><strong>Perfil</strong> — dados pessoais e primeira mensagem.</li>
-        <li><strong>Anúncio</strong> — campanha, conjunto e anúncio que trouxe o lead.</li>
-        <li><strong>Jornada</strong> — todos os contatos desse telefone ao longo do tempo.</li>
-        <li><strong>Venda</strong> — tempo até a primeira resposta, ciclo de venda e valor.</li>
+        <li><strong>Instância</strong> — filtra por qual número de WhatsApp recebeu o contato (útil se o cliente tem mais de uma linha conectada).</li>
+        <li><strong>Origem</strong> — filtra por como o lead chegou: Anúncio (CTWA), Orgânico, Link da bio, Link de campanha.</li>
+        <li><strong>Busca</strong> — procura por nome, telefone, ou nome da campanha/conjunto/anúncio que trouxe o lead.</li>
+        <li><strong>Período</strong> — um calendário estilo Meta Ads Manager: clique na data de início e depois na data de fim para marcar o intervalo. Tem atalhos prontos como "Hoje e Ontem" (o padrão ao abrir a aba).</li>
+        <li><strong>CSV</strong> — exporta a lista filtrada atual para uma planilha.</li>
       </ul>
-      <h2>Marcar venda ou qualificação</h2>
-      <p>Use os botões de ação na linha do lead (ou dentro do drawer) para marcar como <strong>Qualificado</strong> ou registrar uma <strong>Venda</strong>. Isso também dispara o evento correspondente para a Meta (se a CAPI estiver configurada).</p>
+      <p class="muted">Alternar entre "Hoje"/"Ontem"/"Hoje e Ontem" é instantâneo (os dados já estão carregados na memória do navegador); escolher um período maior ou personalizado busca dados novos do servidor.</p>
+      <h2>Abrindo o perfil de um lead</h2>
+      <p>Clique no ícone de perfil (pessoa, cor roxa) em qualquer linha da tabela para abrir o drawer lateral, com 4 abas:</p>
+      <ul>
+        <li><strong>Perfil</strong> — nome, telefone, primeira mensagem enviada e dados de atendimento.</li>
+        <li><strong>Anúncio</strong> — qual campanha, conjunto e anúncio específico trouxe esse lead (quando identificável).</li>
+        <li><strong>Jornada</strong> — todos os contatos já feitos por esse mesmo telefone com esse cliente, em ordem cronológica — útil para ver se essa pessoa já tinha entrado em contato antes, por outro anúncio.</li>
+        <li><strong>Venda</strong> — tempo até a primeira resposta, ciclo total até fechar (ou não) a venda, valor registrado e produto.</li>
+      </ul>
+      <h2>Marcando venda, qualificação ou agendamento</h2>
+      <p>Use os botões de ação na própria linha da tabela (ou dentro do drawer, aba Venda) para:</p>
+      <ul>
+        <li><strong>Qualificar</strong> — marca esse lead como qualificado (pessoa com potencial real de compra).</li>
+        <li><strong>Registrar Venda</strong> — abre um formulário para informar valor e produto; o status do lead vira "Vendido".</li>
+        <li><strong>Mover no Kanban</strong> (aba Pipeline, se disponível) — arrastar o card para a coluna "Agendado" também conta como uma etapa da jornada.</li>
+      </ul>
+      <p>Toda essa marcação é <strong>sempre salva no banco primeiro</strong>; o envio do evento correspondente para a Meta (CAPI) é uma etapa separada e best-effort — se a CAPI falhar por algum motivo, o lead continua salvo normalmente, só o aviso à Meta que não chega.</p>
       <div class="doc-callout info">
         <i data-lucide="info"></i>
-        <span>O card <strong>"Leads Esquecidos"</strong> é clicável: filtra a lista para mostrar só quem está há mais de 48h sem contato e ainda não fechou/perdeu a venda.</span>
+        <span>O card <strong>"Leads Esquecidos"</strong>, no topo da aba, é clicável: ele filtra a lista para mostrar só quem está há mais de 48h sem qualquer contato e ainda não teve a venda fechada nem foi marcado como perdido.</span>
       </div>
     </section>
 
     <!-- CONVERSAS -->
     <section class="doc-section" id="sec-conversas">
       <h1><i data-lucide="message-circle"></i>Monitor de Conversas</h1>
-      <p class="doc-kicker">O WhatsApp espelhado dentro do painel.</p>
-      <p>A aba <em>Conversas</em> mostra a lista de conversas recentes (últimos 15 dias) com bolhas de mensagem no estilo WhatsApp, incluindo áudio, imagem, vídeo e documento. Você pode responder direto por ali — texto, emoji, áudio gravado na hora ou anexos.</p>
+      <p class="doc-kicker">O WhatsApp inteiro, espelhado dentro do painel — sem precisar abrir o celular.</p>
+      <p>A aba <em>Conversas</em> mostra a lista de conversas dos últimos 15 dias, com as mensagens em bolhas no mesmo estilo do WhatsApp (verde/branco), incluindo áudio, imagem, vídeo e documento recebidos. Você também pode <strong>responder direto por ali</strong> — sem precisar do celular físico.</p>
+      <h2>Como usar</h2>
+      <ol class="doc-steps">
+        <li>Clique em uma conversa na lista à esquerda para abrir a thread de mensagens.</li>
+        <li>Para responder, use a caixa de texto na parte de baixo — ela aceita texto, emoji (pelo próprio teclado do sistema ou pelo atalho de emojis do composer), anexos (imagem/vídeo/documento) e gravação de áudio na hora (basta segurar o ícone de microfone).</li>
+        <li>Áudio, imagem e vídeo recebidos carregam automaticamente ao abrir a conversa; documentos exigem um clique manual em "Ver documento" (para não baixar arquivos grandes à toa).</li>
+      </ol>
+      <h2>Filtros e busca</h2>
       <ul>
-        <li>A lista atualiza sozinha a cada 10 segundos.</li>
-        <li>A busca encontra conversas tanto pelo nome/telefone quanto pelo <strong>conteúdo das mensagens</strong>.</li>
-        <li>Na tabela de Leads, o botão verde de WhatsApp abre a conversa daquele lead em um popup, sem sair da aba Leads.</li>
+        <li>Filtro por <strong>Cliente</strong> (admin), <strong>Instância</strong> e <strong>Origem</strong> do lead vinculado.</li>
+        <li>A busca encontra conversas tanto pelo nome/telefone do contato quanto pelo <strong>conteúdo das mensagens trocadas</strong> — digite um trecho do que foi dito e a conversa aparece, mesmo que a última mensagem exibida não seja a que contém o texto buscado.</li>
       </ul>
+      <div class="doc-callout tip">
+        <i data-lucide="lightbulb"></i>
+        <span>Na tabela de <em>Leads</em>, todo lead tem um botão verde de WhatsApp na própria linha — ele abre a conversa daquele lead específico num popup, sem sair da aba Leads. Ótimo para responder rápido sem perder o filtro que você estava usando.</span>
+      </div>
+      <p class="muted">As conversas ficam disponíveis por 15 dias; depois disso, as mensagens são removidas automaticamente (o lead em si continua existindo normalmente na aba Leads — só o histórico de mensagens some).</p>
     </section>
 
     <!-- META ADS -->
     <section class="doc-section" id="sec-meta-ads">
       <h1><i data-lucide="bar-chart-3"></i>Meta Ads</h1>
-      <p class="doc-kicker">Campanhas, métricas e orçamento em um só lugar.</p>
-      <h2>Personalizar métricas</h2>
-      <p>Use o botão <strong>Personalizar métricas</strong> para escolher quais cards e colunas aparecem, ou escolha um preset pronto (Visão geral, WhatsApp, Vendas, Vídeo, etc).</p>
-      <h2>Editar orçamento</h2>
-      <p>Clique no ícone de lápis ao lado do valor de orçamento (na coluna Orçamento) para ajustar o valor diário/vitalício direto pelo painel, sem precisar abrir o Gerenciador de Anúncios da Meta.</p>
-      <h2>Drill-down</h2>
-      <p>Clique em uma campanha para focar os cards do topo só nela; clique em "Todas" para voltar à visão consolidada.</p>
+      <p class="doc-kicker">Campanhas, métricas e orçamento da conta de anúncios, tudo dentro do painel.</p>
+      <p>Assim que a conta é vinculada (veja <em>Configuração inicial</em>), essa aba traz automaticamente todas as campanhas, conjuntos e anúncios ativos e pausados, com métricas de investimento, entrega, tráfego, leads/WhatsApp, vendas, vídeo e engajamento.</p>
+      <h2>Escolhendo o que aparece na tela</h2>
+      <ol class="doc-steps">
+        <li>Clique no botão <strong>Personalizar métricas</strong>, no topo da aba.</li>
+        <li>Escolha um <strong>preset pronto</strong> (Visão Geral, WhatsApp, Tráfego, Instagram, Vendas, Vídeo, Engajamento, Social, Eficiência) — cada um já vem com um conjunto de cards/colunas relevantes para aquele objetivo, ou</li>
+        <li>Monte sua própria seleção: busque a métrica pelo nome, marque as que quiser exibir como card e/ou como coluna da tabela, e arraste para reordenar as colunas.</li>
+        <li>A escolha fica salva no navegador — não precisa refazer a cada visita.</li>
+      </ol>
+      <h2>Editando o orçamento de uma campanha</h2>
+      <p>Na tabela, localize a coluna <strong>Orçamento</strong> e clique no ícone de lápis ao lado do valor — abre um modal para ajustar o orçamento diário ou vitalício direto pelo painel, sem precisar abrir o Gerenciador de Anúncios da Meta em outra aba.</p>
+      <h2>Analisando uma campanha específica (drill-down)</h2>
+      <p>Clique em qualquer linha da tabela para "focar" nela — os cards de métricas do topo recalculam para mostrar só os números daquela campanha. Clique em <strong>Todas</strong> para voltar à visão consolidada da conta inteira.</p>
       <div class="doc-callout tip">
         <i data-lucide="lightbulb"></i>
-        <span>CPC e CTR aqui são calculados sobre <strong>cliques no link</strong>, não sobre qualquer interação com o anúncio — por isso podem ser um pouco diferentes do que aparece "por padrão" no Gerenciador da Meta.</span>
+        <span><strong>CPC e CTR</strong> aqui são calculados sobre <strong>cliques no link</strong> (quem de fato clicou para ir ao WhatsApp/site), não sobre qualquer interação com o anúncio (curtida, comentário, etc.) — por isso podem ser diferentes do que aparece "por padrão" no Gerenciador de Anúncios da Meta. É uma visão mais rigorosa do que realmente gerou tráfego.</span>
       </div>
     </section>
 
     <!-- RELATÓRIOS -->
     <section class="doc-section" id="sec-relatorios">
       <h1><i data-lucide="file-chart-column"></i>Relatórios</h1>
-      <p class="doc-kicker">A visão consolidada de leads, vendas e origem do tráfego.</p>
-      <p>Mostra receita, ticket médio, taxa de conversão, ciclo médio de venda e comparação com o período anterior. Também traz gráficos de campanhas/conjuntos/anúncios por leads e por vendas, heatmap de horários, e a seção <strong>Rastreamento de Conversas</strong> (visão geral de conversas rastreadas e origem por plataforma — Meta, Google ou outras).</p>
-      <h2>Exportar em PDF</h2>
-      <p>O botão de exportação gera um PDF do relatório atual, sempre em tema claro (para garantir legibilidade), mesmo se o painel estiver no modo escuro.</p>
-      <h2>Tipo de gráfico</h2>
-      <p>Os gráficos de distribuição (Campanhas, Conjuntos, Anúncios, Plataformas) têm um alternador para trocar entre barras e pizza — a escolha fica salva no navegador.</p>
+      <p class="doc-kicker">A visão consolidada: quanto entrou, quanto vendeu, e de onde veio.</p>
+      <p>Ao abrir a aba, escolha o período desejado no seletor do topo. A tela é organizada em blocos:</p>
+      <ul>
+        <li><strong>Receita e Conversão</strong> (bloco em destaque) — faturamento total do período, com a variação percentual em relação ao período anterior de mesma duração, além de Conversão e Ticket Médio.</li>
+        <li><strong>Resumo</strong> — Total de leads, Qualificados, Vendas e Leads Esquecidos.</li>
+        <li><strong>Rastreamento de Conversas</strong> — quantas conversas foram rastreadas até um anúncio/link (vs. quantas ficaram sem origem identificada), tempo médio até a primeira resposta, e a origem por plataforma (Meta, Google ou outras).</li>
+        <li><strong>Evolução</strong> — gráfico de linha do tempo diário de leads/vendas.</li>
+        <li><strong>Horários</strong> — um heatmap mostrando em quais dias/horários mais chegam leads.</li>
+        <li><strong>Origem dos leads</strong> — gráficos de Campanhas, Conjuntos, Anúncios e Plataformas por volume de leads.</li>
+        <li><strong>Funil de vendas</strong> — os mesmos agrupamentos acima, mas por vendas fechadas (não só leads que entraram).</li>
+      </ul>
+      <h2>Trocando o tipo de gráfico</h2>
+      <p>Os gráficos de distribuição (Campanhas, Conjuntos, Anúncios, Plataformas) têm um pequeno alternador no canto do título para trocar entre <strong>barras</strong> e <strong>pizza</strong> — a escolha fica salva no navegador para as próximas vezes.</p>
+      <h2>Exportando em PDF</h2>
+      <p>Clique no botão de exportação para gerar um PDF do relatório da tela atual. O sistema força o tema claro durante a geração (mesmo que você esteja no modo escuro), para garantir que o texto fique legível no arquivo final, e volta ao seu tema normal automaticamente ao terminar.</p>
     </section>
 
     <!-- CAPTAÇÃO -->
     <section class="doc-section" id="sec-captacao">
       <h1><i data-lucide="link"></i>Link de Rastreamento</h1>
-      <p class="doc-kicker">Links próprios para site, bio e campanhas — com rastreamento completo.</p>
+      <p class="doc-kicker">Links próprios para site, bio do Instagram ou campanhas — com rastreamento completo de clique até venda.</p>
+      <h2>Criando um link novo</h2>
       <ol class="doc-steps">
-        <li>Crie um novo link informando nome e destino (o número já vem da instância conectada).</li>
-        <li>Use o link gerado (<code>/r/&lt;slug&gt;</code>) em anúncios, bio do Instagram ou botões de site.</li>
-        <li>Acompanhe cliques, conversões e taxa de conversão direto na tabela de links.</li>
+        <li>Vá em <em>Link de Rastreamento</em> no menu e clique em <strong>Novo Link</strong>.</li>
+        <li>Dê um nome interno para identificar o link (ex: "Bio Instagram", "Anúncio Google - Julho").</li>
+        <li>O número de destino já vem automaticamente da instância de WhatsApp conectada — não precisa digitar.</li>
+        <li>(Opcional) Configure uma mensagem pré-preenchida que já abre escrita no WhatsApp da pessoa, e personalize a telinha de carregamento (título, subtítulo, cor de fundo) na aba Configuração do link.</li>
+        <li>Salve — o sistema gera uma URL curta no formato <code>/r/&lt;slug&gt;</code>.</li>
       </ol>
-      <h2>Link direto (sem tela intermediária)</h2>
-      <p>Na aba <strong>Script para site</strong> do link, existe uma URL com <code>?direct=1</code> — ela pula a telinha de carregamento e abre o WhatsApp na hora, ideal para botões de site. O link normal (sem esse parâmetro) mantém a telinha, necessária para o Pixel/Google Ads dispararem corretamente quando usado em anúncios.</p>
-      <h2>Rotador</h2>
-      <p>Um mesmo link pode distribuir os cliques entre vários números/instâncias (round-robin, peso ou prioridade) — útil quando mais de um atendente recebe leads do mesmo anúncio.</p>
+      <p>Use esse link em anúncios (Meta ou Google Ads), na bio do Instagram, ou em botões de WhatsApp do seu site. Acompanhe cliques, conversões e taxa de conversão direto na tabela de links, a qualquer momento.</p>
+      <h2>Link direto, sem tela intermediária</h2>
+      <p>Por padrão, o link passa por uma telinha rápida (menos de 2 segundos) antes de abrir o WhatsApp — é o tempo necessário para o Pixel da Meta/conversão do Google Ads dispararem corretamente. Se você vai usar o link num <strong>botão de site</strong> (onde não há necessidade dessa telinha), abra o link, vá na aba <strong>Script para site</strong> e copie o campo <em>Link de Rastreamento Direto</em> — ele tem <code>?direct=1</code> no final e abre o WhatsApp na hora, sem tela nenhuma. O link "normal" (sem esse parâmetro) continua sendo o que você usa em anúncios.</p>
+      <h2>Rotador de números</h2>
+      <p>Se mais de um atendente/número recebe leads do mesmo anúncio, um único link pode distribuir os cliques entre vários destinos — por rodízio (round-robin), peso ou prioridade. Configure os destinos extras na própria tela de edição do link.</p>
+      <h2>Script para site externo</h2>
+      <p>Se você quer rastreamento completo (Pixel, PageView, clique) em botões de WhatsApp do seu próprio site (fora do domínio do Adlytics Pro), use o script <code>wapptrack.js</code> — a aba "Script para site" do link te dá o trecho de código pronto para colar antes do <code>&lt;/body&gt;</code> do site, e as instruções de quais atributos marcar nos botões.</p>
     </section>
 
     <!-- INTELIGENTE -->
     <section class="doc-section" id="sec-inteligente">
       <h1><i data-lucide="brain-circuit"></i>Rastreamento Inteligente</h1>
-      <p class="doc-kicker">Etapas de jornada disparadas por palavra-chave do atendente.</p>
-      <p>Cada etapa (ex: "Qualificado", "Orçamento Enviado", "Venda Fechada") é configurada com:</p>
-      <ul>
-        <li><strong>Nome da etapa</strong> — só para identificação no painel.</li>
-        <li><strong>Evento</strong> — o evento de conversão que será enviado à Meta quando a etapa for detectada (ex: QualifiedLead, Purchase).</li>
-        <li><strong>Palavras-chave</strong> — o que o atendente precisa digitar na conversa para a etapa disparar (ex: <code>#qualificado</code>, <code>fechado</code>).</li>
-        <li><strong>Expressão de valor (opcional)</strong> — um padrão para extrair o valor da venda da própria mensagem (ex: capturar "R$ 350,00").</li>
-      </ul>
-      <p>As etapas seguem uma ordem: se o atendente pular direto para uma etapa mais avançada, as anteriores são marcadas como "puladas" (não reenviam evento à toa).</p>
+      <p class="doc-kicker">Detecta automaticamente em que etapa da negociação um lead está, pela palavra que o atendente digita.</p>
+      <p>Em vez de você (ou o atendente) precisar marcar manualmente cada avanço de etapa no painel, o Rastreamento Inteligente lê as mensagens que <strong>a empresa</strong> envia no WhatsApp e, ao reconhecer uma palavra-chave configurada, marca a etapa sozinho e (se quiser) já avisa a Meta.</p>
+      <h2>Criando uma etapa</h2>
+      <ol class="doc-steps">
+        <li>Vá em <em>Rastreamento Inteligente</em> no menu e clique em <strong>Nova Etapa</strong>.</li>
+        <li><strong>Nome da etapa</strong> — um rótulo livre, só para você identificar no painel (ex: "Orçamento Enviado", "Fechou Negócio").</li>
+        <li><strong>Evento</strong> — escolha qual evento de conversão será enviado à Meta quando essa etapa for detectada. As opções válidas no canal WhatsApp são: <em>LeadSubmitted</em>, <em>QualifiedLead</em>, <em>AppointmentBooked</em>, <em>InitiateCheckout</em> e <em>Purchase</em>.</li>
+        <li><strong>Palavras-chave</strong> — o(s) termo(s) que, ao aparecerem numa mensagem enviada pelo atendente, disparam essa etapa (ex: <code>#qualificado</code>, <code>fechado</code>, <code>combinado</code>). Pode cadastrar mais de uma variação separada por vírgula.</li>
+        <li><strong>Expressão de valor (opcional)</strong> — se a etapa for uma venda, você pode configurar um padrão que extrai o valor direto do texto da mensagem (ex: reconhecer "R$ 350,00" e já preencher o valor da venda automaticamente, sem digitar de novo).</li>
+        <li>Salve — a partir de agora, toda vez que o atendente escrever essa palavra-chave numa conversa desse cliente, o sistema registra a etapa sozinho.</li>
+      </ol>
+      <p>As etapas seguem uma ordem sequencial "permitindo pular": se o atendente pular direto para uma etapa mais avançada (ex: for direto para "Fechado" sem passar por "Orçamento Enviado"), as etapas anteriores são marcadas como puladas — sem reenviar evento à toa para a Meta.</p>
       <div class="doc-callout info">
         <i data-lucide="info"></i>
-        <span>Essa configuração vale para <strong>qualquer conversa do cliente</strong>. Se você precisa de uma regra só para os leads de um link específico, configure na aba <strong>Jornada</strong> dentro do próprio link, em Link de Rastreamento.</span>
+        <span>Essa configuração vale para <strong>qualquer conversa desse cliente</strong>, de qualquer origem. Se você precisa de uma regra que só valha para os leads que vieram de <strong>um link específico</strong>, configure em vez disso na aba <strong>Jornada</strong>, dentro da própria tela de edição daquele link, em Link de Rastreamento.</span>
       </div>
     </section>
 
     <!-- WHATSAPP -->
     <section class="doc-section" id="sec-whatsapp">
       <h1><i data-lucide="qr-code"></i>Conexão WhatsApp</h1>
-      <p class="doc-kicker">Conectando e gerenciando a instância que recebe os leads.</p>
-      <p>Gere o QR Code e escaneie com o WhatsApp do número que vai atender. Uma vez conectado, o status mostra "Conectado" e o painel passa a receber as conversas automaticamente.</p>
-      <h2>Compartilhar conexão</h2>
-      <p>Se quem vai escanear o QR Code não tem acesso ao painel, use o botão <strong>Compartilhar</strong> para gerar um link público temporário (válido por 15 minutos) — o QR Code se renova sozinho enquanto o link estiver ativo.</p>
-      <h2>Modo de captura</h2>
-      <p>No botão <strong>Captura</strong>, escolha como o sistema decide o que vira lead: apenas quem veio de anúncio (recomendado), todos os contatos novos, ou apenas mensagens com uma palavra-chave específica.</p>
+      <p class="doc-kicker">Conectando e gerenciando o número que vai receber e responder os leads.</p>
+      <h2>Conectando pela primeira vez</h2>
+      <ol class="doc-steps">
+        <li>Abra a aba <em>Conexão WhatsApp</em> e clique em <strong>Gerar QR Code</strong>.</li>
+        <li>No celular com o número que vai atender, abra o WhatsApp → Configurações (ou os 3 pontinhos) → <strong>Aparelhos conectados</strong> → <strong>Conectar um aparelho</strong>.</li>
+        <li>Aponte a câmera do celular para o QR Code exibido na tela do painel.</li>
+        <li>Em poucos segundos, o status muda para <strong>Conectado</strong> — a partir daí, toda mensagem recebida nesse número já aparece no painel.</li>
+      </ol>
+      <h2>Escolhendo o modo de captura</h2>
+      <p>Clique no botão <strong>Captura</strong> para escolher como o sistema decide o que vira um lead novo:</p>
+      <ul>
+        <li><strong>Apenas anúncios (CTWA)</strong> — recomendado na maioria dos casos: só cria lead para quem clicou num anúncio "Clique para o WhatsApp" da Meta.</li>
+        <li><strong>Todos os contatos</strong> — cria lead para qualquer pessoa nova que mandar mensagem, com ou sem anúncio (bom para captar tudo, inclusive contato orgânico/boca a boca).</li>
+        <li><strong>Por palavra-chave</strong> — só cria lead se a mensagem recebida contiver um termo específico configurado por você.</li>
+      </ul>
+      <h2>Compartilhando a conexão com quem não acessa o painel</h2>
+      <p>Se a pessoa que vai escanear o QR Code (por exemplo, o dono do celular físico) não tem login no Adlytics Pro, clique em <strong>Compartilhar</strong> — isso gera um link público temporário (válido por 15 minutos) só com a tela de escaneamento, sem dar acesso a mais nada do painel. O QR Code dentro desse link se renova sozinho automaticamente enquanto ele estiver ativo.</p>
     </section>
 
     <!-- ZAP RELATÓRIOS -->
     <section class="doc-section" id="sec-zap-relatorios">
       <h1><i data-lucide="send"></i>Relatórios Automáticos</h1>
-      <p class="doc-kicker">Envio agendado de métricas por WhatsApp.</p>
-      <p>Funciona em 2 níveis:</p>
+      <p class="doc-kicker">Receba as métricas de anúncios direto no WhatsApp, no horário que você definir — sem precisar abrir o painel.</p>
+      <p>Funciona em 2 níveis, um dentro do outro:</p>
       <ol class="doc-steps">
-        <li><strong>Canal</strong> — o destino fixo: conta de anúncios, instância e o número/grupo do WhatsApp que vai receber. Criado uma vez por cliente.</li>
-        <li><strong>Relatório</strong> — dentro de um canal, você pode ter vários relatórios: cada um com seu próprio filtro de campanha, mensagem/template, frequência e horário de envio.</li>
+        <li>
+          <strong>Canal</strong> — o destino fixo por onde os relatórios daquele cliente vão sair: qual conta de anúncios olhar, qual instância de WhatsApp usar para enviar, e para qual número/grupo mandar. Criado uma vez só, clicando em <strong>Novo Canal</strong>.
+        </li>
+        <li>
+          <strong>Relatório</strong> — dentro de um Canal já criado, você pode ter vários relatórios diferentes: cada um com seu próprio filtro de campanha/objetivo, mensagem/template de texto, frequência de envio (diário, semanal), horário e período coberto. Clique em <strong>Criar Relatório</strong> dentro do card do canal.
+        </li>
       </ol>
-      <p>O modal de criação de relatório mostra um preview lado a lado de como a mensagem vai chegar no WhatsApp, com dados reais da conta.</p>
+      <h2>Montando a mensagem</h2>
+      <p>No modal de criação do relatório, escreva o template da mensagem usando variáveis como <code>{gasto}</code>, <code>{leads}</code>, entre outras disponíveis na lista de chips ao lado do campo. Um preview lado a lado mostra, com <strong>dados reais da conta</strong>, exatamente como a mensagem vai chegar no WhatsApp antes de você salvar.</p>
     </section>
 
     <!-- COMPARTILHAR -->
     <section class="doc-section" id="sec-compartilhar">
       <h1><i data-lucide="share-2"></i>Compartilhar Dashboard</h1>
-      <p class="doc-kicker">Um link público, somente leitura, para o cliente acompanhar os próprios anúncios.</p>
-      <p>Gera uma URL pública com um recorte do dashboard de Meta Ads (sem acesso ao restante do painel). Se você tiver uma conta de anúncios selecionada na aba Meta Ads no momento de gerar o link, a lista já filtra automaticamente por ela.</p>
+      <p class="doc-kicker">Um link público, somente leitura, para o próprio cliente acompanhar os anúncios sem precisar de login.</p>
+      <ol class="doc-steps">
+        <li>Vá na aba <em>Meta Ads</em> e selecione a conta de anúncios que deseja compartilhar (se houver mais de uma).</li>
+        <li>Abra a aba <em>Compartilhar Dashboard</em> — se uma conta já está selecionada no Meta Ads, a lista aqui já vem filtrada automaticamente por ela, com um aviso "Filtrando por: [nome da conta]".</li>
+        <li>Clique em <strong>Gerar Link</strong> para essa conta.</li>
+        <li>Copie a URL gerada e envie para o cliente — ele acessa direto pelo navegador, sem precisar de login, e vê um recorte do dashboard de anúncios daquela conta específica (sem acesso a nenhuma outra parte do painel).</li>
+      </ol>
       <div class="doc-callout warn">
         <i data-lucide="triangle-alert"></i>
-        <span>Links criados antes de uma conta ter moeda configurada continuam mostrando valores em Real (R$) por padrão. Recrie o link se a conta usar outra moeda.</span>
+        <span>Links criados antes de a conta ter a moeda identificada continuam mostrando valores em Real (R$) por padrão, mesmo que a conta seja em Dólar/Euro. Se perceber isso, gere um link novo para essa conta.</span>
       </div>
     </section>
 
     <!-- ALERTA DE SALDO -->
     <section class="doc-section" id="sec-alerta-saldo">
       <h1><i data-lucide="bell-ring"></i>Alerta de Saldo</h1>
-      <p class="doc-kicker">Avisos automáticos quando o saldo da conta de anúncios está acabando.</p>
-      <p>Tem duas partes, em dois lugares diferentes do menu:</p>
-      <ul>
-        <li><strong>Limite por cliente</strong> — configurado em <em>Editar Cliente → Meta Ads</em>, campo "Alerta de saldo baixo". Cada cliente pode ter um limite diferente.</li>
-        <li><strong>Destino do alerta</strong> — configurado uma única vez, em <em>Alerta de Saldo</em> no menu (admin), escolhendo a instância e o grupo/contato que vai receber todos os avisos.</li>
-      </ul>
-      <p>A checagem roda a cada 6 horas. Uma vez avisado, o mesmo cliente só recebe um alerta novo a cada 24h enquanto o saldo continuar baixo — evita spam.</p>
+      <p class="doc-kicker">Um aviso automático no WhatsApp quando o saldo de uma conta de anúncios está acabando — antes que o anúncio pare de rodar.</p>
+      <p>A configuração é dividida em duas telas diferentes, porque um dado é "por cliente" e o outro é "único para toda a agência":</p>
+      <h2>1. Definir o limite de saldo por cliente</h2>
+      <ol class="doc-steps">
+        <li>Vá em <em>Gestão de Clientes → Editar Cliente → aba Meta Ads</em>.</li>
+        <li>Preencha o campo <strong>Alerta de saldo baixo (R$)</strong> com o valor mínimo que, ao ser atingido, deve disparar o aviso (ex: <code>50</code> para avisar quando o saldo cair abaixo de R$ 50).</li>
+        <li>Salve. Cada cliente pode ter um limite diferente — contas grandes e pequenas costumam ter escalas de saldo bem distintas.</li>
+      </ol>
+      <h2>2. Definir para onde os avisos são enviados (uma vez só, para toda a agência)</h2>
+      <ol class="doc-steps">
+        <li>Vá em <em>Alerta de Saldo</em> no menu (visível só para admin).</li>
+        <li>Escolha a <strong>instância</strong> de WhatsApp que vai enviar os avisos.</li>
+        <li>Escolha o <strong>grupo ou contato</strong> que vai receber — todos os alertas de saldo de todos os clientes chegam nesse mesmo destino único.</li>
+        <li>Salve.</li>
+      </ol>
+      <p>A checagem roda automaticamente a cada 6 horas. Uma vez avisado, o mesmo cliente só recebe um alerta novo a cada 24 horas enquanto o saldo continuar abaixo do limite — para não virar spam.</p>
     </section>
 
     <!-- MARCA -->
     <section class="doc-section" id="sec-marca">
       <h1><i data-lucide="palette"></i>Marca (White-label)</h1>
-      <p class="doc-kicker">Personalize o nome e o logotipo do painel para o seu próprio cliente/agência.</p>
-      <p>Em <em>Marca</em> (menu, somente admin), troque o nome do sistema e o logo exibido no topo do painel. Vale para toda a conta — inclusive nas telas que os clientes acessam.</p>
+      <p class="doc-kicker">Personalize o nome e o logotipo do painel com a identidade da sua própria agência.</p>
+      <ol class="doc-steps">
+        <li>Vá em <em>Marca</em> no menu (visível só para admin).</li>
+        <li>No campo <strong>Nome do Projeto</strong>, digite o nome que deve aparecer no lugar de "Adlytics Pro" — tanto no topo do painel quanto no título da aba do navegador.</li>
+        <li>Envie o <strong>Logotipo</strong> — a imagem escolhida substitui o logo padrão em todas as telas, inclusive nas que os clientes acessam (login, dashboard compartilhado, etc.).</li>
+        <li>Salve — a mudança vale imediatamente para toda a conta.</li>
+      </ol>
     </section>
 
     <!-- FAQ -->
@@ -473,6 +596,36 @@ pre code { background:none; border:none; padding:0; }
       <div class="doc-faq-item" onclick="docToggleFaq(this)">
         <div class="doc-faq-q"><span>Métricas de vídeo somem ou aparecem zeradas. É erro?</span><i data-lucide="chevron-down"></i></div>
         <div class="doc-faq-a">A Meta não expõe todo campo de vídeo publicamente (alguns dão erro #100). Quando não é possível calcular uma métrica com confiança (como a antiga "Taxa de Gancho"), ela é removida em vez de mostrar um número aproximado e enganoso.</div>
+      </div>
+
+      <div class="doc-faq-item" onclick="docToggleFaq(this)">
+        <div class="doc-faq-q"><span>Conectei o WhatsApp mas nenhum lead está sendo criado. O que verificar?</span><i data-lucide="chevron-down"></i></div>
+        <div class="doc-faq-a">Primeiro confira o status em Conexão WhatsApp — precisa estar "Conectado", não "Conectando" ou "Desconectado". Depois confira o modo de captura (botão Captura): se estiver em "Apenas anúncios (CTWA)", mensagens de contatos comuns (sem clicar em anúncio) não vão gerar lead — isso é esperado. Troque para "Todos os contatos" se quiser capturar qualquer conversa nova.</div>
+      </div>
+
+      <div class="doc-faq-item" onclick="docToggleFaq(this)">
+        <div class="doc-faq-q"><span>Preciso escanear o QR Code de novo toda vez que atualizo a página?</span><i data-lucide="chevron-down"></i></div>
+        <div class="doc-faq-a">Não. Depois de conectado uma vez, a sessão do WhatsApp fica salva na instância — você só precisa escanear de novo se desconectar manualmente, o celular ficar muito tempo sem internet, ou a sessão expirar por inatividade prolongada.</div>
+      </div>
+
+      <div class="doc-faq-item" onclick="docToggleFaq(this)">
+        <div class="doc-faq-q"><span>Posso ter mais de um número de WhatsApp para o mesmo cliente?</span><i data-lucide="chevron-down"></i></div>
+        <div class="doc-faq-a">Sim. Cada instância conectada aparece no filtro de "Instância" nas abas Leads e Conversas, permitindo ver tudo junto ou separado por número. Isso é comum quando mais de um atendente ou setor recebe leads do mesmo cliente.</div>
+      </div>
+
+      <div class="doc-faq-item" onclick="docToggleFaq(this)">
+        <div class="doc-faq-q"><span>Qual a diferença entre o link de campanha e o CTWA (anúncio nativo)?</span><i data-lucide="chevron-down"></i></div>
+        <div class="doc-faq-a">CTWA ("Clique para WhatsApp") é o formato de anúncio nativo da própria Meta, que já leva direto para uma conversa — o rastreamento vem embutido no próprio anúncio. O Link de Rastreamento é uma URL criada por você no painel, que pode ser usada em qualquer lugar (bio, site, ou até colada manualmente num anúncio) e tem seu próprio sistema de rastreamento de clique, independente do CTWA nativo.</div>
+      </div>
+
+      <div class="doc-faq-item" onclick="docToggleFaq(this)">
+        <div class="doc-faq-q"><span>Um lead veio de iPhone e não recebeu a atribuição correta ao anúncio. É normal?</span><i data-lucide="chevron-down"></i></div>
+        <div class="doc-faq-a">Pode acontecer. O WhatsApp do iPhone, em alguns casos, remove informações técnicas que o link usa para identificar de qual clique aquele contato veio. Quando isso ocorre e não há como confirmar com certeza a origem, o sistema prefere não atribuir nenhuma campanha a arriscar atribuir errado — o lead ainda é criado normalmente, só sem o anúncio identificado.</div>
+      </div>
+
+      <div class="doc-faq-item" onclick="docToggleFaq(this)">
+        <div class="doc-faq-q"><span>Onde vejo os erros técnicos, tipo falha no envio de eventos para a Meta?</span><i data-lucide="chevron-down"></i></div>
+        <div class="doc-faq-a">Na aba Logs do Sistema (visível só para admin). Lá aparecem os detalhes de cada tentativa de envio de evento de conversão, cliques rastreados e qualquer falha de integração — útil para diagnosticar sem precisar mexer em código.</div>
       </div>
     </section>
 

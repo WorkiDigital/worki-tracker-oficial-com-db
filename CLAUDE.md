@@ -2973,11 +2973,34 @@ ocupando a 3000) — `server.js` e `server-static.js` responderam `200` em `/doc
 `/docs/index.html`, sem regressão em `/`, `/health` nem nas demais rotas.
 
 ### Botão de acesso no painel (`index.html`)
-Dois pontos de entrada, ambos `<a href="/docs" target="_blank" rel="noopener">` (abre em nova aba,
-não navega para fora do SPA) com o ícone `book-open-text`:
-- **Topbar superior** (`.topbar-right`, antes do botão de tema) — sempre visível em qualquer aba,
-  mesmo padrão `.btn-icon`/`.btn-ghost` do botão de tema ao lado.
+**3 pontos de entrada** (o painel tem 2 modos de menu — sidebar clássica e topbar horizontal em
+telas ≥1180px, ver seção "Topbar horizontal" acima — cada um precisou do próprio botão), todos
+`<a href="/docs" target="_blank" rel="noopener">` (abre em nova aba) com o ícone `book-open-text`:
+- **Topbar do modo sidebar** (`.topbar-right`, antes do botão de tema) — sempre visível em qualquer
+  aba nesse modo, mesmo padrão `.btn-icon`/`.btn-ghost` do botão de tema ao lado.
 - **Rodapé da sidebar** (`.sidebar-bottom`, acima do botão "Sair") — para quem navega pelo menu
   lateral; mesmo estilo `.btn-icon.pad-md` do botão "Sair" logo abaixo, com o texto "Documentação"
   (`.sidebar-text`, some quando a sidebar está recolhida, igual aos demais itens do menu).
-- Commit `3250eea` criou a rota; o botão foi adicionado em seguida — sem novo commit de rota, só UI.
+- **Topbar horizontal** (`.app-topbar-user`, antes do botão de logout) — faltava neste modo na
+  primeira entrega (só existia nos 2 pontos do modo sidebar); corrigido no commit `b5a2a5d`.
+- Commit `3250eea` criou a rota; os botões foram adicionados em commits seguintes (`e149eec`,
+  `b5a2a5d`) — sem mudança de rota, só UI.
+
+### Conteúdo reescrito de forma didática + nome fixo "Adlytics Pro" (2026-09-17)
+Primeira versão da página tinha textos curtos (1 frase por seção) e usava "Worki Tracker" (nome
+interno do repositório) em vez do nome comercial do produto. Reescrito com:
+- **Nome fixo "Adlytics Pro"** em todo o texto (título da aba, cabeçalho, corpo) — decisão do
+  usuário via AskUserQuestion: não usar o white-label dinâmico de cada agência (que exigiria buscar
+  a config via API só para essa página estática); a doc é sempre "Adlytics Pro", independente de
+  qual agência está logada.
+- **Cada seção de funcionalidade ganhou passo a passo numerado** (`<ol class="doc-steps">`) com onde
+  clicar, o que preencher e exemplos concretos (ex: formato de token, `AW-XXXXXXXXX`, etc.), não só
+  uma descrição de uma frase do que a feature faz.
+- **Seção "Visão geral" expandida** com um fluxo ponta-a-ponta (clique no anúncio → lead → conversa →
+  venda → relatório) para dar contexto de produto antes de mergulhar em cada tela.
+- **FAQ expandido** de 6 para 12 perguntas, cobrindo dúvidas operacionais comuns (lead não é criado,
+  reconectar WhatsApp, múltiplas instâncias, diferença CTWA vs. link, atribuição no iPhone, onde ver
+  logs de erro).
+- Todo o conteúdo continua **estático/escrito à mão** (mesma limitação já documentada acima) — ao
+  mudar o comportamento de uma funcionalidade no produto, esta página precisa ser atualizada
+  manualmente para não ficar desalinhada.
