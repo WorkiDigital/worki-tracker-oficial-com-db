@@ -2920,3 +2920,54 @@ admin (que nunca teve `btn-funil` tocado por nenhum bloco de JS, incluído no `i
 **Regra geral:** ao esconder permanentemente um item de menu que já está numa lista de permissões
 dinâmicas, sempre remover a entrada correspondente dessa lista também — não basta só o `display:none`
 estático no HTML se algum JS de permissão roda depois e pode reescrever esse valor.
+
+## 📖 Página de Documentação pública em `/docs` (2026-09-17)
+
+Nova rota `/docs` (também aceita `/docs/` e `/docs/index.html`) servindo uma página HTML standalone
+de documentação do sistema — voltada a usuários finais (como configurar, como usar cada funcionalidade,
+FAQ), separada da pasta `docs/` já existente no repositório (que guarda documentação técnica interna
+em Markdown, nunca servida pelo navegador). Os dois convivem na mesma pasta física (`docs/`) sem
+conflito: o servidor só expõe arquivos com extensão servível (`.html` aqui) através da allow-list,
+nunca `.md`.
+
+### Arquivo único, sem dependências externas do projeto
+`docs/index.html` é **standalone**: CSS e JS inline no próprio arquivo (não referencia
+`css/dashboard.css`/`js/*.js` do painel) — evita acoplar a página pública a mudanças de cache/versão
+do painel principal (`?v=` bump), e mantém a página funcional mesmo se o painel mudar de estrutura.
+Usa os mesmos tokens de cor do design system (`--bg`, `--card`, `--blue`, `--border`, etc., copiados
+de `css/dashboard-base.css`) e o mesmo padrão de tema dark/light via `localStorage('theme')` + classe
+`light` no `<html>` — consistente visualmente com o resto do produto, mas sem importar o CSS de fato.
+
+### Estrutura da página
+- Menu lateral fixo com busca (filtra os itens do menu por texto, sem indexação de conteúdo),
+  organizado em 3 grupos: **Começando** (visão geral, configuração inicial, permissões), **Funcionalidades**
+  (uma seção por aba do painel: Leads, Conversas, Meta Ads, Relatórios, Link de Rastreamento,
+  Rastreamento Inteligente, Conexão WhatsApp, Relatórios Automáticos, Compartilhar Dashboard, Alerta
+  de Saldo, Marca) e **Suporte** (FAQ em acordeão).
+  - Todo conteúdo é estático/reescrito à mão (não deriva de nenhum endpoint) — **atualizar manualmente
+    esta página sempre que uma funcionalidade documentada aqui mudar de comportamento/nome**, senão a
+    doc fica desalinhada com o produto (mesmo risco já aceito pela documentação técnica em `docs/*.md`).
+  - Navegação client-side via hash (`#leads`, `#faq`, etc.) — permite linkar direto para uma seção.
+  - Responsivo: menu lateral vira drawer (`translateX`) abaixo de 900px, com overlay e botão de menu
+    na topbar — mesmo padrão de drawer mobile já usado no painel principal.
+- Botão "Voltar ao painel" na topbar aponta para `/index.html`.
+
+### Onde a rota foi registrada (2 servidores, ambos ativos)
+`server.js` (monolito) e `server-static.js` (frontend separado) — os dois têm allow-list própria de
+arquivos estáticos (`PUBLIC_ROOT_FILES`/`PUBLIC_DIRS`), então a rota precisou ser adicionada nos dois:
+1. `/docs/` adicionado a `PUBLIC_DIRS` (mesmo mecanismo que já libera `/css/`, `/js/`, `/img/`).
+2. Normalização de `/docs` e `/docs/` (sem `index.html` explícito) para `/docs/index.html`, feita logo
+   após o cálculo de `publicPath` — mesmo padrão de `pathname === '/' ? '/index.html' : ...` que já
+   existia para a raiz do site.
+- Em `server-static.js`, o HTML passa pelo `injectRuntimeConfig()` (injeta `window.APP_CONFIG` no
+  `<head>`) como qualquer outro `.html` servido por ele — inofensivo aqui, já que a página de docs não
+  faz nenhuma chamada de API, só não usa o valor injetado.
+- Cache: como `/docs/index.html` não está em `PUBLIC_ROOT_FILES` (não é "shell" do SPA), cai no
+  fallback padrão de assets sem `?v=` → `max-age=300` (5 min). Se a página ganhar CSS/JS externos no
+  futuro, seguir o padrão já documentado (`?v=` na query para cache longo `immutable`).
+
+### Validação feita
+`node --check` nos 2 arquivos de servidor; parse do único `<script>` inline de `docs/index.html` via
+`node/vm` (sem erro de sintaxe); testado em portas alternativas (evitando um processo antigo já
+ocupando a 3000) — `server.js` e `server-static.js` responderam `200` em `/docs`, `/docs/` e
+`/docs/index.html`, sem regressão em `/`, `/health` nem nas demais rotas.

@@ -12,7 +12,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 3000;
 const API_BASE_URL = String(process.env.API_BASE_URL || '').replace(/\/+$/, '');
 const PUBLIC_ROOT_FILES = new Set(['/index.html', '/login.html', '/share.html', '/wa-connect.html']);
-const PUBLIC_DIRS = ['/css/', '/js/', '/img/'];
+const PUBLIC_DIRS = ['/css/', '/js/', '/img/', '/docs/'];
 
 if (process.env.NODE_ENV === 'production' && !API_BASE_URL) {
   console.error('❌ FATAL: API_BASE_URL não configurada no serviço de frontend.');
@@ -163,6 +163,8 @@ const server = http.createServer((req, res) => {
   }
 
   publicPath = publicPath.replace(/\\/g, '/');
+  // /docs e /docs/ servem a página de documentação (docs/index.html)
+  if (publicPath === '/docs' || publicPath === '/docs/') publicPath = '/docs/index.html';
   const isRootFile = PUBLIC_ROOT_FILES.has(publicPath);
   const isPublicAsset = PUBLIC_DIRS.some(dir => publicPath.startsWith(dir))
     && !publicPath.split('/').some(part => part.startsWith('.'));

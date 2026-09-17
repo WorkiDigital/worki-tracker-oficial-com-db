@@ -20,7 +20,7 @@ for (const key of REQUIRED_ENV) {
 const PORT = process.env.PORT || 3000;
 const MAX_BODY_BYTES = parseInt(process.env.MAX_BODY_BYTES || `${20 * 1024 * 1024}`, 10);
 const PUBLIC_ROOT_FILES = new Set(['/index.html', '/login.html', '/share.html', '/wa-connect.html']);
-const PUBLIC_DIRS = ['/css/', '/js/', '/img/'];
+const PUBLIC_DIRS = ['/css/', '/js/', '/img/', '/docs/'];
 
 async function callApiHandler(modulePath, req, res) {
     try {
@@ -227,6 +227,8 @@ const server = http.createServer(async (req, res) => {
         return;
     }
     publicPath = publicPath.replace(/\\/g, '/');
+    // /docs e /docs/ servem a página de documentação (docs/index.html)
+    if (publicPath === '/docs' || publicPath === '/docs/') publicPath = '/docs/index.html';
     const isRootFile = PUBLIC_ROOT_FILES.has(publicPath);
     const isPublicAsset = PUBLIC_DIRS.some(dir => publicPath.startsWith(dir))
         && !publicPath.split('/').some(part => part.startsWith('.'));
