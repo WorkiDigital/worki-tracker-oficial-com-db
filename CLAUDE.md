@@ -2971,3 +2971,13 @@ arquivos estáticos (`PUBLIC_ROOT_FILES`/`PUBLIC_DIRS`), então a rota precisou 
 `node/vm` (sem erro de sintaxe); testado em portas alternativas (evitando um processo antigo já
 ocupando a 3000) — `server.js` e `server-static.js` responderam `200` em `/docs`, `/docs/` e
 `/docs/index.html`, sem regressão em `/`, `/health` nem nas demais rotas.
+
+### Botão de acesso no painel (`index.html`)
+Dois pontos de entrada, ambos `<a href="/docs" target="_blank" rel="noopener">` (abre em nova aba,
+não navega para fora do SPA) com o ícone `book-open-text`:
+- **Topbar superior** (`.topbar-right`, antes do botão de tema) — sempre visível em qualquer aba,
+  mesmo padrão `.btn-icon`/`.btn-ghost` do botão de tema ao lado.
+- **Rodapé da sidebar** (`.sidebar-bottom`, acima do botão "Sair") — para quem navega pelo menu
+  lateral; mesmo estilo `.btn-icon.pad-md` do botão "Sair" logo abaixo, com o texto "Documentação"
+  (`.sidebar-text`, some quando a sidebar está recolhida, igual aos demais itens do menu).
+- Commit `3250eea` criou a rota; o botão foi adicionado em seguida — sem novo commit de rota, só UI.
