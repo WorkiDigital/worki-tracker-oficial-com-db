@@ -825,7 +825,7 @@
                     <i data-lucide="bar-chart-2"></i><span>Métricas &amp; Conversão</span><i data-lucide="chevron-down" class="tb-chev"></i>
                 </button>
                 <div class="tb-dropdown">
-                    <a id="topbtn-funil" class="tb-dd-item" onclick="mudarAba('funil')"><i data-lucide="filter"></i><span>Funil de Vendas</span></a>
+                    <a id="topbtn-funil" class="tb-dd-item" onclick="mudarAba('funil')" style="display:none;"><i data-lucide="filter"></i><span>Funil de Vendas</span></a>
                     <a id="topbtn-relatorios" class="tb-dd-item" onclick="mudarAba('relatorios')"><i data-lucide="bar-chart-2"></i><span>Relatórios</span></a>
                     <a id="topbtn-clientes" class="tb-dd-item" onclick="mudarAba('clientes')"><i data-lucide="share-2"></i><span>Compartilhar Dash</span></a>
                     <a id="topbtn-zaprelatorios" class="tb-dd-item" onclick="mudarAba('zaprelatorios')"><i data-lucide="send"></i><span>Relatórios Automáticos</span></a>
@@ -898,7 +898,10 @@
 
         <!-- Seção: Métricas & Conversão -->
         <div class="nav-sep" id="sep-metricas"><span>Métricas & Conversão</span></div>
-        <a id="btn-funil" class="nav-item" onclick="mudarAba('funil')">
+        <!-- Removido do menu a pedido do usuário (2026-09) — codigo/dados intactos,
+             so escondido (mesmo padrao das abas admin-only) pra poder reativar
+             depois sem reescrever nada. Ver tambem #topbtn-funil na topbar. -->
+        <a id="btn-funil" class="nav-item" onclick="mudarAba('funil')" style="display:none;">
             <i data-lucide="filter" style="width:17px;flex-shrink:0;"></i><span>Funil de Vendas</span>
         </a>
         <a id="btn-relatorios" class="nav-item" onclick="mudarAba('relatorios')">
@@ -3210,6 +3213,11 @@ async function init() {
             }
         } else {
             // Aplicar permissões do cliente — ocultar abas sem acesso
+            // btn-funil/topbtn-funil DE PROPÓSITO fora deste tabMap: a aba foi removida
+            // do menu (2026-09, código/dados mantidos intactos) via display:none fixo no
+            // próprio HTML — se entrasse aqui, o loop abaixo reescreveria esse display
+            // pra 'flex' sempre que p.funil !== false (o padrão pra quase todo cliente),
+            // reativando a aba no menu sem querer.
             const p = user.permissoes || {};
             const tabMap = {
                 'btn-leads':           p.leads          !== false,
@@ -3219,7 +3227,6 @@ async function init() {
                 'btn-whatsapp':        p.whatsapp       !== false,
                 'btn-captacao':        p.captacao       !== false,
                 'btn-inteligente':     p.inteligente    !== false,
-                'btn-funil':           p.funil          !== false,
                 'btn-clientes':        true, // Compartilhar Dash é sempre disponível ao cliente autenticado
                 'btn-zaprelatorios':   p.zaprelatorios  !== false,
                 'btn-integracoes':     p.integracoes    !== false,
@@ -3240,7 +3247,7 @@ async function init() {
             };
             checkSep('sep-atendimento', ['btn-leads', 'btn-conversas', 'btn-whatsapp']);
             checkSep('sep-campanhas', ['btn-anuncios', 'btn-captacao', 'btn-inteligente']);
-            checkSep('sep-metricas', ['btn-funil', 'btn-relatorios', 'btn-clientes', 'btn-zaprelatorios']);
+            checkSep('sep-metricas', ['btn-relatorios', 'btn-clientes', 'btn-zaprelatorios']);
             checkSep('sep-config', ['btn-integracoes', 'btn-conta']);
             // Mesma checagem para os grupos (dropdowns) da topbar horizontal — esconde
             // o grupo inteiro se nenhum item dele estiver disponível pro cliente.
@@ -3250,7 +3257,7 @@ async function init() {
             };
             checkTbGroup('.tb-group[data-group="atendimento"]', ['btn-leads', 'btn-conversas', 'btn-whatsapp']);
             checkTbGroup('.tb-group[data-group="campanhas"]', ['btn-anuncios', 'btn-captacao', 'btn-inteligente']);
-            checkTbGroup('.tb-group[data-group="metricas"]', ['btn-funil', 'btn-relatorios', 'btn-clientes', 'btn-zaprelatorios']);
+            checkTbGroup('.tb-group[data-group="metricas"]', ['btn-relatorios', 'btn-clientes', 'btn-zaprelatorios']);
             checkTbGroup('.tb-group[data-group="config"]', ['btn-integracoes', 'btn-conta']);
             // Navegar para a primeira aba disponível
             const firstAllowed = Object.entries(tabMap).find(([,v]) => v);
