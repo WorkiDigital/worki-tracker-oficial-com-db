@@ -43,18 +43,38 @@ async function funilCarregar() {
             throw new Error(err.error || `Erro ${r.status}`);
         }
         const data = await r.json();
-        
-        // Render functions
-        _funilRenderVisaoGeral(data.overview);
-        _funilRenderOrigens(data.timeline);
+
+        // "Visão Geral das Conversas" e "Origem das Conversas" migraram pra aba
+        // Relatórios (2026-09, ver relRelatoriosCarregarFunilData abaixo) — a aba
+        // Funil ficou dedicada só ao progresso de venda em si.
         _funilRenderJornada(data.overview);
         _funilRenderFaturamento(data.sales_timeline);
-        
+
     } catch (e) {
         console.error(e);
         toast('Erro ao carregar dados do funil: ' + e.message, 'error');
     } finally {
         if (container) container.classList.remove('loading-overlay-active');
+    }
+}
+
+// ── Rastreamento de Conversas (aba Relatórios) ──────────────────────────────
+// Chama o MESMO endpoint /api/metrics-funnel que a aba Funil de Vendas usa,
+// mas com o período/cliente da aba Relatórios (independente do #funilPeriodo)
+// — 2 chamadas HTTP leves em vez de mover a lógica de cálculo, que fica só no
+// backend (ver CLAUDE.md: bugs de Origem/Comprou já corrigidos em
+// api/metrics-funnel.js — não duplicar essa regra em outro lugar).
+async function relRelatoriosCarregarFunilData(params) {
+    try {
+        const r = await authFetch(`/api/metrics-funnel?${params}`);
+        if (!r.ok) throw new Error(`Erro ${r.status}`);
+        const data = await r.json();
+        _funilRenderVisaoGeral(data.overview, 'rel');
+        _funilRenderOrigens(data.timeline, 'rel');
+    } catch (e) {
+        console.error('[Relatórios] Falha ao carregar Rastreamento de Conversas:', e);
+        // Best-effort: uma falha aqui não deve travar o resto de Relatórios
+        // (mesmo padrão de carregarEngajamentoMedio() em js/leads.js).
     }
 }
 
@@ -67,28 +87,32 @@ function _formatTime(min) {
 }
 
 // 1. Visão Geral das Conversas (Gauge / Doughnut)
-function _funilRenderVisaoGeral(ov) {
+// prefix: prefixo dos ids no HTML — hoje só "rel" (aba Relatórios) é usado de
+// verdade; o parâmetro existe pra função servir os 2 lugares sem duplicar código.
+function _funilRenderVisaoGeral(ov, prefix) {
+    const p = prefix || 'rel';
     const total = parseInt(ov.total_leads) || 0;
     const untracked = parseInt(ov.untracked) || 0;
     const tracked = total - untracked;
     const avgResponse = parseFloat(ov.avg_response_min) || 0;
-    
+
     const pctTracked = total > 0 ? ((tracked / total) * 100).toFixed(1) : 0;
     const pctUntracked = total > 0 ? ((untracked / total) * 100).toFixed(1) : 0;
 
     const el = (id) => document.getElementById(id);
-    if (el('fgTotal')) el('fgTotal').textContent = total;
-    if (el('fgTrackedVal')) el('fgTrackedVal').textContent = tracked;
-    if (el('fgTrackedPct')) el('fgTrackedPct').textContent = `${pctTracked}%`;
-    if (el('fgUntrackedVal')) el('fgUntrackedVal').textContent = untracked;
-    if (el('fgUntrackedPct')) el('fgUntrackedPct').textContent = `${pctUntracked}%`;
-    if (el('fgAvgResponse')) el('fgAvgResponse').textContent = _formatTime(avgResponse);
+    if (el(`${p}Total`)) el(`${p}Total`).textContent = total;
+    if (el(`${p}TrackedVal`)) el(`${p}TrackedVal`).textContent = tracked;
+    if (el(`${p}TrackedPct`)) el(`${p}TrackedPct`).textContent = `${pctTracked}%`;
+    if (el(`${p}UntrackedVal`)) el(`${p}UntrackedVal`).textContent = untracked;
+    if (el(`${p}UntrackedPct`)) el(`${p}UntrackedPct`).textContent = `${pctUntracked}%`;
+    if (el(`${p}AvgResponse`)) el(`${p}AvgResponse`).textContent = _formatTime(avgResponse);
 
     if (window.Chart) {
-        const ctx = document.getElementById('chartVisaoGeral');
+        const ctx = document.getElementById(`${p}ChartVisaoGeral`);
         if (ctx) {
-            if (_charts.visaoGeral) _charts.visaoGeral.destroy();
-            _charts.visaoGeral = new Chart(ctx, {
+            const chartKey = `visaoGeral_${p}`;
+            if (_charts[chartKey]) _charts[chartKey].destroy();
+            _charts[chartKey] = new Chart(ctx, {
                 type: 'doughnut',
                 data: {
                     labels: ['Rastreadas', 'Não rastreadas'],
@@ -112,14 +136,15 @@ function _funilRenderVisaoGeral(ov) {
                 }
             });
             // Update center text manually since ChartJS 3+ doesn't have it built-in easily
-            const centerText = el('chartVisaoGeralCenter');
+            const centerText = el(`${p}ChartVisaoGeralCenter`);
             if (centerText) centerText.textContent = total;
         }
     }
 }
 
 // 2. Origem das Conversas (Bar Stacked)
-function _funilRenderOrigens(timeline) {
+function _funilRenderOrigens(timeline, prefix) {
+    const p = prefix || 'rel';
     const labels = timeline.map(t => t.date_label);
     const dataMeta = timeline.map(t => parseInt(t.meta_ads) || 0);
     const dataGoogle = timeline.map(t => parseInt(t.google_ads) || 0);
@@ -127,16 +152,17 @@ function _funilRenderOrigens(timeline) {
     const dataNaoRast = timeline.map(t => parseInt(t.untracked) || 0);
 
     const el = (id) => document.getElementById(id);
-    if (el('foMeta')) el('foMeta').textContent = dataMeta.reduce((a,b)=>a+b, 0);
-    if (el('foGoogle')) el('foGoogle').textContent = dataGoogle.reduce((a,b)=>a+b, 0);
-    if (el('foOutras')) el('foOutras').textContent = dataOutras.reduce((a,b)=>a+b, 0);
-    if (el('foNaoRast')) el('foNaoRast').textContent = dataNaoRast.reduce((a,b)=>a+b, 0);
+    if (el(`${p}Meta`)) el(`${p}Meta`).textContent = dataMeta.reduce((a,b)=>a+b, 0);
+    if (el(`${p}Google`)) el(`${p}Google`).textContent = dataGoogle.reduce((a,b)=>a+b, 0);
+    if (el(`${p}Outras`)) el(`${p}Outras`).textContent = dataOutras.reduce((a,b)=>a+b, 0);
+    if (el(`${p}NaoRast`)) el(`${p}NaoRast`).textContent = dataNaoRast.reduce((a,b)=>a+b, 0);
 
     if (window.Chart) {
-        const ctx = document.getElementById('chartOrigens');
+        const ctx = document.getElementById(`${p}ChartOrigens`);
         if (ctx) {
-            if (_charts.origens) _charts.origens.destroy();
-            _charts.origens = new Chart(ctx, {
+            const chartKey = `origens_${p}`;
+            if (_charts[chartKey]) _charts[chartKey].destroy();
+            _charts[chartKey] = new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: labels,

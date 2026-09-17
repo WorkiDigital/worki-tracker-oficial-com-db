@@ -23,7 +23,7 @@
     <script src="/runtime-config.js"></script>
     <script defer src="js/utils.js?v=20260712-1"></script>
     <script defer src="js/date-range-picker.js?v=20260825-1"></script>
-    <script defer src="js/funil.js?v=20260717-1"></script>
+    <script defer src="js/funil.js?v=20260917-relmove"></script>
     <style>
         /* Previne piscar o dashboard antes de validar o login/redirecionar */
         body.app-loading .sidebar,
@@ -1275,90 +1275,15 @@
                 </div>
             </div>
             
+            <!-- Visão Geral das Conversas + Origem das Conversas foram movidas pra aba
+                 Relatórios (nova seção "Rastreamento de Conversas") — mesma fonte de dados
+                 (/api/metrics-funnel), agora com 2 chamadas independentes (uma por aba, cada
+                 uma com seu próprio período), não uma "mudança de lugar" do dado em si. Ver
+                 js/funil.js (_funilRenderVisaoGeral/_funilRenderOrigens, parametrizadas por
+                 prefixo de id) e renderRelatorios() em js/leads.js. Funil ficou dedicado só
+                 ao progresso de venda em si. -->
             <div class="funil-grid">
-                <!-- Top Left: Visao Geral -->
-                <div class="funil-card">
-                    <div class="funil-card-title">Visão Geral das Conversas</div>
-                    
-                    <div style="display:flex; gap:10px; margin-bottom: 20px;">
-                        <div style="flex:1; background:var(--bg-secondary); padding:12px; border-radius:8px; border:1px solid var(--border); display:flex; flex-direction:column; gap:4px;">
-                            <div style="display:flex; align-items:center; gap:6px; font-size:12px; color:var(--muted);"><i data-lucide="messages-square" style="width:14px; color:var(--text);"></i> Total de Conversas</div>
-                            <div id="fgTotal" style="font-size:20px; font-weight:800;">—</div>
-                        </div>
-                    </div>
-                    
-                    <div class="funil-legend">
-                        <div class="funil-legend-item">
-                            <div class="funil-legend-label">
-                                <div class="funil-legend-dot" style="background:#25d366;"></div>
-                                Rastreadas
-                            </div>
-                            <div>
-                                <span class="funil-legend-val" id="fgTrackedVal">—</span>
-                                <span class="funil-legend-pct" id="fgTrackedPct"></span>
-                            </div>
-                        </div>
-                        <div class="funil-legend-item">
-                            <div class="funil-legend-label">
-                                <div class="funil-legend-dot" style="background:#f97316;"></div>
-                                Não rastreadas
-                            </div>
-                            <div>
-                                <span class="funil-legend-val" id="fgUntrackedVal">—</span>
-                                <span class="funil-legend-pct" id="fgUntrackedPct"></span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div style="display:flex; align-items:center; gap:8px; background:var(--bg-secondary); padding:10px 14px; border-radius:8px; border:1px solid var(--border);">
-                        <i data-lucide="clock" style="width:16px; color:#3b82f6;"></i>
-                        <div style="font-size:12px; color:var(--muted);">Tempo médio 1ª resposta</div>
-                        <div id="fgAvgResponse" style="margin-left:auto; font-weight:700; font-size:13px;">—</div>
-                    </div>
-
-                    <div class="funil-gauge-wrap">
-                        <canvas id="chartVisaoGeral"></canvas>
-                        <div class="funil-gauge-center" id="chartVisaoGeralCenter">—</div>
-                    </div>
-                </div>
-
-                <!-- Top Right: Origem -->
-                <div class="funil-card">
-                    <div class="funil-card-title">Origem das Conversas</div>
-                    
-                    <div style="display:flex; justify-content:space-between; margin-bottom:20px; gap:10px;">
-                        <div style="flex:1; text-align:center; padding:10px; background:var(--bg-secondary); border-radius:8px; border:1px solid var(--border);">
-                            <div style="display:flex; align-items:center; justify-content:center; gap:6px; font-size:12px; color:var(--muted); margin-bottom:4px;">
-                                <img src="https://cdn.simpleicons.org/meta/1877f2" style="width:12px;"> Meta Ads
-                            </div>
-                            <div id="foMeta" style="font-size:18px; font-weight:800;">—</div>
-                        </div>
-                        <div style="flex:1; text-align:center; padding:10px; background:var(--bg-secondary); border-radius:8px; border:1px solid var(--border);">
-                            <div style="display:flex; align-items:center; justify-content:center; gap:6px; font-size:12px; color:var(--muted); margin-bottom:4px;">
-                                <img src="https://cdn.simpleicons.org/google/34a853" style="width:12px;"> Google Ads
-                            </div>
-                            <div id="foGoogle" style="font-size:18px; font-weight:800;">—</div>
-                        </div>
-                        <div style="flex:1; text-align:center; padding:10px; background:var(--bg-secondary); border-radius:8px; border:1px solid var(--border);">
-                            <div style="display:flex; align-items:center; justify-content:center; gap:6px; font-size:12px; color:var(--muted); margin-bottom:4px;">
-                                <i data-lucide="globe" style="width:12px; color:#64748b;"></i> Outras
-                            </div>
-                            <div id="foOutras" style="font-size:18px; font-weight:800;">—</div>
-                        </div>
-                        <div style="flex:1; text-align:center; padding:10px; background:var(--bg-secondary); border-radius:8px; border:1px solid var(--border);">
-                            <div style="display:flex; align-items:center; justify-content:center; gap:6px; font-size:12px; color:var(--muted); margin-bottom:4px;">
-                                <i data-lucide="link-2-off" style="width:12px; color:#f97316;"></i> Não rastr.
-                            </div>
-                            <div id="foNaoRast" style="font-size:18px; font-weight:800;">—</div>
-                        </div>
-                    </div>
-
-                    <div class="chart-container">
-                        <canvas id="chartOrigens"></canvas>
-                    </div>
-                </div>
-
-                <!-- Bottom Left: Funil -->
+                <!-- Left: Funil -->
                 <div class="funil-card">
                     <div class="funil-card-title">Funil da Jornada de Compra</div>
                     <div id="fjWrap" class="fj-wrap">
@@ -1366,7 +1291,7 @@
                     </div>
                 </div>
 
-                <!-- Bottom Right: Faturamento -->
+                <!-- Right: Faturamento -->
                 <div class="funil-card">
                     <div class="funil-card-title">Faturamento Total</div>
                     <div style="display:flex; justify-content:space-between; margin-bottom:20px; gap:10px;">
@@ -2243,6 +2168,97 @@
                     <div class="metric-card"><div class="metric-value" id="val-qualificados">0</div><div class="metric-label">Qualificados <span id="delta-qualificados"></span></div></div>
                     <div class="metric-card"><div class="metric-value" id="val-vendas">0</div><div class="metric-label">Vendas <span id="delta-vendas"></span></div></div>
                     <div class="metric-card"><div class="metric-value" id="val-esquecidos">0</div><div class="metric-label">Leads Esquecidos</div></div>
+                </div>
+            </div>
+
+            <!-- RASTREAMENTO DE CONVERSAS: movido da aba Funil de Vendas (2026-09) — mesma
+                 fonte de dados (/api/metrics-funnel), chamada própria com o período desta aba
+                 (ver relRelatoriosCarregarFunilData() em js/funil.js, chamada dentro de
+                 renderRelatorios() em js/leads.js). IDs prefixados com "rel" pra não colidir
+                 com os equivalentes que continuam existindo na aba Funil de Vendas
+                 (fgTotal/foMeta/etc. — lá restam só Jornada + Faturamento). -->
+            <div class="report-section">
+                <div class="report-section-title"><i data-lucide="messages-square"></i> Rastreamento de Conversas</div>
+                <div class="funil-grid">
+                    <div class="funil-card">
+                        <div class="funil-card-title">Visão Geral das Conversas</div>
+
+                        <div style="display:flex; gap:10px; margin-bottom: 20px;">
+                            <div style="flex:1; background:var(--bg-secondary); padding:12px; border-radius:8px; border:1px solid var(--border); display:flex; flex-direction:column; gap:4px;">
+                                <div style="display:flex; align-items:center; gap:6px; font-size:12px; color:var(--muted);"><i data-lucide="messages-square" style="width:14px; color:var(--text);"></i> Total de Conversas</div>
+                                <div id="relTotal" style="font-size:20px; font-weight:800;">—</div>
+                            </div>
+                        </div>
+
+                        <div class="funil-legend">
+                            <div class="funil-legend-item">
+                                <div class="funil-legend-label">
+                                    <div class="funil-legend-dot" style="background:#25d366;"></div>
+                                    Rastreadas
+                                </div>
+                                <div>
+                                    <span class="funil-legend-val" id="relTrackedVal">—</span>
+                                    <span class="funil-legend-pct" id="relTrackedPct"></span>
+                                </div>
+                            </div>
+                            <div class="funil-legend-item">
+                                <div class="funil-legend-label">
+                                    <div class="funil-legend-dot" style="background:#f97316;"></div>
+                                    Não rastreadas
+                                </div>
+                                <div>
+                                    <span class="funil-legend-val" id="relUntrackedVal">—</span>
+                                    <span class="funil-legend-pct" id="relUntrackedPct"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="display:flex; align-items:center; gap:8px; background:var(--bg-secondary); padding:10px 14px; border-radius:8px; border:1px solid var(--border);">
+                            <i data-lucide="clock" style="width:16px; color:#3b82f6;"></i>
+                            <div style="font-size:12px; color:var(--muted);">Tempo médio 1ª resposta</div>
+                            <div id="relAvgResponse" style="margin-left:auto; font-weight:700; font-size:13px;">—</div>
+                        </div>
+
+                        <div class="funil-gauge-wrap">
+                            <canvas id="relChartVisaoGeral"></canvas>
+                            <div class="funil-gauge-center" id="relChartVisaoGeralCenter">—</div>
+                        </div>
+                    </div>
+
+                    <div class="funil-card">
+                        <div class="funil-card-title">Origem das Conversas</div>
+
+                        <div style="display:flex; justify-content:space-between; margin-bottom:20px; gap:10px;">
+                            <div style="flex:1; text-align:center; padding:10px; background:var(--bg-secondary); border-radius:8px; border:1px solid var(--border);">
+                                <div style="display:flex; align-items:center; justify-content:center; gap:6px; font-size:12px; color:var(--muted); margin-bottom:4px;">
+                                    <img src="https://cdn.simpleicons.org/meta/1877f2" style="width:12px;"> Meta Ads
+                                </div>
+                                <div id="relMeta" style="font-size:18px; font-weight:800;">—</div>
+                            </div>
+                            <div style="flex:1; text-align:center; padding:10px; background:var(--bg-secondary); border-radius:8px; border:1px solid var(--border);">
+                                <div style="display:flex; align-items:center; justify-content:center; gap:6px; font-size:12px; color:var(--muted); margin-bottom:4px;">
+                                    <img src="https://cdn.simpleicons.org/google/34a853" style="width:12px;"> Google Ads
+                                </div>
+                                <div id="relGoogle" style="font-size:18px; font-weight:800;">—</div>
+                            </div>
+                            <div style="flex:1; text-align:center; padding:10px; background:var(--bg-secondary); border-radius:8px; border:1px solid var(--border);">
+                                <div style="display:flex; align-items:center; justify-content:center; gap:6px; font-size:12px; color:var(--muted); margin-bottom:4px;">
+                                    <i data-lucide="globe" style="width:12px; color:#64748b;"></i> Outras
+                                </div>
+                                <div id="relOutras" style="font-size:18px; font-weight:800;">—</div>
+                            </div>
+                            <div style="flex:1; text-align:center; padding:10px; background:var(--bg-secondary); border-radius:8px; border:1px solid var(--border);">
+                                <div style="display:flex; align-items:center; justify-content:center; gap:6px; font-size:12px; color:var(--muted); margin-bottom:4px;">
+                                    <i data-lucide="link-2-off" style="width:12px; color:#f97316;"></i> Não rastr.
+                                </div>
+                                <div id="relNaoRast" style="font-size:18px; font-weight:800;">—</div>
+                            </div>
+                        </div>
+
+                        <div class="chart-container">
+                            <canvas id="relChartOrigens"></canvas>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -7058,7 +7074,7 @@ function resetLeadSearchAutofill() {
     input.defaultValue = '';
 }
 </script>
-<script defer src="js/leads.js?v=20260913-organicobold"></script>
+<script defer src="js/leads.js?v=20260917-relmove"></script>
 <script defer src="js/chat-monitor.js?v=20260813-clientswitch"></script>
 <script defer src="js/admin.js?v=20260912-faseb"></script>
 <script defer src="js/captacao.js?v=20260912-fase3"></script>

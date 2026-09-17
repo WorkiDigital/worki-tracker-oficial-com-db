@@ -898,6 +898,23 @@ function relatorioPeriodoKey() {
     return `personalizado:${$('relatorioDataInicio')?.value || ''}:${$('relatorioDataFim')?.value || ''}`;
 }
 
+// Converte o período do select de Relatórios (vocabulário próprio: 7dias,
+// esteMes, personalizado, etc.) pro vocabulário que /api/metrics-funnel aceita
+// (hoje/ontem/hojeOntem ou nº de dias) — os 2 selects (Funil x Relatórios) têm
+// opções diferentes, não dá pra repassar o value cru. "esteMes"/"mesPassado"/
+// "personalizado" não têm equivalente direto: convertidos pro nº de dias que o
+// range real cobre, via a mesma calcRangeRelatorio() já usada pro resto da aba
+// — evita uma segunda tabela de tradução desalinhada da lógica de datas real.
+function relatorioPeriodoParaFunil() {
+    const periodo = $('relatorioPeriodoSelect')?.value || 'hojeOntem';
+    if (['hoje', 'ontem', 'hojeOntem'].includes(periodo)) return periodo;
+    if (periodo === 'todos') return '365'; // metrics-funnel não tem "sem limite"; teto alto
+    const range = calcRangeRelatorio();
+    if (!range) return '30';
+    const dias = Math.max(1, Math.ceil((range[1].getTime() - range[0].getTime()) / 86400000));
+    return String(dias);
+}
+
 async function recarregarRelatorios(silencioso = false) {
     if ($('relatorioPeriodoSelect')?.value === 'personalizado' && !calcRangeRelatorio()) return;
     const periodoKey = relatorioPeriodoKey();
@@ -953,6 +970,17 @@ function calcMetricasRelatorio(leads) {
 async function renderRelatorios(leadsRelatorio = relatoriosData) {
     if (typeof ensureChart === 'function') await ensureChart();
     syncRelatorioPeriodo();
+
+    // Rastreamento de Conversas (Visão Geral + Origem) — best-effort, não
+    // bloqueia o resto do render se falhar (mesmo padrão de
+    // carregarEngajamentoMedio()). Usa o mesmo /api/metrics-funnel da aba
+    // Funil de Vendas, com o período/cliente desta aba (ver js/funil.js).
+    if (typeof relRelatoriosCarregarFunilData === 'function') {
+        const paramsFunil = new URLSearchParams({ periodo: relatorioPeriodoParaFunil() });
+        const clienteIdFunil = leadClienteAdminAtual();
+        if (clienteIdFunil) paramsFunil.set('cliente_id', clienteIdFunil);
+        relRelatoriosCarregarFunilData(paramsFunil).catch(() => {});
+    }
     const base = Array.isArray(leadsRelatorio) ? leadsRelatorio : [];
     const total  = base.length;
     const vendas = base.filter(l => (l.status||'').toLowerCase() === 'vendido');
