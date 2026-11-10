@@ -5338,7 +5338,8 @@ function resultFromGoal(ins, goal, event) {
         case 'OFFSITE_CONVERSIONS': case 'VALUE': case 'CONVERSIONS': {
             const ev = String(event || '').toLowerCase();
             if (!ev || ev === 'other') return null;
-            const keys = [`omni_${ev}`, `offsite_conversion.fb_pixel_${ev}`, ev];
+            // first-match (nunca soma): variantes do mesmo evento padrão (ex.: "Contatos no site" = contact_website)
+            const keys = [`omni_${ev}`, `offsite_conversion.fb_pixel_${ev}`, `${ev}_website`, `${ev}_total`, ev];
             if (ev === 'lead') keys.push('offsite_conversion.lead');
             spec = { label: PIXEL_EVENT_LABEL[ev] || ev, keys }; break;
         }
