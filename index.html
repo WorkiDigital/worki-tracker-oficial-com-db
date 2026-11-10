@@ -5038,7 +5038,12 @@ function calcMetricasAds(camps) {
     setEl('ads-comment-reach',pct(comments, reach));
     setEl('ads-cpcomment',    cost(comments));
 
-    _funilData = { spend, imps, reach, clicks: linkClicks, lpv, leads, msgs, purchases };
+    // Resultados no funil: um único número. Com 1 tipo mostra o tipo no rótulo; misturado soma os tipos.
+    const _resTipos = Object.keys(resultadosPorTipo);
+    const resultadosTotal = _resTipos.reduce((s, t) => s + resultadosPorTipo[t], 0);
+    _funilData = { spend, imps, reach, clicks: linkClicks, lpv, leads, msgs, purchases,
+                   resultados: resultadosTotal,
+                   resultadosLabel: _resTipos.length === 1 ? `Resultados (${_resTipos[0]})` : 'Resultados' };
     renderFunil();
 }
 
@@ -5048,8 +5053,9 @@ const FUNIL_DEF = [
     { key:'reach',  label:'Alcance',         cost:'por pessoa',    color:'#0ea5e9', on:false },
     { key:'clicks', label:'Cliques',         cost:'por clique',    color:'#8b5cf6', on:true  },
     { key:'lpv',    label:'Visualizações da Página', cost:'por visualização',    color:'#ec4899', on:false },
+    { key:'resultados', label:'Resultados',  cost:'por resultado', color:'#14b8a6', on:false },
     { key:'leads',  label:'Leads',           cost:'por lead',      color:'#10b981', on:true  },
-    { key:'msgs',   label:'Conversas WA',    cost:'por conversa',  color:'#f59e0b', on:true  },
+    { key:'msgs',   label:'Conversas WA',   cost:'por conversa',  color:'#f59e0b', on:true  },
     { key:'purchases', label:'Compras',      cost:'por compra',    color:'#ec4899', on:false },
 ];
 let funilMetricas = FUNIL_DEF.map(m => ({...m}));
@@ -5079,7 +5085,7 @@ function renderFunil() {
         }
         html += `<div class="funil-trap" style="width:${wpct}%;background:${m.color};">
             <div class="funil-trap-top">
-                <span class="funil-trap-label">${m.label}</span>
+                <span class="funil-trap-label">${m.key === 'resultados' ? (_funilData.resultadosLabel || m.label) : m.label}</span>
                 <span class="funil-trap-num">${v ? fmtN(v) : '—'}</span>
                 <button class="funil-trap-x" onclick="removeFunilStep('${m.key}')" aria-label="Remover etapa do funil">×</button>
             </div>
