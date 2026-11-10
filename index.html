@@ -4976,21 +4976,23 @@ function calcMetricasAds(camps) {
         const tipos = Object.keys(resultadosPorTipo);
         const elRes = $('ads-resultados'), elLbl = $('ads-resultados-lbl'), elCp = $('ads-cpres');
         if (elRes) {
-            if (tipos.length === 1) {
-                elRes.textContent = fmtN(resultadosPorTipo[tipos[0]]);
-                if (elLbl) elLbl.textContent = `Resultados (${tipos[0]})`;
-                if (elCp) elCp.textContent = brl(spend / resultadosPorTipo[tipos[0]]);
-            } else if (tipos.length > 1) {
-                elRes.textContent = tipos.map(t => `${fmtN(resultadosPorTipo[t])} ${t}`).join(' · ');
-                elRes.style.fontSize = '13px';
-                if (elLbl) elLbl.textContent = 'Resultados (por objetivo)';
-                if (elCp) elCp.textContent = '—';
+            const card = elRes.closest('.ads-metric');
+            if (tipos.length >= 1) {
+                // Total somado no card; a divisão por tipo aparece ao passar o mouse.
+                const total = tipos.reduce((s, t) => s + resultadosPorTipo[t], 0);
+                const detalhe = tipos.map(t => `${fmtN(resultadosPorTipo[t])} ${t}`).join(' · ');
+                elRes.textContent = fmtN(total);
+                if (elLbl) elLbl.textContent = tipos.length === 1 ? `Resultados (${tipos[0]})` : 'Resultados';
+                if (elCp) elCp.textContent = brl(spend / total);
+                if (card) card.title = detalhe;
+                const cardCp = elCp?.closest('.ads-metric');
+                if (cardCp) cardCp.title = `Gasto total ÷ ${fmtN(total)} resultados (${detalhe})`;
             } else {
+                if (card) card.removeAttribute('title');
                 elRes.textContent = '—';
                 if (elLbl) elLbl.textContent = 'Resultados';
                 if (elCp) elCp.textContent = '—';
             }
-            if (tipos.length <= 1) elRes.style.fontSize = '';
         }
     }
     $('ads-leads').textContent    = fmtN(leads);
