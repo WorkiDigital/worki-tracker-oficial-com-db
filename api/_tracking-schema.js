@@ -146,6 +146,9 @@ async function createTrackingSchema() {
       ADD COLUMN IF NOT EXISTS conversion_auto BOOLEAN DEFAULT false;
 
       ALTER TABLE public.tracking_destinations
+      ADD COLUMN IF NOT EXISTS name VARCHAR(120);
+
+      ALTER TABLE public.tracking_destinations
       ADD COLUMN IF NOT EXISTS total_captures INTEGER DEFAULT 0;
 
       UPDATE public.tracking_destinations d
