@@ -3046,3 +3046,29 @@ não existia na doc. Página foi de ~40KB para ~116KB.
 > Ao adicionar uma seção nova: criar o `<a class="doc-nav-item" data-section="X">` no menu E a
 > `<section class="doc-section" id="sec-X">` correspondente — a validação é `data-section` ↔ `sec-`,
 > e um sem o outro quebra a navegação silenciosamente (o clique não mostra nada).
+
+## 🎯 Métrica "Resultados" por meta de conversão do conjunto (2026-11-10)
+
+Colunas/cards **Resultados** e **Custo por resultado** (Meta Ads, `index.html`) contam o resultado que a **meta de conversão** (`optimization_goal`) de cada **conjunto** otimiza — igual ao Gerenciador da Meta. Commits: `70335b1`, `f606ed0`, `03ef812`, `aebd355`.
+
+### Por que NÃO basta o objetivo da campanha
+Dentro de uma mesma campanha (ex.: Leads ou Engajamento) cada conjunto pode otimizar para formulário, conversas, evento do Pixel, etc. O `objective` só serve de **fallback** (`RESULT_BY_OBJECTIVE`/`getResultadoInfo`).
+
+### Como funciona
+- `api/ads.js`: após buscar as campanhas, busca `/{account}/adsets` (`optimization_goal`, `promoted_object{custom_event_type,custom_event_str}`, insights `spend,reach,actions,conversions`) e anexa `adset_results` a cada campanha. Best-effort (try/catch): se falhar, o front cai no objetivo.
+- `api/ads-children.js`: conjuntos devolvem `optimization_goal`/`promoted_object`; insights incluem `conversions`.
+- `index.html`: `resultFromGoal(ins, goal, event, eventStr)` → `getResultadoParts(...)`.
+  - Campanha = soma dos conjuntos **agrupada por tipo** (nunca soma leads + compras). Conjunto usa a própria meta; anúncio herda (`data-goal`/`data-event`/`data-eventstr` na linha do conjunto).
+  - Custo por resultado só com **1 tipo** na linha; misturado → "—". Card agregado do topo mostra um total por tipo.
+- Mapa meta → action_type (first-match, NÃO soma variantes): `LEAD_GENERATION`/`QUALITY_LEAD`→`lead`,`onsite_conversion.lead_grouped`; `CONVERSATIONS`→`onsite_conversion.messaging_conversation_started_7d`; `LINK_CLICKS`→`link_click`; `LANDING_PAGE_VIEWS`→`landing_page_view`; `REACH`→`reach`; `OFFSITE_CONVERSIONS`/`VALUE`→ evento do Pixel (`omni_<ev>`, `offsite_conversion.fb_pixel_<ev>`, `<ev>_website`, `<ev>_total`, `<ev>`); evento `OTHER` → `offsite_conversion.fb_pixel_custom.<custom_event_str>`.
+
+### ⚠️ Armadilha: alguns resultados vêm em `conversions`, não em `actions`
+"Contatos no site" (campanha de **Engajamento** com meta Contato) volta como `conversions:contact_website`. Só ler `actions` deixava a coluna em "—". `getActOrConv()` lê `conversions` primeiro e depois `actions`. Eventos personalizados do Pixel também ficam em `conversions`.
+
+### Como descobrir o tipo certo de uma meta nova
+Usar o Meta Ads MCP (`ads_get_ad_entities`, nível campaign/adset, campo `results`): o `results.indicator` diz exatamente o campo/action_type (ex.: `conversions:contact_website`, `actions:offsite_conversion.fb_pixel_lead`). Não chutar nomes; a doc pública não lista o mapeamento meta→action_type.
+
+### Pendências
+- Metas não mapeadas (ex.: `THRUPLAY`, `VISIT_INSTAGRAM_PROFILE`, `IMPRESSIONS`) caem no fallback por objetivo.
+- Dashboard público (`js/share-dash.js`, métrica `results`) e Relatórios Automáticos (`api/_zap-report-metrics.js`) ainda usam a lógica antiga — alinhar se precisar bater com o painel.
+- Quem já personalizou métricas (`localStorage wt_metrics_cfg`) precisa ativar Resultados em "Personalizar métricas".
