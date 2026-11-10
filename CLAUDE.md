@@ -3059,7 +3059,10 @@ Dentro de uma mesma campanha (ex.: Leads ou Engajamento) cada conjunto pode otim
 - `api/ads-children.js`: conjuntos devolvem `optimization_goal`/`promoted_object`; insights incluem `conversions`.
 - `index.html`: `resultFromGoal(ins, goal, event, eventStr)` → `getResultadoParts(...)`.
   - Campanha = soma dos conjuntos **agrupada por tipo** (nunca soma leads + compras). Conjunto usa a própria meta; anúncio herda (`data-goal`/`data-event`/`data-eventstr` na linha do conjunto).
-  - Custo por resultado por linha só com **1 tipo**; misturado → "—".
+  - **Tabela:** custo por resultado por linha só com **1 tipo**; misturado → "—".
+  - **Card agregado do topo:** mostra o **total somado** (ex.: 45 Conversas + 14 Contatos = 59); a divisão por tipo aparece no **hover** (`title`). Custo por resultado = gasto total ÷ total somado (média entre tipos; o gasto de campanhas sem resultado também entra).
+  - **Funil de Conversão do Anúncio:** etapa opcional "Resultados" (`FUNIL_DEF`, começa desligada) usa o mesmo total; rótulo vira "Resultados (Tipo)" quando só há 1 tipo.
+  - **Cliques no link NÃO contam como resultado** (removido a pedido): campanhas de Tráfego sem leads/conversas/compras ficam "—". Colunas Cliques/CPC seguem normais.
 - Mapa meta → action_type (first-match, NÃO soma variantes): `LEAD_GENERATION`/`QUALITY_LEAD`→`lead`,`onsite_conversion.lead_grouped`; `CONVERSATIONS`→`onsite_conversion.messaging_conversation_started_7d`; `LANDING_PAGE_VIEWS`→`landing_page_view`; `REACH`→`reach`; `OFFSITE_CONVERSIONS`/`VALUE`→ evento do Pixel (`omni_<ev>`, `offsite_conversion.fb_pixel_<ev>`, `<ev>_website`, `<ev>_total`, `<ev>`); evento `OTHER` → `offsite_conversion.fb_pixel_custom.<custom_event_str>`.
 
 ### ⚠️ Armadilha: alguns resultados vêm em `conversions`, não em `actions`
