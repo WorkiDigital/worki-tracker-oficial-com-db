@@ -66,7 +66,7 @@ export default async function handler(req, res) {
     // objetivo da campanha (ex.: campanha de Leads pode otimizar p/ formulário, conversas ou site).
     // Best-effort: se falhar, o front cai no mapeamento por objetivo da campanha.
     try {
-      const adsetFields = `campaign_id,optimization_goal,promoted_object{custom_event_type},${insightsParam}{spend,reach,actions}`;
+      const adsetFields = `campaign_id,optimization_goal,promoted_object{custom_event_type,custom_event_str},${insightsParam}{spend,reach,actions,conversions}`;
       let aurl = `https://graph.facebook.com/v23.0/${accountId}/adsets?fields=${encodeURIComponent(adsetFields)}&limit=200&access_token=${token}`;
       const byCampaign = {};
       let pages = 0;
@@ -79,7 +79,8 @@ export default async function handler(req, res) {
           (byCampaign[s.campaign_id] ||= []).push({
             goal: s.optimization_goal || null,
             event: s.promoted_object?.custom_event_type || null,
-            ins: i ? { spend: i.spend, reach: i.reach, actions: i.actions } : null,
+            eventStr: s.promoted_object?.custom_event_str || null,
+            ins: i ? { spend: i.spend, reach: i.reach, actions: i.actions, conversions: i.conversions } : null,
           });
         }
         aurl = ad.paging?.next || null;

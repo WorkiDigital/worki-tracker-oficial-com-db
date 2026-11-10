@@ -5322,7 +5322,15 @@ function getResultadoInfo(ins, objective) {
 // Resultado conforme a META DE CONVERSÃO do conjunto (optimization_goal) — como o Gerenciador da Meta.
 // Para metas de Pixel (OFFSITE_CONVERSIONS) o evento vem de promoted_object.custom_event_type.
 const PIXEL_EVENT_LABEL = { lead:'Leads', contact:'Contatos', purchase:'Compras', complete_registration:'Cadastros', add_to_cart:'Adições ao carrinho', initiate_checkout:'Checkouts', schedule:'Agendamentos', submit_application:'Inscrições', subscribe:'Assinaturas', view_content:'Visualizações de conteúdo', add_payment_info:'Info. de pagamento', add_to_wishlist:'Lista de desejos', search:'Buscas', start_trial:'Testes iniciados', find_location:'Localizações', customize_product:'Personalizações', donate:'Doações' };
-function resultFromGoal(ins, goal, event) {
+// Alguns resultados (ex.: Contatos no site) vêm no campo `conversions`, não em `actions`.
+function getActOrConv(ins, keys) {
+    for (const k of keys) {
+        const a = ins?.conversions?.find(x => x.action_type === k) || ins?.actions?.find(x => x.action_type === k);
+        if (a) return parseFloat(a.value || 0);
+    }
+    return 0;
+}
+function resultFromGoal(ins, goal, event, eventStr) {
     let spec = null;
     switch (goal) {
         case 'LEAD_GENERATION': case 'QUALITY_LEAD':
@@ -5345,7 +5353,7 @@ function resultFromGoal(ins, goal, event) {
         }
         default: return null;
     }
-    return { label: spec.label, value: getActFirst(ins, spec.keys) || 0 };
+    return { label: spec.label, value: getActOrConv(ins, spec.keys) || 0 };
 }
 // Lista de resultados [{label, value}] de uma linha. Prioridade: conjuntos da campanha > meta do
 // conjunto/anúncio > objetivo da campanha. Nunca soma tipos diferentes (agrupa por rótulo).
@@ -5355,10 +5363,10 @@ function getResultadoParts(ins, objective, goalCfg, adsetResults) {
     if (Array.isArray(adsetResults) && adsetResults.length) {
         adsetResults.forEach(s => {
             if (!s.ins) return;
-            add(resultFromGoal(s.ins, s.goal, s.event) || getResultadoInfo(s.ins, objective));
+            add(resultFromGoal(s.ins, s.goal, s.event, s.eventStr) || getResultadoInfo(s.ins, objective));
         });
     } else {
-        add((goalCfg?.goal && resultFromGoal(ins, goalCfg.goal, goalCfg.event)) || getResultadoInfo(ins, objective));
+        add((goalCfg?.goal && resultFromGoal(ins, goalCfg.goal, goalCfg.event, goalCfg.eventStr)) || getResultadoInfo(ins, objective));
     }
     return Object.entries(acc).map(([label, value]) => ({ label, value }));
 }
@@ -5669,13 +5677,13 @@ async function toggleExpand(level, parentId, btn, e) {
         const roas       = getRoas(ins);
         // Conjunto: usa a própria meta; anúncio: herda a meta do conjunto (data-goal da linha pai)
         const goalCfg = hasChild
-            ? { goal: item.optimization_goal, event: item.promoted_object?.custom_event_type }
-            : { goal: parentRow.dataset.goal || null, event: parentRow.dataset.event || null };
+            ? { goal: item.optimization_goal, event: item.promoted_object?.custom_event_type, eventStr: item.promoted_object?.custom_event_str }
+            : { goal: parentRow.dataset.goal || null, event: parentRow.dataset.event || null, eventStr: parentRow.dataset.eventstr || null };
         const getVal = key => getAdsMetricCellValue(key, ins, parentRow.dataset.objective || item.objective, goalCfg, null);
         const expandBtn = hasChild
             ? `<button class="expand-btn" onclick="toggleExpand('ads','${esc(item.id)}',this,event)">▶</button>`
             : '';
-        return `<tr data-parent="${key}" data-row-id="${esc(item.id)}" data-nome="${esc(item.name)}" data-objective="${esc(parentRow.dataset.objective||'')}" data-goal="${esc(item.optimization_goal||'')}" data-event="${esc(item.promoted_object?.custom_event_type||'')}" class="row-child row-depth-${indent}">
+        return `<tr data-parent="${key}" data-row-id="${esc(item.id)}" data-nome="${esc(item.name)}" data-objective="${esc(parentRow.dataset.objective||'')}" data-goal="${esc(item.optimization_goal||'')}" data-event="${esc(item.promoted_object?.custom_event_type||'')}" data-eventstr="${esc(item.promoted_object?.custom_event_str||'')}" class="row-child row-depth-${indent}">
             <td class="ads-td-expand" style="text-align:center;padding:0 4px;">${expandBtn}</td>
             <td class="ads-campaign-name" data-label="${indent===1?'Conjunto':'Anúncio'}" style="padding-left:${indent*28}px;text-align:left;font-weight:500;color:var(--text);" title="${esc(item.name)}">${hasChild ? `<span class="row-name-link" onclick="focarLinha('adset','${esc(item.id)}',event)">${esc(item.name)}</span>` : esc(item.name)}</td>
             <td data-label="Status"><span class="status-badge" style="${bs(item.status)}">${esc(item.status||'')}</span></td>

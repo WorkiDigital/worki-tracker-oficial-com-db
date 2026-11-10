@@ -27,8 +27,8 @@ export default async function handler(req, res) {
   const cached = await cacheGet(ck);
   if (cached) return res.status(200).json(cached);
 
-  const insightFields = 'spend,impressions,clicks,outbound_clicks,ctr,reach,cpm,cpc,frequency,inline_link_clicks,actions,action_values,cost_per_action_type,purchase_roas';
-  const budgetFields = level === 'adsets' ? ',daily_budget,lifetime_budget,optimization_goal,promoted_object{custom_event_type}' : '';
+  const insightFields = 'spend,impressions,clicks,outbound_clicks,ctr,reach,cpm,cpc,frequency,inline_link_clicks,actions,action_values,cost_per_action_type,purchase_roas,conversions';
+  const budgetFields = level === 'adsets' ? ',daily_budget,lifetime_budget,optimization_goal,promoted_object{custom_event_type,custom_event_str}' : '';
   const fields = `name,status${budgetFields},insights.date_preset(${datePreset}){${insightFields}}`;
 
   try {
