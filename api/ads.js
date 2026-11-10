@@ -62,6 +62,31 @@ export default async function handler(req, res) {
     const resp = await buscarCampanhas(insightFields);
     if (resp.error) return res.status(400).json({ error: resp.error.message });
 
+    // "Resultados" depende da meta de conversão (optimization_goal) de cada CONJUNTO, não só do
+    // objetivo da campanha (ex.: campanha de Leads pode otimizar p/ formulário, conversas ou site).
+    // Best-effort: se falhar, o front cai no mapeamento por objetivo da campanha.
+    try {
+      const adsetFields = `campaign_id,optimization_goal,promoted_object{custom_event_type},${insightsParam}{spend,reach,actions}`;
+      let aurl = `https://graph.facebook.com/v23.0/${accountId}/adsets?fields=${encodeURIComponent(adsetFields)}&limit=200&access_token=${token}`;
+      const byCampaign = {};
+      let pages = 0;
+      while (aurl && pages++ < 10) {
+        const ar = await fetchMeta(aurl);
+        const ad = await ar.json();
+        if (ad.error) break;
+        for (const s of ad.data || []) {
+          const i = s.insights?.data?.[0];
+          (byCampaign[s.campaign_id] ||= []).push({
+            goal: s.optimization_goal || null,
+            event: s.promoted_object?.custom_event_type || null,
+            ins: i ? { spend: i.spend, reach: i.reach, actions: i.actions } : null,
+          });
+        }
+        aurl = ad.paging?.next || null;
+      }
+      resp.data.forEach(c => { if (byCampaign[c.id]) c.adset_results = byCampaign[c.id]; });
+    } catch { /* mantém fallback por objetivo */ }
+
     const result = { data: resp.data };
     await cacheSet(ck, result, 60000); // 60s TTL
     return res.status(200).json(result);

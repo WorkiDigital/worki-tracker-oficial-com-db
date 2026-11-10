@@ -4898,8 +4898,9 @@ function calcMetricasAds(camps) {
         linkClicks += getAct(ins, ['link_click']);
 
         // Resultados: soma por tipo de resultado (nunca mistura leads com compras)
-        const resInfo = getResultadoInfo(ins, c.objective);
-        if (resInfo.value) resultadosPorTipo[resInfo.label] = (resultadosPorTipo[resInfo.label] || 0) + resInfo.value;
+        getResultadoParts(ins, c.objective, null, c.adset_results).forEach(p => {
+            resultadosPorTipo[p.label] = (resultadosPorTipo[p.label] || 0) + p.value;
+        });
 
         // Leads: formulários
         leads += getAct(ins, ['lead','offsite_conversion.lead']);
@@ -5318,7 +5319,50 @@ function getResultadoInfo(ins, objective) {
     return cands.reduce((a, b) => b.value > a.value ? b : a);
 }
 
-function getAdsMetricCellValue(key, ins, objective) {
+// Resultado conforme a META DE CONVERSÃO do conjunto (optimization_goal) — como o Gerenciador da Meta.
+// Para metas de Pixel (OFFSITE_CONVERSIONS) o evento vem de promoted_object.custom_event_type.
+const PIXEL_EVENT_LABEL = { lead:'Leads', contact:'Contatos', purchase:'Compras', complete_registration:'Cadastros', add_to_cart:'Adições ao carrinho', initiate_checkout:'Checkouts', schedule:'Agendamentos', submit_application:'Inscrições', subscribe:'Assinaturas', view_content:'Visualizações de conteúdo', add_payment_info:'Info. de pagamento', add_to_wishlist:'Lista de desejos', search:'Buscas', start_trial:'Testes iniciados', find_location:'Localizações', customize_product:'Personalizações', donate:'Doações' };
+function resultFromGoal(ins, goal, event) {
+    let spec = null;
+    switch (goal) {
+        case 'LEAD_GENERATION': case 'QUALITY_LEAD':
+            spec = { label:'Leads', keys:['lead','onsite_conversion.lead_grouped'] }; break;
+        case 'CONVERSATIONS':
+            spec = { label:'Conversas', keys:['onsite_conversion.messaging_conversation_started_7d'] }; break;
+        case 'LINK_CLICKS':
+            spec = { label:'Cliques no link', keys:['link_click'] }; break;
+        case 'LANDING_PAGE_VIEWS':
+            spec = { label:'Visualizações da página', keys:['landing_page_view'] }; break;
+        case 'REACH':
+            return { label:'Alcance', value: parseInt(ins?.reach || 0) };
+        case 'OFFSITE_CONVERSIONS': case 'VALUE': case 'CONVERSIONS': {
+            const ev = String(event || '').toLowerCase();
+            if (!ev || ev === 'other') return null;
+            const keys = [`omni_${ev}`, `offsite_conversion.fb_pixel_${ev}`, ev];
+            if (ev === 'lead') keys.push('offsite_conversion.lead');
+            spec = { label: PIXEL_EVENT_LABEL[ev] || ev, keys }; break;
+        }
+        default: return null;
+    }
+    return { label: spec.label, value: getActFirst(ins, spec.keys) || 0 };
+}
+// Lista de resultados [{label, value}] de uma linha. Prioridade: conjuntos da campanha > meta do
+// conjunto/anúncio > objetivo da campanha. Nunca soma tipos diferentes (agrupa por rótulo).
+function getResultadoParts(ins, objective, goalCfg, adsetResults) {
+    const acc = {};
+    const add = r => { if (r && r.value) acc[r.label] = (acc[r.label] || 0) + r.value; };
+    if (Array.isArray(adsetResults) && adsetResults.length) {
+        adsetResults.forEach(s => {
+            if (!s.ins) return;
+            add(resultFromGoal(s.ins, s.goal, s.event) || getResultadoInfo(s.ins, objective));
+        });
+    } else {
+        add((goalCfg?.goal && resultFromGoal(ins, goalCfg.goal, goalCfg.event)) || getResultadoInfo(ins, objective));
+    }
+    return Object.entries(acc).map(([label, value]) => ({ label, value }));
+}
+
+function getAdsMetricCellValue(key, ins, objective, goalCfg, adsetResults) {
     const spend = parseFloat(ins?.spend || 0);
     const imps = parseInt(ins?.impressions || 0);
     const reach = parseInt(ins?.reach || 0);
@@ -5351,8 +5395,14 @@ function getAdsMetricCellValue(key, ins, objective) {
         case 'cplpv': return lpv ? brl(spend / lpv) : '—';
         case 'profile_visits': return pv ? fmtN(pv) : '—';
         case 'cppv': return pv ? brl(spend / pv) : '—';
-        case 'resultados': { const r = getResultadoInfo(ins, objective); return r.value ? `${fmtN(r.value)} <span style="color:var(--muted);font-size:11px;">${r.label}</span>` : '—'; }
-        case 'cpres': { const r = getResultadoInfo(ins, objective); return r.value ? brl(spend / r.value) : '—'; }
+        case 'resultados': {
+            const parts = getResultadoParts(ins, objective, goalCfg, adsetResults);
+            return parts.length ? parts.map(p => `${fmtN(p.value)} <span style="color:var(--muted);font-size:11px;">${esc(p.label)}</span>`).join('<br>') : '—';
+        }
+        case 'cpres': { // só com um único tipo de resultado (dividir por tipos misturados engana)
+            const parts = getResultadoParts(ins, objective, goalCfg, adsetResults);
+            return parts.length === 1 ? brl(spend / parts[0].value) : '—';
+        }
         case 'leads': return leads ? fmtN(leads) : '—';
         case 'cpl': return leads ? brl(spend / leads) : '—';
         case 'msgs': return msgs ? fmtN(msgs) : '—';
@@ -5416,7 +5466,7 @@ function renderTabelaCampanhas(camps) {
         const initCk     = getActFirst(ins,['omni_initiate_checkout','initiate_checkout']);
         const roas       = getRoas(ins);
 
-        const getVal = key => getAdsMetricCellValue(key, ins, c.objective);
+        const getVal = key => getAdsMetricCellValue(key, ins, c.objective, null, c.adset_results);
         const isAct = c.status==='ACTIVE';
         const bs    = isAct ? 'background:rgba(16,185,129,.15);color:var(--success);border:1px solid rgba(16,185,129,.3)' : 'background:rgba(156,163,175,.1);color:#9ca3af;border:1px solid rgba(156,163,175,.2)';
         return `<tr data-row-id="${esc(c.id)}" data-nome="${esc(c.name)}" data-objective="${esc(c.objective||'')}">
@@ -5616,11 +5666,15 @@ async function toggleExpand(level, parentId, btn, e) {
         const purchaseVal= getActValFirst(ins,['omni_purchase','purchase']);
         const initCk     = getActFirst(ins,['omni_initiate_checkout','initiate_checkout']);
         const roas       = getRoas(ins);
-        const getVal = key => getAdsMetricCellValue(key, ins, parentRow.dataset.objective || item.objective);
+        // Conjunto: usa a própria meta; anúncio: herda a meta do conjunto (data-goal da linha pai)
+        const goalCfg = hasChild
+            ? { goal: item.optimization_goal, event: item.promoted_object?.custom_event_type }
+            : { goal: parentRow.dataset.goal || null, event: parentRow.dataset.event || null };
+        const getVal = key => getAdsMetricCellValue(key, ins, parentRow.dataset.objective || item.objective, goalCfg, null);
         const expandBtn = hasChild
             ? `<button class="expand-btn" onclick="toggleExpand('ads','${esc(item.id)}',this,event)">▶</button>`
             : '';
-        return `<tr data-parent="${key}" data-row-id="${esc(item.id)}" data-nome="${esc(item.name)}" data-objective="${esc(parentRow.dataset.objective||'')}" class="row-child row-depth-${indent}">
+        return `<tr data-parent="${key}" data-row-id="${esc(item.id)}" data-nome="${esc(item.name)}" data-objective="${esc(parentRow.dataset.objective||'')}" data-goal="${esc(item.optimization_goal||'')}" data-event="${esc(item.promoted_object?.custom_event_type||'')}" class="row-child row-depth-${indent}">
             <td class="ads-td-expand" style="text-align:center;padding:0 4px;">${expandBtn}</td>
             <td class="ads-campaign-name" data-label="${indent===1?'Conjunto':'Anúncio'}" style="padding-left:${indent*28}px;text-align:left;font-weight:500;color:var(--text);" title="${esc(item.name)}">${hasChild ? `<span class="row-name-link" onclick="focarLinha('adset','${esc(item.id)}',event)">${esc(item.name)}</span>` : esc(item.name)}</td>
             <td data-label="Status"><span class="status-badge" style="${bs(item.status)}">${esc(item.status||'')}</span></td>
