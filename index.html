@@ -5308,11 +5308,10 @@ const RESULT_BY_OBJECTIVE = {
     OUTCOME_LEADS:      { label:'Leads',             get: ins => getActFirst(ins, ['lead','offsite_conversion.lead']) },
     OUTCOME_ENGAGEMENT: { label:'Conversas',         get: ins => getActFirst(ins, ['onsite_conversion.messaging_conversation_started_7d']) },
     OUTCOME_SALES:      { label:'Compras',           get: ins => getActFirst(ins, ['omni_purchase','purchase']) },
-    OUTCOME_TRAFFIC:    { label:'Cliques no link',   get: ins => getActFirst(ins, ['link_click']) },
     OUTCOME_AWARENESS:  { label:'Alcance',           get: ins => parseInt(ins?.reach || 0) },
 };
 // Objetivos legados (API antiga) caem no equivalente OUTCOME_*.
-const LEGACY_OBJECTIVE = { LEAD_GENERATION:'OUTCOME_LEADS', MESSAGES:'OUTCOME_ENGAGEMENT', CONVERSIONS:'OUTCOME_SALES', PRODUCT_CATALOG_SALES:'OUTCOME_SALES', LINK_CLICKS:'OUTCOME_TRAFFIC', REACH:'OUTCOME_AWARENESS', BRAND_AWARENESS:'OUTCOME_AWARENESS' };
+const LEGACY_OBJECTIVE = { LEAD_GENERATION:'OUTCOME_LEADS', MESSAGES:'OUTCOME_ENGAGEMENT', CONVERSIONS:'OUTCOME_SALES', PRODUCT_CATALOG_SALES:'OUTCOME_SALES', REACH:'OUTCOME_AWARENESS', BRAND_AWARENESS:'OUTCOME_AWARENESS' };
 function getResultadoInfo(ins, objective) {
     const cfg = RESULT_BY_OBJECTIVE[objective] || RESULT_BY_OBJECTIVE[LEGACY_OBJECTIVE[objective]];
     if (cfg) return { label: cfg.label, value: cfg.get(ins) || 0 };
@@ -5343,8 +5342,6 @@ function resultFromGoal(ins, goal, event, eventStr) {
             spec = { label:'Leads', keys:['lead','onsite_conversion.lead_grouped'] }; break;
         case 'CONVERSATIONS':
             spec = { label:'Conversas', keys:['onsite_conversion.messaging_conversation_started_7d'] }; break;
-        case 'LINK_CLICKS':
-            spec = { label:'Cliques no link', keys:['link_click'] }; break;
         case 'LANDING_PAGE_VIEWS':
             spec = { label:'Visualizações da página', keys:['landing_page_view'] }; break;
         case 'REACH':
