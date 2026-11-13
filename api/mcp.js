@@ -19,15 +19,17 @@ function setCors(req, res) {
   // A segurança vem da chave, não da origem — MCP é chamado por clientes variados (CLI, apps de chat).
   res.setHeader('Access-Control-Allow-Origin', req.headers?.origin || '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, GET, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type, Accept, Mcp-Session-Id, MCP-Protocol-Version');
+  res.setHeader('Access-Control-Allow-Headers', 'Authorization, X-API-Key, X-MCP-Key, Content-Type, Accept, Mcp-Session-Id, MCP-Protocol-Version');
   res.setHeader('Access-Control-Expose-Headers', 'Mcp-Session-Id');
   res.setHeader('Vary', 'Origin');
   res.setHeader('Cache-Control', 'no-store');
 }
 
 function extractKey(req) {
-  const header = (req.headers.authorization || '').replace(/^Bearer\s+/i, '').trim();
-  return header || String(req.query?.id || '').trim();
+  const bearer = (req.headers.authorization || '').replace(/^Bearer\s+/i, '').trim();
+  // Alguns apps de chat reservam "Authorization" e só deixam enviar cabeçalho com outro nome.
+  const custom = String(req.headers['x-api-key'] || req.headers['x-mcp-key'] || '').replace(/^Bearer\s+/i, '').trim();
+  return bearer || custom || String(req.query?.id || '').trim();
 }
 
 async function authenticate(req) {
