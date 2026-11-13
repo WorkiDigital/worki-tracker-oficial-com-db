@@ -2,6 +2,7 @@
 // Nunca devolver: tokens, senhas, chaves da Evolution, IP do clique, conteúdo de mensagens,
 // nome/telefone/e-mail de leads. v1 só trabalha com dados agregados.
 import { getPool } from './_db.js';
+import { intervaloMeta, metaAdsDoCliente, metaAdsConsolidado } from './_mcp-ads.js';
 
 const TZ = 'America/Sao_Paulo';
 const MAX_DIAS = 90;
@@ -90,8 +91,51 @@ export const TOOLS = [
   },
 
   {
+    name: 'performance_anuncios',
+    description: 'Meta Ads: lista campanhas (ou conjuntos) com gasto, impressões, alcance, cliques no link, CTR, CPC, resultados e custo por resultado. "Resultados" segue a meta de conversão de cada conjunto (leads, conversas, contatos, compras...), igual ao Gerenciador da Meta. Com cliente_id lista as campanhas daquele cliente; sem cliente_id devolve só o total de cada cliente (pode levar alguns segundos). Por padrão mostra só o que teve gasto no período.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        ...ARGS_COMUNS,
+        nivel: { type: 'string', enum: ['campanha', 'conjunto'], description: 'Nível da lista (só com cliente_id). Padrão: campanha.' },
+        apenas_ativas: { type: 'boolean', description: 'true = só campanhas/conjuntos ativos agora. Padrão: false (inclui pausados que gastaram no período).' },
+        incluir_sem_gasto: { type: 'boolean', description: 'true = inclui itens sem gasto no período. Padrão: false.' },
+      },
+      additionalProperties: false,
+    },
+    async run({ periodo, cliente_id, nivel, apenas_ativas, incluir_sem_gasto }) {
+      const intervalo = intervaloMeta(periodo);
+      const cid = parseClienteId(cliente_id);
+      const opcoes = {
+        nivel: nivel === 'conjunto' ? 'conjunto' : 'campanha',
+        somenteAtivas: apenas_ativas === true,
+        incluirSemGasto: incluir_sem_gasto === true,
+        limite: MAX_LINHAS,
+      };
+      const base = { periodo: intervalo.label, de: intervalo.since, ate: intervalo.until };
+
+      if (!cid) {
+        const d = await metaAdsConsolidado(intervalo, opcoes);
+        return { ...base, ...d, dica: 'Passe cliente_id para listar as campanhas de um cliente.' };
+      }
+      const r = await getPool().query(
+        'SELECT id, nome, account_id FROM clientes WHERE id = $1 AND archived_at IS NULL',
+        [cid]
+      );
+      if (!r.rows.length) throw new Error('cliente_id inválido: cliente não encontrado.');
+      try {
+        const d = await metaAdsDoCliente(r.rows[0], intervalo, opcoes);
+        return { ...base, ...d };
+      } catch (e) {
+        // Mensagens de configuração/Meta (nossas, sem credenciais) são repassadas para a IA explicar.
+        return { ...base, cliente_id: cid, erro: String(e.message || 'Falha ao consultar a Meta.').slice(0, 200) };
+      }
+    },
+  },
+
+  {
     name: 'visao_geral',
-    description: 'Resumo do período: leads novos, qualificados, vendas, receita e conversão. Sem cliente_id, devolve o total da agência e a quebra por cliente. Não inclui gasto de anúncios (virá em performance_anuncios).',
+    description: 'Resumo do período: leads novos, qualificados, vendas, receita e conversão. Sem cliente_id, devolve o total da agência e a quebra por cliente. Não inclui gasto de anúncios (use performance_anuncios).',
     inputSchema: { type: 'object', properties: { ...ARGS_COMUNS }, additionalProperties: false },
     async run({ periodo, cliente_id }) {
       const p = periodoParams(periodo);
