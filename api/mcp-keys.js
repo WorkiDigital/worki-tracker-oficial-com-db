@@ -34,7 +34,7 @@ export default async function handler(req, res) {
 
     if (req.method === 'GET') {
       const r = await pool.query(
-        `SELECT id, nome, last4, created_at, last_used_at, revoked_at
+        `SELECT id, nome, last4, allow_pii, created_at, last_used_at, revoked_at
          FROM mcp_api_keys ORDER BY created_at DESC LIMIT 100`
       );
       return res.status(200).json(r.rows);
@@ -44,10 +44,11 @@ export default async function handler(req, res) {
       const nome = String(req.body?.nome || '').trim().slice(0, 120);
       if (!nome) return res.status(400).json({ error: 'nome é obrigatório.' });
       const key = `mcp_${crypto.randomBytes(24).toString('hex')}`;
+      const pii = req.body?.pii === true; // dados pessoais só quando pedido explicitamente
       const r = await pool.query(
-        `INSERT INTO mcp_api_keys (nome, key_hash, last4, created_by)
-         VALUES ($1,$2,$3,$4) RETURNING id, nome, last4, created_at`,
-        [nome, hashKey(key), key.slice(-4), user.id || null]
+        `INSERT INTO mcp_api_keys (nome, key_hash, last4, created_by, allow_pii)
+         VALUES ($1,$2,$3,$4,$5) RETURNING id, nome, last4, allow_pii, created_at`,
+        [nome, hashKey(key), key.slice(-4), user.id || null, pii]
       );
       return res.status(201).json({
         ...r.rows[0],

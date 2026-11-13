@@ -54,7 +54,7 @@ function combinarIndice(componentes, pesos) {
 }
 
 /** Calcula os 3 componentes para 1 lead (telefone+instância+cliente). */
-async function calcularParaLead(pool, { cliente_id, telefone, instancia, created_at, first_response_at, settings }) {
+export async function calcularParaLead(pool, { cliente_id, telefone, instancia, created_at, first_response_at, settings }) {
   const businessHoursConfig = settings.business_hours_enabled ? settings : null;
 
   // Mensagens do par dentro da janela de retenção (usadas nos componentes 2 e 3).

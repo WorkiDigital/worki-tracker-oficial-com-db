@@ -36,7 +36,7 @@ async function authenticate(req) {
   const key = extractKey(req);
   if (!key || !key.startsWith('mcp_') || key.length < 20 || key.length > 200) return null;
   const r = await getPool().query(
-    'SELECT id, nome FROM mcp_api_keys WHERE key_hash = $1 AND revoked_at IS NULL',
+    'SELECT id, nome, allow_pii FROM mcp_api_keys WHERE key_hash = $1 AND revoked_at IS NULL',
     [hashKey(key)]
   );
   if (!r.rows.length) return null;
@@ -61,11 +61,14 @@ async function audit(keyId, tool, args, ok, error, ms) {
 async function callTool(keyRow, params) {
   const name = params?.name;
   const tool = TOOLS_BY_NAME.get(name);
-  if (!tool) return { isError: true, content: [{ type: 'text', text: `Ferramenta desconhecida: ${name}` }] };
+  if (!tool || (tool.requiresPii && !keyRow.allow_pii)) {
+    // Para chave sem escopo, a ferramenta de dados pessoais "não existe".
+    return { isError: true, content: [{ type: 'text', text: `Ferramenta desconhecida: ${name}` }] };
+  }
   const args = params?.arguments && typeof params.arguments === 'object' ? params.arguments : {};
   const t0 = Date.now();
   try {
-    const data = await tool.run(args);
+    const data = await tool.run(args, { allowPii: !!keyRow.allow_pii });
     await audit(keyRow.id, name, args, true, null, Date.now() - t0);
     const payload = { ...data, _contexto: { fuso: 'America/Sao_Paulo', moeda: 'BRL', avisos: AVISOS_BASE } };
     return { content: [{ type: 'text', text: JSON.stringify(payload) }] };
@@ -89,14 +92,15 @@ async function handleMessage(keyRow, msg) {
         protocolVersion: SUPPORTED_VERSIONS.includes(wanted) ? wanted : SUPPORTED_VERSIONS[1],
         capabilities: { tools: { listChanged: false }, resources: { listChanged: false, subscribe: false } },
         serverInfo: SERVER_INFO,
-        instructions: 'Leia o recurso adlytics://dicionario-de-metricas antes de interpretar números. Comece por listar_clientes e use cliente_id nas demais ferramentas. Somente leitura, sem dados pessoais.',
+        instructions: 'Leia o recurso adlytics://dicionario-de-metricas antes de interpretar números. Comece por listar_clientes e use cliente_id nas demais ferramentas. Somente leitura. Dados pessoais só em chaves com esse escopo.',
       });
     }
     case 'ping':
       return rpcResult(id, {});
     case 'tools/list':
       return rpcResult(id, {
-        tools: TOOLS.map(t => ({ name: t.name, description: t.description, inputSchema: t.inputSchema })),
+        tools: TOOLS.filter(t => !t.requiresPii || keyRow.allow_pii)
+          .map(t => ({ name: t.name, description: t.description, inputSchema: t.inputSchema })),
       });
     case 'tools/call':
       return rpcResult(id, await callTool(keyRow, params));

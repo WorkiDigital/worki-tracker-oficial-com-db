@@ -24,6 +24,12 @@ async function createSchema() {
       );
     `);
 
+    // Escopo: chaves nascem SEM acesso a dados pessoais (nome/telefone de leads).
+    await client.query(`
+      ALTER TABLE public.mcp_api_keys
+      ADD COLUMN IF NOT EXISTS allow_pii BOOLEAN DEFAULT FALSE;
+    `);
+
     await client.query(`
       CREATE TABLE IF NOT EXISTS public.mcp_audit_log (
         id BIGSERIAL PRIMARY KEY,

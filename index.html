@@ -2083,7 +2083,7 @@
                         <i data-lucide="bot" style="width:16px;color:var(--blue);"></i>
                         Acesso por IA (MCP)
                     </div>
-                    <p style="font-size:13px;color:var(--muted);">Conecte Claude, ChatGPT ou Gemini aos dados de <strong>todos os clientes</strong> da agência para pedir análises. O acesso é <strong>somente leitura</strong>, só com dados agregados (sem nome, telefone, e-mail ou mensagens) e cada chamada fica registrada.</p>
+                    <p style="font-size:13px;color:var(--muted);">Conecte Claude, ChatGPT ou Gemini aos dados de <strong>todos os clientes</strong> da agência para pedir análises. O acesso é <strong>somente leitura</strong> e cada chamada fica registrada. Por padrão a chave só enxerga dados agregados; nome e telefone dos leads só aparecem se você marcar a opção abaixo ao criar a chave.</p>
                 </div>
 
                 <div class="mcp-grid" style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;align-items:start;">
@@ -2093,6 +2093,10 @@
                             <label for="mcpNovaChaveNome">Nome da chave</label>
                             <input id="mcpNovaChaveNome" class="form-control" maxlength="120" placeholder="Ex.: Claude, Gemini CLI" autocomplete="off">
                         </div>
+                        <label style="display:flex;gap:8px;align-items:flex-start;margin-top:12px;font-size:12.5px;color:var(--muted);line-height:1.5;cursor:pointer;">
+                            <input type="checkbox" id="mcpNovaChavePii" style="margin-top:3px;">
+                            <span><strong style="color:var(--text);">Permitir dados pessoais (nome e telefone dos leads)</strong><br>Libera a ferramenta de lista de leads, igual à tela de Leads. Esses dados são enviados ao provedor da IA que você conectar (Claude, ChatGPT, Gemini). Marque só se for necessário.</span>
+                        </label>
                         <button type="button" class="btn btn-primary" id="mcpBtnCriar" onclick="mcpCriarChave()" style="margin-top:12px;">
                             <i data-lucide="key-round" style="width:14px;"></i> Gerar chave
                         </button>
@@ -7084,7 +7088,7 @@ async function mcpCarregarChaves() {
             const revogada = !!k.revoked_at;
             return `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);${revogada ? 'opacity:.55;' : ''}">
                 <div style="flex:1;min-width:0;">
-                    <div style="font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(k.nome)} <span style="font-family:monospace;color:var(--muted);font-weight:400;">••••${esc(k.last4)}</span></div>
+                    <div style="font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(k.nome)} <span style="font-family:monospace;color:var(--muted);font-weight:400;">••••${esc(k.last4)}</span>${k.allow_pii ? ' <span style="font-size:10.5px;font-weight:700;color:#f59e0b;background:rgba(245,158,11,.12);border-radius:999px;padding:2px 8px;vertical-align:1px;">Dados pessoais</span>' : ''}</div>
                     <div style="font-size:11.5px;color:var(--muted);">Criada ${mcpFmtData(k.created_at)} · Último uso ${mcpFmtData(k.last_used_at)}${revogada ? ' · <strong>Revogada</strong>' : ''}</div>
                 </div>
                 ${revogada ? '' : `<button type="button" class="btn btn-ghost btn-sm" data-mcp-id="${Number(k.id)}" data-mcp-nome="${esc(k.nome)}" onclick="mcpAbrirRevogar(this)" aria-label="Revogar chave"><i data-lucide="trash-2" style="width:13px;"></i></button>`}
@@ -7119,11 +7123,12 @@ async function mcpCriarChave() {
     if (!nome) { toast('Informe um nome para a chave.', 'error'); input?.focus(); return; }
     const btn = $('mcpBtnCriar'); if (btn) btn.disabled = true;
     try {
-        const r = await authFetch('/api/mcp-keys', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nome }) });
+        const r = await authFetch('/api/mcp-keys', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nome, pii: !!$('mcpNovaChavePii')?.checked }) });
         const data = await readApiJson(r, 'Falha ao criar chave');
         $('mcpChaveNovaValor').value = data.key;
         $('mcpChaveNova').style.display = 'block';
         input.value = '';
+        if ($('mcpNovaChavePii')) $('mcpNovaChavePii').checked = false;
         toast('Chave criada.', 'success');
         mcpCarregarChaves();
     } catch (e) { toast(e.message || 'Erro ao criar chave.', 'error'); }
