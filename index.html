@@ -2113,11 +2113,21 @@
                                 <button type="button" class="btn btn-ghost btn-sm" onclick="mcpCopiar('mcpUrl')" aria-label="Copiar URL"><i data-lucide="copy" style="width:13px;"></i></button>
                             </div>
                         </div>
-                        <ol style="font-size:12.5px;color:var(--muted);line-height:1.7;padding-left:18px;margin:8px 0 0;">
-                            <li><strong>Claude Code / Gemini CLI:</strong> adicione a URL como servidor MCP remoto e envie o cabeçalho <code>Authorization: Bearer &lt;sua chave&gt;</code>.</li>
-                            <li><strong>Apps de chat (Claude, ChatGPT):</strong> crie um conector personalizado com a URL. Se o app não aceitar cabeçalho, use a URL com a chave no final: <code>.../api/mcp/&lt;sua chave&gt;</code> (menos seguro: a URL pode aparecer em logs).</li>
-                            <li>Peça, por exemplo: <em>"Liste meus clientes e compare leads e vendas dos últimos 30 dias"</em>.</li>
-                        </ol>
+                        <div style="font-size:12.5px;color:var(--muted);line-height:1.7;">
+                            <div style="font-weight:700;color:var(--text);margin-top:4px;">No Claude (conector personalizado)</div>
+                            <ol style="padding-left:18px;margin:4px 0 12px;">
+                                <li>Em <strong>Nome</strong>, escreva qualquer nome e cole a <strong>URL</strong> acima.</li>
+                                <li>Em <strong>Autenticação</strong>, marque <strong>Sem login</strong> (o Claude sugere "Entrar agora", mas nosso MCP usa chave, não OAuth).</li>
+                                <li>Em <strong>Cabeçalhos de requisição</strong>, clique em <strong>Adicionar cabeçalho</strong>: nome <code>Authorization</code> e valor <code>Bearer &lt;sua chave&gt;</code> (a palavra Bearer, um espaço e a chave). Deixe <strong>Obrigatório</strong> marcado.</li>
+                                <li>Se o Claude disser que <code>Authorization</code> é reservado, use o nome <code>X-API-Key</code> e, no valor, só a chave (sem Bearer).</li>
+                            </ol>
+                            <div style="font-weight:700;color:var(--text);">Se o app não aceitar cabeçalho</div>
+                            <p style="margin:4px 0 12px;">Use a URL com a chave no final, sem cabeçalho: <code>.../api/mcp/&lt;sua chave&gt;</code>. É menos seguro, porque a URL pode aparecer em logs.</p>
+                            <div style="font-weight:700;color:var(--text);">Claude Code / Gemini CLI / ChatGPT</div>
+                            <p style="margin:4px 0 12px;">Adicione a URL como servidor MCP remoto (HTTP) e envie o cabeçalho <code>Authorization: Bearer &lt;sua chave&gt;</code>.</p>
+                            <div style="font-weight:700;color:var(--text);">Teste</div>
+                            <p style="margin:4px 0 0;">Peça: <em>"Liste meus clientes e compare leads e vendas dos últimos 30 dias"</em>.</p>
+                        </div>
                     </div>
 
                     <div class="card" style="padding:24px;">
