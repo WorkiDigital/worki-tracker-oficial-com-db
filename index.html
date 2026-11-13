@@ -12,7 +12,7 @@
     <script defer src="https://cdn.jsdelivr.net/npm/lucide@0.469.0/dist/umd/lucide.min.js"></script>
     <!-- Chart.js, html2canvas e jsPDF são carregados sob demanda via loadScript() (utils.js).
          Não incluir aqui — evita baixar ~500KB em toda sessão mesmo sem abrir Anúncios ou exportar PDF. -->
-    <link rel="stylesheet" href="css/dashboard.css?v=20260913-budgetheader">
+    <link rel="stylesheet" href="css/dashboard.css?v=20261113-mcp">
     <link rel="stylesheet" href="css/date-range-picker.css?v=20260825-1">
     <link rel="stylesheet" href="css/splash.css?v=20260712-1">
     <link rel="stylesheet" href="css/funil.css?v=20260713-1">
@@ -600,6 +600,29 @@
     </div>
 </div>
 
+<div id="modalMcpRevogar" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="mcpRevogarTitulo" onclick="if(event.target===this) mcpFecharRevogar()">
+    <div class="modal-box" style="width:min(440px,94vw);">
+        <div class="modal-head">
+            <div class="modal-icon" style="background:rgba(239,68,68,.12);color:#ef4444;">
+                <i data-lucide="key-round" style="width:22px;height:22px;"></i>
+            </div>
+            <div>
+                <h3 id="mcpRevogarTitulo">Revogar chave?</h3>
+                <p>Quem usa esta chave perde o acesso imediatamente.</p>
+            </div>
+            <button class="modal-close" aria-label="Fechar" onclick="mcpFecharRevogar()"><i data-lucide="x" style="width:16px;"></i></button>
+        </div>
+        <div style="padding:14px;border:1px solid rgba(239,68,68,.28);background:rgba(239,68,68,.07);border-radius:10px;margin-bottom:18px;">
+            <div id="mcpRevogarNome" style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:5px;"></div>
+            <div style="font-size:12px;color:var(--muted);line-height:1.5;">Esta ação não pode ser desfeita. Para voltar a conectar, será preciso gerar uma chave nova.</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <button type="button" class="btn btn-ghost" onclick="mcpFecharRevogar()" style="justify-content:center;">Cancelar</button>
+            <button type="button" id="mcpBtnConfirmarRevogar" onclick="mcpConfirmarRevogar()" style="border:0;border-radius:8px;padding:12px;background:#ef4444;color:#fff;font-weight:800;cursor:pointer;">Revogar chave</button>
+        </div>
+    </div>
+</div>
+
 <div id="modalArquivarLink" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="capArquivarTitulo" onclick="if(event.target===this) capFecharModalArquivar()">
     <div class="modal-box" style="width:min(440px,94vw);">
         <div class="modal-head">
@@ -848,6 +871,7 @@
                     <a id="topbtn-agencia" class="tb-dd-item" onclick="mudarAba('agencia')"><i data-lucide="building"></i><span>Gestão de Clientes</span></a>
                     <a id="topbtn-ajustes" class="tb-dd-item" onclick="mudarAba('ajustes')"><i data-lucide="palette"></i><span>Marca</span></a>
                     <a id="topbtn-alertas" class="tb-dd-item" onclick="mudarAba('alertas')"><i data-lucide="bell-ring"></i><span>Alerta de Saldo</span></a>
+                    <a id="topbtn-mcp" class="tb-dd-item" onclick="mudarAba('mcp')"><i data-lucide="bot"></i><span>Acesso por IA (MCP)</span></a>
                     <a id="topbtn-logs" class="tb-dd-item" onclick="mudarAba('logs')"><i data-lucide="terminal"></i><span>Logs do Sistema</span></a>
                 </div>
             </div>
@@ -936,6 +960,9 @@
         </a>
         <a id="btn-alertas" class="nav-item" onclick="mudarAba('alertas')" style="display:none;">
             <i data-lucide="bell-ring" style="width:17px;flex-shrink:0;"></i><span>Alerta de Saldo</span>
+        </a>
+        <a id="btn-mcp" class="nav-item" onclick="mudarAba('mcp')" style="display:none;">
+            <i data-lucide="bot" style="width:17px;flex-shrink:0;"></i><span>Acesso por IA (MCP)</span>
         </a>
         <a id="btn-logs" class="nav-item" onclick="mudarAba('logs')" style="display:none;">
             <i data-lucide="terminal" style="width:17px;flex-shrink:0;"></i><span>Logs do Sistema</span>
@@ -2047,6 +2074,64 @@
                 </div>
             </div>
         </div><!-- /aba-ajustes -->
+
+        <!-- ABA: ACESSO POR IA (MCP) — admin only -->
+        <div id="aba-mcp" class="aba-oculta">
+            <div class="content">
+                <div style="margin-bottom:20px;">
+                    <div style="font-size:15px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:8px;">
+                        <i data-lucide="bot" style="width:16px;color:var(--blue);"></i>
+                        Acesso por IA (MCP)
+                    </div>
+                    <p style="font-size:13px;color:var(--muted);">Conecte Claude, ChatGPT ou Gemini aos dados de <strong>todos os clientes</strong> da agência para pedir análises. O acesso é <strong>somente leitura</strong>, só com dados agregados (sem nome, telefone, e-mail ou mensagens) e cada chamada fica registrada.</p>
+                </div>
+
+                <div class="mcp-grid" style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;align-items:start;">
+                    <div class="card" style="padding:24px;">
+                        <div style="font-size:13px;font-weight:700;margin-bottom:12px;">Criar chave de acesso</div>
+                        <div class="input-group">
+                            <label for="mcpNovaChaveNome">Nome da chave</label>
+                            <input id="mcpNovaChaveNome" class="form-control" maxlength="120" placeholder="Ex.: Claude, Gemini CLI" autocomplete="off">
+                        </div>
+                        <button type="button" class="btn btn-primary" id="mcpBtnCriar" onclick="mcpCriarChave()" style="margin-top:12px;">
+                            <i data-lucide="key-round" style="width:14px;"></i> Gerar chave
+                        </button>
+
+                        <div id="mcpChaveNova" style="display:none;margin-top:16px;padding:14px;border:1px solid rgba(16,185,129,.35);background:rgba(16,185,129,.07);border-radius:10px;">
+                            <div style="font-size:12px;font-weight:700;color:#10b981;margin-bottom:6px;">Chave criada. Copie agora: ela não será exibida novamente.</div>
+                            <div style="display:flex;gap:8px;align-items:center;">
+                                <input id="mcpChaveNovaValor" class="form-control" readonly style="font-family:monospace;font-size:12px;flex:1;min-width:0;">
+                                <button type="button" class="btn btn-ghost btn-sm" onclick="mcpCopiar('mcpChaveNovaValor')" aria-label="Copiar chave"><i data-lucide="copy" style="width:13px;"></i></button>
+                            </div>
+                        </div>
+
+                        <div style="font-size:13px;font-weight:700;margin:22px 0 8px;">Como conectar</div>
+                        <div class="input-group">
+                            <label>URL do servidor MCP</label>
+                            <div style="display:flex;gap:8px;align-items:center;">
+                                <input id="mcpUrl" class="form-control" readonly style="font-family:monospace;font-size:12px;flex:1;min-width:0;">
+                                <button type="button" class="btn btn-ghost btn-sm" onclick="mcpCopiar('mcpUrl')" aria-label="Copiar URL"><i data-lucide="copy" style="width:13px;"></i></button>
+                            </div>
+                        </div>
+                        <ol style="font-size:12.5px;color:var(--muted);line-height:1.7;padding-left:18px;margin:8px 0 0;">
+                            <li><strong>Claude Code / Gemini CLI:</strong> adicione a URL como servidor MCP remoto e envie o cabeçalho <code>Authorization: Bearer &lt;sua chave&gt;</code>.</li>
+                            <li><strong>Apps de chat (Claude, ChatGPT):</strong> crie um conector personalizado com a URL. Se o app não aceitar cabeçalho, use a URL com a chave no final: <code>.../api/mcp/&lt;sua chave&gt;</code> (menos seguro: a URL pode aparecer em logs).</li>
+                            <li>Peça, por exemplo: <em>"Liste meus clientes e compare leads e vendas dos últimos 30 dias"</em>.</li>
+                        </ol>
+                    </div>
+
+                    <div class="card" style="padding:24px;">
+                        <div style="font-size:13px;font-weight:700;margin-bottom:12px;">Chaves</div>
+                        <div id="mcpChavesLista" style="font-size:13px;color:var(--muted);">Carregando...</div>
+                    </div>
+                </div>
+
+                <div class="card" style="padding:24px;margin-top:20px;">
+                    <div style="font-size:13px;font-weight:700;margin-bottom:12px;">Uso recente</div>
+                    <div id="mcpAuditoria" style="font-size:13px;color:var(--muted);overflow-x:auto;">Carregando...</div>
+                </div>
+            </div>
+        </div><!-- /aba-mcp -->
 
         <!-- ABA: ALERTA DE SALDO -->
         <div id="aba-alertas" class="aba-oculta">
@@ -3217,6 +3302,7 @@ async function init() {
             $('btn-agencia').style.display = 'flex';
             $('btn-ajustes').style.display = 'flex';
             $('btn-alertas').style.display = 'flex';
+            if ($('btn-mcp')) $('btn-mcp').style.display = 'flex';
             $('btn-logs').style.display = 'flex';
             if ($('tbGroupAdmin')) $('tbGroupAdmin').style.display = '';
             if ($('whiteLabelCard')) {
@@ -6034,7 +6120,7 @@ document.addEventListener('keydown', e => {
 });
 
 // ── Abas ───────────────────────────────────────────────────────
-const ABAS = ['leads','conversas','funil','relatorios','anuncios','captacao','inteligente','clientes','integracoes','conta','ajustes','alertas','agencia','whatsapp','zaprelatorios','logs'];
+const ABAS = ['leads','conversas','funil','relatorios','anuncios','captacao','inteligente','clientes','integracoes','conta','ajustes','alertas','mcp','agencia','whatsapp','zaprelatorios','logs'];
 const TITULOS = {
     leads:          '<i data-lucide="users" style="color:var(--blue);"></i> Leads',
     conversas:      '<i data-lucide="messages-square" style="color:#25D366;"></i> Conversas',
@@ -6048,6 +6134,7 @@ const TITULOS = {
     conta:          '<i data-lucide="user-cog" style="color:var(--blue);"></i> Minha Conta',
     ajustes:        '<i data-lucide="palette" style="color:var(--blue);"></i> Marca (White-label)',
     alertas:        '<i data-lucide="bell-ring" style="color:var(--blue);"></i> Alerta de Saldo',
+    mcp:            '<i data-lucide="bot" style="color:var(--blue);"></i> Acesso por IA (MCP)',
     agencia:        '<i data-lucide="building" style="color:var(--blue);"></i> Gestão de Clientes',
     whatsapp:       '<i data-lucide="smartphone" style="color:#25D366;"></i> Conexão WhatsApp',
     zaprelatorios:  '<i data-lucide="send" style="color:#25D366;"></i> Relatórios Automáticos',
@@ -6102,6 +6189,7 @@ function mudarAba(aba) {
     if (aba === 'zaprelatorios')  { carregarZapRelatorios(); }
     if (aba === 'logs')           { carregarLogs(); }
     if (aba === 'alertas')        { carregarAlertaSaldoConfig(); }
+    if (aba === 'mcp')            { carregarMcp(); }
     // Fecha sidebar mobile ao trocar de aba
     $('sidebar').classList.remove('mobile-open');
     $('sidebarOverlay').classList.remove('open');
@@ -6959,6 +7047,101 @@ async function salvarWhiteLabel() {
 // Relatórios Automáticos (zapModal*), mas para uma config ÚNICA e global
 // (não por cliente) — salva em configuracoes_sistema via api/alerta-saldo-config.js.
 const _alertaSaldoGruposCache = {};
+
+// ── Acesso por IA (MCP) — admin only ────────────────────────────
+let _mcpRevogarId = null;
+const mcpFmtData = (d) => d ? new Date(d).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }) : '—';
+
+function mcpCopiar(id) {
+    const el = $(id); if (!el) return;
+    navigator.clipboard.writeText(el.value).then(() => toast('Copiado!', 'success')).catch(() => { el.select(); toast('Selecione e copie manualmente.', 'info'); });
+}
+
+async function carregarMcp() {
+    const base = (window.APP_CONFIG?.API_BASE_URL || window.location.origin).replace(/\/$/, '');
+    if ($('mcpUrl')) $('mcpUrl').value = `${base}/api/mcp`;
+    await Promise.all([mcpCarregarChaves(), mcpCarregarAuditoria()]);
+    lucide.createIcons({ nodes: [$('aba-mcp')] });
+}
+
+async function mcpCarregarChaves() {
+    const box = $('mcpChavesLista'); if (!box) return;
+    try {
+        const r = await authFetch('/api/mcp-keys');
+        const rows = await readApiJson(r, 'Falha ao carregar chaves');
+        if (!rows.length) { box.textContent = 'Nenhuma chave criada ainda.'; return; }
+        box.innerHTML = rows.map(k => {
+            const revogada = !!k.revoked_at;
+            return `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);${revogada ? 'opacity:.55;' : ''}">
+                <div style="flex:1;min-width:0;">
+                    <div style="font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(k.nome)} <span style="font-family:monospace;color:var(--muted);font-weight:400;">••••${esc(k.last4)}</span></div>
+                    <div style="font-size:11.5px;color:var(--muted);">Criada ${mcpFmtData(k.created_at)} · Último uso ${mcpFmtData(k.last_used_at)}${revogada ? ' · <strong>Revogada</strong>' : ''}</div>
+                </div>
+                ${revogada ? '' : `<button type="button" class="btn btn-ghost btn-sm" data-mcp-id="${Number(k.id)}" data-mcp-nome="${esc(k.nome)}" onclick="mcpAbrirRevogar(this)" aria-label="Revogar chave"><i data-lucide="trash-2" style="width:13px;"></i></button>`}
+            </div>`;
+        }).join('');
+        lucide.createIcons({ nodes: [box] });
+    } catch (e) { box.textContent = e.message || 'Erro ao carregar chaves.'; }
+}
+
+async function mcpCarregarAuditoria() {
+    const box = $('mcpAuditoria'); if (!box) return;
+    try {
+        const r = await authFetch('/api/mcp-keys?audit=1');
+        const rows = await readApiJson(r, 'Falha ao carregar uso');
+        if (!rows.length) { box.textContent = 'Nenhuma chamada registrada ainda.'; return; }
+        const td = 'padding:6px 8px;';
+        box.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:12.5px;">
+            <thead><tr style="text-align:left;color:var(--muted);"><th style="${td}">Quando</th><th style="${td}">Chave</th><th style="${td}">Ferramenta</th><th style="${td}">Cliente</th><th style="${td}">Resultado</th></tr></thead>
+            <tbody>${rows.map(a => `<tr style="border-top:1px solid var(--border);">
+                <td style="${td}white-space:nowrap;">${mcpFmtData(a.created_at)}</td>
+                <td style="${td}">${esc(a.chave || '—')}</td>
+                <td style="${td}font-family:monospace;">${esc(a.tool || '')}</td>
+                <td style="${td}">${esc(a.cliente || (a.cliente_id ? '#' + a.cliente_id : 'Todos'))}</td>
+                <td style="${td}color:${a.ok ? '#10b981' : '#ef4444'};">${a.ok ? 'OK' : 'Erro'} · ${Number(a.duration_ms) || 0} ms</td>
+            </tr>`).join('')}</tbody></table>`;
+    } catch (e) { box.textContent = e.message || 'Erro ao carregar uso.'; }
+}
+
+async function mcpCriarChave() {
+    const input = $('mcpNovaChaveNome');
+    const nome = (input?.value || '').trim();
+    if (!nome) { toast('Informe um nome para a chave.', 'error'); input?.focus(); return; }
+    const btn = $('mcpBtnCriar'); if (btn) btn.disabled = true;
+    try {
+        const r = await authFetch('/api/mcp-keys', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nome }) });
+        const data = await readApiJson(r, 'Falha ao criar chave');
+        $('mcpChaveNovaValor').value = data.key;
+        $('mcpChaveNova').style.display = 'block';
+        input.value = '';
+        toast('Chave criada.', 'success');
+        mcpCarregarChaves();
+    } catch (e) { toast(e.message || 'Erro ao criar chave.', 'error'); }
+    finally { if (btn) btn.disabled = false; }
+}
+
+function mcpAbrirRevogar(btn) {
+    _mcpRevogarId = Number(btn.dataset.mcpId);
+    $('mcpRevogarNome').textContent = btn.dataset.mcpNome || '';
+    $('modalMcpRevogar').classList.add('open');
+}
+function mcpFecharRevogar() {
+    $('modalMcpRevogar')?.classList.remove('open');
+    _mcpRevogarId = null;
+}
+async function mcpConfirmarRevogar() {
+    const id = _mcpRevogarId; if (!id) return mcpFecharRevogar();
+    const btn = $('mcpBtnConfirmarRevogar'); const original = btn?.textContent;
+    if (btn) { btn.disabled = true; btn.textContent = 'Revogando...'; }
+    try {
+        const r = await authFetch(`/api/mcp-keys?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+        await readApiJson(r, 'Falha ao revogar chave');
+        toast('Chave revogada.', 'success');
+        mcpFecharRevogar();
+        mcpCarregarChaves();
+    } catch (e) { toast(e.message || 'Erro ao revogar.', 'error'); }
+    finally { if (btn) { btn.disabled = false; btn.textContent = original; } }
+}
 
 async function carregarAlertaSaldoConfig() {
     if (!$('alertaSaldoInstancia')) return;

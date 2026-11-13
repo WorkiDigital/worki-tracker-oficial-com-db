@@ -20,6 +20,18 @@ export default async function handler(req, res) {
     await ensureMcpSchema();
     const pool = getPool();
 
+    if (req.method === 'GET' && req.query.audit === '1') {
+      // Ultimas chamadas ao MCP (sem os argumentos completos, so ferramenta/cliente/resultado)
+      const r = await pool.query(
+        `SELECT a.created_at, a.tool, a.ok, a.duration_ms, a.cliente_id, c.nome AS cliente, k.nome AS chave
+         FROM mcp_audit_log a
+         LEFT JOIN mcp_api_keys k ON k.id = a.key_id
+         LEFT JOIN clientes c ON c.id = a.cliente_id
+         ORDER BY a.created_at DESC LIMIT 25`
+      );
+      return res.status(200).json(r.rows);
+    }
+
     if (req.method === 'GET') {
       const r = await pool.query(
         `SELECT id, nome, last4, created_at, last_used_at, revoked_at

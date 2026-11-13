@@ -1345,7 +1345,7 @@ html.light .nav-item.active { box-shadow:inset 3px 0 0 var(--blue); background:r
        colunas com largura fixa (280px+1fr / 520px+340px) nunca tinha
        fallback responsivo — no mobile a 2ª coluna ficava espremida ou
        estourava a largura da tela. Empilha em 1 coluna só. */
-    .wl-grid, .alerta-saldo-grid {
+    .wl-grid, .alerta-saldo-grid, .mcp-grid {
         grid-template-columns:1fr !important;
     }
     .alerta-saldo-grid > div:last-child { position:static; }
