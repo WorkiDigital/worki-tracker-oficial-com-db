@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Documentação — Adlytics Pro</title>
+<meta name="description" content="Aprenda a configurar o Adlytics Pro, conectar o WhatsApp, rastrear leads e acompanhar suas vendas. Guias visuais, exemplos e soluções para o dia a dia.">
 <link rel="icon" href="data:,">
 <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.js"></script>
 <style>
@@ -11,7 +12,7 @@
   --radius-sm: 6px; --radius-md: 8px; --radius-lg: 10px; --radius-xl: 14px;
   --bg: #0a0f1a; --sidebar: rgba(10,15,26,0.92); --card: rgba(13,19,33,0.85);
   --card-solid: #0d1321;
-  --text: #e2e8f0; --muted: #64748b;
+  --text: #e2e8f0; --muted: #9aaac0; --link: #93b4ff;
   --blue: #2563eb; --green: #4ade80; --red: #ef4444;
   --border: rgba(255,255,255,0.08); --hover: rgba(255,255,255,0.05); --tag: rgba(255,255,255,0.07);
   --shadow-card: 0 1px 4px rgba(0,0,0,0.4), 0 4px 16px rgba(0,0,0,0.25);
@@ -20,7 +21,7 @@
 html.light {
   --bg: #f0f4f8; --sidebar: rgba(255,255,255,0.95); --card: rgba(255,255,255,0.9);
   --card-solid: #ffffff;
-  --text: #0f172a; --muted: #64748b;
+  --text: #0f172a; --muted: #52647a; --link: #1d4ed8;
   --blue: #2563eb; --green: #16a34a;
   --border: rgba(0,0,0,0.08); --hover: rgba(0,0,0,0.03); --tag: rgba(0,0,0,0.05);
   --shadow-card: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
@@ -116,7 +117,8 @@ pre code { background:none; border:none; padding:0; }
 .doc-nav-item[data-hidden="1"] { display:none; }
 
 .doc-main { flex:1; min-width:0; padding:32px 40px 100px; }
-.doc-section { display:none; max-width:820px; }
+.doc-section { max-width:900px; }
+.docs-ready .doc-section { display:none; }
 .doc-section.active { display:block; }
 .doc-section h1 {
   font-size:26px; margin-bottom:6px; display:flex; align-items:center; gap:10px;
@@ -311,93 +313,326 @@ pre code { background:none; border:none; padding:0; }
   }
   .doc-overlay.open { display:block; }
 }
+/* Central de ajuda: leitura guiada, exemplos e navegação acessível. */
+:root { --topbar-height:65px; --soft-blue:rgba(37,99,235,.09); }
+html { scroll-padding-top:85px; }
+[hidden] { display:none !important; }
+button, input, summary { font:inherit; }
+button, a, summary, input { -webkit-tap-highlight-color:transparent; }
+:focus-visible { outline:3px solid var(--link); outline-offset:4px; }
+.sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
+.skip-link { position:fixed; top:8px; left:16px; padding:12px; background:var(--card-solid); z-index:100; transform:translateY(-150%); }
+.skip-link:focus { transform:translateY(0); }
+.doc-topbar { min-height:var(--topbar-height); padding:12px 28px; }
+.doc-topbar-brand { gap:12px; letter-spacing:-.3px; }
+.doc-topbar-brand svg { width:23px; height:23px; color:var(--link); }
+.doc-topbar-brand small { font-size:13px; font-weight:400; color:var(--muted); border-left:1px solid var(--border); padding-left:12px; }
+.btn-icon, .doc-mobile-toggle { width:40px; height:40px; flex-shrink:0; }
+.btn-back { min-height:40px; }
+.doc-shell { max-width:1440px; }
+.doc-sidebar { width:274px; top:var(--topbar-height); height:calc(100dvh - var(--topbar-height)); padding:24px 16px 48px; scrollbar-width:thin; }
+.doc-search { margin-bottom:8px; min-height:44px; }
+.doc-search:focus-within { border-color:var(--link); outline:2px solid var(--soft-blue); }
+.doc-search input { font-size:14px; min-width:0; }
+.doc-search input::-webkit-search-cancel-button { display:none; }
+.doc-search-clear { border:0; background:none; color:var(--muted); cursor:pointer; padding:4px; min-width:28px; }
+.doc-search-hint { font-size:11px; color:var(--muted); margin:0 10px 12px; }
+kbd { border:1px solid var(--border); border-radius:4px; padding:1px 4px; font:inherit; }
+.doc-nav-group-title { text-transform:none; letter-spacing:0; font-size:12px; padding-top:20px; }
+.doc-nav-item { min-height:39px; font-size:13px; line-height:1.4; }
+.doc-nav-item.active { color:var(--link); background:var(--soft-blue); }
+.doc-search-status { color:var(--muted); font-size:12px; padding:10px 2px; }
+.doc-search-result { display:block; padding:12px 8px; border-bottom:1px solid var(--border); text-decoration:none; }
+.doc-search-result:hover { background:var(--hover); }
+.doc-search-result strong { display:block; font-size:13px; color:var(--link); }
+.doc-search-result span { display:block; font-size:12px; line-height:1.55; color:var(--muted); margin-top:4px; }
+.doc-main { padding:32px 48px 72px; }
+.doc-article-tools { display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin-bottom:24px; font-size:12px; color:var(--muted); }
+.doc-article-tools .doc-copy { margin-left:auto; }
+.doc-copy { display:inline-flex; align-items:center; justify-content:center; gap:6px; min-height:34px; border:1px solid var(--border); border-radius:6px; padding:6px 10px; background:var(--card-solid); color:var(--text); cursor:pointer; font-size:12px; }
+.doc-copy:hover { border-color:var(--link); }
+.doc-copy svg { width:14px; height:14px; }
+.doc-section h1 { font-size:32px; line-height:1.2; letter-spacing:-.8px; align-items:flex-start; margin-bottom:12px; }
+.doc-section h1 svg { margin-top:5px; flex-shrink:0; color:var(--link); }
+.doc-kicker { line-height:1.7; max-width:70ch; }
+.doc-section h2 { font-size:20px; line-height:1.4; margin-top:38px; padding-top:26px; letter-spacing:-.3px; }
+.doc-section p { max-width:78ch; }
+.doc-section a:not(.doc-task):not(.doc-pager-link) { color:var(--link); text-underline-offset:3px; }
+.doc-section code { overflow-wrap:anywhere; }
+.doc-section pre code { overflow-wrap:normal; }
+.doc-section .doc-steps { margin:20px 0; }
+.doc-steps li { padding:0 0 20px 42px; }
+.doc-steps li::before { width:28px; height:28px; }
+.doc-steps li:last-child { padding-bottom:0; }
+.doc-steps small { display:block; color:var(--muted); font-size:13px; margin-top:4px; }
+.doc-section .doc-hero-title { font-size:42px; max-width:19ch; letter-spacing:-1.3px; margin:18px 0; }
+.doc-version { display:flex; flex-wrap:wrap; gap:8px 18px; color:var(--muted); font-size:12px; }
+.doc-version span { display:inline-flex; align-items:center; gap:6px; }
+.doc-version svg { width:14px; height:14px; }
+.doc-hero-actions { display:flex; flex-wrap:wrap; gap:10px; margin:24px 0 32px; }
+.doc-section .doc-action { display:inline-flex; align-items:center; gap:8px; padding:11px 16px; border:1px solid var(--border); border-radius:8px; font-size:14px; font-weight:600; text-decoration:none; }
+.doc-section .doc-action.primary { color:#fff; background:var(--blue); border-color:var(--blue); }
+.doc-action svg { width:16px; height:16px; }
+.doc-flow { border:1px solid var(--border); border-radius:12px; background:var(--card-solid); margin:24px 0; padding:24px; }
+.doc-flow figcaption { font-size:14px; font-weight:600; margin-bottom:22px; }
+.doc-section .doc-flow ol { list-style:none; display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:24px; margin:0; }
+.doc-flow li { position:relative; margin:0; }
+.doc-flow li:not(:last-child)::after { content:'→'; position:absolute; right:-18px; top:10px; color:var(--muted); }
+.doc-flow .flow-icon { display:flex; align-items:center; justify-content:center; width:40px; height:40px; margin-bottom:12px; background:var(--soft-blue); border-radius:10px; color:var(--link); }
+.flow-icon svg { width:20px; height:20px; }
+.doc-flow strong { display:block; font-size:13px; }
+.doc-flow small { display:block; color:var(--muted); font-size:12px; line-height:1.5; margin-top:5px; }
+.doc-flow .flow-note { border-top:1px solid var(--border); padding-top:14px; margin:20px 0 0; font-size:12px; color:var(--muted); }
+.doc-task-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin:18px 0 28px; }
+.doc-task { display:flex; flex-direction:column; align-items:flex-start; gap:12px; text-decoration:none; border:1px solid var(--border); border-radius:10px; padding:20px; background:var(--card-solid); }
+.doc-task:hover { border-color:var(--link); background:var(--soft-blue); }
+.doc-task > svg { width:23px; height:23px; color:var(--link); }
+.doc-task strong { font-size:15px; }
+.doc-task span { font-size:13px; line-height:1.65; color:var(--muted); }
+.doc-task em { margin-top:auto; color:var(--link); font-size:12px; font-style:normal; }
+.doc-context { display:grid; grid-template-columns:1.2fr 1fr; border-left:3px solid var(--blue); background:var(--soft-blue); padding:16px 20px; gap:16px; margin:20px 0; }
+.doc-context dt { font-size:11px; color:var(--muted); margin-bottom:5px; }
+.doc-context dd { font-size:13px; line-height:1.6; margin:0; }
+.doc-toc { margin:20px 0 28px; padding:12px 16px; border:1px solid var(--border); border-radius:8px; }
+.doc-toc summary { cursor:pointer; font-size:13px; font-weight:600; }
+.doc-section .doc-toc ul { display:grid; grid-template-columns:1fr 1fr; gap:6px 24px; margin:12px 0 0 16px; font-size:13px; line-height:1.6; }
+.doc-toc a { text-decoration:none; }
+.doc-toc a:hover { text-decoration:underline; }
+.doc-checklist { border:1px solid var(--border); border-radius:10px; margin:20px 0; overflow:hidden; }
+.doc-checklist-head { padding:18px; background:var(--soft-blue); }
+.doc-checklist-head strong { font-size:14px; }
+.doc-checklist-head p { font-size:12px; color:var(--muted); margin:8px 0 0; }
+.doc-checklist progress { width:100%; height:7px; accent-color:var(--blue); display:block; margin-top:12px; }
+.doc-checklist label { display:flex; align-items:flex-start; gap:12px; padding:14px 18px; border-top:1px solid var(--border); font-size:14px; cursor:pointer; line-height:1.6; }
+.doc-checklist input { width:18px; height:18px; margin-top:3px; flex-shrink:0; accent-color:var(--blue); }
+.doc-checklist label:has(input:checked) { color:var(--muted); background:var(--hover); }
+.doc-checklist label small { display:block; color:var(--muted); font-size:12px; }
+.doc-checklist-foot { display:flex; justify-content:space-between; gap:12px; padding:12px 18px; border-top:1px solid var(--border); align-items:center; }
+.doc-checklist-foot span { font-size:12px; color:var(--muted); }
+.doc-example { padding:20px; border:1px solid var(--border); border-radius:10px; margin:20px 0; background:var(--card-solid); }
+.doc-example-label { display:flex; align-items:center; gap:7px; color:var(--muted); font-size:12px; margin-bottom:14px; }
+.doc-example-label svg { width:15px; height:15px; }
+.doc-example p:last-child { margin-bottom:0; }
+.doc-faq-item { margin-bottom:0; }
+summary.doc-faq-q { list-style:none; min-height:54px; }
+summary.doc-faq-q::-webkit-details-marker { display:none; }
+.doc-faq-item[open] .doc-faq-a { display:block; }
+.doc-faq-item[open] .doc-faq-q svg { transform:rotate(180deg); }
+.doc-faq-a { color:var(--text); }
+.doc-table { min-width:520px; }
+.doc-table th { text-transform:none; letter-spacing:0; font-size:12px; }
+.doc-table td:first-child { white-space:normal; min-width:145px; }
+.doc-table tr:nth-child(even) { background:var(--hover); }
+.doc-table-wrap, .mock { scrollbar-width:thin; }
+.doc-table-wrap { border-radius:8px; }
+.mock { overflow:auto; }
+.mock-cap { line-height:1.6; }
+.mk-tabs { overflow-x:auto; }
+.doc-code { position:relative; margin:16px 0; }
+.doc-code > .doc-copy { display:flex; margin:0 0 6px auto; }
+.doc-section pre { margin:0; }
+.doc-pager { display:grid; grid-template-columns:1fr 1fr; gap:16px; border-top:1px solid var(--border); padding-top:28px; margin-top:44px; }
+.doc-pager-link { display:flex; flex-direction:column; gap:6px; text-decoration:none; font-size:14px; padding:14px; border:1px solid var(--border); border-radius:8px; }
+.doc-pager-link:hover { border-color:var(--link); }
+.doc-pager-link:last-child { text-align:right; }
+.doc-pager-link span { font-size:11px; color:var(--muted); }
+.doc-footer { color:var(--muted); font-size:12px; margin-top:32px; line-height:1.7; }
+.doc-toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); max-width:calc(100% - 32px); padding:12px 20px; background:var(--card-solid); border:1px solid var(--border); border-radius:8px; color:var(--text); box-shadow:var(--shadow-card); z-index:50; font-size:13px; }
+.doc-section h1, .doc-section h2, .doc-section h3 { scroll-margin-top:16px; }
+.doc-section h2:target { color:var(--link); }
+.doc-print-label { display:none; }
+@media (max-width:1100px) { .doc-main { padding:28px; } .doc-task { padding:16px; } }
+@media (max-width:900px) {
+  .doc-sidebar { top:var(--topbar-height); width:310px; max-width:calc(100% - 44px); visibility:hidden; }
+  .doc-sidebar.open { visibility:visible; }
+  .doc-overlay { top:var(--topbar-height); }
+  body.doc-menu-open { overflow:hidden; }
+  .doc-main { padding:24px; }
+  .doc-topbar { padding:12px 16px; }
+}
+@media (max-width:620px) {
+  .doc-main { padding:24px 18px 48px; }
+  .doc-topbar-brand small { display:none; }
+  .doc-topbar-brand { font-size:14px; gap:7px; }
+  .doc-topbar-brand svg { display:none; }
+  .doc-topbar-actions { gap:6px; }
+  .btn-back { font-size:12px; padding:7px 9px; }
+  .btn-back span { display:none; }
+  .doc-print-btn { display:none; }
+  .doc-section h1 { font-size:28px; }
+  .doc-section .doc-hero-title { font-size:34px; }
+  .doc-task-grid, .doc-context, .doc-section .doc-toc ul { grid-template-columns:1fr; }
+  .doc-task { gap:9px; }
+  .doc-task > svg { display:none; }
+  .doc-flow { padding:20px; }
+  .doc-section .doc-flow ol { grid-template-columns:1fr; gap:22px; }
+  .doc-flow li { padding-left:56px; min-height:44px; }
+  .doc-flow .flow-icon { position:absolute; left:0; top:0; }
+  .doc-flow li:not(:last-child)::after { content:'↓'; top:auto; bottom:-23px; left:16px; right:auto; }
+  .doc-flow small { margin-top:2px; }
+  .doc-table-wrap::before { content:'Deslize a tabela para ver todas as colunas.'; display:block; font-size:11px; color:var(--muted); margin-bottom:8px; }
+  .doc-context { gap:12px; }
+  .doc-article-tools { gap:8px; }
+  .doc-checklist-foot { align-items:flex-start; }
+  .doc-pager { gap:8px; }
+}
+@media (prefers-reduced-motion:reduce) { *, *::before, *::after { scroll-behavior:auto !important; transition:none !important; animation:none !important; } }
+@media print {
+  :root, html.light { --bg:#fff; --card:#fff; --card-solid:#fff; --text:#111; --muted:#444; --border:#bbb; --link:#1d4ed8; --tag:#f4f4f4; --shadow-card:none; }
+  body { overflow:visible !important; }
+  .doc-topbar, .doc-sidebar, .doc-overlay, .doc-article-tools, .doc-toc, .doc-pager, .doc-copy, .doc-toast, .doc-checklist-foot, .skip-link { display:none !important; }
+  .doc-shell, .doc-main { display:block; padding:0; margin:0; max-width:none; }
+  .docs-ready .doc-section { display:block; max-width:none; break-before:page; }
+  .doc-section:first-of-type { break-before:auto; }
+  .doc-section h1 { font-size:25px; }
+  .doc-section h2 { break-after:avoid; }
+  .doc-print-label { display:block; }
+  .doc-table, .mk-table { min-width:0; font-size:10px; }
+  .doc-table th, .doc-table td { padding:6px; }
+  .mk-table td, .mk-table th { white-space:normal; }
+  .doc-table-wrap, .mock, pre { overflow:visible; }
+  pre { white-space:pre-wrap; overflow-wrap:anywhere; }
+  .doc-callout, .doc-context, .doc-task, .doc-faq-item, tr { break-inside:avoid; }
+  .doc-faq-a { display:block; }
+  .doc-task-grid { grid-template-columns:repeat(3,1fr); }
+  .doc-flow ol { grid-template-columns:repeat(5,1fr) !important; }
+  .doc-flow li { padding-left:0; }
+  .doc-flow .flow-icon { position:static; }
+  .doc-flow li::after { display:none; }
+  a { text-decoration:none; }
+}
 </style>
 </head>
 <body>
+<a class="skip-link" href="#docMain">Pular para o conteúdo</a>
 
-<div class="doc-topbar">
+<header class="doc-topbar">
   <div style="display:flex;align-items:center;gap:10px;">
-    <button class="doc-mobile-toggle" id="docMobileToggle" aria-label="Abrir menu"><i data-lucide="menu"></i></button>
-    <div class="doc-topbar-brand"><i data-lucide="book-open-text"></i><span>Adlytics Pro — Documentação</span></div>
+    <button class="doc-mobile-toggle" id="docMobileToggle" aria-label="Abrir menu da documentação" aria-controls="docSidebar" aria-expanded="false"><i data-lucide="menu"></i></button>
+    <div class="doc-topbar-brand"><i data-lucide="book-open-text"></i><span>Adlytics Pro</span><small>Central de ajuda</small></div>
   </div>
   <div class="doc-topbar-actions">
-    <a class="btn-back" href="/index.html"><i data-lucide="arrow-left"></i>Voltar ao painel</a>
-    <button class="btn-icon" id="docThemeBtn" onclick="docToggleTheme()" title="Alternar tema" aria-label="Alternar tema claro/escuro"><i data-lucide="moon"></i></button>
+    <a class="btn-back" href="/index.html" aria-label="Voltar ao painel"><i data-lucide="arrow-left"></i><span>Voltar ao </span>painel</a>
+    <button class="btn-icon doc-print-btn" id="docPrintBtn" title="Imprimir ou salvar guia em PDF" aria-label="Imprimir ou salvar guia em PDF"><i data-lucide="printer"></i></button>
+    <button class="btn-icon" id="docThemeBtn" title="Alternar tema" aria-label="Alternar tema claro/escuro"><i data-lucide="moon"></i></button>
   </div>
-</div>
+</header>
 
 <div class="doc-overlay" id="docOverlay"></div>
 
 <div class="doc-shell">
-  <aside class="doc-sidebar" id="docSidebar">
-    <div class="doc-search">
+  <aside class="doc-sidebar" id="docSidebar" aria-label="Menu da documentação">
+    <div class="doc-search" role="search">
       <i data-lucide="search"></i>
-      <input type="text" id="docSearchInput" placeholder="Buscar na documentação..." oninput="docFilterNav(this.value)">
+      <label for="docSearchInput" class="sr-only">Buscar em toda a documentação</label>
+      <input type="search" id="docSearchInput" placeholder="O que você quer aprender?" autocomplete="off" aria-controls="docSearchResults" aria-describedby="docSearchStatus">
+      <button class="doc-search-clear" id="docSearchClear" aria-label="Limpar busca" hidden>×</button>
     </div>
-
+    <p class="doc-search-hint">Busque por tema, campo ou dúvida. <kbd>Ctrl K</kbd></p>
+    <div id="docSearchStatus" class="doc-search-status" role="status" aria-live="polite" hidden></div>
+    <div id="docSearchResults" aria-label="Resultados da busca" hidden></div>
+    <nav id="docNav" aria-label="Guias do produto">
     <div class="doc-nav-group">
-      <div class="doc-nav-group-title">Começando</div>
-      <a class="doc-nav-item" data-section="intro" onclick="docShow('intro')"><i data-lucide="rocket"></i>Visão geral</a>
-      <a class="doc-nav-item" data-section="config-inicial" onclick="docShow('config-inicial')"><i data-lucide="settings-2"></i>Configuração inicial</a>
-      <a class="doc-nav-item" data-section="permissoes" onclick="docShow('permissoes')"><i data-lucide="shield-check"></i>Permissões por cliente</a>
+      <div class="doc-nav-group-title">Comece por aqui</div>
+      <a class="doc-nav-item" data-section="intro" href="#intro"><i data-lucide="compass"></i>Visão geral</a>
+      <a class="doc-nav-item" data-section="config-inicial" href="#config-inicial"><i data-lucide="list-checks"></i>Configuração inicial</a>
     </div>
-
     <div class="doc-nav-group">
-      <div class="doc-nav-group-title">Funcionalidades</div>
-      <a class="doc-nav-item" data-section="leads" onclick="docShow('leads')"><i data-lucide="users"></i>Leads</a>
-      <a class="doc-nav-item" data-section="conversas" onclick="docShow('conversas')"><i data-lucide="message-circle"></i>Monitor de Conversas</a>
-      <a class="doc-nav-item" data-section="meta-ads" onclick="docShow('meta-ads')"><i data-lucide="bar-chart-3"></i>Meta Ads</a>
-      <a class="doc-nav-item" data-section="relatorios" onclick="docShow('relatorios')"><i data-lucide="file-chart-column"></i>Relatórios</a>
-      <a class="doc-nav-item" data-section="captacao" onclick="docShow('captacao')"><i data-lucide="link"></i>Link de Rastreamento</a>
-      <a class="doc-nav-item" data-section="inteligente" onclick="docShow('inteligente')"><i data-lucide="brain-circuit"></i>Rastreamento Inteligente</a>
-      <a class="doc-nav-item" data-section="whatsapp" onclick="docShow('whatsapp')"><i data-lucide="qr-code"></i>Conexão WhatsApp</a>
-      <a class="doc-nav-item" data-section="zap-relatorios" onclick="docShow('zap-relatorios')"><i data-lucide="send"></i>Relatórios Automáticos</a>
-      <a class="doc-nav-item" data-section="compartilhar" onclick="docShow('compartilhar')"><i data-lucide="share-2"></i>Compartilhar Dashboard</a>
-      <a class="doc-nav-item" data-section="alerta-saldo" onclick="docShow('alerta-saldo')"><i data-lucide="bell-ring"></i>Alerta de Saldo</a>
-      <a class="doc-nav-item" data-section="marca" onclick="docShow('marca')"><i data-lucide="palette"></i>Marca (White-label)</a>
-      <a class="doc-nav-item" data-section="logs" onclick="docShow('logs')"><i data-lucide="terminal"></i>Logs do Sistema</a>
+      <div class="doc-nav-group-title">Atendimento</div>
+      <a class="doc-nav-item" data-section="whatsapp" href="#whatsapp"><i data-lucide="qr-code"></i>Conexão WhatsApp</a>
+      <a class="doc-nav-item" data-section="leads" href="#leads"><i data-lucide="users"></i>Leads</a>
+      <a class="doc-nav-item" data-section="conversas" href="#conversas"><i data-lucide="messages-square"></i>Conversas</a>
     </div>
-
     <div class="doc-nav-group">
-      <div class="doc-nav-group-title">Suporte</div>
-      <a class="doc-nav-item" data-section="faq" onclick="docShow('faq')"><i data-lucide="circle-help"></i>Perguntas frequentes</a>
+      <div class="doc-nav-group-title">Campanhas e rastreamento</div>
+      <a class="doc-nav-item" data-section="meta-ads" href="#meta-ads"><i data-lucide="chart-no-axes-combined"></i>Meta Ads</a>
+      <a class="doc-nav-item" data-section="captacao" href="#captacao"><i data-lucide="link"></i>Link de Rastreamento</a>
+      <a class="doc-nav-item" data-section="inteligente" href="#inteligente"><i data-lucide="workflow"></i>Rastreamento Inteligente</a>
     </div>
+    <div class="doc-nav-group">
+      <div class="doc-nav-group-title">Métricas e resultados</div>
+      <a class="doc-nav-item" data-section="relatorios" href="#relatorios"><i data-lucide="chart-column"></i>Relatórios</a>
+      <a class="doc-nav-item" data-section="compartilhar" href="#compartilhar"><i data-lucide="share-2"></i>Compartilhar Dash</a>
+      <a class="doc-nav-item" data-section="zap-relatorios" href="#zap-relatorios"><i data-lucide="send"></i>Relatórios Automáticos</a>
+    </div>
+    <div class="doc-nav-group">
+      <div class="doc-nav-group-title">Configurações</div>
+      <a class="doc-nav-item" data-section="integracoes" href="#integracoes"><i data-lucide="plug"></i>Integrações</a>
+      <a class="doc-nav-item" data-section="minha-conta" href="#minha-conta"><i data-lucide="user-cog"></i>Minha Conta</a>
+    </div>
+    <div class="doc-nav-group">
+      <div class="doc-nav-group-title">Administração</div>
+      <a class="doc-nav-item" data-section="permissoes" href="#permissoes"><i data-lucide="shield-check"></i>Clientes e permissões</a>
+      <a class="doc-nav-item" data-section="mcp" href="#mcp"><i data-lucide="bot"></i>Acesso por IA (MCP)</a>
+      <a class="doc-nav-item" data-section="alerta-saldo" href="#alerta-saldo"><i data-lucide="bell-ring"></i>Alerta de Saldo</a>
+      <a class="doc-nav-item" data-section="marca" href="#marca"><i data-lucide="palette"></i>Marca</a>
+      <a class="doc-nav-item" data-section="logs" href="#logs"><i data-lucide="terminal"></i>Logs do Sistema</a>
+    </div>
+    <div class="doc-nav-group">
+      <div class="doc-nav-group-title">Precisa de ajuda?</div>
+      <a class="doc-nav-item" data-section="diagnostico" href="#diagnostico"><i data-lucide="stethoscope"></i>Resolver um problema</a>
+      <a class="doc-nav-item" data-section="glossario" href="#glossario"><i data-lucide="book-open"></i>Glossário de métricas</a>
+      <a class="doc-nav-item" data-section="faq" href="#faq"><i data-lucide="circle-help"></i>Perguntas frequentes</a>
+    </div>
+    </nav>
   </aside>
 
-  <main class="doc-main">
+  <main class="doc-main" id="docMain" tabindex="-1">
+    <div class="doc-article-tools" id="docArticleTools" hidden>
+      <span id="docBreadcrumb"></span><span id="docReadTime"></span>
+      <button class="doc-copy" id="docCopyLink"><i data-lucide="link"></i>Copiar link</button>
+    </div>
 
     <!-- INTRO -->
     <section class="doc-section" id="sec-intro">
-      <h1><i data-lucide="rocket"></i>Visão geral</h1>
-      <p class="doc-kicker">O que é o Adlytics Pro e como as peças se encaixam.</p>
-      <p>O <strong>Adlytics Pro</strong> é um painel de rastreamento de leads via WhatsApp com integração a Meta Ads e Google Ads. Ele conecta sua instância do WhatsApp, recebe as conversas em tempo real, identifica automaticamente de qual anúncio (Meta ou Google) ou link cada contato veio, e organiza tudo em um funil de vendas — do primeiro contato até a venda fechada — com métricas de resposta, conversão e faturamento.</p>
-      <p>Na prática, ele resolve uma pergunta que a maioria das empresas que anunciam e atendem pelo WhatsApp não consegue responder: <strong>"qual anúncio realmente gerou essa venda?"</strong>. O sistema junta o clique no anúncio, a conversa no WhatsApp e o resultado (venda, qualificação, etc.) numa única linha do tempo por lead.</p>
-      <h2>As 4 peças principais</h2>
-      <ul>
-        <li><strong>Conexão WhatsApp</strong> — sua instância conectada (via QR Code), que recebe e envia mensagens dentro do próprio painel.</li>
-        <li><strong>Rastreamento</strong> — identifica de onde veio cada lead: anúncio nativo do WhatsApp (CTWA), link próprio criado no sistema, ou contato orgânico (sem anúncio).</li>
-        <li><strong>Meta Ads / Google Ads</strong> — métricas de campanhas, conjuntos e anúncios trazidas direto da conta de anúncios, cruzadas com os leads reais.</li>
-        <li><strong>Leads, Conversas e Relatórios</strong> — tudo organizado num só lugar: quem entrou em contato, o histórico da conversa, e os números consolidados de vendas/conversão.</li>
-      </ul>
-      <h2>Um fluxo típico, do início ao fim</h2>
-      <ol class="doc-steps">
-        <li>Alguém clica em um anúncio (ou em um link seu) e é redirecionado para o WhatsApp.</li>
-        <li>A mensagem chega na sua instância conectada — o Adlytics Pro identifica automaticamente que aquele contato veio de um anúncio/link específico e cria um <strong>lead</strong>.</li>
-        <li>Você (ou seu atendente) conversa normalmente pelo WhatsApp — e pode inclusive responder direto de dentro do painel, na aba <em>Conversas</em>.</li>
-        <li>Conforme a conversa avança, você marca o lead como <strong>Qualificado</strong> ou registra a <strong>Venda</strong> — e, se configurado, o sistema já avisa a Meta desse resultado (CAPI), melhorando a otimização dos próprios anúncios.</li>
-        <li>Nos <em>Relatórios</em> e no <em>Meta Ads</em>, você vê o resultado consolidado: quantos leads cada campanha trouxe, quantos viraram venda, e qual o retorno real do investimento.</li>
-      </ol>
-      <div class="doc-callout tip">
-        <i data-lucide="lightbulb"></i>
-        <span>Se você é novo por aqui, siga a ordem do menu <strong>Começando</strong> ao lado: <em>Configuração inicial</em> → <em>Permissões por cliente</em>, e depois explore as funcionalidades conforme for precisando delas no dia a dia.</span>
+      <div class="doc-version"><span><i data-lucide="book-open-text"></i>Guia do produto</span><span>Atualizado em <time datetime="2026-11-17">17 nov. 2026</time></span></div>
+      <h1 class="doc-hero-title">Entenda o caminho de cada lead.</h1>
+      <p class="doc-kicker">Do anúncio à conversa, da conversa à venda. Aprenda a configurar o Adlytics Pro e usar os dados para acompanhar seu atendimento e suas campanhas.</p>
+      <div class="doc-hero-actions">
+        <a class="doc-action primary" href="#config-inicial"><i data-lucide="list-checks"></i>Configurar minha primeira conta</a>
+        <a class="doc-action" href="#diagnostico"><i data-lucide="stethoscope"></i>Resolver um problema</a>
       </div>
+      <figure class="doc-flow">
+        <figcaption>Como o Adlytics Pro conecta as etapas</figcaption>
+        <ol>
+          <li><span class="flow-icon"><i data-lucide="mouse-pointer-2"></i></span><strong>Anúncio ou link</strong><small>A pessoa encontra sua oferta e clica.</small></li>
+          <li><span class="flow-icon"><i data-lucide="message-circle"></i></span><strong>Mensagem</strong><small>Ela envia uma mensagem ao WhatsApp conectado.</small></li>
+          <li><span class="flow-icon"><i data-lucide="contact"></i></span><strong>Lead registrado</strong><small>O painel aplica as regras de captura e identifica a origem disponível.</small></li>
+          <li><span class="flow-icon"><i data-lucide="badge-check"></i></span><strong>Atendimento e venda</strong><small>Você qualifica o contato e registra o resultado.</small></li>
+          <li><span class="flow-icon"><i data-lucide="chart-column"></i></span><strong>Relatórios</strong><small>Acompanhe conversão, receita e desempenho.</small></li>
+        </ol>
+        <p class="flow-note"><strong>Um clique não é um lead.</strong> Abrir o WhatsApp não basta: a mensagem precisa chegar, atender às regras de captura e, para receber uma campanha, conter uma identificação válida.</p>
+      </figure>
+      <h2>O que você quer fazer agora?</h2>
+      <div class="doc-task-grid">
+        <a class="doc-task" href="#config-inicial"><i data-lucide="settings-2"></i><strong>Preparar a conta</strong><span>Cadastre o cliente, conecte o número e confira sua primeira captura.</span><em>Guia de configuração</em></a>
+        <a class="doc-task" href="#leads"><i data-lucide="messages-square"></i><strong>Atender e vender</strong><span>Encontre contatos, acompanhe conversas e registre vendas.</span><em>Guia de Leads</em></a>
+        <a class="doc-task" href="#relatorios"><i data-lucide="chart-no-axes-combined"></i><strong>Entender os resultados</strong><span>Leia os indicadores e compartilhe o desempenho com o cliente.</span><em>Guia de Relatórios</em></a>
+      </div>
+      <h2>Qual rastreamento usar?</h2>
+      <div class="doc-table-wrap"><table class="doc-table">
+        <tr><th>Onde a conversa começa</th><th>O que usar</th><th>O que conferir</th></tr>
+        <tr><td>Anúncio da Meta que abre o WhatsApp</td><td><a href="#whatsapp">Conexão WhatsApp</a> + anúncio CTWA.</td><td>O anúncio precisa enviar os dados de origem junto da mensagem.</td></tr>
+        <tr><td>Bio, site ou anúncio com uma URL</td><td><a href="#captacao">Link de Rastreamento</a> ou o script para site gerado no link.</td><td>O clique e a mensagem precisam manter a identificação de rastreamento.</td></tr>
+        <tr><td>Contato direto, indicação ou busca orgânica</td><td>Modo <strong>Todos os contatos</strong> ou <strong>Por palavra-chave</strong>, em <a href="#whatsapp">Captura</a>.</td><td>O contato pode entrar como orgânico, sem campanha de anúncio atribuída.</td></tr>
+      </table></div>
+      <div class="doc-callout info"><i data-lucide="info"></i><span><strong>Meta Ads e Google Ads têm funções diferentes aqui.</strong> O painel de campanhas e gastos é da Meta. A integração com Google Ads configura a tag de conversão para links/sites; os leads identificados como Google também aparecem na análise de origem.</span></div>
+      <h2>Um exemplo para ligar os pontos</h2>
+      <div class="doc-example">
+        <div class="doc-example-label"><i data-lucide="flask-conical"></i>Exemplo fictício, para aprender</div>
+        <p>Uma loja divulga um link na bio. Uma pessoa clica e envia a mensagem pré-preenchida. Com a identificação preservada, o Adlytics registra o contato e a origem do link.</p>
+        <p>O atendente responde em <strong>Conversas</strong> e registra uma venda de <strong>R$ 250</strong> em <strong>Leads</strong>. O registro alimenta os relatórios. O envio de um evento para a Meta é uma etapa separada e depende da configuração e da identificação disponíveis.</p>
+      </div>
+      <p class="muted">As telas ilustradas neste guia usam dados fictícios. Algumas opções do painel aparecem apenas para administradores ou quando liberadas nas permissões do cliente.</p>
     </section>
 
     <!-- CONFIG INICIAL -->
     <section class="doc-section" id="sec-config-inicial">
       <h1><i data-lucide="settings-2"></i>Configuração inicial</h1>
-      <p class="doc-kicker">O passo a passo completo para deixar uma conta de cliente pronta para uso, do zero.</p>
-      <p>Esta seção assume que você (agência/admin) já tem um cliente cadastrado em <em>Gestão de Clientes</em>. Se ainda não tem, crie primeiro por lá (botão <strong>Novo Cliente</strong>, preenchendo nome e e-mail de acesso) e depois volte para os passos abaixo.</p>
+      <p class="doc-kicker">Prepare uma conta e valide o percurso de uma mensagem até o primeiro lead.</p>
+      <dl class="doc-context"><div><dt>Quem faz</dt><dd>Administrador da agência. O cliente pode usar as telas que forem liberadas para ele.</dd></div><div><dt>Tenha em mãos</dt><dd>Acesso ao painel, celular com WhatsApp e credenciais das integrações que você vai usar.</dd></div></dl>
+      <h2>Prepare, conecte e teste</h2>
+      <p>Em <strong>Gestão de Clientes → Novo Cliente</strong>, cadastre o e-mail e a senha de acesso. Complete os dados da empresa e selecione o cliente correto antes de conectar o número. <a href="#permissoes">Veja os campos e as permissões</a>.</p>
       <ol class="doc-steps">
         <li>
           <strong>Conecte o WhatsApp.</strong> Abra a aba <em>Conexão WhatsApp</em> no menu lateral. Clique em <strong>Gerar QR Code</strong> e escaneie com o celular do número que vai atender os leads (Configurações → Aparelhos conectados → Conectar um aparelho, no próprio WhatsApp do celular). Em poucos segundos o status muda para <strong>Conectado</strong> e a instância já está recebendo mensagens.
@@ -406,13 +641,13 @@ pre code { background:none; border:none; padding:0; }
           <strong>Escolha o modo de captura de leads.</strong> Ainda em Conexão WhatsApp, clique no botão <strong>Captura</strong> e escolha uma das 3 opções: <em>Apenas anúncios (CTWA)</em> — o padrão mais seguro, só cria lead quem clicou num anúncio "Clique para WhatsApp"; <em>Todos os contatos</em> — cria lead para qualquer pessoa que mandar mensagem, mesmo sem anúncio; <em>Por palavra-chave</em> — só cria lead se a primeira mensagem contiver um termo específico que você configura.
         </li>
         <li>
-          <strong>Vincule a conta de anúncios da Meta.</strong> Abra o modal de edição desse cliente em <em>Gestão de Clientes</em> (ícone de editar na linha do cliente) e vá na aba <strong>Meta Ads</strong>. Cole ali o <em>Token de acesso</em> (gerado no Business Manager da Meta, de preferência um token de <em>System User</em> — não expira quando alguém troca de senha) e o <em>ID da Conta de Anúncios</em> (formato <code>act_1234567890</code>, sem o prefixo <code>act_</code> mesmo). É esse token que traz campanhas, gasto e todas as métricas de Ads para o painel desse cliente.
+          <strong>Vincule a conta de anúncios da Meta, se for usá-la.</strong> Abra <strong>Gestão de Clientes → Editar → Meta Ads</strong>. Preencha <strong>Token Meta</strong> e <strong>ID da Conta de Anúncios</strong>, no formato exibido pelo campo: <code>act_1234567890</code>. O token precisa ter acesso à conta informada. <small>Confira: a conta e suas campanhas aparecem na aba Meta Ads ao escolher um período com atividade.</small>
         </li>
         <li>
-          <strong>(Opcional, mas recomendado) Configure a CAPI da Meta.</strong> Na mesma aba Meta Ads, mais abaixo, cadastre o <em>Pixel ID</em> e o <em>Token de CAPI</em> (pode ser gerado no mesmo lugar que o token de anúncios, no Gerenciador de Eventos da Meta). Isso permite que o Adlytics Pro avise a Meta automaticamente quando um lead vira venda/qualificado — o que ajuda o próprio algoritmo de anúncios a encontrar mais gente parecida com quem realmente compra.
+          <strong>Configure os eventos da Meta de acordo com o canal.</strong> <strong>Pixel Meta + Token Meta</strong> atendem ao canal WhatsApp/CTWA. Para links rastreáveis, preencha <strong>Pixel CAPI Web + Token CAPI Web</strong>. As duas configurações ficam na edição do cliente e também em <strong>Integrações</strong>. <a href="#integracoes">Entenda qual campo usar</a>.
         </li>
         <li>
-          <strong>(Se anunciar no Google também) Configure o Google Ads.</strong> Ainda no modal do cliente, na aba <strong>Google Ads</strong>, preencha o <em>ID de conversão</em> (formato <code>AW-XXXXXXXXX</code>) e o <em>Rótulo de conversão</em> — ambos você encontra no Google Ads, em Ferramentas → Conversões → sua ação de conversão → Configuração da tag.
+          <strong>Se usar conversões do Google Ads, configure a tag.</strong> Na aba <strong>Google Ads</strong> da edição, preencha o <strong>ID de conversão</strong> (ex.: <code>AW-123456789</code>) e o <strong>Label da conversão</strong> da ação escolhida. O evento depende do clique de origem Google e da execução da tag no navegador; não representa, por si só, uma venda no WhatsApp.
         </li>
         <li>
           <strong>Crie seu primeiro link de rastreamento</strong> — necessário se você for divulgar o WhatsApp em algum site, na bio do Instagram, ou quiser um link "sem anúncio" com rastreamento próprio. Vá em <em>Link de Rastreamento</em> no menu e clique em <strong>Novo Link</strong> (veja o passo a passo detalhado na seção própria, ao lado).
@@ -423,7 +658,23 @@ pre code { background:none; border:none; padding:0; }
       </ol>
       <div class="doc-callout warn">
         <i data-lucide="triangle-alert"></i>
-        <span>O token da Meta deve ser o do <strong>Business Manager do próprio cliente</strong>. Um token de outra conta/agência não enxerga os anúncios desse cliente específico, mesmo sendo um token tecnicamente válido — cada token só lista as contas de anúncio que foram compartilhadas com ele.</span>
+        <span>O token da Meta precisa ter <strong>acesso à conta de anúncios do cliente</strong>. Um token válido, mas sem acesso a essa conta, não consegue consultar suas campanhas. Confira as permissões e o ID da conta se a lista vier vazia.</span>
+      </div>
+      <h2>Faça um teste completo</h2>
+      <ol class="doc-steps">
+        <li>Confirme o cliente selecionado e o status <strong>Conectado</strong> do WhatsApp.</li>
+        <li>Abra um link que você criou e, usando outro número, <strong>envie a mensagem pré-preenchida sem apagá-la</strong>. Para testar CTWA, a entrada precisa vir de um anúncio desse formato.</li>
+        <li>Em <strong>Leads</strong>, escolha um período que inclua o teste e confira telefone, instância e origem. Se o contato já existir, verifique a janela de deduplicação antes de esperar uma nova linha.</li>
+        <li>Se faltar o lead ou a origem, siga o <a href="#diagnostico">guia de diagnóstico</a>. Se estiver testando CAPI, o administrador deve conferir também <strong>Logs do Sistema</strong>.</li>
+      </ol>
+      <div class="doc-checklist">
+        <div class="doc-checklist-head"><strong>Seu checklist de preparação</strong><p>Marque depois de conferir no painel. Este checklist é um lembrete pessoal deste navegador; não consulta nem altera a configuração de clientes.</p><progress id="docChecklistProgress" value="0" max="5" aria-label="Etapas conferidas"></progress></div>
+        <label><input type="checkbox" data-check="cliente"><span>Cliente e acesso revisados<small>Confirme os dados e as abas liberadas.</small></span></label>
+        <label><input type="checkbox" data-check="whatsapp"><span>WhatsApp conectado<small>O número correto aparece com status Conectado.</small></span></label>
+        <label><input type="checkbox" data-check="captura"><span>Modo de captura escolhido<small>CTWA, todos os contatos ou palavra-chave.</small></span></label>
+        <label><input type="checkbox" data-check="integracoes"><span>Integrações necessárias revisadas<small>Configure apenas os canais que esta conta utiliza.</small></span></label>
+        <label><input type="checkbox" data-check="teste"><span>Mensagem de teste conferida em Leads<small>Valide o contato e a origem esperada.</small></span></label>
+        <div class="doc-checklist-foot"><span id="docChecklistStatus" role="status" aria-live="polite">0 de 5 etapas conferidas</span><button class="doc-copy" id="docChecklistReset">Reiniciar checklist</button></div>
       </div>
     </section>
 
@@ -483,7 +734,7 @@ pre code { background:none; border:none; padding:0; }
         <table class="doc-table">
           <tr><th>Campo</th><th>Formato / exemplo</th><th>Para que serve</th></tr>
           <tr><td>Pixel Meta</td><td>Só números</td><td>Pixel usado nos eventos de conversão do WhatsApp.</td></tr>
-          <tr><td>Token Meta</td><td>Token do app</td><td>Dá acesso às campanhas e métricas da conta. Use um token de <em>System User</em> — ele não expira quando alguém troca a senha do Facebook.</td></tr>
+          <tr><td>Token Meta</td><td>Token do app</td><td>Usado nas integrações da Meta. Precisa estar válido e ter acesso aos recursos do cliente; um token cadastrado não garante que suas permissões estejam corretas.</td></tr>
           <tr><td>ID da Conta de Anúncios</td><td><code>act_XXXXXXXXX</code></td><td>Define qual conta de anúncios esse cliente enxerga.</td></tr>
           <tr><td>Alerta de saldo baixo (R$)</td><td>Ex: <code>50.00</code></td><td>Valor mínimo de saldo que dispara o aviso. Deixe em branco para desativar.</td></tr>
           <tr><td>Pixel CAPI Web (dataset)</td><td>Só números</td><td>Usado nos eventos dos links rastreáveis (diferente do Pixel acima).</td></tr>
@@ -707,7 +958,7 @@ pre code { background:none; border:none; padding:0; }
 
     <!-- CONVERSAS -->
     <section class="doc-section" id="sec-conversas">
-      <h1><i data-lucide="message-circle"></i>Monitor de Conversas</h1>
+      <h1><i data-lucide="message-circle"></i>Conversas</h1>
       <p class="doc-kicker">O WhatsApp inteiro, espelhado dentro do painel — sem precisar abrir o celular.</p>
       <p>A aba <em>Conversas</em> mostra a lista de conversas dos últimos 15 dias, com as mensagens em bolhas no mesmo estilo do WhatsApp (verde/branco), incluindo áudio, imagem, vídeo e documento recebidos. Você também pode <strong>responder direto por ali</strong> — sem precisar do celular físico.</p>
       <div class="mock">
@@ -852,14 +1103,14 @@ pre code { background:none; border:none; padding:0; }
       <p>Na janela você também tem: um campo de <em>busca</em> por nome de métrica, as métricas agrupadas em 9 categorias (Investimento, Entrega, Tráfego, Leads / WhatsApp, Instagram, Vendas, Vídeo, Engajamento, Social), uma lista lateral com as <em>Selecionadas</em>, e os botões <strong>Restaurar padrão</strong>, <strong>Limpar</strong> e <strong>Aplicar</strong>. Na aba <em>Tabela</em>, é possível arrastar para reordenar as colunas. A escolha fica salva no seu navegador.</p>
 
       <h3>Todas as métricas disponíveis</h3>
-      <p>São 41 métricas, utilizáveis tanto como card quanto como coluna da tabela:</p>
+      <p>As métricas podem ser usadas nos cards e na tabela. Use a busca da janela de personalização para localizar uma delas:</p>
       <div class="doc-table-wrap">
         <table class="doc-table">
           <tr><th>Categoria</th><th>Métricas</th></tr>
-          <tr><td>Investimento</td><td>Gasto Total</td></tr>
+          <tr><td>Investimento</td><td>Gasto Total · Custo por resultado</td></tr>
           <tr><td>Entrega</td><td>Impressões · Alcance · Frequência · CPM (custo por 1.000 impressões)</td></tr>
           <tr><td>Tráfego</td><td>Cliques (Links) · CPC (custo/clique) · CTR (Link) · Visualizações da Página · Custo/Visualização da Página · Connect Rate</td></tr>
-          <tr><td>Leads / WhatsApp</td><td>Leads (formulário) · CPL (custo/lead) · Conversas Iniciadas · CPR (custo/conversa)</td></tr>
+          <tr><td>Leads / WhatsApp</td><td>Resultados · Leads (formulário) · CPL (custo/lead) · Conversas Iniciadas · CPR (custo/conversa)</td></tr>
           <tr><td>Instagram</td><td>Visitas Perfil (IG) · Custo/Visita Perfil · Seguidores (IG) · Custo/Seguidor</td></tr>
           <tr><td>Vendas</td><td>Compras · Valor em Compras · ROAS · Inícios de Checkout · Custo/compra</td></tr>
           <tr><td>Vídeo</td><td>Visualização 25% · Visualização 50% · Visualização 75% · Visualização 100% · e o custo de cada uma delas</td></tr>
@@ -868,6 +1119,15 @@ pre code { background:none; border:none; padding:0; }
         </table>
       </div>
       <p class="muted">Por padrão vêm ativas as de investimento, entrega, tráfego, Instagram e leads. As de vendas, vídeo, engajamento e social ficam disponíveis mas desligadas — ative pelo botão <em>Personalizar métricas</em> quando precisar.</p>
+
+      <h2>Como ler “Resultados” e “Custo por resultado”</h2>
+      <p><strong>Resultados</strong> acompanha a meta de conversão de cada conjunto. Pode contar conversas, contatos, leads, compras ou outros eventos. Confira o rótulo antes de comparar duas campanhas.</p>
+      <div class="doc-example">
+        <div class="doc-example-label"><i data-lucide="flask-conical"></i>Exemplo fictício de leitura</div>
+        <div class="mk-cards"><div class="mk-card"><div class="mk-card-lbl">Gasto</div><div class="mk-card-val">R$ 100</div></div><div class="mk-card"><div class="mk-card-lbl">Resultados (conversas)</div><div class="mk-card-val">20</div></div><div class="mk-card"><div class="mk-card-lbl">Custo por resultado</div><div class="mk-card-val">R$ 5</div></div></div>
+        <p style="margin-top:14px;">R$ 100 ÷ 20 conversas = R$ 5 por conversa. Esses 20 resultados não significam 20 vendas. Se o total incluir metas diferentes, observe a composição e entre na campanha ou no conjunto para comparar o mesmo tipo de resultado.</p>
+      </div>
+      <p>O painel de Meta Ads usa dados da Meta. A aba <strong>Leads</strong> usa os contatos registrados pelo Adlytics. <a href="#diagnostico">Veja como investigar diferenças entre os números</a>.</p>
 
       <h2>Editando o orçamento de uma campanha</h2>
       <ol class="doc-steps">
@@ -1361,7 +1621,7 @@ pre code { background:none; border:none; padding:0; }
 
     <!-- COMPARTILHAR -->
     <section class="doc-section" id="sec-compartilhar">
-      <h1><i data-lucide="share-2"></i>Compartilhar Dashboard</h1>
+      <h1><i data-lucide="share-2"></i>Compartilhar Dash</h1>
       <p class="doc-kicker">Um link público, somente leitura, para o próprio cliente acompanhar os anúncios sem precisar de login.</p>
       <ol class="doc-steps">
         <li>Vá na aba <em>Meta Ads</em> e selecione a conta de anúncios que deseja compartilhar (se houver mais de uma).</li>
@@ -1509,78 +1769,242 @@ pre code { background:none; border:none; padding:0; }
       </div>
     </section>
 
+    <!-- INTEGRAÇÕES -->
+    <section class="doc-section" id="sec-integracoes">
+      <h1><i data-lucide="plug"></i>Integrações</h1>
+      <p class="doc-kicker">Entenda o papel de cada credencial antes de conectar Meta e Google Ads.</p>
+      <dl class="doc-context"><div><dt>Onde acessar</dt><dd>Configurações → Integrações. Para o administrador: também em Gestão de Clientes → Editar.</dd></div><div><dt>Antes de começar</dt><dd>Confirme o cliente selecionado e tenha as credenciais das contas que ele utiliza.</dd></div></dl>
+      <h2>Escolha a configuração pelo objetivo</h2>
+      <div class="doc-table-wrap"><table class="doc-table">
+        <tr><th>Quero…</th><th>Campos</th><th>Onde configurar</th></tr>
+        <tr><td>Consultar campanhas e gastos da Meta</td><td><strong>Token Meta</strong> com acesso à conta e <strong>ID da Conta de Anúncios</strong> (ex.: <code>act_123456789</code>).</td><td>Gestão de Clientes → Editar → Meta Ads.</td></tr>
+        <tr><td>Enviar eventos do WhatsApp/CTWA</td><td><strong>Pixel Padrão</strong> e <strong>Token de Acesso (API de Conversões)</strong>. Na edição do cliente, os nomes são Pixel Meta e Token Meta.</td><td>Integrações → Meta Ads, ou edição do cliente.</td></tr>
+        <tr><td>Enviar eventos de links rastreáveis</td><td><strong>CAPI Web: Pixel (para links rastreáveis)</strong> e <strong>CAPI Web: Token de Acesso</strong>.</td><td>Integrações → Meta Ads, bloco CAPI Web.</td></tr>
+        <tr><td>Configurar conversão do Google</td><td><strong>Conversion ID</strong> (ex.: <code>AW-123456789</code>) e <strong>Conversion Label</strong>.</td><td>Integrações → Google Ads, ou edição do cliente.</td></tr>
+      </table></div>
+      <div class="mock" role="img" aria-label="Ilustração dos campos de integração: Pixel Padrão, Token de Acesso, CAPI Web e conversão Google">
+        <div class="mock-bar"><span class="mock-title"><i data-lucide="plug"></i>Integrações (Meta e Google Ads)</span></div>
+        <div class="mock-body mk-row2"><div><span class="mk-label">Meta Ads · canal WhatsApp</span><div class="mk-input">Pixel Padrão: 123456789</div><div class="mk-input">Token de Acesso: ••••••••••</div><span class="mk-label">CAPI Web · links rastreáveis</span><div class="mk-input">Pixel e token do dataset</div></div><div><span class="mk-label">Google Ads</span><div class="mk-input">Conversion ID: AW-123456789</div><div class="mk-input">Conversion Label: exemplo</div><span class="mk-btn">Salvar Integrações</span></div></div>
+      </div>
+      <p class="mock-cap"><i data-lucide="info"></i>Ilustração com dados fictícios. Preencha as credenciais apenas na tela do painel.</p>
+      <h2>Salvar e conferir</h2>
+      <ol class="doc-steps">
+        <li>Abra <strong>Integrações</strong> e confirme o cliente indicado no resumo da tela.</li>
+        <li>Preencha os campos dos canais que usa. Quando um token já estiver salvo, a tela mostra seu estado e os últimos caracteres. <strong>Deixe o campo de token vazio para mantê-lo.</strong></li>
+        <li>Clique em <strong>Salvar Integrações</strong>. Os dados são os mesmos da edição do cliente; não é necessário preenchê-los nas duas telas.</li>
+        <li>Teste o fluxo correspondente. Salvar confirma o cadastro; o funcionamento do envio deve ser verificado com uma entrada real e, quando aplicável, nos <a href="#logs">Logs do Sistema</a>.</li>
+      </ol>
+      <div class="doc-callout info"><i data-lucide="info"></i><span><strong>Não confunda as etapas:</strong> cadastrar uma venda salva o resultado no Adlytics. Enviar uma conversão à Meta é outro passo, sujeito à identificação do lead, às credenciais e à resposta da integração.</span></div>
+      <h2>Google Ads: o que é medido</h2>
+      <p>O sistema usa o ID e o rótulo de conversão na tag do navegador, nos fluxos de link/site compatíveis com origem Google. O identificador <code>gclid</code> ajuda a reconhecer essa origem. O disparo no clique não confirma que a pessoa enviou mensagem ou comprou.</p>
+      <p>O <strong>Link Direto</strong>, com <code>?direct=1</code>, pula a página intermediária. Como ela não abre, as tags de navegador dessa página não executam. Consulte <a href="#captacao">qual link usar em cada lugar</a>.</p>
+    </section>
+
+    <!-- MINHA CONTA -->
+    <section class="doc-section" id="sec-minha-conta">
+      <h1><i data-lucide="user-cog"></i>Minha Conta</h1>
+      <p class="doc-kicker">Atualize seu e-mail de acesso e sua senha no próprio painel.</p>
+      <dl class="doc-context"><div><dt>Onde acessar</dt><dd>Configurações → Minha Conta.</dd></div><div><dt>Qual conta é alterada</dt><dd>O usuário que está conectado, independentemente do cliente escolhido nos filtros.</dd></div></dl>
+      <h2>Alterar o e-mail</h2>
+      <ol class="doc-steps"><li>No bloco <strong>Dados da Conta</strong>, preencha o campo <strong>E-mail</strong>.</li><li>Clique em <strong>Salvar e-mail</strong> e confira a confirmação antes de sair da tela.</li><li>Use o e-mail atualizado no próximo login.</li></ol>
+      <h2>Trocar a senha</h2>
+      <ol class="doc-steps"><li>No bloco <strong>Trocar Senha</strong>, informe sua <strong>Senha atual</strong>.</li><li>Preencha a <strong>Nova senha</strong> e repita em <strong>Confirmar nova senha</strong>. O formulário exige pelo menos 6 caracteres.</li><li>Clique em <strong>Trocar senha</strong>. Se houver erro, confira a senha atual e se os dois campos da nova senha são iguais.</li></ol>
+      <div class="doc-callout tip"><i data-lucide="lightbulb"></i><span>Para o administrador ajustar o acesso de <strong>outro cliente</strong>, o caminho é <strong>Gestão de Clientes → Editar → Dados</strong>. <a href="#permissoes">Veja o guia de clientes e permissões</a>.</span></div>
+    </section>
+
+    <!-- ACESSO POR IA -->
+    <section class="doc-section" id="sec-mcp">
+      <h1><i data-lucide="bot"></i>Acesso por IA (MCP)</h1>
+      <p class="doc-kicker">Permita que uma ferramenta de IA consulte os dados da agência para responder perguntas sobre anúncios e atendimento.</p>
+      <dl class="doc-context"><div><dt>Onde acessar</dt><dd>Administração → Acesso por IA (MCP). Exclusivo de administradores.</dd></div><div><dt>O que o acesso permite</dt><dd>Consultas de leitura sobre todos os clientes da agência. Não altera campanhas nem leads.</dd></div></dl>
+      <p><strong>MCP</strong> é o protocolo usado para conectar o aplicativo de IA ao Adlytics. O aplicativo precisa aceitar um servidor MCP remoto por HTTP e uma forma de enviar a chave de acesso.</p>
+      <figure class="doc-flow"><figcaption>O percurso de uma consulta</figcaption><ol>
+        <li><span class="flow-icon"><i data-lucide="key-round"></i></span><strong>Crie uma chave</strong><small>O administrador define o acesso.</small></li>
+        <li><span class="flow-icon"><i data-lucide="plug"></i></span><strong>Conecte o app</strong><small>Informe URL e autenticação.</small></li>
+        <li><span class="flow-icon"><i data-lucide="message-circle"></i></span><strong>Faça a pergunta</strong><small>Indique o cliente e o período.</small></li>
+        <li><span class="flow-icon"><i data-lucide="search"></i></span><strong>Consulte os dados</strong><small>A IA usa as ferramentas autorizadas.</small></li>
+        <li><span class="flow-icon"><i data-lucide="clipboard-list"></i></span><strong>Confira o uso</strong><small>Veja as chamadas em Uso recente.</small></li>
+      </ol></figure>
+      <h2>Criar uma chave</h2>
+      <ol class="doc-steps">
+        <li>Em <strong>Nome da chave</strong>, use um nome que identifique o aplicativo e a finalidade, por exemplo <code>Análises da agência</code>.</li>
+        <li>Decida se precisa de <strong>Permitir dados pessoais (nome e telefone dos leads)</strong>. Deixe desmarcado para análises agregadas.</li>
+        <li>Clique em <strong>Gerar chave</strong> e copie o segredo exibido. <strong>Ele aparece uma única vez.</strong> Guarde-o no local de credenciais do aplicativo que vai conectar.</li>
+        <li>Copie a <strong>URL do servidor MCP</strong> mostrada na tela. Use essa URL, especialmente se o painel e a API estiverem em domínios diferentes.</li>
+      </ol>
+      <div class="doc-callout warn"><i data-lucide="shield-check"></i><span><strong>A chave tem alcance de agência, não de um único cliente.</strong> O filtro de cliente de uma pergunta não restringe a chave. Ao liberar dados pessoais, nomes e telefones consultados são enviados ao provedor de IA conectado.</span></div>
+      <h2>Conectar o aplicativo</h2>
+      <p>Cadastre a URL como servidor remoto HTTP no aplicativo de IA. O Adlytics autentica com uma <strong>chave de API</strong>, não com login OAuth. Os nomes dos campos variam conforme o aplicativo.</p>
+      <div class="doc-table-wrap"><table class="doc-table">
+        <tr><th>Configuração</th><th>Valor a informar</th></tr>
+        <tr><td>URL</td><td>A URL copiada do painel, terminada em <code>/api/mcp</code>.</td></tr>
+        <tr><td>Cabeçalho preferido</td><td>Nome: <code>Authorization</code>. Valor: <code>Bearer SUA_CHAVE</code> (com um espaço depois de Bearer).</td></tr>
+        <tr><td>Se Authorization for reservado</td><td>Nome: <code>X-API-Key</code>. Valor: somente a chave, sem a palavra Bearer.</td></tr>
+        <tr><td>Se não aceitar cabeçalhos</td><td>O servidor também aceita <code>/api/mcp/SUA_CHAVE</code>. Trate a URL inteira como segredo, pois ela contém a credencial.</td></tr>
+      </table></div>
+      <p class="muted"><code>SUA_CHAVE</code> é apenas um marcador neste guia. Substitua pela chave gerada no painel, somente na configuração do aplicativo escolhido.</p>
+      <h2>O que a IA consegue consultar</h2>
+      <div class="doc-table-wrap"><table class="doc-table">
+        <tr><th>Ferramenta</th><th>O que retorna</th></tr>
+        <tr><td><code>listar_clientes</code></td><td>Clientes ativos, seus IDs e contas de anúncios vinculadas.</td></tr>
+        <tr><td><code>visao_geral</code></td><td>Leads, qualificados, vendas, receita e conversão. O gasto de anúncios é consultado separadamente.</td></tr>
+        <tr><td><code>performance_anuncios</code></td><td>Campanhas ou conjuntos da Meta, com gasto, cliques, resultados e custo por resultado. Sem cliente informado, retorna um consolidado por cliente.</td></tr>
+        <tr><td><code>funil_leads</code></td><td>Etapas do funil, status, plataforma de origem e tempos de atendimento/venda.</td></tr>
+        <tr><td><code>metricas_atendimento</code></td><td>Ciclo de venda, resposta média, leads esquecidos, vendas rápidas e índice de engajamento.</td></tr>
+        <tr><td><code>listar_leads</code></td><td>Lista paginada de contatos com filtros, nome, telefone, status e origem. Disponível <strong>somente com dados pessoais liberados na chave</strong>.</td></tr>
+      </table></div>
+      <p>As consultas por período aceitam <code>hoje</code>, <code>ontem</code> ou um número de dias de <strong>1 a 90</strong>; o padrão é 30 dias. Ao listar leads, peça as próximas páginas quando necessário: cada página traz no máximo 100 contatos.</p>
+      <h2>Perguntas prontas para experimentar</h2>
+      <p>Comece identificando o cliente e peça à IA que informe o período e as fontes usadas na resposta.</p>
+      <pre><code>Liste os clientes ativos e compare leads, vendas e receita dos últimos 30 dias. Separe os resultados por cliente.</code></pre>
+      <pre><code>Para o cliente escolhido, consulte as campanhas da Meta nos últimos 7 dias. Mostre gasto, tipo de resultado e custo por resultado.</code></pre>
+      <pre><code>Analise o atendimento do cliente escolhido nos últimos 15 dias: resposta média, leads esquecidos e engajamento. Explique as limitações dos dados.</code></pre>
+      <div class="doc-callout info"><i data-lucide="info"></i><span>No resumo do MCP, <strong>leads são contados pela entrada e vendas pela data de fechamento</strong>. Uma venda de hoje pode vir de um lead antigo. Peça que a IA leia o recurso <strong>Dicionário de métricas</strong> antes de comparar os números.</span></div>
+      <h2>Revisar ou encerrar o acesso</h2>
+      <p>Em <strong>Chaves</strong>, identifique a credencial pelo nome e pelos últimos caracteres. Use <strong>Revogar</strong> quando não quiser mais permitir acesso. Para substituir uma chave perdida, gere outra e atualize o aplicativo.</p>
+      <p>Em <strong>Uso recente</strong>, confira a ferramenta consultada, o cliente, o resultado e a duração da chamada. Se a lista de leads não estiver disponível, confira se aquela chave foi criada com a opção de dados pessoais.</p>
+    </section>
+
+    <!-- DIAGNÓSTICO -->
+    <section class="doc-section" id="sec-diagnostico">
+      <h1><i data-lucide="stethoscope"></i>Resolver um problema</h1>
+      <p class="doc-kicker">Comece pelo sintoma. Confira uma etapa por vez e repita o teste depois de ajustar.</p>
+      <h2>Enviei uma mensagem, mas não apareceu um lead</h2>
+      <ol class="doc-steps">
+        <li><strong>Confira cliente, instância e período.</strong> Em Leads, remova a busca e os filtros de status/origem. O contato pode estar fora do recorte atual.</li>
+        <li><strong>Confira a conexão.</strong> Em Conexão WhatsApp, o número precisa estar Conectado. Se não estiver, gere e escaneie um novo QR.</li>
+        <li><strong>Confira a regra de captura.</strong> Uma mensagem direta comum não atende ao modo Somente Anúncios (CTWA). Em Por palavra-chave, confira o termo e o tipo de correspondência.</li>
+        <li><strong>Busque pelo telefone.</strong> A janela de deduplicação pode manter o contato no registro existente, em vez de criar outra linha.</li>
+        <li><strong>Peça ao administrador para conferir Logs do Sistema.</strong> Anote o horário do teste e a instância para localizar a entrada.</li>
+      </ol>
+      <h2>O lead existe, mas a campanha não aparece</h2>
+      <div class="doc-callout info"><i data-lucide="info"></i><span><strong>Captura e atribuição são etapas diferentes.</strong> Captura registra o contato. Atribuição liga esse contato ao anúncio ou clique identificado.</span></div>
+      <p>Teste novamente pela origem correta: anúncio CTWA ou link rastreável. No link, envie a mensagem pré-preenchida sem remover seu conteúdo. Se a identificação for perdida, o sistema não associa uma campanha apenas pela proximidade de horário.</p>
+      <p>Sem identificação, a criação de um lead também depende do modo de captura da instância. Verifique <a href="#whatsapp">as regras de Captura</a>.</p>
+      <h2>As métricas parecem diferentes</h2>
+      <div class="doc-table-wrap"><table class="doc-table">
+        <tr><th>Diferença percebida</th><th>O que conferir</th></tr>
+        <tr><td>Meta Ads × Leads</td><td>Meta Ads mostra métricas fornecidas pela Meta. Leads mostra contatos efetivamente registrados. Confira conta, período, filtros e o tipo de resultado antes de comparar.</td></tr>
+        <tr><td>Cliques × conversas</td><td>A pessoa pode clicar e não enviar mensagem. Não espere uma relação de um para um.</td></tr>
+        <tr><td>Resultados × vendas</td><td>“Resultados” pode significar conversas, contatos, leads ou compras, conforme a meta do conjunto. Veja o rótulo do resultado.</td></tr>
+        <tr><td>MCP × painel</td><td>Confira a regra de data de cada consulta: no resumo do MCP, a venda usa a data de fechamento e o lead usa a data de entrada.</td></tr>
+        <tr><td>Resposta muito rápida</td><td>O tempo da primeira resposta pode incluir saudação automática. O índice de engajamento tem configuração própria para detectar bot.</td></tr>
+      </table></div>
+      <h2>A venda foi salva, mas o evento falhou</h2>
+      <p>Confira o aviso exibido após salvar. O registro da venda e o envio à Meta são operações separadas. O administrador deve abrir <strong>Logs do Sistema</strong>, localizar a tentativa e conferir a mensagem de erro antes de alterar credenciais ou configurações.</p>
+      <p>Confira os campos do canal correto em <a href="#integracoes">Integrações</a>: WhatsApp/CTWA e CAPI Web têm configurações distintas. Evite registrar outra venda só para tentar repetir o evento.</p>
+      <h2>Não vejo uma aba ou não consigo conectar a IA</h2>
+      <p><strong>Aba ausente:</strong> peça ao administrador para conferir <strong>Gestão de Clientes → Editar → Dados → Permissões de Acesso</strong> e atualize a página. Acesso por IA, Marca, Alerta de Saldo e Logs do Sistema são exclusivos do administrador.</p>
+      <p><strong>MCP sem acesso:</strong> confira a URL copiada do painel, se a chave foi revogada e se o aplicativo envia <code>Authorization: Bearer SUA_CHAVE</code> ou <code>X-API-Key: SUA_CHAVE</code>. Uma chave sem permissão de dados pessoais não oferece a ferramenta de lista de leads.</p>
+      <h2>O que reunir para pedir ajuda</h2>
+      <p>Anote a tela, o cliente, o período, a instância, o horário do teste e a mensagem de erro. Descreva o que fez e o que esperava ver. Não inclua senhas, tokens ou chaves MCP na captura de tela.</p>
+    </section>
+
+    <!-- GLOSSÁRIO -->
+    <section class="doc-section" id="sec-glossario">
+      <h1><i data-lucide="book-open"></i>Glossário de métricas</h1>
+      <p class="doc-kicker">Os termos do painel explicados com exemplos simples.</p>
+      <h2>Do clique ao resultado</h2>
+      <div class="doc-table-wrap"><table class="doc-table">
+        <tr><th>Termo</th><th>Em palavras simples</th><th>Exemplo</th></tr>
+        <tr><td>Lead</td><td>Contato que entrou na base conforme as regras de captura.</td><td>Uma pessoa manda uma mensagem e o contato é registrado.</td></tr>
+        <tr><td>CTWA</td><td>Anúncio “Clique para WhatsApp”, que pode trazer identificação da Meta junto da mensagem.</td><td>O contato abre a conversa pelo botão do anúncio.</td></tr>
+        <tr><td>Origem</td><td>Como o contato foi capturado. É diferente da plataforma de anúncio.</td><td>Link rastreável é uma origem; Google é uma plataforma.</td></tr>
+        <tr><td>UTMs</td><td>Parâmetros da URL que descrevem a divulgação: fonte, mídia, campanha e conteúdo.</td><td><code>utm_source=instagram</code> e <code>utm_campaign=novembro</code>.</td></tr>
+        <tr><td>Atribuição</td><td>Ligação entre o lead e uma origem identificada.</td><td>O contato fica associado ao link da bio usado no clique.</td></tr>
+        <tr><td>CAPI</td><td>Envio de eventos do servidor para a Meta, quando configurado e elegível.</td><td>Uma tentativa de envio do evento de compra após salvar a venda.</td></tr>
+        <tr><td>Instância</td><td>Uma conexão de WhatsApp vinculada ao cliente.</td><td>Um número comercial conectado por QR Code.</td></tr>
+        <tr><td>Deduplicação</td><td>Regra que evita repetir o lead do mesmo telefone dentro de uma janela.</td><td>Várias mensagens do mesmo contato não precisam gerar várias linhas.</td></tr>
+      </table></div>
+      <h2>Lendo os números sem confundir</h2>
+      <div class="doc-table-wrap"><table class="doc-table">
+        <tr><th>Indicador</th><th>Como interpretar</th></tr>
+        <tr><td>Resultados (Meta Ads)</td><td>Evento contado conforme a meta de conversão de cada conjunto. Confira o tipo antes de comparar campanhas.</td></tr>
+        <tr><td>Custo por resultado</td><td>Gasto dividido pelo número de resultados. Exemplo fictício: R$ 100 ÷ 20 conversas = R$ 5 por conversa.</td></tr>
+        <tr><td>CTR (Link)</td><td>Cliques no link ÷ impressões × 100. Exemplo: 20 cliques em 1.000 impressões = 2%.</td></tr>
+        <tr><td>CPC</td><td>Gasto dividido pelos cliques no link.</td></tr>
+        <tr><td>Ticket médio</td><td>Receita dividida pela quantidade de vendas consideradas no recorte.</td></tr>
+        <tr><td>ROAS da Meta</td><td>Retorno informado pela Meta para as compras atribuídas aos anúncios. Não é o mesmo que receita de todas as vendas do atendimento.</td></tr>
+        <tr><td>Resposta média</td><td>Tempo até a primeira resposta registrada; pode incluir respostas automáticas.</td></tr>
+        <tr><td>Ciclo de venda</td><td>Tempo entre a entrada do contato e o fechamento da venda.</td></tr>
+        <tr><td>Engajamento comercial</td><td>Índice de 0 a 100 calculado a partir dos sinais de atendimento. Não é probabilidade de compra. Os componentes de mensagens dependem da retenção de 15 dias.</td></tr>
+      </table></div>
+      <div class="doc-callout tip"><i data-lucide="lightbulb"></i><span>Antes de comparar dois números, confira <strong>cliente, conta, período, filtros e definição da métrica</strong>. Valores com nomes parecidos podem medir etapas diferentes.</span></div>
+    </section>
+
     <!-- FAQ -->
     <section class="doc-section" id="sec-faq">
       <h1><i data-lucide="circle-help"></i>Perguntas frequentes</h1>
       <p class="doc-kicker">As dúvidas mais comuns, direto ao ponto.</p>
 
-      <div class="doc-faq-item" onclick="docToggleFaq(this)">
-        <div class="doc-faq-q"><span>Por que um lead aparece sem nome de campanha/anúncio?</span><i data-lucide="chevron-down"></i></div>
+      <details class="doc-faq-item">
+        <summary class="doc-faq-q"><span>Por que um lead aparece sem nome de campanha/anúncio?</span><i data-lucide="chevron-down"></i></summary>
         <div class="doc-faq-a">Isso acontece quando o link do anúncio chega encurtado (ex: fb.me/...) e a Meta não retorna os dados da campanha para aquele anúncio específico, ou quando o lead é realmente orgânico (sem anúncio). Quando não há nenhum rastreamento de tráfego pago, a coluna mostra "Orgânico" em vez de deixar em branco.</div>
-      </div>
+      </details>
 
-      <div class="doc-faq-item" onclick="docToggleFaq(this)">
-        <div class="doc-faq-q"><span>O card de vendas do Funil e o de Faturamento mostram números diferentes — é bug?</span><i data-lucide="chevron-down"></i></div>
+      <details class="doc-faq-item">
+        <summary class="doc-faq-q"><span>O card de vendas do Funil e o de Faturamento mostram números diferentes — é bug?</span><i data-lucide="chevron-down"></i></summary>
         <div class="doc-faq-a">Não necessariamente. Um mede vendas pela data em que o <strong>lead entrou</strong>, o outro pela data em que a <strong>venda fechou</strong>. Um lead pode ter entrado numa data e fechado a venda dias depois — nesse caso, os dois números legitimamente divergem.</div>
-      </div>
+      </details>
 
-      <div class="doc-faq-item" onclick="docToggleFaq(this)">
-        <div class="doc-faq-q"><span>Fiz uma correção/deploy e o painel continua com o comportamento antigo. O que fazer?</span><i data-lucide="chevron-down"></i></div>
+      <details class="doc-faq-item">
+        <summary class="doc-faq-q"><span>Fiz uma correção/deploy e o painel continua com o comportamento antigo. O que fazer?</span><i data-lucide="chevron-down"></i></summary>
         <div class="doc-faq-a">Na grande maioria dos casos é cache do navegador ou o deploy ainda não terminou de propagar. Tente um F5 forçado (Ctrl+Shift+R). Se for administrador do sistema, confira se o serviço no painel de hospedagem já processou o commit mais recente.</div>
-      </div>
+      </details>
 
-      <div class="doc-faq-item" onclick="docToggleFaq(this)">
-        <div class="doc-faq-q"><span>Por que a Resposta Média parece baixa demais (poucos segundos)?</span><i data-lucide="chevron-down"></i></div>
+      <details class="doc-faq-item">
+        <summary class="doc-faq-q"><span>Por que a Resposta Média parece baixa demais (poucos segundos)?</span><i data-lucide="chevron-down"></i></summary>
         <div class="doc-faq-a">Provavelmente é a saudação automática (bot) respondendo antes do atendente humano — o sistema ainda não distingue 100% bot de humano nessa métrica legada. O "Índice de Engajamento Comercial" (dentro do perfil do lead, aba Venda) já filtra respostas automáticas e é mais preciso.</div>
-      </div>
+      </details>
 
-      <div class="doc-faq-item" onclick="docToggleFaq(this)">
-        <div class="doc-faq-q"><span>Um cliente não tem conta de anúncios vinculada mesmo com token válido — por quê?</span><i data-lucide="chevron-down"></i></div>
+      <details class="doc-faq-item">
+        <summary class="doc-faq-q"><span>Um cliente não tem conta de anúncios vinculada mesmo com token válido — por quê?</span><i data-lucide="chevron-down"></i></summary>
         <div class="doc-faq-a">Cada token da Meta só enxerga as contas de anúncio do próprio Business Manager. Um token de outra agência/cliente não vê a conta configurada para este cliente, mesmo sendo um token tecnicamente válido.</div>
-      </div>
+      </details>
 
-      <div class="doc-faq-item" onclick="docToggleFaq(this)">
-        <div class="doc-faq-q"><span>Métricas de vídeo somem ou aparecem zeradas. É erro?</span><i data-lucide="chevron-down"></i></div>
+      <details class="doc-faq-item">
+        <summary class="doc-faq-q"><span>Métricas de vídeo somem ou aparecem zeradas. É erro?</span><i data-lucide="chevron-down"></i></summary>
         <div class="doc-faq-a">A Meta não expõe todo campo de vídeo publicamente (alguns dão erro #100). Quando não é possível calcular uma métrica com confiança (como a antiga "Taxa de Gancho"), ela é removida em vez de mostrar um número aproximado e enganoso.</div>
-      </div>
+      </details>
 
-      <div class="doc-faq-item" onclick="docToggleFaq(this)">
-        <div class="doc-faq-q"><span>Conectei o WhatsApp mas nenhum lead está sendo criado. O que verificar?</span><i data-lucide="chevron-down"></i></div>
+      <details class="doc-faq-item">
+        <summary class="doc-faq-q"><span>Conectei o WhatsApp mas nenhum lead está sendo criado. O que verificar?</span><i data-lucide="chevron-down"></i></summary>
         <div class="doc-faq-a">Primeiro confira o status em Conexão WhatsApp — precisa estar "Conectado", não "Conectando" ou "Desconectado". Depois confira o modo de captura (botão Captura): se estiver em "Apenas anúncios (CTWA)", mensagens de contatos comuns (sem clicar em anúncio) não vão gerar lead — isso é esperado. Troque para "Todos os contatos" se quiser capturar qualquer conversa nova.</div>
-      </div>
+      </details>
 
-      <div class="doc-faq-item" onclick="docToggleFaq(this)">
-        <div class="doc-faq-q"><span>Preciso escanear o QR Code de novo toda vez que atualizo a página?</span><i data-lucide="chevron-down"></i></div>
+      <details class="doc-faq-item">
+        <summary class="doc-faq-q"><span>Preciso escanear o QR Code de novo toda vez que atualizo a página?</span><i data-lucide="chevron-down"></i></summary>
         <div class="doc-faq-a">Não. Depois de conectado uma vez, a sessão do WhatsApp fica salva na instância — você só precisa escanear de novo se desconectar manualmente, o celular ficar muito tempo sem internet, ou a sessão expirar por inatividade prolongada.</div>
-      </div>
+      </details>
 
-      <div class="doc-faq-item" onclick="docToggleFaq(this)">
-        <div class="doc-faq-q"><span>Posso ter mais de um número de WhatsApp para o mesmo cliente?</span><i data-lucide="chevron-down"></i></div>
+      <details class="doc-faq-item">
+        <summary class="doc-faq-q"><span>Posso ter mais de um número de WhatsApp para o mesmo cliente?</span><i data-lucide="chevron-down"></i></summary>
         <div class="doc-faq-a">Sim. Cada instância conectada aparece no filtro de "Instância" nas abas Leads e Conversas, permitindo ver tudo junto ou separado por número. Isso é comum quando mais de um atendente ou setor recebe leads do mesmo cliente.</div>
-      </div>
+      </details>
 
-      <div class="doc-faq-item" onclick="docToggleFaq(this)">
-        <div class="doc-faq-q"><span>Qual a diferença entre o link de campanha e o CTWA (anúncio nativo)?</span><i data-lucide="chevron-down"></i></div>
+      <details class="doc-faq-item">
+        <summary class="doc-faq-q"><span>Qual a diferença entre o link de campanha e o CTWA (anúncio nativo)?</span><i data-lucide="chevron-down"></i></summary>
         <div class="doc-faq-a">CTWA ("Clique para WhatsApp") é o formato de anúncio nativo da própria Meta, que já leva direto para uma conversa — o rastreamento vem embutido no próprio anúncio. O Link de Rastreamento é uma URL criada por você no painel, que pode ser usada em qualquer lugar (bio, site, ou até colada manualmente num anúncio) e tem seu próprio sistema de rastreamento de clique, independente do CTWA nativo.</div>
-      </div>
+      </details>
 
-      <div class="doc-faq-item" onclick="docToggleFaq(this)">
-        <div class="doc-faq-q"><span>Um lead veio de iPhone e não recebeu a atribuição correta ao anúncio. É normal?</span><i data-lucide="chevron-down"></i></div>
-        <div class="doc-faq-a">Pode acontecer. O WhatsApp do iPhone, em alguns casos, remove informações técnicas que o link usa para identificar de qual clique aquele contato veio. Quando isso ocorre e não há como confirmar com certeza a origem, o sistema prefere não atribuir nenhuma campanha a arriscar atribuir errado — o lead ainda é criado normalmente, só sem o anúncio identificado.</div>
-      </div>
+      <details class="doc-faq-item">
+        <summary class="doc-faq-q"><span>Um lead veio de iPhone e não recebeu a atribuição correta ao anúncio. É normal?</span><i data-lucide="chevron-down"></i></summary>
+        <div class="doc-faq-a">Pode acontecer quando a identificação do clique não chega na mensagem. Sem uma identificação válida, o sistema não atribui uma campanha apenas pelo horário. A criação do contato passa a depender do modo de captura da instância: confira se a regra permite aquela mensagem. <a href="#diagnostico">Siga o diagnóstico de captura e atribuição</a>.</div>
+      </details>
 
-      <div class="doc-faq-item" onclick="docToggleFaq(this)">
-        <div class="doc-faq-q"><span>Onde vejo os erros técnicos, tipo falha no envio de eventos para a Meta?</span><i data-lucide="chevron-down"></i></div>
+      <details class="doc-faq-item">
+        <summary class="doc-faq-q"><span>Onde vejo os erros técnicos, tipo falha no envio de eventos para a Meta?</span><i data-lucide="chevron-down"></i></summary>
         <div class="doc-faq-a">Na aba Logs do Sistema (visível só para admin). Lá aparecem os detalhes de cada tentativa de envio de evento de conversão, cliques rastreados e qualquer falha de integração — útil para diagnosticar sem precisar mexer em código.</div>
-      </div>
+      </details>
     </section>
 
+    <nav class="doc-pager" id="docPager" aria-label="Continuar a leitura" hidden></nav>
+    <footer class="doc-footer">Adlytics Pro · Guia do produto<br>As ilustrações usam dados fictícios. A disponibilidade das opções depende do perfil e das permissões de acesso.</footer>
   </main>
 </div>
+<div class="doc-toast" id="docToast" role="status" aria-live="polite" hidden></div>
 
 <script>
-lucide.createIcons();
-
 function ls(k, v) {
   try {
     if (v === undefined) return localStorage.getItem(k);
@@ -1588,69 +2012,328 @@ function ls(k, v) {
   } catch (e) { return null; }
 }
 
-// Tema — mesmo padrão do painel principal (localStorage 'theme', classe 'light' no <html>)
-if (ls('theme') === 'light') document.documentElement.classList.add('light');
-function docToggleTheme() {
-  const light = document.documentElement.classList.toggle('light');
-  ls('theme', light ? 'light' : 'dark');
-  document.getElementById('docThemeBtn').innerHTML = '<i data-lucide="' + (light ? 'sun' : 'moon') + '"></i>';
-  lucide.createIcons({ nodes: [document.getElementById('docThemeBtn')] });
+const docSections = Array.from(document.querySelectorAll('.doc-section'));
+const docNavItems = Array.from(document.querySelectorAll('.doc-nav-item'));
+const docSearchInput = document.getElementById('docSearchInput');
+const docMobileMedia = window.matchMedia('(max-width: 900px)');
+const docIndex = [];
+let docToastTimeout;
+
+function docIcons() {
+  // O guia continua utilizavel mesmo se o CDN de icones estiver indisponivel.
+  if (window.lucide) window.lucide.createIcons();
 }
-(function initThemeIcon() {
+
+function docUpdateThemeIcon() {
   const light = document.documentElement.classList.contains('light');
   document.getElementById('docThemeBtn').innerHTML = '<i data-lucide="' + (light ? 'sun' : 'moon') + '"></i>';
-  lucide.createIcons({ nodes: [document.getElementById('docThemeBtn')] });
-})();
-
-// Navegação entre seções
-function docShow(section) {
-  document.querySelectorAll('.doc-section').forEach(function (el) { el.classList.remove('active'); });
-  document.querySelectorAll('.doc-nav-item').forEach(function (el) { el.classList.remove('active'); });
-  const target = document.getElementById('sec-' + section);
-  if (target) target.classList.add('active');
-  const navItem = document.querySelector('.doc-nav-item[data-section="' + section + '"]');
-  if (navItem) navItem.classList.add('active');
-  document.querySelector('.doc-main').scrollTop = 0;
-  window.scrollTo(0, 0);
-  history.replaceState(null, '', '#' + section);
-  docCloseMobileNav();
+  document.getElementById('docThemeBtn').setAttribute('aria-label', light ? 'Ativar tema escuro' : 'Ativar tema claro');
+  docIcons();
 }
+document.documentElement.classList.toggle('light', ls('theme') === 'light');
+document.getElementById('docThemeBtn').addEventListener('click', function () {
+  const light = document.documentElement.classList.toggle('light');
+  ls('theme', light ? 'light' : 'dark');
+  docUpdateThemeIcon();
+});
 
-// Busca simples: filtra os itens do menu pelo texto visível
-function docFilterNav(query) {
-  const q = query.trim().toLowerCase();
-  document.querySelectorAll('.doc-nav-item').forEach(function (el) {
-    const text = el.textContent.toLowerCase();
-    el.dataset.hidden = (q && !text.includes(q)) ? '1' : '0';
+function docNormalize(value) {
+  return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+}
+function docText(element) { return element.textContent.replace(/\s+/g, ' ').trim(); }
+
+// Indexa descricoes, exemplos e tabelas, alem dos titulos.
+docSections.forEach(function (section) {
+  const key = section.id.slice(4);
+  const nav = docNavItems.find(function (item) { return item.dataset.section === key; });
+  const label = nav ? docText(nav) : docText(section.querySelector('h1'));
+  const headings = Array.from(section.querySelectorAll('h2, h3'));
+  const searchHeadings = Array.from(section.querySelectorAll('h2, h3, summary.doc-faq-q'));
+  section.querySelector('h1').id = key;
+  searchHeadings.forEach(function (heading, index) {
+    const slug = docNormalize(docText(heading)).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    heading.id = key + '--' + (slug || 'topico-' + (index + 1));
   });
-  document.querySelectorAll('.doc-nav-group').forEach(function (group) {
-    const anyVisible = Array.from(group.querySelectorAll('.doc-nav-item')).some(function (el) { return el.dataset.hidden !== '1'; });
-    group.style.display = anyVisible ? '' : 'none';
+  let entry = { id:key, section:key, label:label, heading:label, text:'' };
+  Array.from(section.children).forEach(function (element) {
+    if (/^H[23]$/.test(element.tagName)) {
+      docIndex.push(entry);
+      entry = { id:element.id, section:key, label:label, heading:docText(element), text:'' };
+    } else if (element.matches('.doc-faq-item')) {
+      docIndex.push(entry);
+      const question = element.querySelector('summary');
+      entry = { id:question.id, section:key, label:label, heading:docText(question), text:docText(element.querySelector('.doc-faq-a')) };
+    } else {
+      entry.text += ' ' + docText(element);
+    }
+  });
+  docIndex.push(entry);
+  section.dataset.minutes = Math.max(1, Math.ceil(docText(section).split(/\s+/).length / 200));
+
+  if (key !== 'intro' && headings.length > 2) {
+    const toc = document.createElement('details');
+    toc.className = 'doc-toc';
+    const summary = document.createElement('summary');
+    summary.textContent = 'Nesta página';
+    const list = document.createElement('ul');
+    headings.filter(function (heading) { return heading.tagName === 'H2'; }).forEach(function (heading) {
+      const item = document.createElement('li');
+      const link = document.createElement('a');
+      link.href = '#' + heading.id;
+      link.textContent = docText(heading);
+      item.append(link);
+      list.append(item);
+    });
+    toc.append(summary, list);
+    const context = section.querySelector('.doc-context') || section.querySelector('.doc-kicker');
+    if (context) context.after(toc);
+  }
+});
+docIndex.forEach(function (entry) {
+  entry.title = docNormalize(entry.label + ' ' + entry.heading);
+  entry.normalized = docNormalize(entry.label + ' ' + entry.heading + ' ' + entry.text);
+});
+
+function docSearch(query) {
+  const terms = docNormalize(query.trim()).split(/\s+/).filter(Boolean);
+  const results = document.getElementById('docSearchResults');
+  const status = document.getElementById('docSearchStatus');
+  document.getElementById('docNav').hidden = terms.length > 0;
+  document.getElementById('docSearchClear').hidden = terms.length === 0;
+  results.hidden = status.hidden = terms.length === 0;
+  results.replaceChildren();
+  status.textContent = '';
+  if (!terms.length) return;
+  const matches = docIndex.filter(function (entry) {
+    return terms.every(function (term) { return entry.normalized.includes(term); });
+  }).map(function (entry) {
+    return { entry:entry, score:terms.reduce(function (total, term) { return total + (entry.title.includes(term) ? 1 : 0); }, 0) };
+  }).sort(function (a, b) { return b.score - a.score; });
+  status.textContent = !matches.length ? 'Nenhum resultado. Tente “QR”, “venda”, “token” ou “MCP”.' :
+    matches.length === 1 ? '1 trecho encontrado.' :
+    (matches.length > 12 ? 'Mostrando 12 de ' + matches.length : matches.length) + ' trechos encontrados.';
+  matches.slice(0, 12).forEach(function (match) {
+    const entry = match.entry;
+    const link = document.createElement('a');
+    link.className = 'doc-search-result';
+    link.href = '#' + entry.id;
+    const title = document.createElement('strong');
+    title.textContent = entry.heading === entry.label ? entry.label : entry.label + ' / ' + entry.heading;
+    const snippet = document.createElement('span');
+    const text = entry.text.trim();
+    const normalized = docNormalize(text);
+    const positions = terms.map(function (term) { return normalized.indexOf(term); }).filter(function (pos) { return pos >= 0; });
+    const start = positions.length ? Math.max(0, Math.min(...positions) - 35) : 0;
+    snippet.textContent = (start ? '…' : '') + text.slice(start, start + 165) + (text.length > start + 165 ? '…' : '');
+    link.append(title, snippet);
+    results.append(link);
   });
 }
+docSearchInput.addEventListener('input', function () { docSearch(this.value); });
+document.getElementById('docSearchClear').addEventListener('click', function () {
+  docSearchInput.value = '';
+  docSearch('');
+  docSearchInput.focus();
+});
 
-// FAQ acordeão
-function docToggleFaq(el) {
-  el.classList.toggle('open');
-}
-
-// Menu mobile
-function docCloseMobileNav() {
-  document.getElementById('docSidebar').classList.remove('open');
-  document.getElementById('docOverlay').classList.remove('open');
+function docSetMobileNav(open, restoreFocus) {
+  open = open && docMobileMedia.matches;
+  const sidebar = document.getElementById('docSidebar');
+  sidebar.classList.toggle('open', open);
+  sidebar.inert = docMobileMedia.matches && !open;
+  document.getElementById('docOverlay').classList.toggle('open', open);
+  document.getElementById('docMobileToggle').setAttribute('aria-expanded', String(open));
+  document.getElementById('docMobileToggle').setAttribute('aria-label', open ? 'Fechar menu da documentação' : 'Abrir menu da documentação');
+  document.body.classList.toggle('doc-menu-open', open);
+  document.getElementById('docMain').inert = open;
+  document.querySelector('.doc-topbar-actions').inert = open;
+  if (open) docSearchInput.focus();
+  else if (restoreFocus) document.getElementById('docMobileToggle').focus();
 }
 document.getElementById('docMobileToggle').addEventListener('click', function () {
-  document.getElementById('docSidebar').classList.toggle('open');
-  document.getElementById('docOverlay').classList.toggle('open');
+  docSetMobileNav(!document.getElementById('docSidebar').classList.contains('open'), true);
 });
-document.getElementById('docOverlay').addEventListener('click', docCloseMobileNav);
+document.getElementById('docOverlay').addEventListener('click', function () { docSetMobileNav(false, true); });
+docMobileMedia.addEventListener('change', function () { docSetMobileNav(false, false); });
 
-// Abre direto na seção do hash da URL, se houver
-(function initFromHash() {
-  const hash = (location.hash || '').replace('#', '');
-  const valid = hash && document.getElementById('sec-' + hash);
-  docShow(valid ? hash : 'intro');
-})();
+function docPager(key) {
+  const pager = document.getElementById('docPager');
+  const index = docNavItems.findIndex(function (item) { return item.dataset.section === key; });
+  pager.replaceChildren();
+  [index - 1, index + 1].forEach(function (position, direction) {
+    const nav = docNavItems[position];
+    if (!nav) { pager.append(document.createElement('span')); return; }
+    const link = document.createElement('a');
+    link.className = 'doc-pager-link';
+    link.href = nav.getAttribute('href');
+    const caption = document.createElement('span');
+    caption.textContent = direction === 0 ? 'Guia anterior' : 'Próximo guia';
+    const title = document.createElement('strong');
+    title.textContent = docText(nav);
+    link.append(caption, title);
+    pager.append(link);
+  });
+  pager.hidden = false;
+}
+
+function docNavigate(hash, options) {
+  options = options || {};
+  let id;
+  try { id = decodeURIComponent((hash || '#intro').slice(1)); } catch (_) { id = 'intro'; }
+  let anchor = document.getElementById(id);
+  let target = anchor && anchor.closest('.doc-section');
+  if (!target) { id = 'intro'; anchor = document.getElementById(id); target = document.getElementById('sec-intro'); }
+  const key = target.id.slice(4);
+  docSections.forEach(function (section) { section.classList.toggle('active', section === target); });
+  docNavItems.forEach(function (item) {
+    const active = item.dataset.section === key;
+    item.classList.toggle('active', active);
+    if (active) item.setAttribute('aria-current', 'page');
+    else item.removeAttribute('aria-current');
+  });
+  const nav = docNavItems.find(function (item) { return item.dataset.section === key; });
+  document.getElementById('docBreadcrumb').textContent = nav.closest('.doc-nav-group').querySelector('.doc-nav-group-title').textContent;
+  document.getElementById('docReadTime').textContent = '~' + target.dataset.minutes + ' min de leitura';
+  document.getElementById('docArticleTools').hidden = key === 'intro';
+  document.title = docText(nav) + ' — Adlytics Pro';
+  const nextHash = '#' + id;
+  if (options.push && location.hash !== nextHash) history.pushState(null, '', nextHash);
+  else if (!location.hash || (hash && id === 'intro' && hash !== '#intro')) history.replaceState(null, '', nextHash);
+  docSearchInput.value = '';
+  docSearch('');
+  docSetMobileNav(false, false);
+  docPager(key);
+  let disclosure = anchor.closest('details');
+  while (disclosure) {
+    disclosure.open = true;
+    disclosure = disclosure.parentElement.closest('details');
+  }
+  if (options.focus) {
+    if (/^H[123]$/.test(anchor.tagName)) anchor.setAttribute('tabindex', '-1');
+    anchor.focus({ preventScroll:true });
+  }
+  if (id === key) window.scrollTo({ top:0, behavior:'instant' });
+  else anchor.scrollIntoView({ block:'start', behavior:'instant' });
+}
+
+document.addEventListener('click', function (event) {
+  const link = event.target.closest('a[href^="#"]');
+  if (!link || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey || event.button !== 0) return;
+  const hash = link.getAttribute('href');
+  if (hash === '#docMain') {
+    event.preventDefault();
+    document.getElementById('docMain').focus({ preventScroll:true });
+    document.getElementById('docMain').scrollIntoView({ block:'start' });
+    return;
+  }
+  event.preventDefault();
+  docNavigate(hash, { push:true, focus:true });
+});
+window.addEventListener('popstate', function () { docNavigate(location.hash, { focus:true }); });
+window.addEventListener('hashchange', function () { docNavigate(location.hash, { focus:true }); });
+
+document.addEventListener('keydown', function (event) {
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+    event.preventDefault();
+    if (docMobileMedia.matches) docSetMobileNav(true, false);
+    docSearchInput.focus();
+    docSearchInput.select();
+  }
+  const menuOpen = document.getElementById('docSidebar').classList.contains('open');
+  if (event.key === 'Escape') {
+    if (docSearchInput.value) {
+      docSearchInput.value = '';
+      docSearch('');
+      docSearchInput.focus();
+    } else if (menuOpen) docSetMobileNav(false, true);
+  }
+  if (event.key === 'Tab' && menuOpen) {
+    const candidates = [document.getElementById('docMobileToggle'), ...document.getElementById('docSidebar').querySelectorAll('a[href], button, input')];
+    const focusable = candidates.filter(function (element) { return element.getClientRects().length && !element.disabled; });
+    const first = focusable[0], last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+  }
+});
+
+function docToast(message) {
+  const toast = document.getElementById('docToast');
+  clearTimeout(docToastTimeout);
+  toast.textContent = message;
+  toast.hidden = false;
+  docToastTimeout = setTimeout(function () { toast.hidden = true; }, 4500);
+}
+async function docCopy(text, source) {
+  try {
+    if (!navigator.clipboard) throw new Error('Clipboard unavailable');
+    await navigator.clipboard.writeText(text);
+    docToast('Copiado para a área de transferência.');
+  } catch (_) {
+    if (source) {
+      const range = document.createRange();
+      range.selectNodeContents(source);
+      const selection = window.getSelection();
+      selection.removeAllRanges();
+      selection.addRange(range);
+      docToast('Cópia automática indisponível. O texto foi selecionado; use a opção Copiar do navegador.');
+    } else {
+      docToast('Cópia automática indisponível. Copie o endereço na barra do navegador.');
+    }
+  }
+}
+document.getElementById('docCopyLink').addEventListener('click', function () { docCopy(location.href); });
+document.querySelectorAll('.doc-section pre').forEach(function (pre) {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'doc-code';
+  const button = document.createElement('button');
+  button.className = 'doc-copy';
+  button.textContent = 'Copiar exemplo';
+  button.addEventListener('click', function () { docCopy(pre.textContent, pre); });
+  pre.before(wrapper);
+  wrapper.append(button, pre);
+});
+
+const docChecklistKey = 'adlytics-docs-checklist-v1';
+const docChecks = Array.from(document.querySelectorAll('[data-check]'));
+let savedChecks = [];
+try { const saved = JSON.parse(ls(docChecklistKey) || '[]'); if (Array.isArray(saved)) savedChecks = saved; } catch (_) { /* Recomeça caso o estado local esteja inválido. */ }
+docChecks.forEach(function (checkbox) { checkbox.checked = savedChecks.includes(checkbox.dataset.check); });
+function docUpdateChecklist(save) {
+  const checked = docChecks.filter(function (checkbox) { return checkbox.checked; });
+  document.getElementById('docChecklistProgress').value = checked.length;
+  document.getElementById('docChecklistStatus').textContent = checked.length + ' de ' + docChecks.length + ' etapas conferidas' + (checked.length === docChecks.length ? '. Checklist concluído!' : '');
+  if (save) ls(docChecklistKey, JSON.stringify(checked.map(function (checkbox) { return checkbox.dataset.check; })));
+}
+docChecks.forEach(function (checkbox) { checkbox.addEventListener('change', function () { docUpdateChecklist(true); }); });
+document.getElementById('docChecklistReset').addEventListener('click', function () {
+  docChecks.forEach(function (checkbox) { checkbox.checked = false; });
+  docUpdateChecklist(true);
+});
+
+let docPrintDetails = null;
+window.addEventListener('beforeprint', function () {
+  if (docPrintDetails) return;
+  docPrintDetails = Array.from(document.querySelectorAll('details')).map(function (element) { return { element:element, open:element.open }; });
+  docPrintDetails.forEach(function (item) { item.element.open = true; });
+});
+window.addEventListener('afterprint', function () {
+  if (docPrintDetails) docPrintDetails.forEach(function (item) { item.element.open = item.open; });
+  docPrintDetails = null;
+});
+document.getElementById('docPrintBtn').addEventListener('click', function () { window.print(); });
+
+document.querySelectorAll('.doc-table-wrap').forEach(function (wrapper) {
+  wrapper.tabIndex = 0;
+  wrapper.setAttribute('role', 'region');
+  let heading = wrapper.previousElementSibling;
+  while (heading && !/^H[123]$/.test(heading.tagName)) heading = heading.previousElementSibling;
+  wrapper.setAttribute('aria-label', heading ? 'Tabela: ' + docText(heading) : 'Tabela de referência');
+});
+document.querySelectorAll('th').forEach(function (cell) { cell.setAttribute('scope', 'col'); });
+docUpdateChecklist(false);
+docUpdateThemeIcon();
+document.documentElement.classList.add('docs-ready');
+docNavigate(location.hash);
 </script>
 </body>
 </html>

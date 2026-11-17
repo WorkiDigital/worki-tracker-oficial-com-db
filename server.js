@@ -19,8 +19,9 @@ for (const key of REQUIRED_ENV) {
 
 const PORT = process.env.PORT || 3000;
 const MAX_BODY_BYTES = parseInt(process.env.MAX_BODY_BYTES || `${20 * 1024 * 1024}`, 10);
-const PUBLIC_ROOT_FILES = new Set(['/index.html', '/login.html', '/share.html', '/wa-connect.html']);
-const PUBLIC_DIRS = ['/css/', '/js/', '/img/', '/docs/'];
+// A ajuda pública é um único HTML; os Markdown/SQL de docs são internos.
+const PUBLIC_ROOT_FILES = new Set(['/index.html', '/login.html', '/share.html', '/wa-connect.html', '/docs/index.html']);
+const PUBLIC_DIRS = ['/css/', '/js/', '/img/'];
 
 async function callApiHandler(modulePath, req, res) {
     try {

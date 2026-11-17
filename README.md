@@ -2,6 +2,25 @@
 
 Sistema SaaS de rastreamento de leads via WhatsApp com envio automático de eventos para a Meta CAPI (Conversions API), dashboard de anúncios Meta Ads e painel de compartilhamento público. Cada cliente tem seu próprio pixel, instâncias WhatsApp e template de venda.
 
+## Guia visual para usar o produto
+
+No painel, clique em **Documentação** para abrir a central de ajuda em **`/docs`**. Ela reúne os primeiros passos, ilustrações com dados fictícios, exemplos e referências dos campos de cada tela. O código da página fica em [docs/index.html](docs/index.html).
+
+| Seu objetivo | Por onde começar na central de ajuda |
+|---|---|
+| Preparar uma conta | **Configuração inicial**: cadastro, conexão, captura e teste com checklist pessoal |
+| Acompanhar contatos e registrar vendas | **Leads** e **Conversas** |
+| Rastrear a origem das mensagens | **Link de Rastreamento**, **Conexão WhatsApp** e **Integrações** |
+| Ler e compartilhar o desempenho | **Meta Ads**, **Relatórios** e **Compartilhar Dash** |
+| Conectar uma IA aos dados da agência | **Acesso por IA (MCP)**: chaves, escopo de acesso e exemplos de consultas |
+| Entender uma diferença ou resolver uma falha | **Resolver um problema**, **Glossário de métricas** e **Perguntas frequentes** |
+
+Use a busca da central para encontrar termos dentro dos textos e tabelas, inclusive sem acentos. Cada guia tem links diretos; **Copiar link** permite compartilhar a seção atual. O botão de impressão prepara o guia completo para imprimir ou salvar em PDF pelo navegador.
+
+> **Para quem mantém o projeto:** o restante deste README trata da instalação e da operação técnica. A central de ajuda documenta o produto como ele existe no código; revise seus nomes, caminhos e exemplos sempre que uma tela mudar. Ela é pública, não consulta dados de clientes e não deve conter credenciais reais.
+
+Para conferir a publicação da ajuda nos dois servidores, execute `node --test scripts/test-docs-routes.js`. O teste verifica os três caminhos de acesso, o bloqueio dos documentos internos e a preservação dos arquivos públicos, sem usar credenciais reais ou conectar ao banco.
+
 ---
 
 ## Índice

@@ -11,8 +11,9 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 3000;
 const API_BASE_URL = String(process.env.API_BASE_URL || '').replace(/\/+$/, '');
-const PUBLIC_ROOT_FILES = new Set(['/index.html', '/login.html', '/share.html', '/wa-connect.html']);
-const PUBLIC_DIRS = ['/css/', '/js/', '/img/', '/docs/'];
+// A ajuda pública é um único HTML; os Markdown/SQL de docs são internos.
+const PUBLIC_ROOT_FILES = new Set(['/index.html', '/login.html', '/share.html', '/wa-connect.html', '/docs/index.html']);
+const PUBLIC_DIRS = ['/css/', '/js/', '/img/'];
 
 if (process.env.NODE_ENV === 'production' && !API_BASE_URL) {
   console.error('❌ FATAL: API_BASE_URL não configurada no serviço de frontend.');

@@ -1,5 +1,19 @@
 # Worki Tracker Oficial - Documentação do Projeto
 
+## Documentação de uso — atualização de 17/11/2026
+
+`docs/index.html` continua sendo a central pública standalone em `/docs`, `/docs/` e `/docs/index.html`, com nome fixo **Adlytics Pro**. Agora tem 21 guias, incluindo Integrações, Minha Conta, Acesso por IA (MCP), diagnóstico e glossário. As descrições anteriores desta página, mais abaixo, são histórico; o comportamento atual é:
+
+- Busca local no conteúdo completo (títulos, explicações, tabelas, exemplos e perguntas), sem diferenciar acentos. Resultados abrem o trecho, inclusive respostas do FAQ em `<details>`.
+- Os hashes antigos (`#leads`, `#captacao`, etc.) continuam válidos. Subtítulos ganham IDs `guia--titulo-normalizado`; se mudar o título, revise links externos que apontem para esse trecho. Navegação usa histórico e suporta voltar/avançar.
+- Menu mobile com foco contido, Escape e estado `aria-expanded`; atalhos Ctrl/Cmd+K para busca, link para pular ao conteúdo e FAQ nativo acessível por teclado.
+- Checklist de preparação é apenas um lembrete local (`adlytics-docs-checklist-v1`), sem sincronização ou consulta à configuração de clientes. Tema continua usando `localStorage('theme')`.
+- Cópia de links/exemplos, índice por artigo, guias anterior/próximo e CSS de impressão para o guia inteiro. `beforeprint`/`afterprint` abrem/restauram os detalhes.
+- Lucide permanece a única dependência externa da página. Sua indisponibilidade não pode impedir navegação ou leitura. Não carregar scripts do painel nem fazer chamadas a APIs de clientes para renderizar a ajuda.
+- Publicação corrigida nos dois servidores: apenas `/docs/index.html` entra na lista de HTML público, com `Cache-Control: no-cache`. O diretório `/docs/` não é mais liberado inteiro; Markdown, SQL e documentos internos retornam 404. A descrição antiga da allow-list, abaixo, foi substituída por esta regra. Verifique com `node --test scripts/test-docs-routes.js` (servidores de teste isolados, sem banco ou crons).
+
+Ao alterar esta página, confira a correspondência entre `.doc-nav-item[data-section]` e `#sec-ID`, a sintaxe do script inline, os links de trechos e o comportamento sem CDN/localStorage. As ilustrações devem continuar identificadas como exemplos com dados fictícios. Não descrever Google Ads como dashboard de campanhas: a integração atual é de tag/conversão. O MCP tem acesso de leitura a toda a agência; `listar_leads` exige a opção explícita de dados pessoais na chave.
+
 Bem-vindo ao projeto **Worki Tracker Oficial**. Este arquivo serve como um guia rápido para Inteligências Artificiais e Desenvolvedores sobre a arquitetura e padrões do projeto.
 
 ## 🚀 Arquitetura e Tech Stack
